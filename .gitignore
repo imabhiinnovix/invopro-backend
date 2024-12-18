@@ -1,0 +1,17 @@
+target/
+build/
+dist/
+node_modules/
+uploads/
+
+*.iml
+.idea/
+.vscode/
+
+*.swp
+*~
+
+.env
+*.tmp
+*.lock
+

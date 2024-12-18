@@ -1,0 +1,399 @@
+FORMAT: 1A
+HOST: http://localhost:5002/api/v1
+
+# Innovix-Labs/Searchify
+
+## Auth Collection [/auth]       
+
+### Login [POST /auth/login]
+
++ Request (application/json)
+
+        {
+            "email": "test@searchify.com",
+            "password": "Test@1234"
+        }
+
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "message": "Login successful",
+            "data": {
+                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmE4OWI3ZGI3ZjM0MjVkM2U0OGRlMDQiLCJyb2xlIjoidXNlciIsImlhdCI6MTcyMjU5Mzc0NSwiZXhwIjoxNzIyNzY2NTQ1fQ.riERw0uj0-dBVUYRXy-KtZSCrRms5AYNxtJKkt9G3SQ"
+            }
+        }
+        
+
+### Register (Admin) [POST /auth/register]
+
++ Request (application/json)
+
+             {
+                "username": "test user",
+                "email": "test@searchify.com",
+                "password": "Test@1234"
+            }
+
+
++ Response 200 (application/json)
+
+            {
+                "success": true,
+                "message": "User registered successfully",
+                "data": {
+                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmFjYjVjNGEyNjFjOTM1ZGI5NzAyMjciLCJyb2xlIjoidXNlciIsImlhdCI6MTcyMjU5NDc1NiwiZXhwIjoxNzIyNzY3NTU2fQ.PcUv_OWpgdgLfuMEltVeRS_NYMDhOlNEj2nJ_dwPlM0"
+                }
+            }
+
+
+
+
+
+
+
+    
+## User Collection [/users]
+
+### Get User [GET/users/getUser]
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "message": "User fetched successfully",
+            "data": {
+                "_id": "66a89b7db7f3425d3e48de04",
+                "email": "test@searchify.com",
+                "password": "$2a$10$oDFBAzVC49mrKut5cGYelOoopNEVARYH2So6z6tYfP.aSLR2lv/vC",
+                "username": "test user",
+                "role": "user",
+                "createdAt": "2024-07-30T07:32:53.007Z",
+                "updatedAt": "2024-07-30T07:50:40.504Z",
+                "__v": 0
+            }
+        }
+
+
+
+
+## Workspaces Collection [/workspaces]
+
+### Get search History by workspace [GET/workspaces/searchHistory/:workspaceId]
+
++ Response 200 (application/json)
+
+                    {
+                "success": true,
+                "message": "Search history fetched successfully",
+                "data": {
+                    "_id": "66a8c52233dde20a20e5d78a",
+                    "name": "POD",
+                    "userId": "66a89b7db7f3425d3e48de04",
+                    "files": [],
+                    "createdAt": "2024-07-30T10:49:06.146Z",
+                    "updatedAt": "2024-07-30T10:49:06.146Z",
+                    "__v": 0,
+                    "searchhistories": [
+                        {
+                            "_id": "66acc5a955f9a8b393b2a4ef",
+                            "userId": "66a89b7db7f3425d3e48de04",
+                            "workspaceId": "66a8c52233dde20a20e5d78a",
+                            "searchQueries": [
+                                {
+                                    "query": "geo",
+                                    "colorCode": "#D9E3F0",
+                                    "_id": "66acc5b155f9a8b393b2a4fa"
+                                },
+                                {
+                                    "query": "jhon",
+                                    "colorCode": "#697689",
+                                    "_id": "66acc5b155f9a8b393b2a4fb"
+                                }
+                            ],
+                            "createdAt": "2024-08-02T11:40:25.430Z",
+                            "updatedAt": "2024-08-02T11:40:33.459Z",
+                            "__v": 0
+                        },
+                        {
+                            "_id": "66acccc755f9a8b393b2a58d",
+                            "userId": "66a89b7db7f3425d3e48de04",
+                            "workspaceId": "66a8c52233dde20a20e5d78a",
+                            "searchQueries": [
+                                {
+                                    "query": "hii",
+                                    "colorCode": "#D9E3F0",
+                                    "_id": "66acccc755f9a8b393b2a58e"
+                                }
+                            ],
+                            "createdAt": "2024-08-02T12:10:47.628Z",
+                            "updatedAt": "2024-08-02T12:10:47.628Z",
+                            "__v": 0
+                        }
+                    ]
+                }
+                
+### Workspace create [POST/workspaces/create]
+
++ Request (application/json)
+
+        {
+            "name": "Workspace 1"
+        }
+
++ Response 201 (application/json)
+
+    + Headers
+
+            Location: /questions/2
+
+    + Body
+
+                  {
+                    "success": true,
+                    "message": "Workspace created successfully",
+                    "data": {
+                        "name": "Workspace 3",
+                        "userId": "66a8953fcfe8b476ffaa58e0",
+                        "_id": "66b071b4ac052303eae98c3c",
+                        "createdAt": "2024-08-05T06:31:16.301Z",
+                        "updatedAt": "2024-08-05T06:31:16.301Z",
+                        "__v": 0
+                    }
+                }
+
+
+## File Collection [/files]
+
+### List All Files [GET]
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "message": "Files fetched successfully",
+            "data": [
+                {
+                    "_id": "66ab31263b3a40f0b15e9f8c",
+                    "userId": "66a89b7db7f3425d3e48de04",
+                    "workspaceId": "66a8c52233dde20a20e5d78a",
+                    "name": "Sample-Spreadsheet-10-rows.csv",
+                    "type": "csv",
+                    "path": "uploads/1722495270140-Sample-Spreadsheet-10-rows.csv",
+                    "size": 1098,
+                    "content": "2 293 68.02 1.7 Cubic Foot Compact \"Cube\" Office Refrigerators Barry French 457.81 208.16 Nunavut Appliances 0.58 3 293 2.99 Cardinal Slant-D� Ring Binder, Heavy Gauge Vinyl Barry French 46.71 8.69 Nunavut Binders and Binder Accessories 0.39 4 483 3.99 R380 Clay Rozendal 1198.97 195.99 Nunavut Telephones and Communication 0.58 5 515 5.94 Holmes HEPA Air Purifier Carlos Soltero 30.94 21.78 Nunavut Appliances 0.5 6 515 4.95 G.E. Longer-Life Indoor Recessed Floodlight Bulbs Carlos Soltero 4.43 6.64 Nunavut Office Furnishings 0.37 7 613 7.72 Angle-D Binders with Locking Rings, Label Holders Carl Jackson -54.04 7.3 Nunavut Binders and Binder Accessories 0.38 8 613 6.22 SAFCO Mobile Desk Side File, Wire Frame Carl Jackson 127.70 42.76 Nunavut Storage & Organization  9 643 35 SAFCO Commercial Wire Shelving, Black Monica Federle -695.26 138.14 Nunavut Storage & Organization  10 678 8.33 Xerox 198 Dorothy Badders -226.36 4.98 Nunavut Paper 0.38",
+                    "createdAt": "2024-08-01T06:54:30.149Z",
+                    "updatedAt": "2024-08-01T06:54:30.149Z",
+                    "__v": 0
+                }  
+            ]
+        }
+        
+        
+### Create File [POST/files/upload]
+
++ Request (multipart/form-data)
+
+        {
+            "file": "",
+            "userId": "66a89b7db7f3425d3e48de04",
+            "workspaceId": "66a8c52233dde20a20e5d78a"
+        }
+
++ Response 201 (application/json)
+
+    + Headers
+
+            Location: /questions/2
+
+    + Body
+
+               {
+                    "success": true,
+                    "message": "File uploaded successfully",
+                    "data": {
+                        "userId": "66a89b7db7f3425d3e48de04",
+                        "workspaceId": "66a8c52233dde20a20e5d78a",
+                        "name": "1722343812658-Presidents (1).xlsx",
+                        "type": "vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "path": "uploads/1722593603779-1722343812658-Presidents (1).xlsx",
+                        "size": 10826,
+                        "content": "George Washington 1732-02-22 John Adams 1735-10-19 Thomas Jefferson 1743-04-13 James Madison 1751-03-16 James Monroe 1758-04-28 John Adams 1767-07-11 Andrew Jackson 1767-03-15 Martin Van Buren 1782-12-05 William Harrison 1773-02-09 John Tyler 1790-03-29 James Polk 1795-11-02 Zachary Taylor 1784-11-24 Millard Fillmore 1800-01-07 Franklin Pierce 1804-11-23 James Buchanan 1791-04-23 Abraham Lincoln 1809-02-12 Andrew Johnson 1808-12-29 Ulysses Grant 1822-04-27 Rutherford Hayes 1822-10-04 James Garfield 1831-11-19 Chester Arthur 1829-10-05 Grover Cleveland 1837-03-18 Benjamin Harrison 1833-08-20 William McKinley 1843-01-29 Theodore Roosevelt 1858-10-27 William Taft 1857-09-15 Woodrow Wilson 1856-12-28 Warren Harding 1865-11-02 Calvin Coolidge 1872-07-04 Herbert Hoover 1874-08-10 Franklin Roosevelt 1882-01-30 Harry Truman 1884-05-08 Dwight Eisenhower 1890-10-14 John Kennedy 1917-05-29 Lyndon Johnson 1908-08-27 Richard Nixon 1913-01-09 Gerald Ford 1913-07-14 James Carter 1924-10-01 Ronald Reagan 1911-02-06 George Bush 1924-06-12 William Clinton 1946-08-19 George Bush 1946-07-06 Barack Obama 1961-08-04 Donald Trump 1946-06-14 Joseph Biden 1942-11-20",
+                        "_id": "66acb143a261c935db970222",
+                        "createdAt": "2024-08-02T10:13:23.784Z",
+                        "updatedAt": "2024-08-02T10:13:23.784Z",
+                        "__v": 0
+                    }
+                }
+                
+
+
+
+
+
+## Search History Collection [/searchHistory]
+
+### List All Search History(Admin) [GET/searchHistory/list]
+
++ Response 200 (application/json)
+
+                       {
+                    "success": true,
+                    "message": "Search history fetched successfully",
+                    "data": [
+                        {
+                            "_id": "66acc5a955f9a8b393b2a4ef",
+                            "userId": "66a89b7db7f3425d3e48de04",
+                            "workspaceId": "66a8c52233dde20a20e5d78a",
+                            "searchQueries": [
+                                {
+                                    "query": "geo",
+                                    "colorCode": "#D9E3F0",
+                                    "_id": "66acc5b155f9a8b393b2a4fa"
+                                },
+                                {
+                                    "query": "jhon",
+                                    "colorCode": "#697689",
+                                    "_id": "66acc5b155f9a8b393b2a4fb"
+                                }
+                            ],
+                            "createdAt": "2024-08-02T11:40:25.430Z",
+                            "updatedAt": "2024-08-02T11:40:33.459Z",
+                            "__v": 0
+                        },
+                        {
+                            "_id": "66acccc755f9a8b393b2a58d",
+                            "userId": "66a89b7db7f3425d3e48de04",
+                            "workspaceId": "66a8c52233dde20a20e5d78a",
+                            "searchQueries": [
+                                {
+                                    "query": "hii",
+                                    "colorCode": "#D9E3F0",
+                                    "_id": "66acccc755f9a8b393b2a58e"
+                                }
+                            ],
+                            "createdAt": "2024-08-02T12:10:47.628Z",
+                            "updatedAt": "2024-08-02T12:10:47.628Z",
+                            "__v": 0
+                        }
+                            ]
+                }
+        
+        
+
+### Get Search History by id [GET/searchHistory/:searchHistoryId]
+
++ Response 200 (application/json)
+
+            {
+                "success": true,
+                "message": "Search history fetched successfully",
+                "data": {
+                    "_id": "66acc5a955f9a8b393b2a4ef",
+                    "userId": "66a89b7db7f3425d3e48de04",
+                    "workspaceId": "66a8c52233dde20a20e5d78a",
+                    "searchQueries": [
+                        {
+                            "query": "geo",
+                            "colorCode": "#D9E3F0",
+                            "_id": "66acc5b155f9a8b393b2a4fa"
+                        },
+                        {
+                            "query": "jhon",
+                            "colorCode": "#697689",
+                            "_id": "66acc5b155f9a8b393b2a4fb"
+                        }
+                    ],
+                    "createdAt": "2024-08-02T11:40:25.430Z",
+                    "updatedAt": "2024-08-02T11:40:33.459Z",
+                    "__v": 0
+                }
+            }
+                    
+
+### Create Search History [POST/searchHistory/create]
+
++ Request (application/json)
+
+           {
+                "workspaceId": "66a8c52233dde20a20e5d78a",
+                "searchQueries": [
+                    {
+                        "query": "john",
+                        "colorCode": "#000"
+                    }
+                ]
+            }
+
++ Response 201 (application/json)
+
+    + Headers
+
+
+    + Body
+
+                      {
+                "success": true,
+                "message": "Search history created successfully",
+                "data": {
+                    "userId": "66a89b7db7f3425d3e48de04",
+                    "workspaceId": "66a8c52233dde20a20e5d78a",
+                    "searchQueries": [
+                        {
+                            "query": "john",
+                            "colorCode": "#000",
+                            "_id": "66b06caeac052303eae98c1f"
+                        }
+                    ],
+                    "_id": "66b06cadac052303eae98c1e",
+                    "createdAt": "2024-08-05T06:09:50.005Z",
+                    "updatedAt": "2024-08-05T06:09:50.005Z",
+                    "__v": 0
+                }
+            }
+            
+
+### Update Search History [POST/searchHistory/update/:searchHistoryId]
+
++ Request (application/json)
+
+                    {
+                        "workspaceId": "66a8c52233dde20a20e5d78a",
+                        "searchQueries": [
+                            {
+                                "query": "test",
+                                "colorCode": "#000"
+                            },
+                            {
+                                "query": "test1",
+                                "colorCode": "#fff"
+                            }
+                        ]
+                    }
+
++ Response 201 (application/json)
+
+
+    + Body
+
+                {
+                    "success": true,
+                    "message": "Search history updated successfully"
+                }
+            
+            
+### Delete Search History [POST/searchHistory/delete/:searchHistoryId]
+
+
++ Response 201 (application/json)
+
+    + Headers
+
+
+    + Body
+
+                    {
+                        "success": true,
+                        "message": "Search history deleted successfully"
+                    }
