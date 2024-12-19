@@ -15,7 +15,7 @@ import { RoleId } from '../../enums/role.enum';
 const router = Router();
 
 // Admin
-router.get('/list', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), getOrganizationList);
+router.get('/list', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN]), getOrganizationList);
 
 router.get(
   '/:organizationId',
