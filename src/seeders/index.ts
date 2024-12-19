@@ -4,8 +4,6 @@ import config from '../config';
 import { seedUsers } from './user.seed';
 import { seedOrganizations } from './organization.seed';
 
-
-
 const payload = {
   superAdminUserId: new mongoose.Types.ObjectId('66b34cbbd40e24fca2e3e312'),
   adminUserId: new mongoose.Types.ObjectId('64d229e76e4d3f1d2f9f3e8c'),
@@ -16,7 +14,7 @@ const payload = {
   userWorkspaceId: new mongoose.Types.ObjectId('66c6f88773caaef93d40807a'),
 };
 
-async function seedDatabase() {
+export async function seedDatabase() {
   try {
     // Connect to MongoDB
     const conn = await mongoose.connect(config.MONGO_URI!);

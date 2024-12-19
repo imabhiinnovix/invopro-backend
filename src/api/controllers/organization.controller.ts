@@ -5,7 +5,7 @@ import { Types } from 'mongoose';
 
 export const createOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, description, totalLicenses, licenseExpiresAt } = req.body;
+    const { name, description, totalLicenses, licenseExpiresAt, domain, code } = req.body;
     const { userId } = req.user;
 
     const organization = await organizationService.createOrganization({
@@ -13,6 +13,8 @@ export const createOrganization = async (req: Request, res: Response, next: Next
       description,
       owner: userId,
       totalLicenses,
+      domain,
+      code,
       licenseExpiresAt: new Date(licenseExpiresAt),
     });
     res.status(201).json({
@@ -29,9 +31,7 @@ export const getOrganizationById = async (req: Request, res: Response, next: Nex
   try {
     const { organizationId } = req.params;
 
-    const { data } = await organizationService.organizationAggregate({
-      query: { _id: new Types.ObjectId(organizationId) },
-    });
+    const data = await organizationService.getOrganizationById(organizationId);
 
     res.status(200).json({
       success: true,
@@ -105,7 +105,7 @@ export const deleteOrganization = async (req: Request, res: Response, next: Next
 
 export const getOrganizationList = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search, paginate = 'true' } = req.query;
+    const { search, paginate = 'false' } = req.query;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
@@ -113,8 +113,8 @@ export const getOrganizationList = async (req: Request, res: Response, next: Nex
     if (search) query.name = { $regex: search, $options: 'i' };
 
     let result: any = {};
-    if (paginate === 'true') {
-      result = await organizationService.organizationAggregate({
+    if (paginate) {
+      result = await organizationService.getOrganizationList({
         query,
         page,
         limit,

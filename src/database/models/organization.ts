@@ -12,6 +12,8 @@ interface IOrganization extends Document {
   licenseExpiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
+  domain:string;
+  code:string;
 }
 
 // Define the Organization Schema
@@ -20,6 +22,8 @@ const organizationSchema = new Schema<IOrganization>(
     name: { type: String, required: true },
     description: { type: String },
     owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    domain:{ type: String },
+    code: { type: String, required: true,unique:true },
     isMaster: { type: Boolean, default: false },
     status: { type: String, default: 'active' }, // 1. active, 2. inactive
     totalLicenses: { type: Number, default: 0 }, // Total licenses assigned

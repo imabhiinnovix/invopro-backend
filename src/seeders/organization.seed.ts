@@ -9,10 +9,11 @@ export async function seedOrganizations(payload) {
     // If it doesn't exist, create a new organization
     const newOrganization = new Organization({
       _id: payload.organizationId,
-      name: 'Searchivix',
+      name: 'reportivix',
       owner: payload.adminUserId,
       isMaster: true,
       licenseExpiresAt: new Date('2025-12-31'),
+      code: 'reportivix',
     });
 
     await newOrganization.save();

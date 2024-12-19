@@ -25,7 +25,7 @@ export async function seedUsers(payload) {
   if (!existingSuperAdminUser) {
     const superAdminUser = new User({
       _id: payload.superAdminUserId,
-      email: 'superadmin@searchivix.com',
+      email: 'superadmin@reportivix.com',
       password: hashedSuperAdminPassword,
       firstName: 'Super Admin',
       lastName: 'User',
@@ -48,7 +48,7 @@ export async function seedUsers(payload) {
   if (!existingAdminUser) {
     const adminUser = new User({
       _id: payload.adminUserId,
-      email: 'admin@searchivix.com',
+      email: 'admin@reportivix.com',
       password: hashedAdminPassword,
       firstName: 'Admin',
       lastName: 'User',
@@ -71,7 +71,7 @@ export async function seedUsers(payload) {
   if (!existingTestUser) {
     const testUser = new User({
       _id: payload.testUserId,
-      email: 'test@searchivix.com',
+      email: 'test@reportivix.com',
       password: hashedTestPassword,
       firstName: 'Test',
       lastName: 'User',
