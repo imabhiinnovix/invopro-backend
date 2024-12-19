@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from 'express';
 import * as organizationService from '../../database/services/organization.service';
-import { Types } from 'mongoose';
 
 export const createOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -36,7 +35,7 @@ export const getOrganizationById = async (req: Request, res: Response, next: Nex
     res.status(200).json({
       success: true,
       message: 'Organization fetched successfully',
-      data: data[0],
+      data: data,
     });
   } catch (err) {
     next(err);
@@ -45,11 +44,13 @@ export const getOrganizationById = async (req: Request, res: Response, next: Nex
 
 export const updateOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, description, totalLicenses, licenseExpiresAt } = req.body;
+    const { name, description, totalLicenses, domain, licenseExpiresAt } = req.body;
+    console.log('body', req.body);
     await organizationService.updateOrganization(req.params.organizationId, {
       ...(name && { name }),
       ...(description && { description }),
-      ...(totalLicenses && { totalLicenses }),
+      ...((totalLicenses || totalLicenses === 0) && { totalLicenses }),
+      ...(domain && { domain }),
       ...(licenseExpiresAt && { licenseExpiresAt: new Date(licenseExpiresAt) }),
     });
     res.status(200).json({
