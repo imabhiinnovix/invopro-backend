@@ -76,28 +76,12 @@ const userSchema = new Schema<IUser>(
       required: true,
       default: 3, // 1 for Super Admin, 2 for Admin, 3 for User
     },
-    lastWorkspaceId: { type: Schema.Types.ObjectId, ref: 'Workspace' },
-    lastSearchHistoryId: { type: Schema.Types.ObjectId, ref: 'SearchHistory' },
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
     lastLogin: { type: Date, default: null }, // New field to track last login time
-    settings: {
-      type: settingSchema,
-      default: {
-        RPPos: 'top',
-        RPDimensions: {
-          left: { width: '30%', height: '100%' },
-          right: { width: '30%', height: '100%' },
-          bottom: { width: '100%', height: '30%' },
-          top: { width: '100%', height: '30%' },
-        },
-        showOccurrenceCount: true,
-        showOccurrenceCountTerm: true,
-      },
-    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default model<IUser>('User', userSchema);

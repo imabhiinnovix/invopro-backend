@@ -1,19 +1,6 @@
 import User from '../database/models/user';
 import { hashPassword } from '../utils/bcrypt.utils';
 
-const defaultSettings = {
-  RPPos: 'top',
-  RPDimensions: {
-    left: { width: '30%', height: '100%' },
-    right: { width: '30%', height: '100%' },
-    bottom: { width: '100%', height: '30%' },
-    top: { width: '100%', height: '30%' },
-  },
-  showOccurrenceCount: true,
-  showOccurrenceCountTerm: true,
-  proximityRange: 100,
-};
-
 export async function seedUsers(payload) {
   const hashedSuperAdminPassword = await hashPassword('superadmin@1234');
   const hashedAdminPassword = await hashPassword('admin@1234');
@@ -31,9 +18,7 @@ export async function seedUsers(payload) {
       lastName: 'User',
       role: 'super admin',
       roleId: 1,
-      lastWorkspaceId: payload.superAdminWorkspaceId,
       organizationId: payload.organizationId,
-      settings: defaultSettings,
       createdAt: new Date('2024-08-07'),
       updatedAt: new Date('2024-08-07'),
     });
@@ -54,9 +39,7 @@ export async function seedUsers(payload) {
       lastName: 'User',
       role: 'admin',
       roleId: 2,
-      lastWorkspaceId: payload.adminWorkspaceId,
       organizationId: payload.organizationId,
-      settings: defaultSettings,
       createdAt: new Date('2024-08-08'),
       updatedAt: new Date('2024-08-08'),
     });
@@ -76,9 +59,7 @@ export async function seedUsers(payload) {
       firstName: 'Test',
       lastName: 'User',
       role: 'user',
-      lastWorkspaceId: payload.userWorkspaceId,
       organizationId: payload.organizationId,
-      settings: defaultSettings,
       createdAt: new Date('2024-08-09'),
       updatedAt: new Date('2024-08-09'),
     });
@@ -90,7 +71,7 @@ export async function seedUsers(payload) {
   // Set payload.organizationId for users without it
   const organizationCount = await User.updateMany(
     { organizationId: { $exists: false } },
-    { $set: { organizationId: payload.organizationId } }
+    { $set: { organizationId: payload.organizationId } },
   );
   console.info(`Updated ${organizationCount.modifiedCount} users with organizationIds.`);
 
@@ -105,33 +86,4 @@ export async function seedUsers(payload) {
 
   const updateStatus = await User.updateMany({ status: { $exists: false } }, { $set: { status: 'active' } });
   console.info(`Updated ${updateStatus.modifiedCount} users with status.`);
-
-  // Update user settings
-  const userSettings = await User.find({
-    $or: [
-      { 'settings.RPPos': { $exists: false } },
-      { 'settings.RPDimensions': { $exists: false } },
-      { 'settings.showOccurrenceCount': { $exists: false } },
-      { 'settings.showOccurrenceCountTerm': { $exists: false } },
-      { 'settings.proximityRange': { $exists: false } },
-    ],
-  });
-
-  for (const user of userSettings) {
-    user.settings = {
-      RPPos: user.settings?.RPPos || defaultSettings.RPPos,
-      RPDimensions: {
-        left: user.settings?.RPDimensions?.left || defaultSettings.RPDimensions.left,
-        right: user.settings?.RPDimensions?.right || defaultSettings.RPDimensions.right,
-        bottom: user.settings?.RPDimensions?.bottom || defaultSettings.RPDimensions.bottom,
-        top: user.settings?.RPDimensions?.top || defaultSettings.RPDimensions.top,
-      },
-      showOccurrenceCount: user.settings?.showOccurrenceCount ?? defaultSettings.showOccurrenceCount,
-      showOccurrenceCountTerm: user.settings?.showOccurrenceCountTerm ?? defaultSettings.showOccurrenceCountTerm,
-      proximityRange: user.settings?.proximityRange || defaultSettings.proximityRange,
-    };
-
-    await user.save();
-  }
-  console.info(`Updated ${userSettings.length} users with settings.`);
 }

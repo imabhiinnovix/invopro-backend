@@ -58,11 +58,7 @@ export const findOne = async ({ query }) => {
 
 export const findUserById = async (id: string) => {
   try {
-    const user = await User.findById(id)
-      .populate('lastWorkspaceId', 'id name')
-      .populate('organizationId', 'id name')
-      .populate('lastSearchHistoryId');
-
+    const user = await User.findById(id).populate('organizationId', 'id name');
     if (!user) {
       throw new Error('User not found');
     }
@@ -101,7 +97,7 @@ export const userCount = async (query) => {
 
 export const checkUserStatus = async (
   status: string,
-  organizationId: string
+  organizationId: string,
 ): Promise<{ success: boolean; message?: string }> => {
   const organization = await organizationService.getOrganizationById(organizationId);
 
