@@ -73,14 +73,13 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
   try {
     const { userId } = req.user;
 
-    const { firstName, lastName, password, settings } = req.body;
+    const { firstName, lastName, password } = req.body;
 
     const user = (await userService.findUserById(userId)).toJSON();
 
     const updateUser: any = {
       ...(firstName && { firstName }),
       ...(lastName && { lastName }),
-      ...(settings && { settings: { ...user.settings, ...settings } }),
       ...(password && { password: await hashPassword(password) }),
     };
 
@@ -95,7 +94,7 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
   try {
     const { userId } = req.params;
 
-    const { email, firstName, lastName, roleId, password, settings, organizationId } = req.body;
+    const { email, firstName, lastName, roleId, password, organizationId } = req.body;
 
     const user = (await userService.findUserById(userId)).toJSON();
 
@@ -103,7 +102,6 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
       ...(email && { email }),
       ...(firstName && { firstName }),
       ...(lastName && { lastName }),
-      ...(settings && { settings: { ...user.settings, ...settings } }),
       ...(password && { password: await hashPassword(password) }),
       ...(roleId && { role: Role.Labels[roleId] }),
       ...(roleId && { roleId }),

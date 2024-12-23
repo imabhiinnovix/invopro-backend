@@ -1,23 +1,5 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
-interface IRPDimensions {
-  width: string;
-  height: string;
-}
-
-interface ISetting {
-  RPPos: string;
-  RPDimensions: {
-    left: IRPDimensions;
-    right: IRPDimensions;
-    bottom: IRPDimensions;
-    top: IRPDimensions;
-  };
-  showOccurrenceCount: boolean;
-  showOccurrenceCountTerm: boolean;
-  proximityRange: number;
-}
-
 enum UserRole {
   SUPER_ADMIN = 'super admin',
   ADMIN = 'admin',
@@ -33,30 +15,10 @@ export interface IUser extends Document {
   status?: string;
   role?: string;
   roleId?: string;
-  lastWorkspaceId: Types.ObjectId;
   lastSearchHistoryId: Types.ObjectId;
   organizationId: Types.ObjectId;
-  settings?: ISetting;
   lastLogin?: Date;
 }
-
-const RPDimensionsSchema = new Schema<IRPDimensions>({
-  width: { type: String },
-  height: { type: String },
-});
-
-const settingSchema = new Schema<ISetting>({
-  RPPos: { type: String, default: 'top' },
-  RPDimensions: {
-    left: { type: RPDimensionsSchema },
-    right: { type: RPDimensionsSchema },
-    bottom: { type: RPDimensionsSchema },
-    top: { type: RPDimensionsSchema },
-  },
-  showOccurrenceCount: { type: Boolean, default: true },
-  showOccurrenceCountTerm: { type: Boolean, default: true },
-  proximityRange: { type: Number, default: 100 },
-});
 
 const userSchema = new Schema<IUser>(
   {
