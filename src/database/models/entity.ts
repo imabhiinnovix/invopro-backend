@@ -17,6 +17,7 @@ interface IEntity extends Document {
   attributes?: IAttribute[]; // Optional array of attributes
   organizationId: Types.ObjectId;
   createdBy: Types.ObjectId;
+  updatedBy: Types.ObjectId;
   isActive: boolean;
 }
 
@@ -45,6 +46,7 @@ const entitySchema = new Schema<IEntity>(
     attributes: { type: [attributeSchema], default: [] }, // Array of attributes
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     isActive: { type: Boolean, required: true },
   },
   {
