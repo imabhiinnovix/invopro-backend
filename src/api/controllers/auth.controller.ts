@@ -201,8 +201,8 @@ export const sendOtp = async (req: Request, res: Response, next: NextFunction) =
         <h2 style="color: #333;">${otp}</h2>
         <p>This OTP is valid for the next <strong>${config.OTP_EXPIRATION_TIME} minutes</strong>. For your safety, please do not share it with anyone.</p>
         <p>If you did not request this verification code, no further action is needed—your account remains safe.</p>
-        <p>Thank you for choosing Searchivix!</p>
-        <p style="color: #4CAF50;">Best regards,<br>The Searchivix Team</p>
+        <p>Thank you for choosing Reportivix!</p>
+        <p style="color: #4CAF50;">Best regards,<br>The Reportivix Team</p>
       </div>
       `,
     });
