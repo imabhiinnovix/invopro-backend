@@ -6,6 +6,7 @@ import organizationRoutes from './organization.routes';
 import supportRoutes from './support.routes';
 import entityRoutes from './entity.routes';
 import attributeRoutes from './attributeOption.routes';
+import fileRoutes from './file.routes';
 
 const router = Router();
 
@@ -15,5 +16,6 @@ router.use('/organizations', organizationRoutes);
 router.use('/support', supportRoutes);
 router.use('/entities', entityRoutes);
 router.use('/attributeOptions', attributeRoutes);
+router.use('/files', fileRoutes);
 
 export default router;
