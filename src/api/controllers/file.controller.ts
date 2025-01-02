@@ -16,7 +16,8 @@ interface KeywordPosition {
 
 interface ColumnInfo {
   name: string;
-  attributeType: string;
+  type: string;
+  id: number;
 }
 
 async function getColumnNamesAndTypes(filePath: string, sheetName?: string): Promise<ColumnInfo[]> {
@@ -47,8 +48,9 @@ async function getColumnNamesAndTypes(filePath: string, sheetName?: string): Pro
     }
 
     columnsInfo.push({
+      id: colNumber,
       name: columnName,
-      attributeType: type,
+      type: type,
     });
   });
   await fsPromises.unlink(filePath);
@@ -80,13 +82,13 @@ async function getAttributesFromXlsxOrCsvHeaders({
 }
 
 export const handleFileUpload = async (req: Request, res: Response, next: NextFunction) => {
-  const { userId } = req?.user;
+  const { userId, organizationId } = req?.user;
   try {
     if (!req.files?.length) {
       return res.status(400).send('No files uploaded.');
     }
 
-    const { organizationId, operation } = req.body;
+    const { operation } = req.body;
 
     const files = Array.isArray(req.files) ? req.files : Object.values(req.files).flat();
 

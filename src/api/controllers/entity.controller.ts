@@ -6,7 +6,7 @@ export const createEntity = async (req: Request, res: Response, next: NextFuncti
     const { name, description, attributes } = req.body;
     const { organizationId, userId } = req.user;
 
-    const entity = await entityService.createEntity({
+    await entityService.createEntity({
       name,
       description,
       attributes,
@@ -17,7 +17,6 @@ export const createEntity = async (req: Request, res: Response, next: NextFuncti
     res.status(201).json({
       success: true,
       message: 'Entity created successfully',
-      data: entity,
     });
   } catch (err) {
     next(err);
