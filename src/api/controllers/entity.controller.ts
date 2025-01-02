@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as entityService from '../../database/services/entity.services';
+import { populate } from 'dotenv';
 
 export const createEntity = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -23,6 +24,26 @@ export const createEntity = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
+export const updateEntity = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, description, attributes } = req.body;
+    const { userId } = req.user;
+
+    await entityService.updateEntity(req.params.entityId, {
+      name,
+      description,
+      attributes,
+      updatedBy: userId,
+    });
+    res.status(201).json({
+      success: true,
+      message: 'Entity Updated Successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const listEntity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { search, paginate = 'false' } = req.query;
@@ -38,6 +59,16 @@ export const listEntity = async (req: Request, res: Response, next: NextFunction
         query,
         page,
         limit,
+        populate: [
+          {
+            path: 'createdBy',
+            select: 'firstName lastName', // Specify the fields to populate
+          },
+          {
+            path: 'updatedBy',
+            select: 'firstName lastName', // Specify the fields to populate
+          },
+        ],
       });
     } else {
       result = await entityService.getEntityList({
@@ -47,7 +78,7 @@ export const listEntity = async (req: Request, res: Response, next: NextFunction
 
     res.status(200).json({
       success: true,
-      message: 'Entity fetched successfully',
+      message: 'Entity Fetched Successfully',
       data: result.data,
       totalCount: result.totalCount,
     });

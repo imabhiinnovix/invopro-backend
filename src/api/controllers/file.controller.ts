@@ -101,7 +101,7 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
 
     return res.status(201).json({
       success: true,
-      message: 'Files uploaded successfully',
+      message: 'Attribute Retrieved Successfully',
       data: data,
     });
   } catch (err: any) {

@@ -10,7 +10,16 @@ export const createEntity = async (entityData: any) => {
   }
 };
 
-export const getEntityList = async ({ query, select = '', page, limit, sort = { createdAt: -1 }, populate }: any) => {
+export const updateEntity = async (entityId: string, entityData: any) => {
+  try {
+    const organization = await Entity.findByIdAndUpdate(entityId, entityData, { new: true });
+    return organization;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getEntityList = async ({ query, select = '', page, limit, sort = { updatedAt: -1 }, populate }: any) => {
   try {
     // Remove the await keyword here
     let usersQuery: any = Entity.find(query)
