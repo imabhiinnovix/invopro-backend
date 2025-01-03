@@ -22,7 +22,7 @@ const attributeSchema = new Schema<IAttribute>(
   },
   {
     timestamps: true, // Adds createdAt and updatedAt
-  },
+  }
 );
 
 // Create the attribute model

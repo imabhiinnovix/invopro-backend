@@ -10,6 +10,15 @@ export const createAttribute = async (attributeData: any) => {
   }
 };
 
+export const updateAttribute = async (attributeId: string, attributeData: any) => {
+  try {
+    const attributeResp = await Attribute.findByIdAndUpdate(attributeId, attributeData, { new: true });
+    return attributeResp;
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const getAttributeList = async ({
   query,
   select = '',
