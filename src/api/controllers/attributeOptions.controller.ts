@@ -49,7 +49,7 @@ export const listAttribute = async (req: Request, res: Response, next: NextFunct
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
     const query: any = {};
-    if (search) query.name = { $regex: search, $options: 'i' };
+    if (search) query.attributeName = { $regex: search, $options: 'i' };
 
     let result: any = {};
     if (paginate) {

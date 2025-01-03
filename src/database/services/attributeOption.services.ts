@@ -24,7 +24,7 @@ export const getAttributeList = async ({
   select = '',
   page,
   limit,
-  sort = { createdAt: -1 },
+  sort = { updatedAt: -1 },
   populate,
 }: any) => {
   try {
