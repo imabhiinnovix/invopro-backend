@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import * as attributeOptionService from '../../database/services/attributeOption.services';
+import { Request, Response, NextFunction } from "express";
+import * as attributeOptionService from "../../database/services/attributeOption.services";
 
 export const createAttribute = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -15,7 +15,7 @@ export const createAttribute = async (req: Request, res: Response, next: NextFun
     });
     res.status(201).json({
       success: true,
-      message: 'Attribute created successfully',
+      message: "Attribute created successfully",
       data: attribute,
     });
   } catch (err) {
@@ -25,12 +25,12 @@ export const createAttribute = async (req: Request, res: Response, next: NextFun
 
 export const listAttribute = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search, paginate = 'false' } = req.query;
+    const { search, paginate = "false" } = req.query;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
     const query: any = {};
-    if (search) query.name = { $regex: search, $options: 'i' };
+    if (search) query.name = { $regex: search, $options: "i" };
 
     let result: any = {};
     if (paginate) {
@@ -38,18 +38,36 @@ export const listAttribute = async (req: Request, res: Response, next: NextFunct
         query,
         page,
         limit,
-        populate: false,
+        populate: [
+          {
+            path: "createdBy",
+            select: "firstName lastName", // Specify the fields to populate
+          },
+          {
+            path: "updatedBy",
+            select: "firstName lastName", // Specify the fields to populate
+          },
+        ],
       });
     } else {
       result = await attributeOptionService.getAttributeList({
         query,
-        populate: false,
+        populate: [
+          {
+            path: "createdBy",
+            select: "firstName lastName", // Specify the fields to populate
+          },
+          {
+            path: "updatedBy",
+            select: "firstName lastName", // Specify the fields to populate
+          },
+        ],
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Attribute fetched successfully',
+      message: "Attribute fetched successfully",
       data: result.data,
       totalCount: result.totalCount,
     });
