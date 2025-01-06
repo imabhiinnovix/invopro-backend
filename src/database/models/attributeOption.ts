@@ -25,7 +25,9 @@ const attributeSchema = new Schema<IAttribute>(
   }
 );
 
-// Create the attribute model
-const Attribute = model<IAttribute>('Attribute', attributeSchema);
+attributeSchema.index({ attributeName: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
 
-export default Attribute;
+// Create the attribute model
+const AttributeOption = model<IAttribute>('AttributeOption', attributeSchema);
+
+export default AttributeOption;

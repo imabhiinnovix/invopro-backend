@@ -35,7 +35,7 @@ const attributeSchema = new Schema<IAttribute>(
     optionAttributeId: { type: String }, // Optional field
     cleaner: { type: [String] }, // Array of strings
   },
-  { _id: false }, // Disable _id for subdocuments in arrays
+  { _id: false } // Disable _id for subdocuments in arrays
 );
 
 // Define the Entity Schema
@@ -51,8 +51,10 @@ const entitySchema = new Schema<IEntity>(
   },
   {
     timestamps: true, // Adds createdAt and updatedAt
-  },
+  }
 );
+
+entitySchema.index({ name: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
 
 // Create the entity model
 const Entity = model<IEntity>('Entity', entitySchema);

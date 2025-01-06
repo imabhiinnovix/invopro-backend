@@ -6,6 +6,10 @@ export const createAttribute = async (req: Request, res: Response, next: NextFun
     const { attributeName, attributeValue } = req.body;
     const { organizationId, userId } = req.user;
 
+    const attributeData = await attributeOptionService.findAttributeByName(attributeName);
+    if (attributeData) {
+      return res.status(400).json({ success: false, message: 'Attribute Option Name Already Exists' });
+    }
     const attribute = await attributeOptionService.createAttribute({
       attributeName,
       attributeValue,
@@ -27,6 +31,11 @@ export const updateAttribute = async (req: Request, res: Response, next: NextFun
   try {
     const { attributeName, attributeValue } = req.body;
     const { userId } = req.user;
+
+    const attributeData = await attributeOptionService.findAttributeByName(attributeName);
+    if (attributeData && attributeData._id != req.params.attributeId) {
+      return res.status(400).json({ success: false, message: 'Attribute Option Name Already Exists' });
+    }
 
     await attributeOptionService.updateAttribute(req.params.attributeId, {
       attributeName,

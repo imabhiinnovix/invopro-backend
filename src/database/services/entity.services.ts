@@ -44,3 +44,16 @@ export const getEntityList = async ({ query, select = '', page, limit, sort = { 
     throw err;
   }
 };
+
+export const findEntityByName = async (name: string) => {
+  try {
+    const entityDetails = await Entity.findOne(
+      { name },
+      null, // Projection (null means no specific fields are excluded or included)
+      { collation: { locale: 'en', strength: 2 } } // Case-sensitive collation
+    );
+    return entityDetails;
+  } catch (err) {
+    throw err;
+  }
+};
