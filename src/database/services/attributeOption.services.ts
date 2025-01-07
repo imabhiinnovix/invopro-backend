@@ -64,3 +64,13 @@ export const findAttributeByName = async (attributeName: string) => {
     throw err;
   }
 };
+
+export const findAttributeOptionById = async (id: string) => {
+  try {
+    const attributeDetails = await Attribute.findById(id);
+    console.log(attributeDetails, 'attributeDetails');
+    return attributeDetails;
+  } catch (err) {
+    throw err;
+  }
+};

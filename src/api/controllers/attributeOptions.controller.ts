@@ -103,3 +103,16 @@ export const listAttribute = async (req: Request, res: Response, next: NextFunct
     next(err);
   }
 };
+
+export const getAttributeOptionById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const attributeData = await attributeOptionService.findAttributeOptionById(req.params.attributeId);
+    res.status(200).json({
+      success: true,
+      message: 'Attribute Option Fetched Successfully',
+      data: attributeData,
+    });
+  } catch (err) {
+    next(err);
+  }
+};

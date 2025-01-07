@@ -3,7 +3,12 @@ import { Router } from 'express';
 import { RoleId } from '../../enums/role.enum';
 import { roleAuthorization } from '../../middlewares/role.middleware';
 import { authenticateToken } from '../../middlewares/authenticate.middleware';
-import { createAttribute, listAttribute, updateAttribute } from '../controllers/attributeOptions.controller';
+import {
+  createAttribute,
+  getAttributeOptionById,
+  listAttribute,
+  updateAttribute,
+} from '../controllers/attributeOptions.controller';
 
 const router = Router();
 
@@ -15,5 +20,6 @@ router.post(
   updateAttribute
 );
 router.get('/list', authenticateToken, listAttribute);
+router.get('/get/:attributeId', authenticateToken, getAttributeOptionById);
 
 export default router;
