@@ -45,10 +45,10 @@ export const getEntityList = async ({ query, select = '', page, limit, sort = { 
   }
 };
 
-export const findEntityByName = async (name: string) => {
+export const findEntityByNameAndOrganization = async (name: string, organizationId: string) => {
   try {
     const entityDetails = await Entity.findOne(
-      { name },
+      { name, organizationId },
       null, // Projection (null means no specific fields are excluded or included)
       { collation: { locale: 'en', strength: 2 } } // Case-sensitive collation
     );

@@ -54,7 +54,7 @@ const entitySchema = new Schema<IEntity>(
   }
 );
 
-entitySchema.index({ name: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
+entitySchema.index({ name: 1, organizationId: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
 
 // Create the entity model
 const Entity = model<IEntity>('Entity', entitySchema);

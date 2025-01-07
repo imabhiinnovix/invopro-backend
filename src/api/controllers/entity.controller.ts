@@ -1,12 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import * as entityService from '../../database/services/entity.services';
-import { populate } from 'dotenv';
 
 export const createEntity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, description, attributes } = req.body;
     const { organizationId, userId } = req.user;
-    const entityDetails = await entityService.findEntityByName(name);
+    const entityDetails = await entityService.findEntityByNameAndOrganization(name, organizationId);
     if (entityDetails) {
       return res.status(400).json({ success: false, message: 'Entity Name already exists' });
     }
@@ -31,8 +30,8 @@ export const createEntity = async (req: Request, res: Response, next: NextFuncti
 export const updateEntity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, description, attributes } = req.body;
-    const { userId } = req.user;
-    const entityDetails = await entityService.findEntityByName(name);
+    const { userId, organizationId } = req.user;
+    const entityDetails = await entityService.findEntityByNameAndOrganization(name, organizationId);
     if (entityDetails && entityDetails._id != req.params.entityId) {
       return res.status(400).json({ success: false, message: 'Entity Name already exists' });
     }

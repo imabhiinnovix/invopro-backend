@@ -25,7 +25,10 @@ const attributeSchema = new Schema<IAttribute>(
   }
 );
 
-attributeSchema.index({ attributeName: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
+attributeSchema.index(
+  { attributeName: 1, organizationId: 1 },
+  { unique: true, collation: { locale: 'en', strength: 2 } }
+);
 
 // Create the attribute model
 const AttributeOption = model<IAttribute>('AttributeOption', attributeSchema);

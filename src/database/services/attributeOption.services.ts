@@ -52,10 +52,10 @@ export const getAttributeList = async ({
   }
 };
 
-export const findAttributeByName = async (attributeName: string) => {
+export const findAttributeByNameAndOrganization = async (attributeName: string, organizationId: string) => {
   try {
     const attributeData = await Attribute.findOne(
-      { attributeName },
+      { attributeName, organizationId },
       null, // Projection (null means no specific fields are excluded or included)
       { collation: { locale: 'en', strength: 2 } } // Case-sensitive collation
     );
