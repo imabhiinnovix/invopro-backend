@@ -7,6 +7,7 @@ import supportRoutes from './support.routes';
 import entityRoutes from './entity.routes';
 import attributeRoutes from './attributeOption.routes';
 import fileRoutes from './file.routes';
+import dataSourceRoutes from './dataSource.routes';
 
 const router = Router();
 
@@ -15,6 +16,7 @@ router.use('/users', userRoutes);
 router.use('/organizations', organizationRoutes);
 router.use('/support', supportRoutes);
 router.use('/entities', entityRoutes);
+router.use('/dataSource', dataSourceRoutes);
 router.use('/attributeOptions', attributeRoutes);
 router.use('/files', fileRoutes);
 

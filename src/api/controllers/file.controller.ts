@@ -88,7 +88,7 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
       return res.status(400).send('No files uploaded.');
     }
 
-    const { operation } = req.body;
+    const { operation, bodyData } = req.body;
 
     const files = Array.isArray(req.files) ? req.files : Object.values(req.files).flat();
 
