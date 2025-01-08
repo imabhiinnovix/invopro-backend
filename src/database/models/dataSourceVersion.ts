@@ -10,13 +10,17 @@ interface IDataSourceVersion extends Document {
   updatedBy?: Types.ObjectId;
   createdBy?: Types.ObjectId;
   isActive: boolean;
+  //   isLatest: boolean;
+  versionName: string;
 }
 
 const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'DataSource' },
-    versionValue: { type: String },
+    versionValue: { type: String, required: true },
+    versionName: { type: String, required: true },
+    // isLatest: { type: Boolean, required: true },//not requered we can get it using ceatedAt
     filePath: { type: String },
     fileType: { type: String },
     fileSize: { type: String },
@@ -29,7 +33,10 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
   }
 );
 
-// dataSourceSchema.index({ code: 1, organizationId: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
+dataSourceVersionSchema.index(
+  { dataSourceId: 1, versionValue: 1, versionName: 1 },
+  { unique: true, collation: { locale: 'en', strength: 2 } }
+);
 
 const DataSourceVersion = model<IDataSourceVersion>('DataSourceVersion', dataSourceVersionSchema);
 

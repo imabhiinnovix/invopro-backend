@@ -17,7 +17,12 @@ interface ColumnInfo {
 
 export async function getColumnNamesAndTypes(filePath: string, sheetName?: string): Promise<ColumnInfo[]> {
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(filePath);
+
+  await workbook.xlsx.readFile(filePath, {
+    ignoreNodes: [
+      'dataValidations', // ignores the workbook's Data Validations
+    ],
+  });
 
   const worksheet = sheetName ? workbook.getWorksheet(sheetName) : workbook.worksheets[0]; // Use the first sheet if no sheet name is provided
 
@@ -50,4 +55,45 @@ export async function getColumnNamesAndTypes(filePath: string, sheetName?: strin
   });
 
   return columnsInfo;
+}
+
+export async function readExcelFile(filePath: string, sheetName?: string): Promise<any[]> {
+  const workbook = new ExcelJS.Workbook();
+
+  await workbook.xlsx.readFile(filePath);
+  const worksheet = sheetName ? workbook.getWorksheet(sheetName) : workbook.worksheets[0]; // Use the first sheet if no sheet name is provided
+
+  if (!worksheet) {
+    throw new Error(sheetName ? `Sheet "${sheetName}" not found` : 'No sheets found in the workbook.');
+  }
+
+  const rows: any[] = [];
+  const headers: string[] = [];
+
+  worksheet.eachRow((row, rowIndex) => {
+    if (rowIndex === 1) {
+      // First row is the header
+      row.eachCell((cell, colNumber) => {
+        headers[colNumber - 1] = cell.text; // Store header names
+      });
+    } else {
+      // Process other rows
+      const rowData: { [key: string]: any } = {};
+      row.eachCell((cell, colNumber) => {
+        const header = headers[colNumber - 1];
+        if (header) {
+          if (cell.type === ExcelJS.ValueType.Date) {
+            // Convert date to ISO string
+            rowData[header] = (cell.value as Date).toISOString();
+          } else {
+            // Handle other types
+            rowData[header] = cell.value;
+          }
+        }
+      });
+      rows.push(rowData);
+    }
+  });
+
+  return rows;
 }
