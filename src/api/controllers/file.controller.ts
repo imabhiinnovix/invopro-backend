@@ -83,6 +83,7 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
           return res.status(201).json({
             success: true,
             message: 'Data added successfully',
+            dataSourceVersionId: dataSourceVersion._id,
           });
         } else {
           await fsPromises.unlink(newFilePath);
