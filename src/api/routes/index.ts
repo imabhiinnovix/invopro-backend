@@ -8,6 +8,7 @@ import entityRoutes from './entity.routes';
 import attributeRoutes from './attributeOption.routes';
 import fileRoutes from './file.routes';
 import dataSourceRoutes from './dataSource.routes';
+import customReports from './customReport.routes';
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use('/entities', entityRoutes);
 router.use('/dataSource', dataSourceRoutes);
 router.use('/attributeOptions', attributeRoutes);
 router.use('/files', fileRoutes);
+router.use('/customReports', customReports);
 
 export default router;

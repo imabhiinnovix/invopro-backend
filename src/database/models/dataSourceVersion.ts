@@ -3,6 +3,7 @@ import { Schema, model, Document, Types } from 'mongoose';
 interface IDataSourceVersion extends Document {
   organizationId: Types.ObjectId;
   dataSourceId: Types.ObjectId;
+  entityId: Types.ObjectId;
   versionValue: string;
   filePath: string;
   fileType: string;
@@ -18,6 +19,7 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'DataSource' },
+    entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     versionValue: { type: String, required: true },
     versionName: { type: String, required: true },
     // isLatest: { type: Boolean, required: true },//not requered we can get it using ceatedAt

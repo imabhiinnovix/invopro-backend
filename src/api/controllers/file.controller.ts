@@ -7,6 +7,8 @@ import * as dataSourceService from '../../database/services/dataSourceVersion.se
 import * as dataSourceVersionValueDisclosureService from '../../database/services/dataSourceVersionValueDisclosure.services';
 import * as dataSourceVersionValuePortfolioService from '../../database/services/dataSourceVersionValuePortfolio.services';
 
+const cleanMongoKey = (key: string) => key.replace(/[$.\s\r\n]/g, '');
+
 export const handleFileUpload = async (req: Request, res: Response, next: NextFunction) => {
   const { userId, organizationId } = req?.user;
   try {
@@ -69,10 +71,15 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
             isActive: true,
           });
 
-          const updatedFileData = fileData.map((item) => ({
-            ...item,
-            dataSourceVersionId: dataSourceVersion._id,
-          }));
+          const updatedFileData = fileData.map((item) => {
+            const cleanedItem = Object.fromEntries(
+              Object.entries(item).map(([key, value]) => [cleanMongoKey(key), value]) // Clean keys
+            );
+            return {
+              ...cleanedItem,
+              dataSourceVersionId: dataSourceVersion._id, // Add dataSourceVersionId
+            };
+          });
 
           if (fileType === 'disclosure') {
             await dataSourceVersionValueDisclosureService.createDataSourceVersionValueDisclosure(updatedFileData);

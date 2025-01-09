@@ -2,6 +2,8 @@ import { Schema, model, Document, Types } from 'mongoose';
 
 // Interface for TypeScript
 interface IDataSourceVersionValueDisclosure extends Document {
+  entityId: Types.ObjectId;
+  dataSourceId: Types.ObjectId;
   dataSourceVersionId: Types.ObjectId;
   DisclosureNumber: string;
   SBU: string;
@@ -26,7 +28,9 @@ interface IDataSourceVersionValueDisclosure extends Document {
 // Mongoose Schema
 const dataSourceVersionValueDisclosureSchema = new Schema<IDataSourceVersionValueDisclosure>(
   {
-    dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'DataSourceVersion', required: true },
+    entityId: { type: Schema.Types.ObjectId, ref: 'Enity' },
+    dataSourceId: { type: Schema.Types.ObjectId, ref: 'DataSource' },
+    dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'DataSourceVersion' },
     DisclosureNumber: { type: String },
     SBU: { type: String },
     BU: { type: String },

@@ -6,40 +6,40 @@ interface IDataSourceVersionValuePortfolio extends Document {
   CaseNumber?: string;
   Case_Reference1?: string;
   Country?: string;
-  Case_Type?: string;
-  Sub_Case?: string;
+  CaseType?: string;
+  SubCase?: string;
   SBU?: string;
   BU?: string;
   BL?: string;
   Attorney?: string;
   IsFirstFiling?: number;
-  In_Force?: number;
+  InForce?: number;
   Status?: string;
-  Status_Date?: Date;
-  Priority_Info?: string;
-  Filing_Date?: Date;
-  PCT_Date?: Date;
-  Exp_Date?: Date;
-  Grant_Date?: Date;
-  Application_No?: string;
-  PCT_No?: string;
-  Publication_No?: string;
-  Grant_No?: string;
-  Annuity_Agent?: string;
-  Local_Agent?: string;
-  Procedure_Agent?: string;
-  Procedure_Agent_Ref?: string;
+  StatusDate?: Date;
+  PriorityInfo?: string;
+  FilingDate?: Date;
+  PCTDate?: Date;
+  ExpDate?: Date;
+  GrantDate?: Date;
+  ApplicationNo?: string;
+  PCTNo?: string;
+  PublicationNo?: string;
+  GrantNo?: string;
+  AnnuityAgent?: string;
+  LocalAgent?: string;
+  ProcedureAgent?: string;
+  ProcedureAgentRef?: string;
   Title?: string;
-  Legal_Owner?: string;
+  LegalOwner?: string;
   Inventors?: string;
-  Local_Agent_Ref?: string;
+  LocalAgentRef?: string;
   Applicants?: string;
-  Registered_Owner?: string;
-  Original_STCs?: string;
-  Accolade_ID_List?: string;
+  RegisteredOwner?: string;
+  OriginalSTCs?: string;
+  AccoladeID_List?: string;
   AccoladeID?: string;
-  Publication_Date?: Date;
-  Country_Name?: string;
+  PublicationDate?: Date;
+  CountryName?: string;
 }
 
 // Mongoose Schema
@@ -49,40 +49,40 @@ const dataSourceVersionValuePortfolioSchema = new Schema<IDataSourceVersionValue
     CaseNumber: { type: String },
     Case_Reference1: { type: String },
     Country: { type: String },
-    Case_Type: { type: String },
-    Sub_Case: { type: String },
+    CaseType: { type: String },
+    SubCase: { type: String },
     SBU: { type: String },
     BU: { type: String },
     BL: { type: String },
     Attorney: { type: String },
     IsFirstFiling: { type: Number },
-    In_Force: { type: Number },
+    InForce: { type: Number },
     Status: { type: String },
-    Status_Date: { type: Date },
-    Priority_Info: { type: String },
-    Filing_Date: { type: Date },
-    PCT_Date: { type: Date },
-    Exp_Date: { type: Date },
-    Grant_Date: { type: Date },
-    Application_No: { type: String },
-    PCT_No: { type: String },
-    Publication_No: { type: String },
-    Grant_No: { type: String },
-    Annuity_Agent: { type: String },
-    Local_Agent: { type: String },
-    Procedure_Agent: { type: String },
-    Procedure_Agent_Ref: { type: String },
+    StatusDate: { type: Date },
+    PriorityInfo: { type: String },
+    FilingDate: { type: Date },
+    PCTDate: { type: Date },
+    ExpDate: { type: Date },
+    GrantDate: { type: Date },
+    ApplicationNo: { type: String },
+    PCTNo: { type: String },
+    PublicationNo: { type: String },
+    GrantNo: { type: String },
+    AnnuityAgent: { type: String },
+    LocalAgent: { type: String },
+    ProcedureAgent: { type: String },
+    ProcedureAgentRef: { type: String },
     Title: { type: String },
-    Legal_Owner: { type: String },
+    LegalOwner: { type: String },
     Inventors: { type: String },
-    Local_Agent_Ref: { type: String },
+    LocalAgentRef: { type: String },
     Applicants: { type: String },
-    Registered_Owner: { type: String },
-    Original_STCs: { type: String },
-    Accolade_ID_List: { type: String },
+    RegisteredOwner: { type: String },
+    OriginalSTCs: { type: String },
+    AccoladeID_List: { type: String },
     AccoladeID: { type: String },
-    Publication_Date: { type: Date },
-    Country_Name: { type: String },
+    PublicationDate: { type: Date },
+    CountryName: { type: String },
   },
   {
     timestamps: true, // Automatically manage createdAt and updatedAt timestamps
