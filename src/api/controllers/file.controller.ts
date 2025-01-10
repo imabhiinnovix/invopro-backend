@@ -45,7 +45,7 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
       }
 
       if (operation === 'dataSourceVersion') {
-        const { versionName, dataSourceId, versionValue, fileType } = req.body;
+        const { versionName, entityId, dataSourceId, versionValue, fileType } = req.body;
         const newFilePath = path.join('uploads', organizationId, userId, 'temp', fileName);
         await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
         await fsPromises.rename(filePath, newFilePath);
@@ -64,6 +64,7 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
           const fileData = await readExcelFile(newFilePath);
 
           const dataSourceVersion = await dataSourceService.createDataSourceVersion({
+            entityId,
             dataSourceId,
             versionName,
             versionValue,
@@ -76,8 +77,12 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
               Object.entries(item).map(([key, value]) => [cleanMongoKey(key), value]) // Clean keys
             );
             return {
-              ...cleanedItem,
-              dataSourceVersionId: dataSourceVersion._id, // Add dataSourceVersionId
+              dataSourceId: dataSourceId,
+              entityId: entityId,
+              dataSourceVersionId: dataSourceVersion._id,
+              rowData: {
+                ...cleanedItem,
+              },
             };
           });
 

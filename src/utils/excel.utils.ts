@@ -74,7 +74,7 @@ export async function readExcelFile(filePath: string, sheetName?: string): Promi
     if (rowIndex === 1) {
       // First row is the header
       row.eachCell((cell, colNumber) => {
-        headers[colNumber - 1] = cell.text; // Store header names
+        headers[colNumber - 1] = cell.text.trim(); // Store header names
       });
     } else {
       // Process other rows
@@ -87,7 +87,7 @@ export async function readExcelFile(filePath: string, sheetName?: string): Promi
             rowData[header] = (cell.value as Date).toISOString();
           } else {
             // Handle other types
-            rowData[header] = cell.value;
+            rowData[header] = typeof cell.value === 'string' ? cell.value?.trim() : cell.value;
           }
         }
       });

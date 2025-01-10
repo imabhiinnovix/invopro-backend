@@ -1,18 +1,14 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
-// Interface for TypeScript
-interface IDataSourceVersionValueDisclosure extends Document {
-  entityId: Types.ObjectId;
-  dataSourceId: Types.ObjectId;
-  dataSourceVersionId: Types.ObjectId;
-  DisclosureNumber: string;
-  SBU: string;
-  BU: string;
-  BL: string;
+interface IRowData {
+  DisclosureNumber?: string;
+  SBU?: string;
+  BU?: string;
+  BL?: string;
   DisclosureDate?: Date;
   DisclosureStatus?: string;
   DisclosureTitle?: string;
-  OwnerName: string;
+  OwnerName?: string;
   Attorney?: string;
   ProcedureAgentName?: string;
   OriginalSTCs?: string;
@@ -22,7 +18,16 @@ interface IDataSourceVersionValueDisclosure extends Document {
   OriginalSTCName?: string;
   ResponsibleSTCName?: string;
   ResponsibleSTCName1?: string;
+}
+
+interface IDataSourceVersionValueDisclosure extends Document {
+  entityId: Types.ObjectId;
+  dataSourceId: Types.ObjectId;
+  dataSourceVersionId: Types.ObjectId;
+  rowData: IRowData;
   createdBy?: Types.ObjectId;
+  createdAt?: Date; // Added by timestamps
+  updatedAt?: Date; // Added by timestamps
 }
 
 // Mongoose Schema
@@ -31,23 +36,26 @@ const dataSourceVersionValueDisclosureSchema = new Schema<IDataSourceVersionValu
     entityId: { type: Schema.Types.ObjectId, ref: 'Enity' },
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'DataSource' },
     dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'DataSourceVersion' },
-    DisclosureNumber: { type: String },
-    SBU: { type: String },
-    BU: { type: String },
-    BL: { type: String },
-    DisclosureDate: { type: Date },
-    DisclosureStatus: { type: String },
-    DisclosureTitle: { type: String },
-    OwnerName: { type: String },
-    Attorney: { type: String },
-    ProcedureAgentName: { type: String },
-    OriginalSTCs: { type: String },
-    AccoladeID_List: { type: String },
-    Inventors: { type: String },
-    Accolade: { type: String },
-    OriginalSTCName: { type: String },
-    ResponsibleSTCName: { type: String },
-    ResponsibleSTCName1: { type: String },
+    rowData: {
+      DisclosureNumber: { type: String },
+      SBU: { type: String },
+      BU: { type: String },
+      BL: { type: String },
+      DisclosureDate: { type: Date },
+      DisclosureStatus: { type: String },
+      DisclosureTitle: { type: String },
+      OwnerName: { type: String },
+      Attorney: { type: String },
+      ProcedureAgentName: { type: String },
+      OriginalSTCs: { type: String },
+      AccoladeID_List: { type: String },
+      Inventors: { type: String },
+      Accolade: { type: String },
+      OriginalSTCName: { type: String },
+      ResponsibleSTCName: { type: String },
+      ResponsibleSTCName1: { type: String },
+    },
+
     createdBy: { type: Schema.Types.ObjectId },
   },
   {
