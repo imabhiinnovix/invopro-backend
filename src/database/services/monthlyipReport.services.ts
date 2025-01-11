@@ -11,6 +11,15 @@ export async function getCurrentYearNewApplicationFiled({
   isCurrentYearUSIssued,
   isCurrentYearINTIssued,
   isUSPendingApplication,
+  isEPPendingApplication,
+  isCNPendingApplication,
+  isOtherPendingApplication,
+  isTotalPendingApplication,
+  isUSIssuedApplication,
+  isEPIssuedApplication,
+  isCNIssuedApplication,
+  isOtherIssuedApplication,
+  isTotalIssuedApplication,
 }: {
   portfolioDataSourceVersionId: string;
   currentYear: string;
@@ -18,40 +27,184 @@ export async function getCurrentYearNewApplicationFiled({
   isCurrentYearUSIssued?: boolean;
   isCurrentYearINTIssued?: boolean;
   isUSPendingApplication?: boolean;
+  isEPPendingApplication?: boolean;
+  isCNPendingApplication?: boolean;
+  isOtherPendingApplication?: boolean;
+  isTotalPendingApplication?: boolean;
+  isUSIssuedApplication?: boolean;
+  isEPIssuedApplication?: boolean;
+  isCNIssuedApplication?: boolean;
+  isOtherIssuedApplication?: boolean;
+  isTotalIssuedApplication?: boolean;
 }) {
   try {
-    const matchCondition = {
+    let matchCondition: Record<string, any> = {
       dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
     };
 
-    if (isCurrentYearUSIssued) {
-      matchCondition['rowData.InForce'] = 1;
-      matchCondition['rowData.GrantDate'] = {
-        $gte: new Date(`${currentYear}-01-01`),
-        $lte: new Date(`${currentYear}-12-31`),
-      };
-      matchCondition['rowData.STATUS'] = {
-        $nin: ['UNDER OPPOSITION'],
-      };
-      matchCondition['rowData.Country'] = { $in: ['US'] };
-    } else if (isCurrentYearINTIssued) {
-      matchCondition['rowData.InForce'] = 1;
-      matchCondition['rowData.GrantDate'] = {
-        $gte: new Date(`${currentYear}-01-01`),
-        $lte: new Date(`${currentYear}-12-31`),
-      };
-      matchCondition['rowData.STATUS'] = {
-        $nin: ['UNDER OPPOSITION'],
-      };
-      matchCondition['rowData.Country'] = { $nin: ['US'] };
-    } else if (isUSPendingApplication) {
-      matchCondition['rowData.InForce'] = 1;
+    const yearDateRange = {
+      $gte: new Date(`${currentYear}-01-01`),
+      $lte: new Date(`${currentYear}-12-31`),
+    };
 
-      matchCondition['rowData.STATUS'] = {
-        $in: ['Under Opposition', 'UNDER OPPOSITION'],
-        $nin: ['UNFILED'],
-      };
-      matchCondition['rowData.Country'] = { $in: ['US'] };
+    if (isCurrentYearUSIssued || isCurrentYearINTIssued) {
+      matchCondition['rowData.GrantDate'] = yearDateRange;
+      matchCondition['rowData.STATUS'] = { $nin: ['UNDER OPPOSITION'] };
+      if (isCurrentYearUSIssued) matchCondition['rowData.Country'] = { $in: ['US'] };
+      if (isCurrentYearINTIssued) matchCondition['rowData.Country'] = { $nin: ['US'] };
+      matchCondition['rowData.InForce'] = 1; // Add InForce condition for issued applications
+    } else if (
+      isUSPendingApplication ||
+      isEPPendingApplication ||
+      isCNPendingApplication ||
+      isOtherPendingApplication ||
+      isTotalPendingApplication ||
+      isUSIssuedApplication ||
+      isEPIssuedApplication ||
+      isCNIssuedApplication ||
+      isOtherIssuedApplication ||
+      isTotalIssuedApplication
+    ) {
+      if (isUSPendingApplication || isUSIssuedApplication) matchCondition['rowData.Country'] = { $in: ['US'] };
+      else if (isEPPendingApplication || isEPIssuedApplication)
+        matchCondition['rowData.Country'] = {
+          $in: [
+            'EU',
+            'EP',
+            'AL',
+            'AT',
+            'BE',
+            'BG',
+            'CH',
+            'CY',
+            'CZ',
+            'DE',
+            'DK',
+            'EE',
+            'ES',
+            'FI',
+            'FR',
+            'GB',
+            'GR',
+            'HR',
+            'HU',
+            'IE',
+            'IS',
+            'IT',
+            'LI',
+            'LT',
+            'LU',
+            'LV',
+            'MC',
+            'ME',
+            'MK',
+            'MT',
+            'NL',
+            'NO',
+            'PL',
+            'PT',
+            'RO',
+            'RS',
+            'SE',
+            'SI',
+            'SK',
+            'SM',
+            'TR',
+          ],
+        };
+      else if (isCNPendingApplication || isCNIssuedApplication) matchCondition['rowData.Country'] = { $in: ['CN'] };
+      else if (isOtherPendingApplication || isOtherIssuedApplication)
+        matchCondition['rowData.Country'] = {
+          $nin: [
+            'US',
+            'EU',
+            'EP',
+            'AL',
+            'AT',
+            'BE',
+            'BG',
+            'CH',
+            'CY',
+            'CZ',
+            'DE',
+            'DK',
+            'EE',
+            'ES',
+            'FI',
+            'FR',
+            'GB',
+            'GR',
+            'HR',
+            'HU',
+            'IE',
+            'IS',
+            'IT',
+            'LI',
+            'LT',
+            'LU',
+            'LV',
+            'MC',
+            'ME',
+            'MK',
+            'MT',
+            'NL',
+            'NO',
+            'PL',
+            'PT',
+            'RO',
+            'RS',
+            'SE',
+            'SI',
+            'SK',
+            'SM',
+            'TR',
+            'CN',
+          ],
+        };
+      if (isTotalPendingApplication || isTotalIssuedApplication) delete matchCondition['rowData.Country']; // For total pending application, ignore country filter
+
+      if (
+        isUSIssuedApplication ||
+        isEPIssuedApplication ||
+        isCNIssuedApplication ||
+        isOtherIssuedApplication ||
+        isTotalIssuedApplication
+      ) {
+        matchCondition = {
+          ...matchCondition,
+          'rowData.InForce': 1,
+          'rowData.Status': {
+            $nin: ['Unfiled', 'UNFILED', 'Under Opposition', 'UNDER OPPOSITION', 'UnderOpposition'],
+          },
+
+          'rowData.GrantDate': { $ne: null }, // Checks if GrantDate is null
+        };
+      } else {
+        matchCondition = {
+          ...matchCondition,
+          'rowData.InForce': 1,
+          'rowData.Status': {
+            $nin: ['Unfiled', 'UNFILED'],
+          },
+          $or: [
+            {
+              'rowData.GrantDate': { $eq: null }, // Checks if GrantDate is null
+            },
+            {
+              $and: [
+                {
+                  'rowData.Status': {
+                    $in: ['Under Opposition', 'UNDER OPPOSITION', 'UnderOpposition'],
+                  },
+                },
+                {
+                  'rowData.GrantDate': { $ne: null }, // Ensures GrantDate is not null
+                },
+              ],
+            },
+          ],
+        };
+      }
     } else {
       matchCondition['rowData.IsFirstFiling'] = 1;
       matchCondition['rowData.FilingDate'] = {

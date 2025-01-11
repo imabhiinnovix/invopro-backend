@@ -58,10 +58,91 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
       isPercentagePart: false,
       isUSPendingApplication: true,
     });
+
+    const epPendingApplication = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isEPPendingApplication: true,
+    });
+
+    const cnPendingApplication = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isCNPendingApplication: true,
+    });
+
+    const otherPendingApplication = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isOtherPendingApplication: true,
+    });
+
+    const totalPendingApplication = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isTotalPendingApplication: true,
+    });
+
+    const usIssuedApplication = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isUSIssuedApplication: true,
+    });
+
+    const epIssuedApplication = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isEPIssuedApplication: true,
+    });
+
+    const cnIssuedApplication = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isCNIssuedApplication: true,
+    });
+
+    const otherIssuedApplication = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isOtherIssuedApplication: true,
+    });
+
+    const totalIssuedApplication = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isTotalIssuedApplication: true,
+    });
+
     res.status(201).json({
       success: true,
       message: 'Report Generated Successfully',
-      data: usPendingApplication,
+      data: {
+        newYearApplicationFiledData,
+        percentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
+        draftedApplicationDisclosureCount,
+        openApplicationDisclosureCount,
+        currentYearUsIssued,
+        currentYearINTIssued,
+        usPendingApplication,
+        epPendingApplication,
+        cnPendingApplication,
+        otherPendingApplication,
+        totalPendingApplication,
+        usIssuedApplication,
+        epIssuedApplication,
+        cnIssuedApplication,
+        otherIssuedApplication,
+        totalIssuedApplication,
+      },
     });
   } catch (err) {
     next(err);
