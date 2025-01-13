@@ -97,3 +97,28 @@ export async function readExcelFile(filePath: string, sheetName?: string): Promi
 
   return rows;
 }
+interface DataItem {
+  distinctCount?: number;
+  SBU: string;
+  cellName?: string;
+}
+
+export async function writeDataToExcel(data: DataItem[], filePath: string): Promise<void> {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(filePath); // Read the existing workbook
+
+  const sheet = workbook.getWorksheet('Global')!; // Get the existing sheet by name
+
+  // Iterate through the data and write it to the sheet
+  data.forEach((item) => {
+    if (item.cellName) {
+      // If a specific cell is provided, write the value there
+      const cell = sheet.getCell(item.cellName);
+      cell.value = `${item.distinctCount ?? ''}`;
+    }
+  });
+
+  // Save the updated Excel file
+  await workbook.xlsx.writeFile(filePath);
+  console.log(`Excel file written successfully to ${filePath}`);
+}
