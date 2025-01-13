@@ -1,65 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import { promises as fsPromises } from 'fs';
 import {
+  addCellMaping,
   getCurrentYearNewApplicationFiled,
   getDisclosureCount,
   percentageOfCurrentYearInventionDisclosureConvertedToFilings,
+  processData,
 } from '../../database/services/monthlyipReport.services';
 import path from 'path';
 import { writeDataToExcel } from '../../utils/excel.utils';
-
-interface DataItem {
-  distinctCount: number;
-  SBU: string;
-  cellName?: string;
-}
-function processData(data: DataItem[], cellMappings: Record<string, string>): DataItem[] {
-  // Define cell mappings and mergeable SBUs
-
-  const mergeSBUs = ['SBU Polymers', 'SBU Temp Polymers Transfer (from Spec)', 'SBU PNJ Saudi Aramco-SABIC'];
-
-  // Initialize totals
-  let polymersCount = 0;
-  let totalDistinctCount = 0;
-
-  // Process data
-  const processedData: DataItem[] = data
-    .filter((item) => {
-      // Handle merging SBUs into "SBU Polymers"
-      if (mergeSBUs.includes(item.SBU)) {
-        polymersCount += item.distinctCount;
-        return false; // Exclude these items from the final list
-      }
-      return true;
-    })
-    .map((item) => {
-      // Calculate total and assign cell names
-      totalDistinctCount += item.distinctCount;
-      return { ...item, cellName: cellMappings[item.SBU] };
-    });
-
-  // Add merged "SBU Polymers" data
-  const polymersItem = {
-    distinctCount: polymersCount,
-    SBU: 'SBU Polymers',
-    cellName: cellMappings['SBU Polymers'],
-  };
-  processedData.push(polymersItem);
-  totalDistinctCount += polymersCount;
-
-  // Calculate petchem total
-  const petchemTotal = processedData
-    .filter((item) => item.SBU === 'SBU Polymers' || item.SBU === 'SBU Chemicals')
-    .reduce((sum, item) => sum + item.distinctCount, 0);
-
-  // Add totals to the processed data
-  processedData.push(
-    { distinctCount: totalDistinctCount, SBU: 'Total', cellName: cellMappings.Total },
-    { distinctCount: petchemTotal, SBU: 'Petchem Total', cellName: cellMappings.Petchem }
-  );
-
-  return processedData;
-}
 
 export const generateMonthlyIpReport = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -90,6 +39,20 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
         disclosureDataSourceVersionId,
         currentYear
       );
+    const processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData = addCellMaping(
+      percentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
+      {
+        'SBU SHPP': 'H4',
+        'SBU Agri-nutrients': 'D4',
+        'SBU Polymers': 'F4',
+        'SBU Chemicals': 'E4',
+        'SBU T&I': 'B4',
+        'SBU MISC': 'I4',
+        'SBU Metals': 'C4',
+        Total: 'J4',
+        'Petchem Total': 'G4',
+      }
+    );
 
     //TODO:here currern year filter need to discuss
     const draftedApplicationDisclosureCount = await getDisclosureCount({
@@ -352,6 +315,7 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
     await writeDataToExcel(
       [
         ...processedCurrentYearApplicationFiledData,
+        ...processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
         ...processedDraftedApplicationDisclosureCount,
         ...processedDraftedApplicationDisclosureCount,
         ...processedOpenApplicationDisclosureCount,
@@ -373,6 +337,7 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
     res.status(201).json({
       success: true,
       message: 'Report Generated Successfully',
+      data: percentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
     });
   } catch (err) {
     next(err);

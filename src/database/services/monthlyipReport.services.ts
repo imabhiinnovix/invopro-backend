@@ -4,6 +4,68 @@ import DataSourceVersionValueDisclosure from '../models/dataSourceVersionValueDi
 
 const ObjectId = mongoose.Types.ObjectId;
 
+export interface DataItem {
+  value: number | string;
+  SBU: string;
+  cellName?: string;
+}
+export function processData(data: DataItem[], cellMappings?: Record<string, string>, isCellOnly?: boolean): DataItem[] {
+  // Define cell mappings and mergeable SBUs
+
+  const mergeSBUs = ['SBU Polymers', 'SBU Temp Polymers Transfer (from Spec)', 'SBU PNJ Saudi Aramco-SABIC'];
+
+  // Initialize totals
+  let polymersCount = 0;
+  let totalDistinctCount = 0;
+
+  // Process data
+  const processedData: DataItem[] = data
+    .filter((item) => {
+      // Handle merging SBUs into "SBU Polymers"
+      if (mergeSBUs.includes(item.SBU)) {
+        polymersCount += item.value as number;
+        return false; // Exclude these items from the final list
+      }
+      return true;
+    })
+    .map((item) => {
+      // Calculate total and assign cell names
+      totalDistinctCount += item.value as number;
+      return { ...item, cellName: cellMappings?.[item.SBU] };
+    });
+
+  // Add merged "SBU Polymers" data
+  const polymersItem = {
+    value: polymersCount,
+    SBU: 'SBU Polymers',
+    cellName: cellMappings?.['SBU Polymers'],
+  };
+  processedData.push(polymersItem);
+
+  if (!isCellOnly) {
+    totalDistinctCount += polymersCount;
+
+    // Calculate petchem total
+    const petchemTotal = processedData
+      .filter((item) => item.SBU === 'SBU Polymers' || item.SBU === 'SBU Chemicals')
+      .reduce((sum, item) => sum + (item.value as number), 0);
+
+    // Add totals to the processed data
+    processedData.push(
+      { value: totalDistinctCount, SBU: 'Total', cellName: cellMappings?.Total },
+      { value: petchemTotal, SBU: 'Petchem Total', cellName: cellMappings?.Petchem }
+    );
+  }
+
+  return processedData;
+}
+
+export function addCellMaping(data: DataItem[], cellMappings?: Record<string, string>): DataItem[] {
+  return data.map((item) => {
+    return { ...item, cellName: cellMappings?.[item.SBU] };
+  });
+}
+
 export async function getCurrentYearNewApplicationFiled({
   portfolioDataSourceVersionId,
   currentYear,
@@ -233,14 +295,14 @@ export async function getCurrentYearNewApplicationFiled({
       {
         $group: {
           _id: '$SBU',
-          distinctCount: { $sum: 1 },
+          value: { $sum: 1 },
         },
       },
       {
         $project: {
           SBU: '$_id',
           _id: 0,
-          distinctCount: 1,
+          value: 1,
         },
       },
     ]);
@@ -298,14 +360,14 @@ export async function getDisclosureCount({
       {
         $group: {
           _id: '$SBU',
-          distinctCount: { $sum: 1 },
+          value: { $sum: 1 },
         },
       },
       {
         $project: {
           SBU: '$_id',
           _id: 0,
-          distinctCount: 1,
+          value: 1,
         },
       },
     ]);
@@ -315,30 +377,21 @@ export async function getDisclosureCount({
   }
 }
 
-interface CountData {
-  distinctCount: number;
-  SBU: string;
-}
-
-interface ResultData {
-  SBU: string;
-  combinedPercentage: string;
-}
 const calculateCombinedPercentage = (
-  newData: CountData[],
-  activeData: CountData[],
-  totalData: CountData[]
-): ResultData[] => {
+  newData: DataItem[],
+  activeData: DataItem[],
+  totalData: DataItem[]
+): DataItem[] => {
   return totalData.map((total) => {
-    const newEntry = newData.find((item) => item.SBU === total.SBU)?.distinctCount || 0;
-    const activeEntry = activeData.find((item) => item.SBU === total.SBU)?.distinctCount || 0;
+    const newEntry = newData.find((item) => item.SBU === total.SBU)?.value || 0;
+    const activeEntry = activeData.find((item) => item.SBU === total.SBU)?.value || 0;
 
-    const combined = newEntry + activeEntry;
-    const combinedPercentage = total.distinctCount ? ((combined / total.distinctCount) * 100).toFixed(2) : '0.00';
+    const combined = (newEntry as number) + (activeEntry as number);
+    const combinedPercentage = total.value ? ((combined / (total.value as number)) * 100).toFixed(2) : '0.00';
 
     return {
       SBU: total.SBU,
-      combinedPercentage: `${combinedPercentage}%`,
+      value: `${combinedPercentage}%`,
     };
   });
 };
@@ -366,14 +419,17 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       isActive: false,
       isDrafted: false,
     });
-    const result: ResultData[] = calculateCombinedPercentage(
-      newYearApplicationFiled,
-      activeDisclosureCount,
-      totalDisclosureCount
+
+    const processedNewYearApplicationFiled = processData(newYearApplicationFiled);
+    const processedActiveDisclosureCount = processData(activeDisclosureCount);
+    const processedTotalDisclosureCount = processData(totalDisclosureCount);
+
+    const result = calculateCombinedPercentage(
+      processedNewYearApplicationFiled,
+      processedActiveDisclosureCount,
+      processedTotalDisclosureCount
     );
-    return {
-      result,
-    };
+    return result;
   } catch (error) {
     throw error;
   }

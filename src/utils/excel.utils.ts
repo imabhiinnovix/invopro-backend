@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import { DataItem } from '../database/services/monthlyipReport.services';
 
 interface KeywordPosition {
   page: number;
@@ -97,11 +98,6 @@ export async function readExcelFile(filePath: string, sheetName?: string): Promi
 
   return rows;
 }
-interface DataItem {
-  distinctCount?: number;
-  SBU: string;
-  cellName?: string;
-}
 
 export async function writeDataToExcel(data: DataItem[], filePath: string): Promise<void> {
   const workbook = new ExcelJS.Workbook();
@@ -114,7 +110,7 @@ export async function writeDataToExcel(data: DataItem[], filePath: string): Prom
     if (item.cellName) {
       // If a specific cell is provided, write the value there
       const cell = sheet.getCell(item.cellName);
-      cell.value = `${item.distinctCount ?? ''}`;
+      cell.value = `${item.value ?? ''}`;
     }
   });
 
