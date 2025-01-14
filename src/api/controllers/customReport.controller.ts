@@ -331,13 +331,71 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
         ...processedCNIssuedApplication,
         ...processedOtherIssuedApplication,
         ...processedTotalIssuedApplication,
+        { cellName: 'A3', value: `${currentYear} New Apps Filed`, SBU: '' },
+        { cellName: 'A4', value: `% of ${currentYear} Invention Disclosures converted to Filings`, SBU: '' },
+        { cellName: 'A5', value: `${currentYear} New Apps Estimate`, SBU: '' },
+        { cellName: 'A6', value: `${Number(currentYear) - 1} New Apps filed`, SBU: '' },
+        {
+          cellName: 'A7',
+          value: `${Number(currentYear) - 2} New Apps filed`,
+          SBU: '',
+        },
+        {
+          cellName: 'A8',
+          value: `${Number(currentYear) - 3} New Apps filed`,
+          SBU: '',
+        },
+        {
+          cellName: 'A9',
+          value: `${Number(currentYear) - 4} New Apps filed`,
+          SBU: '',
+        },
+        {
+          cellName: 'A12',
+          value: `Projects Opened in ${currentYear}`,
+          SBU: '',
+        },
+        {
+          cellName: 'A12',
+          value: `Projects Opened in ${Number(currentYear) - 1}`,
+          SBU: '',
+        },
+        {
+          cellName: 'A13',
+          value: `Projects Opened in ${Number(currentYear) - 2}`,
+          SBU: '',
+        },
+        {
+          cellName: 'A14',
+          value: `Projects Opened in ${Number(currentYear) - 3}`,
+          SBU: '',
+        },
+        {
+          cellName: 'A15',
+          value: `Projects Opened in ${Number(currentYear) - 4}`,
+          SBU: '',
+        },
+        {
+          cellName: 'A16',
+          value: `Projects Opened in ${Number(currentYear) - 5}`,
+          SBU: '',
+        },
+        {
+          cellName: 'A19',
+          value: `${currentYear} US Issued`,
+          SBU: '',
+        },
+        {
+          cellName: 'A20',
+          value: `${currentYear} Intl Issued`,
+          SBU: '',
+        },
       ],
       newFilePath
     );
     res.status(201).json({
       success: true,
       message: 'Report Generated Successfully',
-      data: percentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
     });
   } catch (err) {
     next(err);
