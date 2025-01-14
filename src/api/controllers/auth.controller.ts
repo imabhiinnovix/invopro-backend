@@ -23,6 +23,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
     // Find the user and populate the organization details
     const user: any = await authService.findUserByEmail(email.toLowerCase());
+
     if (!user) {
       return res.status(400).json({ success: false, message: 'Invalid credentials' });
     }
@@ -74,6 +75,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const token = generateToken({
       userId: user._id,
       organizationId: user.organizationId?._id,
+      orgCode: user.organizationId?.code,
       roleId: user.roleId,
     });
 
@@ -244,7 +246,12 @@ export const verifyOtp = async (req: Request, res: Response, next: NextFunction)
 
     // Generate JWT token for login OTP
     if (type === 'login') {
-      const token = generateToken({ userId: user._id, organizationId: user.organizationId, roleId: user.roleId });
+      const token = generateToken({
+        userId: user._id,
+        organizationId: user.organizationId,
+        roleId: user.roleId,
+        orgCode: user.organizationId?.code,
+      });
       return res.status(200).json({ success: true, message: 'OTP verified successfully', data: { token } });
     }
 

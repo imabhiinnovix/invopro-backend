@@ -39,7 +39,7 @@ export const createUser = async (userData: any) => {
 
 export const findUserByEmail = async (email: string) => {
   try {
-    const user = await User.findOne({ email }).populate('organizationId', 'id name status licenseExpiresAt');
+    const user = await User.findOne({ email }).populate('organizationId', 'id name code status licenseExpiresAt');
     return user;
   } catch (err) {
     throw err;
@@ -97,7 +97,7 @@ export const userCount = async (query) => {
 
 export const checkUserStatus = async (
   status: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<{ success: boolean; message?: string }> => {
   const organization = await organizationService.getOrganizationById(organizationId);
 

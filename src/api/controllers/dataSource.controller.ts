@@ -5,14 +5,15 @@ import * as defaultDataSourceVersion from '../../database/services/defaultDataSo
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { entityId, name, code, versionType, description } = req.body;
-    const { organizationId, userId } = req.user;
+    const { organizationId, userId, orgCode } = req.user;
 
     const dataSourceData = await dataSourceService.findDataSourceByCodeAndOrganization(code, organizationId);
     if (dataSourceData) {
       return res.status(400).json({ success: false, message: 'Data Source Option Code Already Exists' });
     }
 
-    await defaultDataSourceVersion.createEmptyCollection(code);
+    const collectionName = `data_${orgCode}_${code}`;
+    await defaultDataSourceVersion.createEmptyCollection(collectionName);
     const dataSource = await dataSourceService.createDataSourcce({
       entityId,
       name,
