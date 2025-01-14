@@ -12,10 +12,10 @@ import { writeDataToExcel } from '../../utils/excel.utils';
 
 export const generateMonthlyIpReport = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { disclosureDataSourceVersionId, portfolioDataSourceVersionId } = req.body;
+    const { disclosureDataSourceVersionId, portfolioDataSourceVersionId, currentYear } = req.body;
     const { organizationId, userId } = req.user;
 
-    const currentYear = '2024';
+    // const currentYear = '2024';
     const currentYearApplicationFiledData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
