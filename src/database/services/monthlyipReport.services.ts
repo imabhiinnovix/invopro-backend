@@ -1,6 +1,10 @@
 import mongoose from 'mongoose';
-import DataSourceVersionValuePortfolio from '../models/dataSourceVersionValuePortfolio';
-import DataSourceVersionValueDisclosure from '../models/dataSourceVersionValueDisclosure';
+// import DataSourceVersionValuePortfolio from '../models/dataSourceVersionValuePortfolio';
+// import DataSourceVersionValueDisclosure from '../models/dataSourceVersionValueDisclosure';
+import createDefaultDataSourceVersionModel from '../models/defaultDataSourceVersionModel';
+
+const DataSourceVersionValuePortfolio = createDefaultDataSourceVersionModel('data_sabiac_portfolio');
+const DataSourceVersionValueDisclosure = createDefaultDataSourceVersionModel('data_sabiac_disclosure');
 
 const ObjectId = mongoose.Types.ObjectId;
 

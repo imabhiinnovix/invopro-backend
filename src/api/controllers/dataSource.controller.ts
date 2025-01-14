@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as dataSourceService from '../../database/services/dataSource.services';
+import * as defaultDataSourceVersion from '../../database/services/defaultDataSourceVersion.services';
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -10,6 +11,8 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
     if (dataSourceData) {
       return res.status(400).json({ success: false, message: 'Data Source Option Code Already Exists' });
     }
+
+    await defaultDataSourceVersion.createEmptyCollection(code);
     const dataSource = await dataSourceService.createDataSourcce({
       entityId,
       name,
