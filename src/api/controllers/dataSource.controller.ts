@@ -3,7 +3,7 @@ import * as dataSourceService from '../../database/services/dataSource.services'
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { entityId, name, code, versionType } = req.body;
+    const { entityId, name, code, versionType, description } = req.body;
     const { organizationId, userId } = req.user;
 
     const dataSourceData = await dataSourceService.findDataSourceByCodeAndOrganization(code, organizationId);
@@ -18,6 +18,7 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       organizationId,
       createdBy: userId,
       isActive: true,
+      description,
     });
     res.status(201).json({
       success: true,
@@ -52,6 +53,10 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
           {
             path: 'updatedBy',
             select: 'firstName lastName', // Specify the fields to populate
+          },
+          {
+            path: 'entityId',
+            select: 'name', // Specify the fields to populate
           },
         ],
       });

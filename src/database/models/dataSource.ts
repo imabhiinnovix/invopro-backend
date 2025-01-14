@@ -6,6 +6,7 @@ interface IDataSource extends Document {
   name: string;
   code: string;
   versionType: string;
+  description: string;
   updatedBy?: Types.ObjectId;
   createdBy?: Types.ObjectId;
   isActive: boolean;
@@ -16,6 +17,7 @@ const dataSourceSchema = new Schema<IDataSource>(
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     name: { type: String, required: true },
+    description: { type: String },
     code: { type: String, required: true },
     versionType: { type: String, required: true },
     isActive: { type: Boolean, required: true },
