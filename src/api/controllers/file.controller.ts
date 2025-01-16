@@ -62,7 +62,7 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
           const fileData = await readExcelFile(newFilePath);
           const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
             orgCode,
-            versionCode: 'disclosure',
+            versionCode: 'Portfolios',
           });
 
           const dataSourceVersion = await dataSourceService.createDataSourceVersion({
@@ -74,7 +74,18 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
             isActive: true,
           });
 
-          await createDataSourceVersionValue(schemaName, fileData);
+          const updatedFileData = fileData.map((item) => {
+            return {
+              dataSourceId: dataSourceId,
+              entityId: entityId,
+              dataSourceVersionId: dataSourceVersion._id,
+              rowData: {
+                ...item,
+              },
+            };
+          });
+
+          await createDataSourceVersionValue(schemaName, updatedFileData);
           await fsPromises.unlink(newFilePath);
           return res.status(201).json({
             success: true,

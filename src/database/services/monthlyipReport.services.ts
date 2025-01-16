@@ -1,10 +1,8 @@
 import mongoose from 'mongoose';
-// import DataSourceVersionValuePortfolio from '../models/dataSourceVersionValuePortfolio';
-// import DataSourceVersionValueDisclosure from '../models/dataSourceVersionValueDisclosure';
 import createDefaultDataSourceVersionModel from '../models/defaultDataSourceVersionModel';
 
-const DataSourceVersionValuePortfolio = createDefaultDataSourceVersionModel('data_sabiac_portfolio');
-const DataSourceVersionValueDisclosure = createDefaultDataSourceVersionModel('data_sabiac_disclosure');
+const DataSourceVersionValuePortfolio = createDefaultDataSourceVersionModel('data_reportivix_portfolios');
+const DataSourceVersionValueDisclosure = createDefaultDataSourceVersionModel('data_reportivix_disclosures');
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -86,6 +84,7 @@ export async function getCurrentYearNewApplicationFiled({
   isCNIssuedApplication,
   isOtherIssuedApplication,
   isTotalIssuedApplication,
+  schemaName,
 }: {
   portfolioDataSourceVersionId: string;
   currentYear: string;
@@ -102,6 +101,7 @@ export async function getCurrentYearNewApplicationFiled({
   isCNIssuedApplication?: boolean;
   isOtherIssuedApplication?: boolean;
   isTotalIssuedApplication?: boolean;
+  schemaName?: string;
 }) {
   try {
     let matchCondition: Record<string, any> = {
@@ -109,16 +109,16 @@ export async function getCurrentYearNewApplicationFiled({
     };
 
     const yearDateRange = {
-      $gte: new Date(`${currentYear}-01-01`),
-      $lte: new Date(`${currentYear}-12-31`),
+      $gte: `${currentYear}-01-01`,
+      $lte: `${currentYear}-12-31`,
     };
 
     if (isCurrentYearUSIssued || isCurrentYearINTIssued) {
-      matchCondition['rowData.GrantDate'] = yearDateRange;
+      matchCondition['rowData.Grant Date'] = yearDateRange;
       matchCondition['rowData.STATUS'] = { $nin: ['UNDER OPPOSITION'] };
       if (isCurrentYearUSIssued) matchCondition['rowData.Country'] = { $in: ['US'] };
       if (isCurrentYearINTIssued) matchCondition['rowData.Country'] = { $nin: ['US'] };
-      matchCondition['rowData.InForce'] = 1; // Add InForce condition for issued applications
+      matchCondition['rowData.In Force'] = 1; // Add In Force condition for issued applications
     } else if (
       isUSPendingApplication ||
       isEPPendingApplication ||
@@ -238,23 +238,23 @@ export async function getCurrentYearNewApplicationFiled({
       ) {
         matchCondition = {
           ...matchCondition,
-          'rowData.InForce': 1,
+          'rowData.In Force': 1,
           'rowData.Status': {
             $nin: ['Unfiled', 'UNFILED', 'Under Opposition', 'UNDER OPPOSITION', 'UnderOpposition'],
           },
 
-          'rowData.GrantDate': { $ne: null }, // Checks if GrantDate is null
+          'rowData.Grant Date': { $ne: null }, // Checks if Grant Date is null
         };
       } else {
         matchCondition = {
           ...matchCondition,
-          'rowData.InForce': 1,
+          'rowData.In Force': 1,
           'rowData.Status': {
             $nin: ['Unfiled', 'UNFILED'],
           },
           $or: [
             {
-              'rowData.GrantDate': { $eq: null }, // Checks if GrantDate is null
+              'rowData.Grant Date': { $eq: null }, // Checks if Grant Date is null
             },
             {
               $and: [
@@ -264,7 +264,7 @@ export async function getCurrentYearNewApplicationFiled({
                   },
                 },
                 {
-                  'rowData.GrantDate': { $ne: null }, // Ensures GrantDate is not null
+                  'rowData.Grant Date': { $ne: null }, // Ensures Grant Date is not null
                 },
               ],
             },
@@ -273,14 +273,11 @@ export async function getCurrentYearNewApplicationFiled({
       }
     } else {
       matchCondition['rowData.IsFirstFiling'] = 1;
-      matchCondition['rowData.FilingDate'] = {
-        $gte: new Date(`${currentYear}-01-01`),
-        $lte: new Date(`${currentYear}-12-31`),
-      };
+      matchCondition['rowData.Filing Date'] = yearDateRange;
     }
 
     if (isPercentagePart) {
-      matchCondition['rowData.InForce'] = 1;
+      matchCondition['rowData.In Force'] = 1;
     }
 
     const newYearApplicationFiled = await DataSourceVersionValuePortfolio.aggregate([
@@ -328,6 +325,10 @@ export async function getDisclosureCount({
   isDrafted: boolean;
 }) {
   try {
+    const yearDateRange = {
+      $gte: `${currentYear}-01-01`,
+      $lte: `${currentYear}-12-31`,
+    };
     const matchCondition = {
       dataSourceVersionId: new ObjectId(disclosureDataSourceVersionId),
     };
@@ -343,10 +344,7 @@ export async function getDisclosureCount({
         $in: ['Rated To Draft OC', 'RATED TO DRAFT IN HOUSE', 'Rated To Draft IH'],
       };
     } else {
-      matchCondition['rowData.DisclosureDate'] = {
-        $gte: new Date(`${currentYear}-01-01`),
-        $lte: new Date(`${currentYear}-12-31`),
-      };
+      matchCondition['rowData.DisclosureDate'] = yearDateRange;
     }
     const activeDisclosure = await DataSourceVersionValueDisclosure.aggregate([
       {
