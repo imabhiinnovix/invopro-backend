@@ -10,6 +10,15 @@ export const createDataSourcce = async (dataSourceData: any) => {
   }
 };
 
+export const updateDataSource = async (dataSourceId: string, dataSourceData: any) => {
+  try {
+    const dataSourceResp = await DataSource.findByIdAndUpdate(dataSourceId, dataSourceData, { new: true });
+    return dataSourceResp;
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const findDataSourceByCodeAndOrganization = async (code: string, organizationId: string) => {
   try {
     const dataSourceData = await DataSource.findOne(

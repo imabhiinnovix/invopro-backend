@@ -57,3 +57,13 @@ export const findEntityByNameAndOrganization = async (name: string, organization
     throw err;
   }
 };
+
+export const findEntityById = async (id: string) => {
+  try {
+    const entityDetails = await Entity.findById(id);
+
+    return entityDetails;
+  } catch (err) {
+    throw err;
+  }
+};

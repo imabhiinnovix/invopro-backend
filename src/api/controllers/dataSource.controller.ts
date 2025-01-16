@@ -18,7 +18,7 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       entityId,
       name,
       code,
-      versionType, //enum monthly
+      versionType,
       organizationId,
       createdBy: userId,
       isActive: true,
@@ -29,6 +29,50 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       message: 'Data Source Created Successfully',
       data: dataSource,
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateDataSource = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, versionType, description } = req.body;
+    const { userId } = req.user;
+
+    await dataSourceService.updateDataSource(req.params.dataSourceId, {
+      name,
+      versionType,
+      updatedBy: userId,
+      description,
+    });
+    res.status(201).json({
+      success: true,
+      message: 'Data Source updated Successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const checkDataSourceCodeAvailableOrNot = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { code } = req.params;
+    const { organizationId, orgCode } = req.user;
+
+    const dataSourceData = await dataSourceService.findDataSourceByCodeAndOrganization(code, organizationId);
+    if (dataSourceData) {
+      res.status(200).json({
+        success: true,
+        available: false,
+        message: code,
+      });
+    } else {
+      res.status(200).json({
+        success: true,
+        available: true,
+        message: code,
+      });
+    }
   } catch (err) {
     next(err);
   }

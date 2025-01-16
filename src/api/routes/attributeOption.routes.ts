@@ -13,7 +13,7 @@ import {
 const router = Router();
 
 router.post('/create', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), createAttribute);
-router.post(
+router.put(
   '/update/:attributeId',
   authenticateToken,
   roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),

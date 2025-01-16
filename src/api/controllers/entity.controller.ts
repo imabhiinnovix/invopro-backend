@@ -92,3 +92,16 @@ export const listEntity = async (req: Request, res: Response, next: NextFunction
     next(err);
   }
 };
+
+export const getEntityById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const entityData = await entityService.findEntityById(req.params.entityId);
+    res.status(200).json({
+      success: true,
+      message: 'Entity Data Fetched Successfully',
+      data: entityData,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
