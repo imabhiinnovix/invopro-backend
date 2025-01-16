@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as dataSourceService from '../../database/services/dataSource.services';
-import * as defaultDataSourceVersion from '../../database/services/defaultDataSourceVersion.services';
+import * as defaultDataSourceVersionValue from '../../database/services/defaultDataSourceVersionValue.services';
+import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -12,8 +13,11 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       return res.status(400).json({ success: false, message: 'Data Source Option Code Already Exists' });
     }
 
-    const collectionName = `data_${orgCode}_${code}`;
-    await defaultDataSourceVersion.createEmptyCollection(collectionName);
+    const collectionName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: code,
+    });
+    await defaultDataSourceVersionValue.createEmptyCollection(collectionName);
     const dataSource = await dataSourceService.createDataSourcce({
       entityId,
       name,

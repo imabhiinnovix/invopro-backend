@@ -22,7 +22,6 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     versionValue: { type: String, required: true },
     versionName: { type: String, required: true },
-    // isLatest: { type: Boolean, required: true },//not requered we can get it using ceatedAt
     filePath: { type: String },
     fileType: { type: String },
     fileSize: { type: String },

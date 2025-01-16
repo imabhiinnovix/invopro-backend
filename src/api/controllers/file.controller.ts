@@ -4,13 +4,11 @@ import { promises as fsPromises } from 'fs';
 import path from 'path';
 import { getColumnNamesAndTypes, readExcelFile } from '../../utils/excel.utils';
 import * as dataSourceService from '../../database/services/dataSourceVersion.services';
-import * as dataSourceVersionValueDisclosureService from '../../database/services/dataSourceVersionValueDisclosure.services';
-import * as dataSourceVersionValuePortfolioService from '../../database/services/dataSourceVersionValuePortfolio.services';
-
-const cleanMongoKey = (key: string) => key.replace(/[$.\s\r\n]/g, '');
+import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
+import { createDataSourceVersionValue } from '../../database/services/defaultDataSourceVersionValue.services';
 
 export const handleFileUpload = async (req: Request, res: Response, next: NextFunction) => {
-  const { userId, organizationId } = req?.user;
+  const { userId, organizationId, orgCode } = req?.user;
   try {
     if (!req.files?.length) {
       return res.status(400).send('No files uploaded.');
@@ -62,6 +60,10 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
           }
 
           const fileData = await readExcelFile(newFilePath);
+          const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+            orgCode,
+            versionCode: 'disclosure',
+          });
 
           const dataSourceVersion = await dataSourceService.createDataSourceVersion({
             entityId,
@@ -72,25 +74,7 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
             isActive: true,
           });
 
-          const updatedFileData = fileData.map((item) => {
-            const cleanedItem = Object.fromEntries(
-              Object.entries(item).map(([key, value]) => [cleanMongoKey(key), value]) // Clean keys
-            );
-            return {
-              dataSourceId: dataSourceId,
-              entityId: entityId,
-              dataSourceVersionId: dataSourceVersion._id,
-              rowData: {
-                ...cleanedItem,
-              },
-            };
-          });
-
-          if (fileType === 'disclosure') {
-            await dataSourceVersionValueDisclosureService.createDataSourceVersionValueDisclosure(updatedFileData);
-          } else if (fileType === 'portfolio') {
-            await dataSourceVersionValuePortfolioService.createDataSourceVersionValuePortfolio(updatedFileData);
-          }
+          await createDataSourceVersionValue(schemaName, fileData);
           await fsPromises.unlink(newFilePath);
           return res.status(201).json({
             success: true,
