@@ -31,13 +31,17 @@ const attributeSchema = new Schema<IAttribute>(
       required: true,
       enum: ['number', 'text', 'date', 'boolean', 'richtext', 'url', 'option', 'multioption', 'user'],
     },
-    required: { type: Boolean, required: true, get: (value: boolean) => (value ? 'Mandatory' : 'Not Mandatory') },
+    required: {
+      type: Boolean,
+      required: true,
+      get: (value: boolean) => (value ? 'Mandatory' : 'Not Mandatory'), // Custom getter
+    },
     validation: { type: [String] }, // Array of strings
     transformations: { type: [String] }, // Array of strings
     optionAttributeId: { type: String }, // Optional field
     cleaner: { type: [String] }, // Array of strings
   },
-  { _id: false } // Disable _id for subdocuments in arrays
+  { _id: false, toJSON: { getters: true }, toObject: { getters: true } } // Enable getters for JSON and Object conversion
 );
 
 // Define the Entity Schema
