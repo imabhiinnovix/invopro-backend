@@ -8,6 +8,7 @@ interface IAttribute {
   transformations?: string[];
   optionAttributeId?: string;
   cleaner?: string[];
+  required: any;
 }
 
 // Define the IEntity interface
@@ -30,6 +31,7 @@ const attributeSchema = new Schema<IAttribute>(
       required: true,
       enum: ['number', 'text', 'date', 'boolean', 'richtext', 'url', 'option', 'multioption', 'user'],
     },
+    required: { type: Boolean, required: true, get: (value: boolean) => (value ? 'Mandatory' : 'Not Mandatory') },
     validation: { type: [String] }, // Array of strings
     transformations: { type: [String] }, // Array of strings
     optionAttributeId: { type: String }, // Optional field
