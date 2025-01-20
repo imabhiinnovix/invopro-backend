@@ -7,6 +7,7 @@ import { authenticateToken } from '../../middlewares/authenticate.middleware';
 import {
   checkDataSourceCodeAvailableOrNot,
   createDataSourcce,
+  getDataSourceById,
   listDataSource,
   updateDataSource,
 } from '../controllers/dataSource.controller';
@@ -24,5 +25,6 @@ router.put(
 );
 
 router.get('/list', authenticateToken, listDataSource);
+router.get('/dataSourceId/:dataSourceId', authenticateToken, getDataSourceById);
 
 export default router;

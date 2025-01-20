@@ -64,3 +64,13 @@ export const getDataSourceList = async ({
     throw err;
   }
 };
+
+export const findDataSourceById = async (id: string) => {
+  try {
+    const dataSourceDetails = await DataSource.findById(id).populate('entityId');
+
+    return dataSourceDetails;
+  } catch (err) {
+    throw err;
+  }
+};

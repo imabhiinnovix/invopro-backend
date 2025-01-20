@@ -16,7 +16,7 @@ type NewAttribute = {
 type MappingResult = {
   matchedAttributes: {
     newAttribute: NewAttribute;
-    entityAttribute: IAttribute;
+    enttitySettingAttribute: IAttribute;
   }[];
   unmatchedNewAttributes: NewAttribute[];
   unmatchedEntitySettingAttributes: {
@@ -46,7 +46,7 @@ function mapAttributes(newAttributes: NewAttribute[], entityAttributes: IAttribu
     if (matchedIndex !== -1) {
       matchedAttributes.push({
         newAttribute: newAttr,
-        entityAttribute: remainingEntityAttributes[matchedIndex],
+        enttitySettingAttribute: remainingEntityAttributes[matchedIndex],
       });
       // Remove matched entity attribute
       remainingEntityAttributes.splice(matchedIndex, 1);
@@ -152,3 +152,33 @@ export async function getDataSourceVersionAttributeMapping(req: Request, res: Re
     next(e);
   }
 }
+
+export const checkDataSourceVersionNameAvailableOrNot = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { versionName, dataSourceId, versionValue } = req.params;
+
+    const existingVersionData =
+      await dataSourceService.getDataSourceVersionBasedOnDataSourceIdAndVersionValueAndVersionName(
+        dataSourceId,
+        versionValue,
+        versionName
+      );
+    if (existingVersionData) {
+      res.status(200).json({
+        success: true,
+        available: false,
+        message: versionName,
+      });
+    } else {
+      res.status(200).json({
+        success: true,
+        available: true,
+        message: versionName,
+        dataSourceId,
+        versionValue,
+      });
+    }
+  } catch (err) {
+    next(err);
+  }
+};

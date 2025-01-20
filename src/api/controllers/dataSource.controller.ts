@@ -108,7 +108,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
           },
           {
             path: 'entityId',
-            select: 'name', // Specify the fields to populate
+            select: 'name attributes', // Specify the fields to populate
           },
         ],
       });
@@ -123,6 +123,19 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
       message: 'Data Source Fetched Successfully',
       data: result.data,
       totalCount: result.totalCount,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getDataSourceById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const dataSourceDetails = await dataSourceService.findDataSourceById(req.params.dataSourceId);
+    res.status(200).json({
+      success: true,
+      message: 'Data Source Details Fetched Successfully',
+      data: dataSourceDetails,
     });
   } catch (err) {
     next(err);
