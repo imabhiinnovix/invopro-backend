@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { createDataSourceVersionValue } from './dataSourceVersion.controller';
+import { getDataSourceVersionAttributeMapping } from './dataSourceVersion.controller';
 import { getAttributesFromXlsxOrCsvHeaders } from './getAttributesFromXlsxOrCsvHeaders.controller';
 
 export const handleFileUpload = async (req: Request, res: Response, next: NextFunction) => {
@@ -14,8 +14,8 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
       return await getAttributesFromXlsxOrCsvHeaders(req, res, next);
     }
 
-    if (operation === 'dataSourceVersion') {
-      return await createDataSourceVersionValue(req, res, next);
+    if (operation === 'dataSourceVersionAttributeMapping') {
+      return await getDataSourceVersionAttributeMapping(req, res, next);
     }
   } catch (err: any) {
     console.error(err);

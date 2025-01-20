@@ -1,7 +1,7 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
 // Define the Attribute interface
-interface IAttribute {
+export interface IAttribute {
   name: string;
   type: 'number' | 'text' | 'date' | 'boolean' | 'richtext' | 'url' | 'option' | 'multioption' | 'user';
   validation?: string[];
