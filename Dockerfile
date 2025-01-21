@@ -43,7 +43,8 @@ COPY . .
 EXPOSE 5000
 
 # Start the application.
-CMD ["yarn", "dev"]
+# CMD ["yarn", "dev"]
+CMD ["/app/scripts/start.sh"]
 
 ###########################
 # Production stage

@@ -1,3 +1,9 @@
 
 /uploads
 /node_modules
+/_scratch
+/dist
+
+Dockerfile
+.dockerignore
+.git
