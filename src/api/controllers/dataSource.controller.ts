@@ -82,6 +82,30 @@ export const checkDataSourceCodeAvailableOrNot = async (req: Request, res: Respo
   }
 };
 
+export const checkDataSourceNameAvailableOrNot = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name } = req.params;
+    const { organizationId } = req.user;
+
+    const dataSourceData = await dataSourceService.findDataSourceByNameAndOrganization(name, organizationId);
+    if (dataSourceData) {
+      res.status(200).json({
+        success: true,
+        available: false,
+        message: name,
+      });
+    } else {
+      res.status(200).json({
+        success: true,
+        available: true,
+        message: name,
+      });
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const listDataSource = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { search, paginate = 'false' } = req.query;

@@ -6,6 +6,7 @@ import { authenticateToken } from '../../middlewares/authenticate.middleware';
 
 import {
   checkDataSourceCodeAvailableOrNot,
+  checkDataSourceNameAvailableOrNot,
   createDataSourcce,
   getDataSourceById,
   listDataSource,
@@ -15,6 +16,7 @@ import {
 const router = Router();
 
 router.get('/code/:code', authenticateToken, checkDataSourceCodeAvailableOrNot);
+router.get('/name/:name', authenticateToken, checkDataSourceNameAvailableOrNot);
 
 router.post('/create', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), createDataSourcce);
 router.put(

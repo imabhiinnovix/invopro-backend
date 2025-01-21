@@ -30,6 +30,7 @@ const dataSourceSchema = new Schema<IDataSource>(
 );
 
 dataSourceSchema.index({ code: 1, organizationId: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
+dataSourceSchema.index({ name: 1, organizationId: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
 
 const DataSource = model<IDataSource>('DataSource', dataSourceSchema);
 

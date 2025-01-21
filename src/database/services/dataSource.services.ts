@@ -32,6 +32,19 @@ export const findDataSourceByCodeAndOrganization = async (code: string, organiza
   }
 };
 
+export const findDataSourceByNameAndOrganization = async (name: string, organizationId: string) => {
+  try {
+    const dataSourceData = await DataSource.findOne(
+      { name, organizationId },
+      null,
+      { collation: { locale: 'en', strength: 2 } } // Case-sensitive collation
+    );
+    return dataSourceData;
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const getDataSourceList = async ({
   query,
   select = '',
