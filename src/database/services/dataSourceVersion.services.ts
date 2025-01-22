@@ -10,6 +10,21 @@ export const createDataSourceVersion = async (createDataSourceVersionValue: any)
   }
 };
 
+export const updateDataSourceVersion = async (dataSourceVersionId: string, dataSourceVersionData: any) => {
+  try {
+    const dataSourceVersionResp = await DataSourceVersion.findByIdAndUpdate(
+      dataSourceVersionId,
+      dataSourceVersionData,
+      {
+        new: true,
+      }
+    );
+    return dataSourceVersionResp;
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const getDataSourceVersionBasedOnDataSourceIdAndVersionValueAndVersionName = async (
   dataSourceId: string,
   versionValue: string,

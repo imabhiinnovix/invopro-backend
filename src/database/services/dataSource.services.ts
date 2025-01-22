@@ -78,11 +78,9 @@ export const getDataSourceList = async ({
   }
 };
 
-export const findDataSourceById = async (id: string) => {
+export const findDataSourceById = async (id: string, populate = true) => {
   try {
-    const dataSourceDetails = await DataSource.findById(id).populate('entityId');
-
-    return dataSourceDetails;
+    return await DataSource.findById(id).populate('entityId');
   } catch (err) {
     throw err;
   }

@@ -11,8 +11,11 @@ interface IDataSourceVersion extends Document {
   updatedBy?: Types.ObjectId;
   createdBy?: Types.ObjectId;
   isActive: boolean;
-  //   isLatest: boolean;
   versionName: string;
+  errorMessage: string[];
+  status: 'Failed' | 'Processing' | 'Success';
+  fileName: string;
+  mappings: Record<string, string>;
 }
 
 const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
@@ -22,6 +25,22 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     versionValue: { type: String, required: true },
     versionName: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ['Failed', 'Processing', 'Success'], // Restricting the values of status
+      required: true,
+      default: 'Processing', // Optional: Default value for status
+    },
+    mappings: {
+      type: Map, // Mongoose's Map type to store key-value pairs
+      of: String, // The values in the map are strings
+      default: {}, // Optional: Default to an empty map if no mappings are provided
+    },
+    errorMessage: {
+      type: [String], // Array of strings
+      default: [], // Optional: Default to an empty array if no error messages are provided
+    },
+    fileName: { type: String },
     filePath: { type: String },
     fileType: { type: String },
     fileSize: { type: String },
