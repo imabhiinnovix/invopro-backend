@@ -12,8 +12,7 @@ interface IDataSourceVersion extends Document {
   createdBy?: Types.ObjectId;
   isActive: boolean;
   versionName: string;
-  errorMessage: string[];
-  status: 'Failed' | 'Processing' | 'Success';
+  status: 'failed' | 'processing' | 'processed';
   fileName: string;
   mappings: Record<string, string>;
 }
@@ -27,18 +26,14 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
     versionName: { type: String, required: true },
     status: {
       type: String,
-      enum: ['Failed', 'Processing', 'Success'], // Restricting the values of status
+      enum: ['failed', 'processing', 'processed'], // Restricting the values of status
       required: true,
-      default: 'Processing', // Optional: Default value for status
+      default: 'processing', // Optional: Default value for status
     },
     mappings: {
       type: Map, // Mongoose's Map type to store key-value pairs
       of: String, // The values in the map are strings
       default: {}, // Optional: Default to an empty map if no mappings are provided
-    },
-    errorMessage: {
-      type: [String], // Array of strings
-      default: [], // Optional: Default to an empty array if no error messages are provided
     },
     fileName: { type: String },
     filePath: { type: String },

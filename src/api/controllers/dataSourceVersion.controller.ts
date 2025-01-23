@@ -3,31 +3,78 @@ import { promises as fsPromises } from 'fs';
 import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
 import * as dataSourceVersionValueService from '../../database/services/defaultDataSourceVersionValue.services';
 import * as dataSourceService from '../../database/services/dataSource.services';
+import * as attributeOptionService from '../../database/services/attributeOption.services';
+import * as dataImportErrorServices from '../../database/services/dataImportError.services';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
 import path from 'path';
-import { readExcelFile } from '../../utils/excel.utils';
+import { excelDateToJSDate, readExcelFile } from '../../utils/excel.utils';
 import { debounceManager } from '../../utils/debounce.utils';
-
-function validateType(value: any, type: string): boolean {
+async function validateAndConvert({
+  value,
+  type,
+  optionAttributeId,
+  separator,
+}: {
+  value: any;
+  type: string;
+  optionAttributeId?: string;
+  separator?: string;
+}) {
   if (type === 'number') {
-    return !isNaN(value);
+    const convertedValue = parseFloat(value);
+    return { isValid: !isNaN(convertedValue), convertedValue: !isNaN(convertedValue) ? convertedValue : null };
   } else if (type === 'text' || type === 'richtext') {
-    return typeof value === 'string';
+    const convertedValue = value !== undefined && value !== null ? String(value) : null;
+    return { isValid: typeof convertedValue === 'string', convertedValue };
   } else if (type === 'date') {
-    return !isNaN(Date.parse(value));
+    if (typeof value === 'number') {
+      value = excelDateToJSDate(value);
+    }
+    const convertedValue = new Date(value);
+    return {
+      isValid: !isNaN(convertedValue.getTime()),
+      convertedValue: !isNaN(convertedValue.getTime()) ? convertedValue.toISOString() : null,
+    };
   } else if (type === 'boolean') {
-    return typeof value === 'boolean';
+    const convertedValue =
+      value === 'true' || value === true ? true : value === 'false' || value === false ? false : null;
+    return { isValid: typeof convertedValue === 'boolean', convertedValue };
   } else if (type === 'url') {
-    const urlRegex = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i;
-    return urlRegex.test(value);
+    const urlRegex =
+      /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)/;
+    const isValid = urlRegex.test(value);
+    return { isValid, convertedValue: isValid ? value : null };
+  } else if (type === 'email') {
+    const emailRegex =
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    const isValid = emailRegex.test(value);
+    return { isValid, convertedValue: isValid ? value : null };
+  } else if (type === 'option' || type === 'multioption') {
+    if (optionAttributeId) {
+      const attributeOptionDetails = await attributeOptionService.findAttributeOptionById(optionAttributeId);
+      const attributeOptionValue = attributeOptionDetails?.attributeValue ? attributeOptionDetails?.attributeValue : [];
+      if (type === 'option') {
+        const isValid = attributeOptionValue.includes(value);
+        return { isValid, convertedValue: isValid ? value : null, attributeOptionValue: attributeOptionValue };
+      } else {
+        const splittedValue = value.split(separator);
+        const allValid = splittedValue.every((val: any) => attributeOptionValue.includes(val));
+        return {
+          isValid: allValid,
+          convertedValue: allValid ? splittedValue : null,
+          attributeOptionValue: attributeOptionValue,
+        };
+      }
+    }
   }
-  return true;
+  return { isValid: true, convertedValue: value };
 }
 
 function validateFileData({
   fileData,
   attributes,
   mapping,
+  separator,
   dataSourceId,
   entityId,
   dataSourceVersionId,
@@ -35,13 +82,14 @@ function validateFileData({
   fileData: any[];
   attributes: any[];
   mapping: Record<string, string>;
+  separator: Record<string, string>;
   dataSourceId: string;
   entityId: any;
   dataSourceVersionId: string;
 }) {
-  const errors: string[] = [];
+  const errors: any[] = [];
 
-  //we will map key of setting attribute with the value attribute
+  // Map the key of setting attribute with the value attribute
   const reversedMapping = Object.entries(mapping).reduce((acc, [key, value]) => {
     acc[value] = acc[value] ? [...acc[value], key] : [key];
     return acc;
@@ -50,25 +98,67 @@ function validateFileData({
   const newRowData: any[] = [];
   fileData.forEach((row, index) => {
     const newRow = { dataSourceId, entityId, dataSourceVersionId, rowData: {} };
-    attributes.forEach((attr) => {
-      const mappedKeyArray = reversedMapping[attr.name];
-      if (mappedKeyArray.length === 1) {
-        const mappedKey = mappedKeyArray[0];
-        const value = row[mappedKey];
+    attributes.forEach(async (attr) => {
+      const attrName = attr.name;
+      const fileKeyArray = reversedMapping[attrName];
+      if (fileKeyArray.length === 1) {
+        const fileKey = fileKeyArray[0];
+        const value = row[fileKey];
+
         // Required field validation
         if (attr.required === 'Mandatory' && (value === undefined || value === null || value === '')) {
-          errors.push(`Row Number ${index + 1}:${mappedKey} is required but missing in row ${index + 1}`);
-        } else if (value !== undefined && !validateType(value, attr.type)) {
-          errors.push(
-            `Row Number ${index + 1}:${mappedKey} has type ${typeof value}, but expected ${attr.type} in row ${index + 1}.`
-          );
-        } else {
-          newRow.rowData[attr.name] = value;
+          errors.push({
+            entityId: entityId,
+            dataSourceId: dataSourceId,
+            dataSourceVersionId: dataSourceVersionId,
+            rowNumber: index + 1,
+            fileAttributeName: fileKey,
+            attributeName: attrName,
+            errorType: 'Not Found',
+            errorCode: '404',
+            errorMessage: `Error: Row ${index + 1} - The attribute "${attrName}" is required but is missing.`,
+          });
+        } else if (value !== undefined) {
+          const { isValid, convertedValue, attributeOptionValue } = await validateAndConvert({
+            value,
+            type: attr.type,
+            optionAttributeId: attr.optionAttributeId,
+            separator: separator[value],
+          });
+          if (!isValid) {
+            if (['option', 'multioption'].includes(attr.type)) {
+              errors.push({
+                entityId: entityId,
+                dataSourceId: dataSourceId,
+                dataSourceVersionId: dataSourceVersionId,
+                rowNumber: index + 1,
+                fileAttributeName: fileKey,
+                fileAttributeValue: value,
+                attributeName: attrName,
+                errorType: 'Type Error',
+                errorCode: '400',
+                errorMessage: `Error: Row ${index + 1} - ${fileKey} has a value ${value}, but a value of type ${attr.type} was expected from one of the valid settings attribute(${attrName}) options ${attributeOptionValue}.`,
+              });
+            } else {
+              errors.push({
+                entityId: entityId,
+                dataSourceId: dataSourceId,
+                dataSourceVersionId: dataSourceVersionId,
+                rowNumber: index + 1,
+                fileAttributeName: fileKey,
+                fileAttributeValue: value,
+                attributeName: attrName,
+                errorType: 'Type Error',
+                errorCode: '400',
+                errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value} of type ${typeof value}, but a value of type ${attr.type} was expected for the settings attribute ${attrName}.`,
+              });
+            }
+          } else {
+            newRow.rowData[attrName] = convertedValue;
+          }
         }
       } else {
-        errors.push(
-          `Row Number ${index + 1}:${mappedKeyArray.join(',')} has same dublicate mapping with ${attr.name}.`
-        );
+        errors.push(`Row Number ${index + 1}:${fileKeyArray.join(',')} has duplicate mapping with ${attrName}.`);
       }
     });
     newRowData.push(newRow);
@@ -79,10 +169,12 @@ function validateFileData({
     newRowData,
   };
 }
+
 export async function createDataSourceVersion(req: Request, res: Response, next: NextFunction) {
   try {
-    const { versionName, mappings, dataSourceId, versionValue } = req.body;
+    const { versionName, mappings, separator, dataSourceId, versionValue } = req.body;
     const jsonMapping = JSON.parse(mappings);
+    const jsonSeparator = JSON.parse(separator);
 
     const { userId, organizationId, orgCode } = req?.user;
 
@@ -123,7 +215,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
             versionName,
             versionValue,
             createdBy: userId,
-            status: 'Processing',
+            status: 'processing',
             fileName: fileName,
             filePath: newFilePath,
             fileType: mimetype,
@@ -141,15 +233,17 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
                 fileData,
                 attributes,
                 mapping: jsonMapping,
+                separator: jsonSeparator,
                 dataSourceId: dataSourceId,
                 dataSourceVersionId: dataSourceVersion._id as string,
                 entityId: dataSourceDetails.entityId._id,
               });
               if (validatedData.errors.length > 0) {
                 await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
-                  status: 'Failed',
-                  errorMessage: validatedData.errors,
+                  status: 'failed',
                 });
+
+                await dataImportErrorServices.createManyDataImportError(validatedData.errors);
               } else {
                 const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
                   orgCode,
@@ -157,8 +251,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
                 });
                 await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, validatedData.newRowData);
                 await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
-                  status: 'Success',
-                  errorMessage: validatedData.errors,
+                  status: 'processed',
                 });
               }
             } catch (error) {
