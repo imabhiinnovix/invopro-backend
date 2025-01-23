@@ -20,7 +20,7 @@ interface IDataSourceVersion extends Document {
 const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
-    dataSourceId: { type: Schema.Types.ObjectId, ref: 'DataSource' },
+    dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     versionValue: { type: String, required: true },
     versionName: { type: String, required: true },
@@ -53,6 +53,6 @@ dataSourceVersionSchema.index(
   { unique: true, collation: { locale: 'en', strength: 2 } }
 );
 
-const DataSourceVersion = model<IDataSourceVersion>('DataSourceVersion', dataSourceVersionSchema);
+const DataSourceVersion = model<IDataSourceVersion>('data_source_version', dataSourceVersionSchema);
 
 export default DataSourceVersion;

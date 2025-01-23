@@ -15,7 +15,7 @@ const defaultDataSourceVersionSchema = new Schema<IDefaultDataSourceVersionValue
   {
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'DataSource' },
-    dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'DataSourceVersion' },
+    dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'data_source_version' },
     rowData: { type: Schema.Types.Mixed }, // Accepts any type of object
     createdBy: { type: Schema.Types.ObjectId },
   },
