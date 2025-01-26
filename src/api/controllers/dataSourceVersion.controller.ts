@@ -65,6 +65,11 @@ async function validateAndConvert({
           attributeOptionValue: attributeOptionValue,
         };
       }
+    } else {
+      return {
+        isValid: false,
+        convertedValue: null,
+      };
     }
   }
   return { isValid: true, convertedValue: value };
