@@ -74,8 +74,7 @@ async function validateAndConvert({
   }
   return { isValid: true, convertedValue: value };
 }
-
-function validateFileData({
+async function validateFileData({
   fileData,
   attributes,
   mapping,
@@ -101,12 +100,14 @@ function validateFileData({
   }, {});
 
   const newRowData: any[] = [];
-  fileData.forEach((row, index) => {
+
+  for (const [index, row] of fileData.entries()) {
     const newRow = { dataSourceId, entityId, dataSourceVersionId, rowData: {} };
-    attributes.forEach(async (attr) => {
+
+    for (const attr of attributes) {
       const attrName = attr.name;
       const fileKeyArray = reversedMapping[attrName];
-      if (fileKeyArray.length === 1) {
+      if (fileKeyArray?.length === 1) {
         const fileKey = fileKeyArray[0];
         const value = row[fileKey];
 
@@ -130,6 +131,7 @@ function validateFileData({
             optionAttributeId: attr.optionAttributeId,
             separator: separator[value],
           });
+
           if (!isValid) {
             if (['option', 'multioption'].includes(attr.type)) {
               errors.push({
@@ -163,11 +165,12 @@ function validateFileData({
           }
         }
       } else {
-        errors.push(`Row Number ${index + 1}:${fileKeyArray.join(',')} has duplicate mapping with ${attrName}.`);
+        errors.push(`Row Number ${index + 1}:${fileKeyArray?.join(',')} has duplicate mapping with ${attrName}.`);
       }
-    });
+    }
+
     newRowData.push(newRow);
-  });
+  }
 
   return {
     errors,
@@ -234,7 +237,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
               const fileData = await readExcelFile(newFilePath);
               const entityDetails = dataSourceDetails.entityId as any;
               const attributes = entityDetails?.attributes || [];
-              const validatedData = validateFileData({
+              const validatedData = await validateFileData({
                 fileData,
                 attributes,
                 mapping: jsonMapping,
@@ -243,6 +246,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
                 dataSourceVersionId: dataSourceVersion._id as string,
                 entityId: dataSourceDetails.entityId._id,
               });
+
               if (validatedData.errors.length > 0) {
                 await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
                   status: 'failed',
