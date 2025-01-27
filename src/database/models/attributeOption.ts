@@ -31,6 +31,6 @@ attributeSchema.index(
 );
 
 // Create the attribute model
-const AttributeOption = model<IAttribute>('AttributeOption', attributeSchema);
+const AttributeOption = model<IAttribute>('attribute_option', attributeSchema);
 
 export default AttributeOption;

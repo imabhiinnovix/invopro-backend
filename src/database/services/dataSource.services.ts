@@ -32,6 +32,19 @@ export const findDataSourceByCodeAndOrganization = async (code: string, organiza
   }
 };
 
+export const findDataSourceByNameAndOrganization = async (name: string, organizationId: string) => {
+  try {
+    const dataSourceData = await DataSource.findOne(
+      { name, organizationId },
+      null,
+      { collation: { locale: 'en', strength: 2 } } // Case-sensitive collation
+    );
+    return dataSourceData;
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const getDataSourceList = async ({
   query,
   select = '',
@@ -60,6 +73,14 @@ export const getDataSourceList = async ({
     const totalCount = await DataSource.countDocuments(query);
 
     return { data: dataSource, totalCount };
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const findDataSourceById = async (id: string, populate = true) => {
+  try {
+    return await DataSource.findById(id).populate('entityId');
   } catch (err) {
     throw err;
   }

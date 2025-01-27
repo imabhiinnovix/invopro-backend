@@ -9,6 +9,7 @@ import attributeRoutes from './attributeOption.routes';
 import fileRoutes from './file.routes';
 import dataSourceRoutes from './dataSource.routes';
 import customReports from './customReport.routes';
+import dataSourceVersion from './dataSourceVersion.routes';
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use('/dataSource', dataSourceRoutes);
 router.use('/attributeOptions', attributeRoutes);
 router.use('/files', fileRoutes);
 router.use('/customReports', customReports);
+router.use('/dataSourceVersion', dataSourceVersion);
 
 export default router;

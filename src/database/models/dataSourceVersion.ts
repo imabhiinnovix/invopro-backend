@@ -11,18 +11,31 @@ interface IDataSourceVersion extends Document {
   updatedBy?: Types.ObjectId;
   createdBy?: Types.ObjectId;
   isActive: boolean;
-  //   isLatest: boolean;
   versionName: string;
+  status: 'failed' | 'processing' | 'processed';
+  fileName: string;
+  mappings: Record<string, string>;
 }
 
 const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
-    dataSourceId: { type: Schema.Types.ObjectId, ref: 'DataSource' },
+    dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     versionValue: { type: String, required: true },
     versionName: { type: String, required: true },
-    // isLatest: { type: Boolean, required: true },//not requered we can get it using ceatedAt
+    status: {
+      type: String,
+      enum: ['failed', 'processing', 'processed'], // Restricting the values of status
+      required: true,
+      default: 'processing', // Optional: Default value for status
+    },
+    mappings: {
+      type: Map, // Mongoose's Map type to store key-value pairs
+      of: String, // The values in the map are strings
+      default: {}, // Optional: Default to an empty map if no mappings are provided
+    },
+    fileName: { type: String },
     filePath: { type: String },
     fileType: { type: String },
     fileSize: { type: String },
@@ -40,6 +53,6 @@ dataSourceVersionSchema.index(
   { unique: true, collation: { locale: 'en', strength: 2 } }
 );
 
-const DataSourceVersion = model<IDataSourceVersion>('DataSourceVersion', dataSourceVersionSchema);
+const DataSourceVersion = model<IDataSourceVersion>('data_source_version', dataSourceVersionSchema);
 
 export default DataSourceVersion;

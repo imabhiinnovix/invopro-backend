@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as dataSourceService from '../../database/services/dataSource.services';
-import * as defaultDataSourceVersion from '../../database/services/defaultDataSourceVersion.services';
+import * as defaultDataSourceVersionValue from '../../database/services/defaultDataSourceVersionValue.services';
+import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -12,8 +13,11 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       return res.status(400).json({ success: false, message: 'Data Source Option Code Already Exists' });
     }
 
-    const collectionName = `data_${orgCode}_${code}`;
-    await defaultDataSourceVersion.createEmptyCollection(collectionName);
+    const collectionName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: code,
+    });
+    await defaultDataSourceVersionValue.createEmptyCollection(collectionName);
     const dataSource = await dataSourceService.createDataSourcce({
       entityId,
       name,
@@ -78,6 +82,30 @@ export const checkDataSourceCodeAvailableOrNot = async (req: Request, res: Respo
   }
 };
 
+export const checkDataSourceNameAvailableOrNot = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name } = req.params;
+    const { organizationId } = req.user;
+
+    const dataSourceData = await dataSourceService.findDataSourceByNameAndOrganization(name, organizationId);
+    if (dataSourceData) {
+      res.status(200).json({
+        success: true,
+        available: false,
+        message: name,
+      });
+    } else {
+      res.status(200).json({
+        success: true,
+        available: true,
+        message: name,
+      });
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const listDataSource = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { search, paginate = 'false' } = req.query;
@@ -104,7 +132,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
           },
           {
             path: 'entityId',
-            select: 'name', // Specify the fields to populate
+            select: 'name attributes', // Specify the fields to populate
           },
         ],
       });
@@ -119,6 +147,19 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
       message: 'Data Source Fetched Successfully',
       data: result.data,
       totalCount: result.totalCount,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getDataSourceById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const dataSourceDetails = await dataSourceService.findDataSourceById(req.params.dataSourceId);
+    res.status(200).json({
+      success: true,
+      message: 'Data Source Details Fetched Successfully',
+      data: dataSourceDetails,
     });
   } catch (err) {
     next(err);
