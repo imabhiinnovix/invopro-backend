@@ -15,6 +15,7 @@ interface IDataSourceVersion extends Document {
   status: 'failed' | 'processing' | 'processed';
   fileName: string;
   mappings: Record<string, string>;
+  separator: Record<string, string>;
 }
 
 const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
@@ -31,6 +32,11 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
       default: 'processing', // Optional: Default value for status
     },
     mappings: {
+      type: Map, // Mongoose's Map type to store key-value pairs
+      of: String, // The values in the map are strings
+      default: {}, // Optional: Default to an empty map if no mappings are provided
+    },
+    separator: {
       type: Map, // Mongoose's Map type to store key-value pairs
       of: String, // The values in the map are strings
       default: {}, // Optional: Default to an empty map if no mappings are provided

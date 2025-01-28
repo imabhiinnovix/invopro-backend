@@ -42,3 +42,36 @@ export const getDataSourceVersionBasedOnDataSourceIdAndVersionValueAndVersionNam
     throw err;
   }
 };
+
+export const getDataSourceVersionList = async ({
+  query,
+  select = '',
+  page,
+  limit,
+  sort = { updatedAt: -1 },
+  populate,
+}: any) => {
+  try {
+    // Remove the await keyword here
+    let dataSourceVersionQuery: any = DataSourceVersion.find(query)
+      .select(select)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort(sort);
+
+    if (populate && Array.isArray(populate)) {
+      populate.forEach((field) => {
+        dataSourceVersionQuery = dataSourceVersionQuery.populate(field);
+      });
+    }
+
+    // Now await the final query execution
+    const dataSourceVersion = await dataSourceVersionQuery.exec();
+
+    const totalCount = await DataSourceVersion.countDocuments(query);
+
+    return { data: dataSourceVersion, totalCount };
+  } catch (err) {
+    throw err;
+  }
+};
