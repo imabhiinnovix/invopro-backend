@@ -10,6 +10,7 @@ import fileRoutes from './file.routes';
 import dataSourceRoutes from './dataSource.routes';
 import customReports from './customReport.routes';
 import dataSourceVersion from './dataSourceVersion.routes';
+import dataImportErrorRoutes from './dataImportError.routes';
 
 const router = Router();
 
@@ -23,5 +24,6 @@ router.use('/attributeOptions', attributeRoutes);
 router.use('/files', fileRoutes);
 router.use('/customReports', customReports);
 router.use('/dataSourceVersion', dataSourceVersion);
+router.use('/dataImportError', dataImportErrorRoutes);
 
 export default router;
