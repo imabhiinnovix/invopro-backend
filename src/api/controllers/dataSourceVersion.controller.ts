@@ -224,6 +224,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
             versionValue,
             createdBy: userId,
             status: 'processing',
+            separator: jsonSeparator,
             fileName: fileName,
             filePath: newFilePath,
             fileType: mimetype,
@@ -339,10 +340,10 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
             path: 'updatedBy',
             select: 'firstName lastName', // Specify the fields to populate
           },
-          // {
-          //   path: 'entityId',
-          //   select: 'name attributes', // Specify the fields to populate
-          // },
+          {
+            path: 'dataSourceId',
+            select: 'name', // Specify the fields to populate
+          },
         ],
       });
     } else {
