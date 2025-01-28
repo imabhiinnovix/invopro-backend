@@ -45,7 +45,7 @@ export const getOrganizationById = async (req: Request, res: Response, next: Nex
 export const updateOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, description, totalLicenses, domain, licenseExpiresAt } = req.body;
-    console.log('body', req.body);
+
     await organizationService.updateOrganization(req.params.organizationId, {
       ...(name && { name }),
       ...(description && { description }),

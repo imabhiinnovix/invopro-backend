@@ -8,7 +8,7 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
 ) => {
   try {
     const { paginate = 'false', dataSourceVersionId } = req.query;
-    console.log('dataSourceVersionId', dataSourceVersionId);
+
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
@@ -20,6 +20,7 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
         query,
         page,
         limit,
+        sort: { rowNumber: 1 },
       });
     } else {
       result = await dataImportErrorServices.getDataSourceVersionErrrorList({

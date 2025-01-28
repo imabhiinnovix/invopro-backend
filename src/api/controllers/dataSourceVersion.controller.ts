@@ -281,7 +281,6 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
       }
     }
   } catch (e) {
-    console.log(e);
     next(e);
   }
 }
