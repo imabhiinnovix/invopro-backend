@@ -314,3 +314,50 @@ export const checkDataSourceVersionNameAvailableOrNot = async (req: Request, res
     next(err);
   }
 };
+
+export const listDataSourceVersion = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { search, paginate = 'false' } = req.query;
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
+
+    const query: any = {};
+    if (search) query.name = { $regex: search, $options: 'i' };
+
+    let result: any = {};
+    if (paginate) {
+      result = await dataSourceVersionService.getDataSourceVersionList({
+        query,
+        page,
+        limit,
+        populate: [
+          {
+            path: 'createdBy',
+            select: 'firstName lastName', // Specify the fields to populate
+          },
+          {
+            path: 'updatedBy',
+            select: 'firstName lastName', // Specify the fields to populate
+          },
+          // {
+          //   path: 'entityId',
+          //   select: 'name attributes', // Specify the fields to populate
+          // },
+        ],
+      });
+    } else {
+      result = await dataSourceService.getDataSourceList({
+        query,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Data Source Version Fetched Successfully',
+      data: result.data,
+      totalCount: result.totalCount,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
