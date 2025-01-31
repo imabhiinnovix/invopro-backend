@@ -12,6 +12,7 @@ interface IDataSourceVersion extends Document {
   createdBy?: Types.ObjectId;
   isActive: boolean;
   versionName: string;
+  isCurrent: boolean;
   status: 'failed' | 'processing' | 'processed';
   fileName: string;
   mappings: Record<string, string>;
@@ -45,6 +46,7 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
     filePath: { type: String },
     fileType: { type: String },
     fileSize: { type: String },
+    isCurrent: { type: Boolean, required: true },
     isActive: { type: Boolean, required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },

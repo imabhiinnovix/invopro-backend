@@ -231,6 +231,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
             fileSize: size,
             mappings: jsonMapping,
             isActive: true,
+            isCurrent: false,
           });
 
           debounceManager.debounce(dataSourceVersion._id as string, async () => {
@@ -260,8 +261,13 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
                   versionCode: dataSourceDetails.code,
                 });
                 await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, validatedData.newRowData);
+                await dataSourceVersionService.updateDataSourceVersions({
+                  query: { dataSourceId, versionValue },
+                  updateFields: { isCurrent: false },
+                });
                 await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
                   status: 'processed',
+                  isCurrent: true,
                 });
               }
             } catch (error) {

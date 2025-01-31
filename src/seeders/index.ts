@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import config from '../config';
 import { seedUsers } from './user.seed';
 import { seedOrganizations } from './organization.seed';
+import { seedCustomReports } from './customReport.seed';
+import path from 'path';
 
 const payload = {
   superAdminUserId: new mongoose.Types.ObjectId('66b34cbbd40e24fca2e3e312'),
@@ -26,6 +28,19 @@ export async function seedDatabase() {
 
     console.info('\n====> Seeding organizations <====');
     await seedOrganizations(payload);
+
+    console.info('\n====> Seeding monthly ip <====');
+    await seedCustomReports({
+      _id: '66b34cbbd40e24fca2e3e313',
+      reportName: 'monthlyip',
+      functionName: 'generateMonthlyIpReport',
+      dataSourceIds: [
+        { code: 'portfolio', dataSourceId: '67923590d31b8f4ea211147b' },
+        { code: 'disclosure', dataSourceId: '6792332a753ceb4945e5b3b8' },
+      ],
+      organizationId: payload.organizationId,
+      sampleFilePath: path.join('reports', 'sample', 'sample-monthly-ip-report.xlsx'),
+    });
 
     console.log('\nDatabase seeded successfully!');
     process.exit();

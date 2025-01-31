@@ -7,20 +7,32 @@ import {
   percentageOfCurrentYearInventionDisclosureConvertedToFilings,
   processData,
 } from '../../database/services/monthlyipReport.services';
+import * as customReportServices from '../../database/services/customReport.services';
+import * as dataSourceVersionServices from '../../database/services/dataSourceVersion.services';
+import * as reportRequestService from '../../database/services/reportRequest.services';
 import path from 'path';
 import { writeDataToExcel } from '../../utils/excel.utils';
-
-export const generateMonthlyIpReport = async (req: Request, res: Response, next: NextFunction) => {
+import { version } from 'os';
+const generateMonthlyIpReport = async ({
+  reportRequestPayload,
+  requestedReportId,
+  sampleFilePath,
+  disclosureDataSourceVersionId,
+  portfolioDataSourceVersionId,
+}: {
+  reportRequestPayload: any;
+  requestedReportId: string;
+  sampleFilePath: string;
+  disclosureDataSourceVersionId: string;
+  portfolioDataSourceVersionId: string;
+}) => {
   try {
-    const { disclosureDataSourceVersionId, portfolioDataSourceVersionId, currentYear } = req.body;
-    const { organizationId, userId } = req.user;
-
-    // const currentYear = '2024';
+    const currentYear = reportRequestPayload.versionValue.split('-')[0];
     const currentYearApplicationFiledData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
     });
-
+    const newFilePath = reportRequestPayload.filePath;
     const processedCurrentYearApplicationFiledData = processData(currentYearApplicationFiledData, {
       'SBU SHPP': 'H3',
       'SBU Agri-nutrients': 'D3',
@@ -32,7 +44,6 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
       Total: 'J3',
       Petchem: 'G3',
     });
-
     const percentageOfCurrentYearInventionDisclosureConvertedToFilingsData =
       await percentageOfCurrentYearInventionDisclosureConvertedToFilings(
         portfolioDataSourceVersionId,
@@ -53,7 +64,6 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
         'Petchem Total': 'G4',
       }
     );
-
     //TODO:here currern year filter need to discuss
     const draftedApplicationDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
@@ -78,7 +88,6 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
       isActive: false,
       isDrafted: false,
     });
-
     const processedOpenApplicationDisclosureCount = processData(openApplicationDisclosureCount, {
       'SBU T&I': 'B12',
       'SBU Metals': 'C12',
@@ -90,14 +99,12 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
       'SBU MISC': 'I12',
       Total: 'J12',
     });
-
     const currentYearUsIssued = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
       isPercentagePart: false,
       isCurrentYearUSIssued: true,
     });
-
     const processedCurrentYearUsIssued = processData(currentYearUsIssued, {
       'SBU T&I': 'B19',
       'SBU Metals': 'C19',
@@ -126,7 +133,6 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
       'SBU MISC': 'I20',
       Total: 'J20',
     });
-
     const usPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -150,7 +156,6 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
       isPercentagePart: false,
       isEPPendingApplication: true,
     });
-
     const processedEPPendingApplication = processData(epPendingApplication, {
       'SBU T&I': 'B23',
       'SBU Metals': 'C23',
@@ -168,7 +173,6 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
       isPercentagePart: false,
       isCNPendingApplication: true,
     });
-
     const processedCNPendingApplication = processData(cnPendingApplication, {
       'SBU T&I': 'B24',
       'SBU Metals': 'C24',
@@ -186,7 +190,6 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
       isPercentagePart: false,
       isOtherPendingApplication: true,
     });
-
     const processedOtherPendingApplication = processData(otherPendingApplication, {
       'SBU T&I': 'B25',
       'SBU Metals': 'C25',
@@ -204,7 +207,6 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
       isPercentagePart: false,
       isTotalPendingApplication: true,
     });
-
     const processedTotalPendingApplication = processData(totalPendingApplication, {
       'SBU T&I': 'B26',
       'SBU Metals': 'C26',
@@ -216,14 +218,12 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
       'SBU MISC': 'I26',
       Total: 'J26',
     });
-
     const usIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
       isPercentagePart: false,
       isUSIssuedApplication: true,
     });
-
     const processedUSIssuedApplication = processData(usIssuedApplication, {
       'SBU T&I': 'B28',
       'SBU Metals': 'C28',
@@ -241,7 +241,6 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
       isPercentagePart: false,
       isEPIssuedApplication: true,
     });
-
     const processedEPIssuedApplication = processData(epIssuedApplication, {
       'SBU T&I': 'B29',
       'SBU Metals': 'C29',
@@ -259,7 +258,6 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
       isPercentagePart: false,
       isCNIssuedApplication: true,
     });
-
     const processedCNIssuedApplication = processData(cnIssuedApplication, {
       'SBU T&I': 'B30',
       'SBU Metals': 'C30',
@@ -277,7 +275,6 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
       isPercentagePart: false,
       isOtherIssuedApplication: true,
     });
-
     const processedOtherIssuedApplication = processData(otherIssuedApplication, {
       'SBU T&I': 'B31',
       'SBU Metals': 'C31',
@@ -307,11 +304,8 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
       Total: 'J32',
     });
 
-    const newFilePath = path.join('reports', 'generated', organizationId, userId, `${Date.now()}.xlsx`);
-    const sampleFilePath = path.join('reports', 'sample', 'sample-monthly-ip-report.xlsx');
     await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
     await fsPromises.copyFile(sampleFilePath, newFilePath);
-
     await writeDataToExcel(
       [
         ...processedCurrentYearApplicationFiledData,
@@ -393,9 +387,103 @@ export const generateMonthlyIpReport = async (req: Request, res: Response, next:
       ],
       newFilePath
     );
-    res.status(201).json({
+
+    await reportRequestService.updateReportRequest(requestedReportId, { status: 'processed' });
+  } catch (err) {
+    await reportRequestService.updateReportRequest(requestedReportId, { status: 'failed' });
+  }
+};
+
+export const generateCustomReports = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { versionValue, customReportId } = req.body;
+    const { userId, organizationId, orgCode } = req?.user;
+    const customReportDetails = await customReportServices.findCustomReportById(customReportId);
+    if (!customReportDetails) {
+      throw new Error('Custom report not found');
+    }
+    // Extract all data source IDs
+    const dataSourceIds = customReportDetails.dataSourceIds.map((ds) => ds.dataSourceId);
+
+    const dataSourceVersionDetails = await dataSourceVersionServices.getDataSourceVersionList({
+      dataSourceId: { $in: dataSourceIds },
+      versionValue: versionValue,
+      isCurrent: true,
+    });
+
+    if (!dataSourceVersionDetails.data || dataSourceVersionDetails.data.length != dataSourceIds.length) {
+      throw new Error(`Not all required data is available for this report with version value ${versionValue}.`);
+    }
+
+    if (customReportDetails.reportName === 'monthlyip') {
+      const fileName = `${customReportDetails.reportName}_${versionValue}.xlsx`;
+      const reportRequestPayload = {
+        organizationId: organizationId,
+        versionValue: versionValue,
+        customReportId: customReportDetails._id,
+        status: 'processing',
+        fileName: fileName,
+        filePath: path.join('uploads', organizationId, userId, 'generatedReports', `${fileName}`),
+        fileType: 'xlsx',
+        createdBy: userId,
+      };
+
+      const versionMap = Object.fromEntries(
+        dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
+      );
+
+      const requestedReport = await reportRequestService.createReportRequest(reportRequestPayload);
+
+      const disclosureDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'disclosure');
+
+      const portfolioDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'portfolio');
+
+      await generateMonthlyIpReport({
+        reportRequestPayload,
+        requestedReportId: requestedReport._id as string,
+        sampleFilePath: customReportDetails.sampleFilePath,
+        disclosureDataSourceVersionId: versionMap[disclosureDataSource?.dataSourceId!],
+        portfolioDataSourceVersionId: versionMap[portfolioDataSource?.dataSourceId!],
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Report Generated Successfully',
+      });
+    }
+  } catch (e) {
+    next(e);
+  }
+};
+
+export const listCustomReports = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { search, paginate = 'false' } = req.query;
+    const { organizationId } = req.user;
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
+
+    const query: any = { organizationId: organizationId };
+    if (search) query.name = { $regex: search, $options: 'i' };
+
+    let result: any = {};
+    if (paginate) {
+      result = await customReportServices.getCustomReportList({
+        query,
+        page,
+        limit,
+      });
+    } else {
+      result = await customReportServices.getCustomReportList({
+        query,
+      });
+    }
+
+    res.status(200).json({
       success: true,
-      message: 'Report Generated Successfully',
+      message: 'Custom Report List Fetched Successfully',
+      data: result.data,
+      totalCount: result.totalCount,
     });
   } catch (err) {
     next(err);

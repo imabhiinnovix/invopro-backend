@@ -75,3 +75,38 @@ export const getDataSourceVersionList = async ({
     throw err;
   }
 };
+
+export const updateDataSourceVersions = async ({ query, updateFields }: any) => {
+  try {
+    // Perform the update operation
+    const updateResult = await DataSourceVersion.updateMany(query, {
+      $set: updateFields,
+    });
+
+    return updateResult;
+  } catch (err) {
+    throw err;
+  }
+};
+
+// export const getDataSourceVersionBasedOnDataSourceIdAndVersionValueAndIsCurrent = async ({
+//   dataSourceId,
+//   versionValue,
+//   isCurrent,
+// }: {
+//   dataSourceId: string;
+//   versionValue: string;
+//   isCurrent: boolean;
+// }) => {
+//   try {
+//     const dataSourceVersionDetails = await DataSourceVersion.findOne({
+//       dataSourceId,
+//       versionValue,
+//       isCurrent,
+//     });
+
+//     return dataSourceVersionDetails;
+//   } catch (err) {
+//     throw err;
+//   }
+// };
