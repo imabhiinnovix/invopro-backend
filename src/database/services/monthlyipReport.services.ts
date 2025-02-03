@@ -157,8 +157,8 @@ export async function getCurrentYearNewApplicationFiled({
     };
 
     const yearDateRange = {
-      $gte: `${currentYear}-01-01`,
-      $lte: `${currentYear}-12-31`,
+      $gte: `${currentYear}-01-01T00:00:00.000Z`,
+      $lte: `${currentYear}-12-31T00:00:00.000Z`,
     };
 
     if (isCurrentYearUSIssued || isCurrentYearINTIssued) {
@@ -288,9 +288,10 @@ export async function getDisclosureCount({
 }) {
   try {
     const yearDateRange = {
-      $gte: `${currentYear}-01-01`,
-      $lte: `${currentYear}-12-31`,
+      $gte: `${currentYear}-01-01T00:00:00.000Z`,
+      $lte: `${currentYear}-12-31T00:00:00.000Z`,
     };
+
     const matchCondition = {
       dataSourceVersionId: new ObjectId(disclosureDataSourceVersionId),
     };
