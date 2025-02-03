@@ -406,10 +406,10 @@ export const generateCustomReports = async (req: Request, res: Response, next: N
     const dataSourceIds = customReportDetails.dataSourceIds.map((ds) => ds.dataSourceId);
 
     const dataSourceVersionDetails = await dataSourceVersionServices.getDataSourceVersionList({
-      dataSourceId: { $in: dataSourceIds },
-      versionValue: versionValue,
-      isCurrent: true,
+      query: { dataSourceId: { $in: dataSourceIds }, versionValue: versionValue, isCurrent: true },
     });
+
+    console.log(dataSourceVersionDetails);
 
     if (!dataSourceVersionDetails.data || dataSourceVersionDetails.data.length != dataSourceIds.length) {
       throw new Error(`Not all required data is available for this report with version value ${versionValue}.`);
