@@ -12,6 +12,16 @@ export interface DataItem {
   cellName?: string;
 }
 
+export function getTotalPortfolioPercentage({ data }: { data: DataItem[] }) {
+  // Find the total value from the SBU named 'total'
+  const totalItem = data.find((item) => item.SBU.toLowerCase() === 'total');
+  const totalValue = totalItem ? Number(totalItem.value) : 0;
+
+  return data.map((item) => ({
+    ...item,
+    value: totalValue > 0 ? parseFloat(((Number(item.value) / totalValue) * 100).toFixed(2)) : 0,
+  }));
+}
 export async function getTotalPortfolio({
   totalAppsPendingData,
   totalIssuedData,
@@ -82,7 +92,7 @@ export function processData({
 
     // Add totals to the processed data
     processedData.push(
-      { value: totalDistinctCount, SBU: 'Total', cellName: cellMappings?.Total }
+      { value: totalDistinctCount + staticTotal, SBU: 'Total', cellName: cellMappings?.Total }
       // { value: petchemTotal, SBU: 'Petchem Total', cellName: cellMappings?.Petchem }
     );
   }

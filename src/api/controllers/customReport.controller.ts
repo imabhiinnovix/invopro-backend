@@ -5,6 +5,7 @@ import {
   getCurrentYearNewApplicationFiled,
   getDisclosureCount,
   getTotalPortfolio,
+  getTotalPortfolioPercentage,
   percentageOfCurrentYearInventionDisclosureConvertedToFilings,
   processData,
 } from '../../database/services/monthlyipReport.services';
@@ -273,6 +274,7 @@ const generateMonthlyIpReport = async ({
         'SBU Strategy & Transformation': 'I26',
         Total: 'J26',
       },
+      staticTotal: 109,
     });
     const usIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -373,11 +375,12 @@ const generateMonthlyIpReport = async ({
         'SBU Strategy & Transformation': 'I32',
         Total: 'J32',
       },
+      staticTotal: 263,
     });
 
     const totalPortFolio = await getTotalPortfolio({
-      totalAppsPendingData: totalPendingApplication,
-      totalIssuedData: totalIssuedApplication,
+      totalAppsPendingData: processedTotalPendingApplication,
+      totalIssuedData: processedTotalIssuedApplication,
     });
 
     const processedTotalPortFolio = processData({
@@ -393,6 +396,24 @@ const generateMonthlyIpReport = async ({
         'SBU Strategy & Transformation': 'I34',
         Total: 'J34',
       },
+      isCellOnly: true,
+    });
+
+    const totalPortFolioPercentage = getTotalPortfolioPercentage({ data: totalPortFolio });
+    const processedTotalPortFolioPercentage = processData({
+      data: totalPortFolioPercentage,
+      cellMappings: {
+        'SBU T&I': 'B35',
+        'SBU Metals': 'C35',
+        'SBU Agri-nutrients': 'D35',
+        'SBU Chemicals': 'E35',
+        'SBU Polymers': 'F35',
+        // Petchem: 'G32',
+        'SBU SHPP': 'H35',
+        'SBU Strategy & Transformation': 'I35',
+        Total: 'J35',
+      },
+      isCellOnly: true,
     });
 
     await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
@@ -418,6 +439,7 @@ const generateMonthlyIpReport = async ({
         ...processedTotalIssuedApplication,
         ...processedTotalActiveDisclosureCount,
         ...processedTotalPortFolio,
+        ...processedTotalPortFolioPercentage,
         { cellName: 'A3', value: `${currentYear} New Apps Filed`, SBU: '' },
         { cellName: 'A4', value: `% of ${currentYear} Invention Disclosures converted to Filings`, SBU: '' },
         { cellName: 'A5', value: `${currentYear} New Apps Estimate`, SBU: '' },
