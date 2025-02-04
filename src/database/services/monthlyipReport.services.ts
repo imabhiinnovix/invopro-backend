@@ -48,14 +48,14 @@ export function processData(data: DataItem[], cellMappings?: Record<string, stri
     totalDistinctCount += polymersCount;
 
     // Calculate petchem total
-    const petchemTotal = processedData
-      .filter((item) => item.SBU === 'SBU Polymers' || item.SBU === 'SBU Chemicals')
-      .reduce((sum, item) => sum + (item.value as number), 0);
+    // const petchemTotal = processedData
+    //   .filter((item) => item.SBU === 'SBU Polymers' || item.SBU === 'SBU Chemicals')
+    //   .reduce((sum, item) => sum + (item.value as number), 0);
 
     // Add totals to the processed data
     processedData.push(
-      { value: totalDistinctCount, SBU: 'Total', cellName: cellMappings?.Total },
-      { value: petchemTotal, SBU: 'Petchem Total', cellName: cellMappings?.Petchem }
+      { value: totalDistinctCount, SBU: 'Total', cellName: cellMappings?.Total }
+      // { value: petchemTotal, SBU: 'Petchem Total', cellName: cellMappings?.Petchem }
     );
   }
 
@@ -163,7 +163,9 @@ export async function getCurrentYearNewApplicationFiled({
 
     if (isCurrentYearUSIssued || isCurrentYearINTIssued) {
       matchCondition['rowData.Grant Date'] = yearDateRange;
-      matchCondition['rowData.STATUS'] = { $nin: ['UNDER OPPOSITION'] };
+      matchCondition['rowData.STATUS'] = {
+        $nin: ['UNDER OPPOSITION', 'UNDEROPPOSITION', 'Under Opposition', 'UnderOpposition'],
+      };
       if (isCurrentYearUSIssued) matchCondition['rowData.Country'] = { $in: ['US'] };
       if (isCurrentYearINTIssued) matchCondition['rowData.Country'] = { $nin: ['US'] };
       matchCondition['rowData.In Force'] = 1; // Add In Force condition for issued applications
@@ -280,11 +282,13 @@ export async function getDisclosureCount({
   currentYear,
   isActive,
   isDrafted,
+  isYearRequired,
 }: {
   disclosureDataSourceVersionId: string;
   currentYear: string;
   isActive: boolean;
   isDrafted: boolean;
+  isYearRequired: boolean;
 }) {
   try {
     const yearDateRange = {
@@ -298,15 +302,28 @@ export async function getDisclosureCount({
 
     if (isActive) {
       matchCondition['rowData.DisclosureStatus'] = {
-        $in: ['Rated To Draft OC', 'Rated To Draft IH', 'RATED TO DRAFT IN HOUSE'],
+        $in: [
+          'Open',
+          'Rated to Search',
+          'Rated To Search',
+          'Rated to Hold',
+          'Rated To Hold',
+          'Rated to Draft OC',
+          'Rated To Draft OC',
+          'Rated to Draft IH',
+          'Rated To Draft IH',
+          'Filing Requested',
+          'RATED TO DRAFT IN HOUSE',
+          'Submitted',
+        ],
       };
     }
-
     if (isDrafted) {
       matchCondition['rowData.DisclosureStatus'] = {
         $in: ['Rated To Draft OC', 'RATED TO DRAFT IN HOUSE', 'Rated To Draft IH'],
       };
-    } else {
+    }
+    if (isYearRequired) {
       matchCondition['rowData.DisclosureDate'] = yearDateRange;
     }
     const activeDisclosure = await DataSourceVersionValueDisclosure.aggregate([
@@ -377,12 +394,14 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       currentYear,
       isActive: true,
       isDrafted: false,
+      isYearRequired: true,
     });
     const totalDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,
       isActive: false,
       isDrafted: false,
+      isYearRequired: true,
     });
 
     const processedNewYearApplicationFiled = processData(newYearApplicationFiled);
