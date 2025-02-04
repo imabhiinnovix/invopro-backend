@@ -4,6 +4,7 @@ import {
   addCellMaping,
   getCurrentYearNewApplicationFiled,
   getDisclosureCount,
+  getTotalPortfolio,
   percentageOfCurrentYearInventionDisclosureConvertedToFilings,
   processData,
 } from '../../database/services/monthlyipReport.services';
@@ -33,16 +34,19 @@ const generateMonthlyIpReport = async ({
       currentYear,
     });
     const newFilePath = reportRequestPayload.filePath;
-    const processedCurrentYearApplicationFiledData = processData(currentYearApplicationFiledData, {
-      'SBU SHPP': 'H3',
-      'SBU Agri-nutrients': 'D3',
-      'SBU Polymers': 'F3',
-      'SBU Chemicals': 'E3',
-      'SBU T&I': 'B3',
-      'SBU Strategy & Transformation': 'I3',
-      'SBU Metals': 'C3',
-      Total: 'J3',
-      // Petchem: 'G3',
+    const processedCurrentYearApplicationFiledData = processData({
+      data: currentYearApplicationFiledData,
+      cellMappings: {
+        'SBU SHPP': 'H3',
+        'SBU Agri-nutrients': 'D3',
+        'SBU Polymers': 'F3',
+        'SBU Chemicals': 'E3',
+        'SBU T&I': 'B3',
+        'SBU Strategy & Transformation': 'I3',
+        'SBU Metals': 'C3',
+        Total: 'J3',
+        // Petchem: 'G3',
+      },
     });
     const percentageOfCurrentYearInventionDisclosureConvertedToFilingsData =
       await percentageOfCurrentYearInventionDisclosureConvertedToFilings(
@@ -72,16 +76,19 @@ const generateMonthlyIpReport = async ({
       isDrafted: true,
       isYearRequired: false,
     });
-    const processedDraftedApplicationDisclosureCount = processData(draftedApplicationDisclosureCount, {
-      'SBU T&I': 'B11',
-      'SBU Metals': 'C11',
-      'SBU Agri-nutrients': 'D11',
-      'SBU Chemicals': 'E11',
-      'SBU Polymers': 'F11',
-      // Petchem: 'G11',
-      'SBU SHPP': 'H11',
-      'SBU Strategy & Transformation': 'I11',
-      Total: 'J11',
+    const processedDraftedApplicationDisclosureCount = processData({
+      data: draftedApplicationDisclosureCount,
+      cellMappings: {
+        'SBU T&I': 'B11',
+        'SBU Metals': 'C11',
+        'SBU Agri-nutrients': 'D11',
+        'SBU Chemicals': 'E11',
+        'SBU Polymers': 'F11',
+        // Petchem: 'G11',
+        'SBU SHPP': 'H11',
+        'SBU Strategy & Transformation': 'I11',
+        Total: 'J11',
+      },
     });
     const openApplicationDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
@@ -90,16 +97,19 @@ const generateMonthlyIpReport = async ({
       isDrafted: false,
       isYearRequired: true,
     });
-    const processedOpenApplicationDisclosureCount = processData(openApplicationDisclosureCount, {
-      'SBU T&I': 'B12',
-      'SBU Metals': 'C12',
-      'SBU Agri-nutrients': 'D12',
-      'SBU Chemicals': 'E12',
-      'SBU Polymers': 'F12',
-      // Petchem: 'G12',
-      'SBU SHPP': 'H12',
-      'SBU Strategy & Transformation': 'I12',
-      Total: 'J12',
+    const processedOpenApplicationDisclosureCount = processData({
+      data: openApplicationDisclosureCount,
+      cellMappings: {
+        'SBU T&I': 'B12',
+        'SBU Metals': 'C12',
+        'SBU Agri-nutrients': 'D12',
+        'SBU Chemicals': 'E12',
+        'SBU Polymers': 'F12',
+        // Petchem: 'G12',
+        'SBU SHPP': 'H12',
+        'SBU Strategy & Transformation': 'I12',
+        Total: 'J12',
+      },
     });
 
     const totalActiveProjects = await getDisclosureCount({
@@ -110,16 +120,19 @@ const generateMonthlyIpReport = async ({
       isYearRequired: false,
     });
 
-    const processedTotalActiveDisclosureCount = processData(totalActiveProjects, {
-      'SBU T&I': 'B17',
-      'SBU Metals': 'C17',
-      'SBU Agri-nutrients': 'D17',
-      'SBU Chemicals': 'E17',
-      'SBU Polymers': 'F17',
-      // Petchem: 'G12',
-      'SBU SHPP': 'H17',
-      'SBU Strategy & Transformation': 'I17',
-      Total: 'J17',
+    const processedTotalActiveDisclosureCount = processData({
+      data: totalActiveProjects,
+      cellMappings: {
+        'SBU T&I': 'B17',
+        'SBU Metals': 'C17',
+        'SBU Agri-nutrients': 'D17',
+        'SBU Chemicals': 'E17',
+        'SBU Polymers': 'F17',
+        // Petchem: 'G12',
+        'SBU SHPP': 'H17',
+        'SBU Strategy & Transformation': 'I17',
+        Total: 'J17',
+      },
     });
     const currentYearUsIssued = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -127,16 +140,19 @@ const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isCurrentYearUSIssued: true,
     });
-    const processedCurrentYearUsIssued = processData(currentYearUsIssued, {
-      'SBU T&I': 'B19',
-      'SBU Metals': 'C19',
-      'SBU Agri-nutrients': 'D19',
-      'SBU Chemicals': 'E19',
-      'SBU Polymers': 'F19',
-      // Petchem: 'G19',
-      'SBU SHPP': 'H19',
-      'SBU Strategy & Transformation': 'I19',
-      Total: 'J19',
+    const processedCurrentYearUsIssued = processData({
+      data: currentYearUsIssued,
+      cellMappings: {
+        'SBU T&I': 'B19',
+        'SBU Metals': 'C19',
+        'SBU Agri-nutrients': 'D19',
+        'SBU Chemicals': 'E19',
+        'SBU Polymers': 'F19',
+        // Petchem: 'G19',
+        'SBU SHPP': 'H19',
+        'SBU Strategy & Transformation': 'I19',
+        Total: 'J19',
+      },
     });
     const currentYearINTIssued = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -144,16 +160,19 @@ const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isCurrentYearINTIssued: true,
     });
-    const processedCurrentYearINTIssued = processData(currentYearINTIssued, {
-      'SBU T&I': 'B20',
-      'SBU Metals': 'C20',
-      'SBU Agri-nutrients': 'D20',
-      'SBU Chemicals': 'E20',
-      'SBU Polymers': 'F20',
-      // Petchem: 'G20',
-      'SBU SHPP': 'H20',
-      'SBU Strategy & Transformation': 'I20',
-      Total: 'J20',
+    const processedCurrentYearINTIssued = processData({
+      data: currentYearINTIssued,
+      cellMappings: {
+        'SBU T&I': 'B20',
+        'SBU Metals': 'C20',
+        'SBU Agri-nutrients': 'D20',
+        'SBU Chemicals': 'E20',
+        'SBU Polymers': 'F20',
+        // Petchem: 'G20',
+        'SBU SHPP': 'H20',
+        'SBU Strategy & Transformation': 'I20',
+        Total: 'J20',
+      },
     });
     const usPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -161,16 +180,19 @@ const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isUSPendingApplication: true,
     });
-    const processedUSPendingApplication = processData(usPendingApplication, {
-      'SBU T&I': 'B22',
-      'SBU Metals': 'C22',
-      'SBU Agri-nutrients': 'D22',
-      'SBU Chemicals': 'E22',
-      'SBU Polymers': 'F22',
-      // Petchem: 'G22',
-      'SBU SHPP': 'H22',
-      'SBU Strategy & Transformation': 'I22',
-      Total: 'J22',
+    const processedUSPendingApplication = processData({
+      data: usPendingApplication,
+      cellMappings: {
+        'SBU T&I': 'B22',
+        'SBU Metals': 'C22',
+        'SBU Agri-nutrients': 'D22',
+        'SBU Chemicals': 'E22',
+        'SBU Polymers': 'F22',
+        // Petchem: 'G22',
+        'SBU SHPP': 'H22',
+        'SBU Strategy & Transformation': 'I22',
+        Total: 'J22',
+      },
     });
     const epPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -178,16 +200,19 @@ const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isEPPendingApplication: true,
     });
-    const processedEPPendingApplication = processData(epPendingApplication, {
-      'SBU T&I': 'B23',
-      'SBU Metals': 'C23',
-      'SBU Agri-nutrients': 'D23',
-      'SBU Chemicals': 'E23',
-      'SBU Polymers': 'F23',
-      // Petchem: 'G23',
-      'SBU SHPP': 'H23',
-      'SBU Strategy & Transformation': 'I23',
-      Total: 'J23',
+    const processedEPPendingApplication = processData({
+      data: epPendingApplication,
+      cellMappings: {
+        'SBU T&I': 'B23',
+        'SBU Metals': 'C23',
+        'SBU Agri-nutrients': 'D23',
+        'SBU Chemicals': 'E23',
+        'SBU Polymers': 'F23',
+        // Petchem: 'G23',
+        'SBU SHPP': 'H23',
+        'SBU Strategy & Transformation': 'I23',
+        Total: 'J23',
+      },
     });
     const cnPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -195,16 +220,19 @@ const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isCNPendingApplication: true,
     });
-    const processedCNPendingApplication = processData(cnPendingApplication, {
-      'SBU T&I': 'B24',
-      'SBU Metals': 'C24',
-      'SBU Agri-nutrients': 'D24',
-      'SBU Chemicals': 'E24',
-      'SBU Polymers': 'F24',
-      // Petchem: 'G24',
-      'SBU SHPP': 'H24',
-      'SBU Strategy & Transformation': 'I24',
-      Total: 'J24',
+    const processedCNPendingApplication = processData({
+      data: cnPendingApplication,
+      cellMappings: {
+        'SBU T&I': 'B24',
+        'SBU Metals': 'C24',
+        'SBU Agri-nutrients': 'D24',
+        'SBU Chemicals': 'E24',
+        'SBU Polymers': 'F24',
+        // Petchem: 'G24',
+        'SBU SHPP': 'H24',
+        'SBU Strategy & Transformation': 'I24',
+        Total: 'J24',
+      },
     });
     const otherPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -212,16 +240,19 @@ const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isOtherPendingApplication: true,
     });
-    const processedOtherPendingApplication = processData(otherPendingApplication, {
-      'SBU T&I': 'B25',
-      'SBU Metals': 'C25',
-      'SBU Agri-nutrients': 'D25',
-      'SBU Chemicals': 'E25',
-      'SBU Polymers': 'F25',
-      // Petchem: 'G25',
-      'SBU SHPP': 'H25',
-      'SBU Strategy & Transformation': 'I25',
-      Total: 'J25',
+    const processedOtherPendingApplication = processData({
+      data: otherPendingApplication,
+      cellMappings: {
+        'SBU T&I': 'B25',
+        'SBU Metals': 'C25',
+        'SBU Agri-nutrients': 'D25',
+        'SBU Chemicals': 'E25',
+        'SBU Polymers': 'F25',
+        // Petchem: 'G25',
+        'SBU SHPP': 'H25',
+        'SBU Strategy & Transformation': 'I25',
+        Total: 'J25',
+      },
     });
     const totalPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -229,16 +260,19 @@ const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isTotalPendingApplication: true,
     });
-    const processedTotalPendingApplication = processData(totalPendingApplication, {
-      'SBU T&I': 'B26',
-      'SBU Metals': 'C26',
-      'SBU Agri-nutrients': 'D26',
-      'SBU Chemicals': 'E26',
-      'SBU Polymers': 'F26',
-      // Petchem: 'G26',
-      'SBU SHPP': 'H26',
-      'SBU Strategy & Transformation': 'I26',
-      Total: 'J26',
+    const processedTotalPendingApplication = processData({
+      data: totalPendingApplication,
+      cellMappings: {
+        'SBU T&I': 'B26',
+        'SBU Metals': 'C26',
+        'SBU Agri-nutrients': 'D26',
+        'SBU Chemicals': 'E26',
+        'SBU Polymers': 'F26',
+        // Petchem: 'G26',
+        'SBU SHPP': 'H26',
+        'SBU Strategy & Transformation': 'I26',
+        Total: 'J26',
+      },
     });
     const usIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -246,16 +280,19 @@ const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isUSIssuedApplication: true,
     });
-    const processedUSIssuedApplication = processData(usIssuedApplication, {
-      'SBU T&I': 'B28',
-      'SBU Metals': 'C28',
-      'SBU Agri-nutrients': 'D28',
-      'SBU Chemicals': 'E28',
-      'SBU Polymers': 'F28',
-      // Petchem: 'G28',
-      'SBU SHPP': 'H28',
-      'SBU Strategy & Transformation': 'I28',
-      Total: 'J28',
+    const processedUSIssuedApplication = processData({
+      data: usIssuedApplication,
+      cellMappings: {
+        'SBU T&I': 'B28',
+        'SBU Metals': 'C28',
+        'SBU Agri-nutrients': 'D28',
+        'SBU Chemicals': 'E28',
+        'SBU Polymers': 'F28',
+        // Petchem: 'G28',
+        'SBU SHPP': 'H28',
+        'SBU Strategy & Transformation': 'I28',
+        Total: 'J28',
+      },
     });
     const epIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -263,16 +300,19 @@ const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isEPIssuedApplication: true,
     });
-    const processedEPIssuedApplication = processData(epIssuedApplication, {
-      'SBU T&I': 'B29',
-      'SBU Metals': 'C29',
-      'SBU Agri-nutrients': 'D29',
-      'SBU Chemicals': 'E29',
-      'SBU Polymers': 'F29',
-      // Petchem: 'G29',
-      'SBU SHPP': 'H29',
-      'SBU Strategy & Transformation': 'I29',
-      Total: 'J29',
+    const processedEPIssuedApplication = processData({
+      data: epIssuedApplication,
+      cellMappings: {
+        'SBU T&I': 'B29',
+        'SBU Metals': 'C29',
+        'SBU Agri-nutrients': 'D29',
+        'SBU Chemicals': 'E29',
+        'SBU Polymers': 'F29',
+        // Petchem: 'G29',
+        'SBU SHPP': 'H29',
+        'SBU Strategy & Transformation': 'I29',
+        Total: 'J29',
+      },
     });
     const cnIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -280,16 +320,19 @@ const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isCNIssuedApplication: true,
     });
-    const processedCNIssuedApplication = processData(cnIssuedApplication, {
-      'SBU T&I': 'B30',
-      'SBU Metals': 'C30',
-      'SBU Agri-nutrients': 'D30',
-      'SBU Chemicals': 'E30',
-      'SBU Polymers': 'F30',
-      // Petchem: 'G30',
-      'SBU SHPP': 'H30',
-      'SBU Strategy & Transformation': 'I30',
-      Total: 'J30',
+    const processedCNIssuedApplication = processData({
+      data: cnIssuedApplication,
+      cellMappings: {
+        'SBU T&I': 'B30',
+        'SBU Metals': 'C30',
+        'SBU Agri-nutrients': 'D30',
+        'SBU Chemicals': 'E30',
+        'SBU Polymers': 'F30',
+        // Petchem: 'G30',
+        'SBU SHPP': 'H30',
+        'SBU Strategy & Transformation': 'I30',
+        Total: 'J30',
+      },
     });
     const otherIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -297,16 +340,19 @@ const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isOtherIssuedApplication: true,
     });
-    const processedOtherIssuedApplication = processData(otherIssuedApplication, {
-      'SBU T&I': 'B31',
-      'SBU Metals': 'C31',
-      'SBU Agri-nutrients': 'D31',
-      'SBU Chemicals': 'E31',
-      'SBU Polymers': 'F31',
-      // Petchem: 'G31',
-      'SBU SHPP': 'H31',
-      'SBU Strategy & Transformation': 'I31',
-      Total: 'J31',
+    const processedOtherIssuedApplication = processData({
+      data: otherIssuedApplication,
+      cellMappings: {
+        'SBU T&I': 'B31',
+        'SBU Metals': 'C31',
+        'SBU Agri-nutrients': 'D31',
+        'SBU Chemicals': 'E31',
+        'SBU Polymers': 'F31',
+        // Petchem: 'G31',
+        'SBU SHPP': 'H31',
+        'SBU Strategy & Transformation': 'I31',
+        Total: 'J31',
+      },
     });
     const totalIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -314,16 +360,39 @@ const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isTotalIssuedApplication: true,
     });
-    const processedTotalIssuedApplication = processData(totalIssuedApplication, {
-      'SBU T&I': 'B32',
-      'SBU Metals': 'C32',
-      'SBU Agri-nutrients': 'D32',
-      'SBU Chemicals': 'E32',
-      'SBU Polymers': 'F32',
-      // Petchem: 'G32',
-      'SBU SHPP': 'H32',
-      'SBU Strategy & Transformation': 'I32',
-      Total: 'J32',
+    const processedTotalIssuedApplication = processData({
+      data: totalIssuedApplication,
+      cellMappings: {
+        'SBU T&I': 'B32',
+        'SBU Metals': 'C32',
+        'SBU Agri-nutrients': 'D32',
+        'SBU Chemicals': 'E32',
+        'SBU Polymers': 'F32',
+        // Petchem: 'G32',
+        'SBU SHPP': 'H32',
+        'SBU Strategy & Transformation': 'I32',
+        Total: 'J32',
+      },
+    });
+
+    const totalPortFolio = await getTotalPortfolio({
+      totalAppsPendingData: totalPendingApplication,
+      totalIssuedData: totalIssuedApplication,
+    });
+
+    const processedTotalPortFolio = processData({
+      data: totalPortFolio,
+      cellMappings: {
+        'SBU T&I': 'B34',
+        'SBU Metals': 'C34',
+        'SBU Agri-nutrients': 'D34',
+        'SBU Chemicals': 'E34',
+        'SBU Polymers': 'F34',
+        // Petchem: 'G32',
+        'SBU SHPP': 'H34',
+        'SBU Strategy & Transformation': 'I34',
+        Total: 'J34',
+      },
     });
 
     await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
@@ -348,6 +417,7 @@ const generateMonthlyIpReport = async ({
         ...processedOtherIssuedApplication,
         ...processedTotalIssuedApplication,
         ...processedTotalActiveDisclosureCount,
+        ...processedTotalPortFolio,
         { cellName: 'A3', value: `${currentYear} New Apps Filed`, SBU: '' },
         { cellName: 'A4', value: `% of ${currentYear} Invention Disclosures converted to Filings`, SBU: '' },
         { cellName: 'A5', value: `${currentYear} New Apps Estimate`, SBU: '' },

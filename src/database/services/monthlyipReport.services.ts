@@ -11,7 +11,35 @@ export interface DataItem {
   SBU: string;
   cellName?: string;
 }
-export function processData(data: DataItem[], cellMappings?: Record<string, string>, isCellOnly?: boolean): DataItem[] {
+
+export async function getTotalPortfolio({
+  totalAppsPendingData,
+  totalIssuedData,
+}: {
+  totalAppsPendingData: DataItem[];
+  totalIssuedData: DataItem[];
+}) {
+  const dataMap = new Map<string, number>();
+
+  [...totalAppsPendingData, ...totalIssuedData].forEach(({ SBU, value }) => {
+    const numericValue = Number(value) || 0;
+    dataMap.set(SBU, (dataMap.get(SBU) || 0) + numericValue);
+  });
+
+  return Array.from(dataMap, ([SBU, value]) => ({ SBU, value }));
+}
+
+export function processData({
+  data,
+  cellMappings,
+  isCellOnly,
+  staticTotal = 0,
+}: {
+  data: DataItem[];
+  cellMappings?: Record<string, string>;
+  isCellOnly?: boolean;
+  staticTotal?: number;
+}): DataItem[] {
   // Define cell mappings and mergeable SBUs
 
   const mergeSBUs = ['SBU Polymers', 'SBU Temp Polymers Transfer (from Spec)', 'SBU PNJ Saudi Aramco-SABIC'];
@@ -404,9 +432,9 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       isYearRequired: true,
     });
 
-    const processedNewYearApplicationFiled = processData(newYearApplicationFiled);
-    const processedActiveDisclosureCount = processData(activeDisclosureCount);
-    const processedTotalDisclosureCount = processData(totalDisclosureCount);
+    const processedNewYearApplicationFiled = processData({ data: newYearApplicationFiled });
+    const processedActiveDisclosureCount = processData({ data: activeDisclosureCount });
+    const processedTotalDisclosureCount = processData({ data: totalDisclosureCount });
 
     const result = calculateCombinedPercentage(
       processedNewYearApplicationFiled,
