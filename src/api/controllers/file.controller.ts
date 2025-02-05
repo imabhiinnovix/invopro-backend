@@ -12,10 +12,13 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
 
     if (operation === 'getAttributesFromXlsxOrCsvHeaders') {
       return await getAttributesFromXlsxOrCsvHeaders(req, res, next);
-    }
-
-    if (operation === 'dataSourceVersion') {
+    } else if (operation.toLowerCase() === 'datasourceversion') {
       return await createDataSourceVersion(req, res, next);
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'Operation not found.',
+      });
     }
   } catch (err: any) {
     console.error(err);

@@ -32,11 +32,7 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
       required: true,
       default: 'processing', // Optional: Default value for status
     },
-    mappings: {
-      type: Map, // Mongoose's Map type to store key-value pairs
-      of: String, // The values in the map are strings
-      default: {}, // Optional: Default to an empty map if no mappings are provided
-    },
+    mappings: { type: Schema.Types.Mixed },
     separator: {
       type: Map, // Mongoose's Map type to store key-value pairs
       of: String, // The values in the map are strings

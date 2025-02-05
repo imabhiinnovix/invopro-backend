@@ -182,7 +182,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
   try {
     const { versionName, mappings, separator, dataSourceId, versionValue } = req.body;
     const jsonMapping = JSON.parse(mappings);
-    const jsonSeparator = JSON.parse(separator);
+    const jsonSeparator = separator ? JSON.parse(separator) : {};
 
     const { userId, organizationId, orgCode } = req?.user;
 
@@ -200,6 +200,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
         'dsvRequest',
         `${dataSourceId}_${versionValue}_${versionName}_${fileName}`
       );
+
       await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
       await fsPromises.rename(filePath, newFilePath);
       if (fileExtension && ['xlsx', 'xls'].includes(fileExtension)) {
