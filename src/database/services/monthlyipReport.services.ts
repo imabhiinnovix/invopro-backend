@@ -201,12 +201,12 @@ export async function getCurrentYearNewApplicationFiled({
 
     if (isCurrentYearUSIssued || isCurrentYearINTIssued) {
       matchCondition['rowData.Grant Date'] = yearDateRange;
-      matchCondition['rowData.STATUS'] = {
+      matchCondition['rowData.Status'] = {
         $nin: ['UNDER OPPOSITION', 'UNDEROPPOSITION', 'Under Opposition', 'UnderOpposition'],
       };
       if (isCurrentYearUSIssued) matchCondition['rowData.Country'] = { $in: ['US'] };
       if (isCurrentYearINTIssued) matchCondition['rowData.Country'] = { $nin: ['US'] };
-      matchCondition['rowData.In Force'] = 1; // Add In Force condition for issued applications
+      // matchCondition['rowData.In Force'] = 1; // Add In Force condition for issued applications
     } else if (
       isUSPendingApplication ||
       isEPPendingApplication ||
@@ -426,14 +426,14 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
     const newYearApplicationFiled = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
-      isPercentagePart: true,
+      isPercentagePart: false,
     });
     const activeDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,
-      isActive: true,
-      isDrafted: false,
-      isYearRequired: true,
+      isActive: false,
+      isDrafted: true,
+      isYearRequired: false,
     });
     const totalDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
