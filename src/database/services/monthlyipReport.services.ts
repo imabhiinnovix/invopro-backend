@@ -353,6 +353,7 @@ export async function getDisclosureCount({
           'Filing Requested',
           'RATED TO DRAFT IN HOUSE',
           'Submitted',
+          'Review Rate to Draft',
         ],
       };
     }
@@ -411,7 +412,7 @@ const calculateCombinedPercentage = (
 
     return {
       SBU: total.SBU,
-      value: `${combinedPercentage}%`,
+      value: combinedPercentage,
     };
   });
 };
