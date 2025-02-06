@@ -3,6 +3,7 @@ import { promises as fsPromises } from 'fs';
 import {
   addCellMaping,
   getCurrentYearNewApplicationFiled,
+  getCurrentYearRenewalDue,
   getDisclosureCount,
   getTotalPortfolio,
   getTotalPortfolioPercentage,
@@ -21,15 +22,22 @@ const generateMonthlyIpReport = async ({
   sampleFilePath,
   disclosureDataSourceVersionId,
   portfolioDataSourceVersionId,
+  sabicipDataSourceVersionId,
+  ctclinsabDataSourceVersionId,
+  annuitiesbDataSourceVersionId,
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
   sampleFilePath: string;
   disclosureDataSourceVersionId: string;
   portfolioDataSourceVersionId: string;
+  sabicipDataSourceVersionId: string;
+  ctclinsabDataSourceVersionId: string;
+  annuitiesbDataSourceVersionId: string;
 }) => {
   try {
     const currentYear = reportRequestPayload.versionValue.split('-')[0];
+
     const currentYearApplicationFiledData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -416,6 +424,29 @@ const generateMonthlyIpReport = async ({
       isCellOnly: true,
     });
 
+    const currentYearRenewalDue = await getCurrentYearRenewalDue({
+      portfolioDataSourceVersionId,
+      sabicipDataSourceVersionId,
+      ctclinsabDataSourceVersionId,
+      annuitiesbDataSourceVersionId,
+      currentYear,
+    });
+
+    const processedCurrentYearRenewalDue = processData({
+      data: currentYearRenewalDue,
+      cellMappings: {
+        'SBU T&I': 'B37',
+        'SBU Metals': 'C37',
+        'SBU Agri-nutrients': 'D37',
+        'SBU Chemicals': 'E37',
+        'SBU Polymers': 'F37',
+        // Petchem: 'G32',
+        'SBU SHPP': 'H37',
+        'SBU Strategy & Transformation': 'I37',
+        Total: 'J37',
+      },
+    });
+
     await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
     await fsPromises.copyFile(sampleFilePath, newFilePath);
     await writeDataToExcel(
@@ -440,6 +471,7 @@ const generateMonthlyIpReport = async ({
         ...processedTotalActiveDisclosureCount,
         ...processedTotalPortFolio,
         ...processedTotalPortFolioPercentage,
+        ...processedCurrentYearRenewalDue,
         { cellName: 'A3', value: `${currentYear} New Apps Filed`, SBU: '' },
         { cellName: 'A4', value: `% of ${currentYear} Invention Disclosures converted to Filings`, SBU: '' },
         { cellName: 'A5', value: `${currentYear} New Apps Estimate`, SBU: '' },
@@ -499,6 +531,16 @@ const generateMonthlyIpReport = async ({
           value: `${currentYear} Intl Issued`,
           SBU: '',
         },
+        {
+          cellName: 'A36',
+          value: `${currentYear} Renewals Due`,
+          SBU: '',
+        },
+        {
+          cellName: 'A37',
+          value: `${currentYear} Renewals Due(USD)`,
+          SBU: '',
+        },
       ],
       newFilePath
     );
@@ -519,11 +561,13 @@ export const generateCustomReports = async (req: Request, res: Response, next: N
     }
     // Extract all data source IDs
     const dataSourceIds = customReportDetails.dataSourceIds.map((ds) => ds.dataSourceId);
+    console.log(dataSourceIds);
 
     const dataSourceVersionDetails = await dataSourceVersionServices.getDataSourceVersionList({
       query: { dataSourceId: { $in: dataSourceIds }, versionValue: versionValue, isCurrent: true },
     });
 
+    console.log(dataSourceVersionDetails);
     if (!dataSourceVersionDetails.data || dataSourceVersionDetails.data.length != dataSourceIds.length) {
       throw new Error(`Not all required data is available for this report with version value ${versionValue}.`);
     }
@@ -551,12 +595,21 @@ export const generateCustomReports = async (req: Request, res: Response, next: N
 
       const portfolioDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'portfolio');
 
+      const sabicipDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'sabicip');
+
+      const ctclinsabDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'ctclinsab');
+
+      const annuitiesbDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'annuities');
+
       await generateMonthlyIpReport({
         reportRequestPayload,
         requestedReportId: requestedReport._id as string,
         sampleFilePath: customReportDetails.sampleFilePath,
         disclosureDataSourceVersionId: versionMap[disclosureDataSource?.dataSourceId!],
         portfolioDataSourceVersionId: versionMap[portfolioDataSource?.dataSourceId!],
+        sabicipDataSourceVersionId: versionMap[sabicipDataSource?.dataSourceId!],
+        ctclinsabDataSourceVersionId: versionMap[ctclinsabDataSource?.dataSourceId!],
+        annuitiesbDataSourceVersionId: versionMap[annuitiesbDataSource?.dataSourceId!],
       });
 
       res.status(201).json({

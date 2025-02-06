@@ -37,6 +37,9 @@ export async function seedDatabase() {
       dataSourceIds: [
         { code: 'portfolio', dataSourceId: '67923590d31b8f4ea211147b' },
         { code: 'disclosure', dataSourceId: '6792332a753ceb4945e5b3b8' },
+        { code: 'sabicip', dataSourceId: '67a3226221f5f8dd752ce644' },
+        { code: 'ctclinsab', dataSourceId: '67a33c7f22cb8a927a85e427' },
+        { code: 'annuities', dataSourceId: '67a3429322cb8a927a85e4b9' },
       ],
       organizationId: payload.organizationId,
       sampleFilePath: path.join('reports', 'sample', 'sample-monthly-ip-report.xlsx'),

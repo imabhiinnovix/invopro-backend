@@ -3,6 +3,9 @@ import createDefaultDataSourceVersionModel from '../models/defaultDataSourceVers
 
 const DataSourceVersionValuePortfolio = createDefaultDataSourceVersionModel('data_reportivix_portfolios');
 const DataSourceVersionValueDisclosure = createDefaultDataSourceVersionModel('data_reportivix_disclosures');
+const DataSourceVersionValueAnnuities = createDefaultDataSourceVersionModel('data_reportivix_annuities');
+const DataSourceVersionValueCtclinsabs = createDefaultDataSourceVersionModel('data_reportivix_ctclinsabs');
+const DataSourceVersionValueSabicips = createDefaultDataSourceVersionModel('data_reportivix_sabicips');
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -369,8 +372,6 @@ export async function getDisclosureCount({
       {
         $match: matchCondition,
       },
-
-      // Group by rowData.Case_Reference1 and count distinct cases
       {
         $group: {
           _id: '$rowData.DisclosureNumber',
@@ -455,5 +456,278 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
     return result;
   } catch (error) {
     throw error;
+  }
+}
+
+export async function getCurrentYearRenewalDue({
+  portfolioDataSourceVersionId,
+  sabicipDataSourceVersionId,
+  ctclinsabDataSourceVersionId,
+  annuitiesbDataSourceVersionId,
+  currentYear,
+}: {
+  portfolioDataSourceVersionId: string;
+  sabicipDataSourceVersionId: string;
+  ctclinsabDataSourceVersionId: string;
+  annuitiesbDataSourceVersionId: string;
+  currentYear: string;
+}) {
+  try {
+    const yearDateRange = {
+      $gte: `${currentYear}-01-01T00:00:00.000Z`,
+      $lte: `${currentYear}-12-31T00:00:00.000Z`,
+    };
+
+    const sabicipData = await DataSourceVersionValueSabicips.aggregate([
+      {
+        $match: {
+          dataSourceVersionId: new ObjectId(sabicipDataSourceVersionId),
+          'rowData.Current renewal date': yearDateRange, // Ensure yearDateRange is properly defined
+        },
+      },
+      {
+        $project: {
+          _id: 1, // Include the `_id` field
+          dataSourceVersionId: 1,
+          rowData: 1,
+        },
+      },
+    ]);
+
+    const portfolioData = await DataSourceVersionValuePortfolio.aggregate([
+      {
+        $match: {
+          dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
+          'rowData.In Force': 1,
+        },
+      },
+      {
+        $project: {
+          _id: 1, // Include the `_id` field
+          dataSourceVersionId: 1,
+          rowData: 1,
+        },
+      },
+    ]);
+
+    const mergedSabicIpPortFolioData = sabicipData.reduce((result, sabicItem) => {
+      const matchingPortfolioItem = portfolioData.find(
+        (portfolioItem) => portfolioItem.rowData.Case_Reference1 === sabicItem.rowData["Client's reference"]
+      );
+
+      if (matchingPortfolioItem) {
+        result.push({
+          ...sabicItem.rowData,
+          ...matchingPortfolioItem.rowData,
+        });
+      }
+
+      return result;
+    }, []);
+
+    const uniqueSabicIpPortFolioData = mergedSabicIpPortFolioData.reduce((acc, current) => {
+      const duplicate = acc.find((item) => item.Case_Reference1 === current.Case_Reference1);
+      if (!duplicate) {
+        acc.push(current);
+      }
+      return acc;
+    }, []);
+
+    const groupedSabicIpPortFolioData: any = uniqueSabicIpPortFolioData.reduce((acc, item) => {
+      const sbu = item.SBU;
+      if (!acc[sbu]) {
+        acc[sbu] = {
+          total: 0,
+        };
+      }
+
+      acc[sbu].total += item.Total || 0;
+
+      return acc;
+    }, {});
+
+    const groupedSabicIpPortFolioDataResult = Object.entries(groupedSabicIpPortFolioData).map(([SBU, data]) => ({
+      SBU,
+      value: (data as Record<string, any>).total,
+    }));
+
+    const ctclinsabData = await DataSourceVersionValueCtclinsabs.aggregate([
+      {
+        $match: {
+          dataSourceVersionId: new ObjectId(ctclinsabDataSourceVersionId),
+          'rowData.Current renewal date': yearDateRange, // Ensure yearDateRange is properly defined
+        },
+      },
+      {
+        $project: {
+          _id: 1, // Include the `_id` field
+          dataSourceVersionId: 1,
+          rowData: 1,
+        },
+      },
+    ]);
+
+    const mergedCtclinSabPortFolioData = ctclinsabData?.reduce((result, ctclinsabItem) => {
+      const matchingPortfolioItem = portfolioData.find(
+        (portfolioItem) => portfolioItem.rowData['ProcedureAgentRef'] === ctclinsabItem.rowData['File number']
+      );
+
+      if (matchingPortfolioItem) {
+        result.push({
+          ...ctclinsabItem.rowData,
+          ...matchingPortfolioItem.rowData,
+        });
+      }
+      return result;
+    }, []);
+
+    const uniqueCtclinSabPortFolioData = mergedCtclinSabPortFolioData?.reduce((acc, current) => {
+      const duplicate = acc.find((item) => item.Case_Reference1 === current.Case_Reference1);
+      if (!duplicate) {
+        acc.push(current);
+      }
+      return acc;
+    }, []);
+
+    const groupedCtclPortFolioData: any = uniqueCtclinSabPortFolioData?.reduce((acc, item) => {
+      const sbu = item.SBU;
+      if (!acc[sbu]) {
+        acc[sbu] = {
+          total: 0,
+        };
+      }
+
+      acc[sbu].total += item.Total || 0;
+
+      return acc;
+    }, {});
+
+    const groupedCtclPortFolioDataResult = Object.entries(groupedCtclPortFolioData)?.map(([SBU, data]) => ({
+      SBU,
+      value: (data as Record<string, any>).total,
+    }));
+
+    const annuitiesData = await DataSourceVersionValueAnnuities.aggregate([
+      {
+        $match: {
+          dataSourceVersionId: new ObjectId(annuitiesbDataSourceVersionId),
+          'rowData.Due Date': yearDateRange, // Ensure yearDateRange is properly defined
+        },
+      },
+      {
+        $project: {
+          _id: 1, // Include the `_id` field
+          dataSourceVersionId: 1,
+          rowData: 1,
+        },
+      },
+    ]);
+
+    const mergedAnnuitiesData = annuitiesData?.reduce((result, annuitiesItem) => {
+      const matchingPortfolioItem = portfolioData.find(
+        (portfolioItem) => portfolioItem.rowData['Case_Reference1'] === annuitiesItem.rowData['Other Reference No.']
+      );
+
+      if (matchingPortfolioItem) {
+        result.push({
+          ...annuitiesItem.rowData,
+          ...matchingPortfolioItem.rowData,
+        });
+      }
+      return result;
+    }, []);
+
+    const uniqueAnnuitiesData = mergedAnnuitiesData?.reduce((acc, current) => {
+      const duplicate = acc.find((item) => item.Case_Reference1 === current.Case_Reference1);
+      if (!duplicate) {
+        acc.push(current);
+      }
+      return acc;
+    }, []);
+
+    const groupedAnnuitiesData: any = uniqueAnnuitiesData?.reduce((acc, item) => {
+      const sbu = item.SBU;
+      if (!acc[sbu]) {
+        acc[sbu] = {
+          Amount: 0,
+        };
+      }
+
+      acc[sbu].Amount += item.Amount || 0;
+
+      return acc;
+    }, {});
+
+    const groupedAnnuitiesDataResult = Object.entries(groupedAnnuitiesData)?.map(([SBU, data]) => ({
+      SBU,
+      value: (data as Record<string, any>).Amount,
+    }));
+
+    const combinedCurrentYearRenewalDueMap = new Map<string, number>();
+
+    [groupedSabicIpPortFolioDataResult, groupedCtclPortFolioDataResult, groupedAnnuitiesDataResult].forEach(
+      (dataset) => {
+        dataset.forEach(({ SBU, value }) => {
+          combinedCurrentYearRenewalDueMap.set(SBU, (combinedCurrentYearRenewalDueMap.get(SBU) || 0) + value);
+        });
+      }
+    );
+
+    const finalCurrentYearRenewalDueResult = Array.from(combinedCurrentYearRenewalDueMap, ([SBU, value]) => ({
+      SBU,
+      value,
+    }));
+    return finalCurrentYearRenewalDueResult;
+  } catch (e) {
+    console.log('Error in getCurrentYearRenewalDue function');
+    throw e;
+  }
+}
+
+export async function getReductionsAndCostSavings({
+  portfolioDataSourceVersionId,
+  sabicipDataSourceVersionId,
+  ctclinsabDataSourceVersionId,
+  annuitiesbDataSourceVersionId,
+  currentYear,
+}: {
+  portfolioDataSourceVersionId: string;
+  sabicipDataSourceVersionId: string;
+  ctclinsabDataSourceVersionId: string;
+  annuitiesbDataSourceVersionId: string;
+  currentYear: string;
+}) {
+  try {
+    const yearDateRange = {
+      $gte: `${currentYear}-01-01T00:00:00.000Z`,
+      $lte: `${currentYear}-12-31T00:00:00.000Z`,
+    };
+
+    const currentStatus = ['Abandoned', 'Withdrawn', 'Inactive'];
+    const dropOrReductionMatch = {
+      dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
+      'rowData.Status Date': yearDateRange,
+      $or: [{ 'rowData.Grant Date': { $ne: null } }, { 'rowData.Grant No.': { $ne: null } }],
+      'rowData.Case_Reference1': {
+        $not: { $regex: 'RO', $options: 'i' },
+      },
+    };
+
+    const annuityDrop = await DataSourceVersionValuePortfolio.aggregate([
+      {
+        $match: {
+          ...dropOrReductionMatch,
+        },
+      },
+      {
+        $project: {
+          _id: 1, // Include the `_id` field
+          dataSourceVersionId: 1,
+          rowData: 1,
+        },
+      },
+    ]);
+  } catch (e) {
+    throw e;
   }
 }
