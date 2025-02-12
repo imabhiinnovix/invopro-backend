@@ -624,7 +624,7 @@ export async function getCurrentYearRenewalDue({
         $match: {
           dataSourceVersionId: new ObjectId(annuitiesbDataSourceVersionId),
           'rowData.Due Date': yearDateRange,
-          // 'rowData.Other Reference No.': { $exists: true },
+          // 'rowData.Other Reference No': { $exists: true },
         },
       },
       {
@@ -638,7 +638,7 @@ export async function getCurrentYearRenewalDue({
 
     const mergedAnnuitiesData = annuitiesData?.reduce((result, annuitiesItem) => {
       const matchingPortfolioItem = portfolioData.find(
-        (portfolioItem) => portfolioItem.rowData['Case_Reference1'] === annuitiesItem.rowData['Other Reference No.']
+        (portfolioItem) => portfolioItem.rowData['Case_Reference1'] === annuitiesItem.rowData['Other Reference No']
       );
 
       if (matchingPortfolioItem) {
@@ -697,6 +697,25 @@ export async function getCurrentYearRenewalDue({
   }
 }
 
+function filterCombineData(data) {
+  const invalidTypes = ['PCT', 'EPP', 'ORD', 'EPT', 'NP', 'PCD', 'DIV', 'CNT', 'EAT', 'ETD', 'CIP', 'CON'];
+  let result: any[] = [];
+
+  for (const key in data) {
+    if (data.hasOwnProperty(key)) {
+      const isInvalid = data[key].some((item) => {
+        const includedItem = invalidTypes.includes(item['Case Type']);
+        const match = item['Case_Reference1'].match(/\[(\d+)\]/); // Check for subcase in square brackets
+        return includedItem;
+      });
+      if (!isInvalid) {
+        result = [...result, ...data[key]];
+      }
+    }
+  }
+
+  return result;
+}
 export async function getReductionsAndCostSavings({
   portfolioDataSourceVersionId,
   sabicipDataSourceVersionId,
@@ -726,7 +745,7 @@ export async function getReductionsAndCostSavings({
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
           'rowData.Status Date': yearDateRange,
           'rowData.Status': { $in: currentStatus },
-          'rowData.Case_Reference1': { $not: { $regex: 'RO', $options: 'i' } },
+          'rowData.Case_Reference1': { $not: { $regex: 'CNRO', $options: 'i' } },
 
           $and: [
             {
@@ -735,7 +754,7 @@ export async function getReductionsAndCostSavings({
                 { $and: [{ 'rowData.Country': 'WO' }, { 'rowData.Case Type': { $ne: 'PRI' } }] },
               ],
             },
-            { $or: [{ 'rowData.Grant Date': { $ne: null } }, { 'rowData.Grant No.': { $ne: null } }] },
+            { $or: [{ 'rowData.Grant Date': { $ne: null } }, { 'rowData.Grant No': { $ne: null } }] },
           ],
         },
       },
@@ -757,16 +776,16 @@ export async function getReductionsAndCostSavings({
     ];
 
     const annuityDrop = await DataSourceVersionValuePortfolio.aggregate(annuityDropAggregate);
-    // const annuityDropCaseReference = annuityDrop.map((data) => {
-    //   return data.rowData.Case_Reference1;
-    // });
+    const annuityDropCaseReference = annuityDrop.map((data) => {
+      return data.rowData.Case_Reference1;
+    });
 
-    const annuityDropCaseReference = annuityDrop
-      .map((c) => c.rowData.Case_Reference1)
-      .filter((ref) => {
-        const match = ref.match(/\[(\d+)\]/); // Check for subcase in square brackets
-        return match && parseInt(match[1], 10) >= 2;
-      });
+    // const annuityDropCaseReference = annuityDrop
+    //   .map((c) => c.rowData.Case_Reference1)
+    //   .filter((ref) => {
+    // const match = ref.match(/\[(\d+)\]/); // Check for subcase in square brackets
+    // return match && parseInt(match[1], 10) >= 2;
+    //   });
 
     const annuityDropCount = annuityDrop.reduce((acc, item) => {
       const sbu = item.rowData['SBU'];
@@ -781,29 +800,37 @@ export async function getReductionsAndCostSavings({
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
           'rowData.Status Date': yearDateRange,
           'rowData.Status': { $in: currentStatus },
-          'rowData.Case_Reference1': {
-            $not: { $regex: 'RO', $options: 'i' },
-            $nin: annuityDropCaseReference,
-          },
-          $and: [
-            {
-              $or: [
-                { 'rowData.Country': { $ne: 'WO' } },
-                { $and: [{ 'rowData.Country': 'WO' }, { 'rowData.Case Type': { $ne: 'PRI' } }] },
-              ],
-            },
-            {
-              $and: [
-                { 'rowData.Publication Date': { $eq: null } },
-                { $and: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No.': { $eq: null } }] },
-              ],
-            },
+          // 'rowData.Case_Reference1': {
+          //   $not: { $regex: 'RO', $options: 'i' },
+          //   $nin: annuityDropCaseReference,
+          // },
+
+          // $and: [
+          //   {
+          //     $or: [
+          //       {
+          //         $and: [{ 'rowData.Publication Date': { $eq: null } }, { 'rowData.Publication No': { $eq: null } }],
+          //       },
+          //       {
+          //         $and: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }],
+          //       },
+          //     ],
+          //   },
+          // ],
+          'rowData.Publication Date': { $eq: null },
+          'rowData.Grant Date': { $eq: null },
+          'rowData.Grant No': { $eq: null },
+          'rowData.Publication No': { $eq: null },
+          $or: [
+            { 'rowData.Country': { $ne: 'WO' } },
+            { $and: [{ 'rowData.Country': 'WO' }, { 'rowData.Case Type': { $ne: 'PRI' } }] },
           ],
 
-          'rowData.Case Type': {
-            $nin: ['PCT', 'EPP', 'ORD', 'EPT', 'NP', 'PCD', 'DIV', 'CNT', 'EAT', 'ETD', 'CIP', 'CON'],
-          },
-          'rowData.IsFirstFiling': 1,
+          // 'rowData.Case Type': {
+          //   $nin: ['PCT', 'EPP', 'ORD', 'EPT', 'NP', 'PCD', 'DIV', 'CNT', 'EAT', 'ETD', 'CIP', 'CON'],
+          // },
+          // 'rowData.IsFirstFiling': 1,
+          // 'rowData.SBU': 'SBU Agri-nutrients',
         },
       },
       {
@@ -817,42 +844,74 @@ export async function getReductionsAndCostSavings({
     ];
 
     const priorityDropUnfilteredWithDate = await DataSourceVersionValuePortfolio.aggregate(priorityDropAggregate);
-    const priorityDrop = priorityDropUnfilteredWithDate.filter((item) => {
-      const statusDate = DateTime.fromISO(item.rowData['Status Date']);
-      const filingDate = DateTime.fromISO(item.rowData['Filing Date']);
+    // return priorityDropUnfilteredWithDate;
+    console.log('priorityDropUnfilteredWithDate', priorityDropUnfilteredWithDate.length);
 
+    const groupedPriorityDrop = {};
+
+    for (let i = 0; i < priorityDropUnfilteredWithDate.length; i++) {
+      const rowData = priorityDropUnfilteredWithDate[i].rowData;
+
+      if (groupedPriorityDrop[rowData['CaseNumber']]) {
+        groupedPriorityDrop[rowData['CaseNumber']].push(rowData);
+      } else {
+        groupedPriorityDrop[rowData['CaseNumber']] = [rowData];
+      }
+    }
+
+    // return groupedPriorityDrop;
+
+    // return groupedPriorityDrop;
+    const groupedPriorityDropFiltered = filterCombineData(groupedPriorityDrop);
+
+    // return groupedPriorityDropFiltered.length;
+
+    const priorityDrop = groupedPriorityDropFiltered.filter((item) => {
+      const statusDate = DateTime.fromISO(item['Status Date']);
+      const filingDate = DateTime.fromISO(item['Filing Date']);
+      // const caseReference = item.rowData['Case_Reference1'];
+      // const match = caseReference.match(/\[(\d+)\]/);
+      // return match && parseInt(match[1], 10) >= 2;
       // Calculate the difference in months
       const diffInMonths = statusDate.diff(filingDate, 'months').months;
 
-      return diffInMonths > 24;
+      return (
+        diffInMonths <= 24
+        // !item['Publication Date'] &&
+        // !item['Publication No'] &&
+        // !item['Grant Date'] &&
+        // !item['Grant No']
+      );
     });
 
+    // return priorityDrop;
     // const priorityDropCaseReference = priorityDrop.map((data) => {
     //   return data.rowData.Case_Reference1;
     // });
-    const priorityDropCaseReference = priorityDrop
-      .map((c) => c.rowData.Case_Reference1)
-      .filter((ref) => {
-        const match = ref.match(/\[(\d+)\]/); // Check for subcase in square brackets
-        return match && parseInt(match[1], 10) >= 2;
-      });
+    // const priorityDropCaseReference = priorityDrop
+    //   .map((c) => c.rowData.Case_Reference1)
+    //   .filter((ref) => {
+    //     const match = ref.match(/\[(\d+)\]/); // Check for subcase in square brackets
+    //     return match && parseInt(match[1], 10) >= 2;
+    //   });
     const priorityDropCount = priorityDrop.reduce((acc, item) => {
-      const sbu = item.rowData['SBU'];
+      const sbu = item['SBU'];
       acc[sbu] = (acc[sbu] || 0) + 1;
       return acc;
     }, {});
     const priorityDropCountResult = Object.entries(priorityDropCount).map(([SBU, value]) => ({ SBU, value }));
 
+    // return priorityDropCountResult;
     const pctDropAggregate: any[] = [
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
           'rowData.Status Date': yearDateRange,
           'rowData.Status': { $in: currentStatus },
-          'rowData.Case_Reference1': {
-            $not: { $regex: 'RO', $options: 'i' },
-            $nin: [...annuityDropCaseReference, ...priorityDropCaseReference],
-          },
+          // 'rowData.Case_Reference1': {
+          //   $not: { $regex: 'RO', $options: 'i' },
+          //   // $nin: [...annuityDropCaseReference, ...priorityDropCaseReference],
+          // },
           $and: [{ 'rowData.Country': 'WO' }, { 'rowData.Case Type': { $ne: 'PRI' } }],
           'rowData.Case Type': {
             $nin: ['PCT', 'EPP', 'ORD', 'EPT', 'NP', 'PCD', 'DIV', 'CNT', 'EAT', 'ETD', 'CIP', 'CON'],
@@ -871,23 +930,40 @@ export async function getReductionsAndCostSavings({
     ];
 
     const pctDrop = await DataSourceVersionValuePortfolio.aggregate(pctDropAggregate);
+
+    // return pctDrop;
     // const pctDropCaseReference = pctDrop.map((data) => {
     //   return data.rowData.Case_Reference1;
     // });
+    const groupedPctDrop = {};
+    for (let i = 0; i < pctDrop.length; i++) {
+      const rowData = pctDrop[i].rowData;
 
+      if (groupedPctDrop[rowData['CaseNumber']]) {
+        groupedPctDrop[rowData['CaseNumber']].push(rowData);
+      } else {
+        groupedPctDrop[rowData['CaseNumber']] = [rowData];
+      }
+    }
+
+    // return groupedPriorityDrop;
+
+    // return groupedPriorityDrop;
+    const groupedPctDropFiltered = filterCombineData(groupedPctDrop);
+    // return groupedPctDropFiltered;
     const pctDropCaseReference = pctDrop
       .map((c) => c.rowData.Case_Reference1)
       .filter((ref) => {
         const match = ref.match(/\[(\d+)\]/); // Check for subcase in square brackets
         return match && parseInt(match[1], 10) >= 2;
       });
-    const pctDropCount = pctDrop.reduce((acc, item) => {
-      const sbu = item.rowData['SBU'];
+    const pctDropCount = groupedPctDropFiltered.reduce((acc, item) => {
+      const sbu = item['SBU'];
       acc[sbu] = (acc[sbu] || 0) + 1;
       return acc;
     }, {});
     const pctDropCountResult = Object.entries(pctDropCount).map(([SBU, value]) => ({ SBU, value }));
-
+    // return pctDropCountResult;
     // const prosecutionDropAggregate: any[] = [
     //   {
     //     $match: {
@@ -895,7 +971,7 @@ export async function getReductionsAndCostSavings({
     //       $or: [
     //         { 'rowData.Grant Date': { $eq: null } },
     //         {
-    //           'rowData.Grant No.': { $eq: null },
+    //           'rowData.Grant No': { $eq: null },
     //         },
     //       ],
 
@@ -904,9 +980,9 @@ export async function getReductionsAndCostSavings({
     //         { $and: [{ 'rowData.IsFirstFiling': 0 }, { 'rowData.Case Type': 'ORD' }] },
     //       ],
     //       $or: [
-    //         {
-    //           'rowData.Case Type': 'CON',
-    //         },
+    // {
+    //   'rowData.Case Type': 'CON',
+    // },
     //         {
     //           $and: [{ 'rowData.IsFirstFiling': 0 }, { 'rowData.Case Type': 'ORD' }],
     //         },
@@ -943,55 +1019,92 @@ export async function getReductionsAndCostSavings({
           'rowData.Status': { $in: currentStatus },
           'rowData.Case_Reference1': {
             $not: { $regex: 'RO', $options: 'i' },
-            $nin: [...annuityDropCaseReference, ...priorityDropCaseReference, ...pctDropCaseReference],
+            // $nin: [...annuityDropCaseReference, ...priorityDropCaseReference, ...pctDropCaseReference],
           },
-          $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No.': { $eq: null } }],
-          $and: [
+
+          $or: [
+            // {
+            //   $and: [
+            //     { $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }] },
+            //     { 'rowData.IsFirstFiling': 1 },
+            //     { 'rowData.Publication Date': { $ne: null } },
+            //     { 'rowData.Publication No': { $ne: null } },
+            //     {
+            //       $or: [
+            //         {
+            //           $and: [
+            //             { 'rowData.Case_Reference1': { $regex: 'WO-PCT', $options: 'i' } },
+            //             { 'rowData.In Force': 0 },
+            //           ],
+            //         },
+            //         { 'rowData.Case_Reference1': { $not: { $regex: 'WO-PCT', $options: 'i' } } },
+            //       ],
+            //     },
+            //   ],
+            // },
+            // {
+            //   $and: [
+            //     { $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }] },
+            //     { 'rowData.Case Type': 'PCT' },
+            //     { 'rowData.Country': { $ne: 'WO' } },
+            //   ],
+            // },
             {
-              $or: [
-                { 'rowData.Country': { $ne: 'WO' } },
-                { $and: [{ 'rowData.Country': 'WO' }, { 'rowData.Case Type': { $ne: 'PRI' } }] },
-              ],
-            },
-            {
-              $or: [
+              $and: [
+                { $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }] },
                 {
-                  $and: [
-                    { 'rowData.IsFirstFiling': 1 },
-                    { 'rowData.Publication Date': { $ne: null } },
-                    {
-                      $or: [
-                        {
-                          $and: [
-                            { 'rowData.Case_Reference1': { $regex: 'WO-PCT', $options: 'i' } },
-                            { 'rowData.In Force': 0 },
-                          ],
-                        },
-                        { 'rowData.Case_Reference1': { $not: { $regex: 'WO-PCT', $options: 'i' } } },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  $and: [{ 'rowData.IsFirstFiling': 0 }, { 'rowData.Case Type': 'ORD' }],
-                },
-              ],
-            },
-            {
-              $or: [
-                { 'rowData.Case Type': 'CON' },
-                {
-                  $and: [{ 'rowData.IsFirstFiling': 0 }, { 'rowData.Case Type': 'ORD' }],
-                },
-                {
-                  $and: [
-                    { 'rowData.Case_Reference1': { $regex: 'PCT', $options: 'i' } },
-                    { 'rowData.Country': { $ne: 'WO' } },
-                  ],
+                  'rowData.Case Type': 'CON',
                 },
               ],
             },
           ],
+
+          // $and: [
+          //   {
+          //     $or: [
+          //       { 'rowData.Country': { $ne: 'WO' } },
+          //       { $and: [{ 'rowData.Country': 'WO' }, { 'rowData.Case Type': { $ne: 'PRI' } }] },
+          //     ],
+          //   },
+          //   {
+          //     $or: [
+          //       {
+          //         $and: [
+          //           { 'rowData.IsFirstFiling': 1 },
+          //           { 'rowData.Publication Date': { $ne: null } },
+          //           {
+          //             $or: [
+          //               {
+          //                 $and: [
+          //                   { 'rowData.Case_Reference1': { $regex: 'WO-PCT', $options: 'i' } },
+          //                   { 'rowData.In Force': 0 },
+          //                 ],
+          //               },
+          //               { 'rowData.Case_Reference1': { $not: { $regex: 'WO-PCT', $options: 'i' } } },
+          //             ],
+          //           },
+          //         ],
+          //       },
+          //       {
+          //         $and: [{ 'rowData.IsFirstFiling': 0 }, { 'rowData.Case Type': 'ORD' }],
+          //       },
+          //     ],
+          //   },
+          //   {
+          //     $or: [
+          //       { 'rowData.Case Type': 'CON' },
+          //       {
+          //         $and: [{ 'rowData.IsFirstFiling': 0 }, { 'rowData.Case Type': 'ORD' }],
+          //       },
+          //       {
+          //         $and: [
+          //           { 'rowData.Case_Reference1': { $regex: 'PCT', $options: 'i' } },
+          //           { 'rowData.Country': { $ne: 'WO' } },
+          //         ],
+          //       },
+          //     ],
+          //   },
+          // ],
         },
       },
       {
@@ -1011,14 +1124,16 @@ export async function getReductionsAndCostSavings({
     ];
 
     const prosecutionDrop = await DataSourceVersionValuePortfolio.aggregate(prosecutionDropAggregate);
+    return { prosecutionDrop, l: prosecutionDrop.length };
     return {
       // annuityDrop: annuityDrop.map((d) => d.rowData),
-      // annuityDropCountResult,
+      annuityDropCountResult,
       // priorityDrop: priorityDrop.map((d) => d.rowData),
-      // priorityDropCountResult,
+      priorityDropCountResult,
       // pctDrop: pctDrop.map((d) => d.rowData),
-      // pctDropCountResult,
-      prosecutionDrop: prosecutionDrop.map((d) => d.rowData),
+      pctDropCountResult,
+      prosecutionDrop,
+      // prosecutionDrop: prosecutionDrop.map((d) => d.rowData),
     };
   } catch (e) {
     console.log('Error in getReductionsAndCostSavings', e);
