@@ -2,19 +2,22 @@ import { Request, Response, NextFunction } from 'express';
 import { promises as fsPromises } from 'fs';
 import {
   addCellMaping,
+  getAppsFiledBasedOnStc,
   getCurrentYearNewApplicationFiled,
   getCurrentYearRenewalDue,
   getDisclosureCount,
+  getProjectBasedOnStcs,
   getTotalPortfolio,
   getTotalPortfolioPercentage,
   percentageOfCurrentYearInventionDisclosureConvertedToFilings,
   processData,
+  processSTCData,
 } from '../../database/services/monthlyipReport.services';
 import * as customReportServices from '../../database/services/customReport.services';
 import * as dataSourceVersionServices from '../../database/services/dataSourceVersion.services';
 import * as reportRequestService from '../../database/services/reportRequest.services';
 import path from 'path';
-import { writeDataToExcel } from '../../utils/excel.utils';
+import { createExcelSheetFile, writeDataToExcel } from '../../utils/excel.utils';
 
 const generateMonthlyIpReport = async ({
   reportRequestPayload,
@@ -545,8 +548,147 @@ const generateMonthlyIpReport = async ({
       newFilePath
     );
 
+    //stc tab
+    //first table
+    const newProjectOpenedBasedOnStc = await getProjectBasedOnStcs({
+      disclosureDataSourceVersionId,
+      currentYear,
+      isActive: false,
+      isDrafted: false,
+      isYearRequired: true,
+    });
+
+    const processedNewProjectOpenedBasedOnStc = processSTCData(newProjectOpenedBasedOnStc);
+
+    const totalOpenProjectsBasedOnStc = await getProjectBasedOnStcs({
+      disclosureDataSourceVersionId,
+      currentYear,
+      isActive: true,
+      isDrafted: false,
+      isYearRequired: false,
+    });
+
+    const processedTotalOpenProjectsBasedOnStc = processSTCData(totalOpenProjectsBasedOnStc);
+
+    const newAppsFiledBasedOnStc = await getAppsFiledBasedOnStc({
+      portfolioDataSourceVersionId,
+      currentYear,
+    });
+
+    const processedNewAppsFiledBasedOnStc = processSTCData(newAppsFiledBasedOnStc);
+
+    const newProjectOpenedBasedOnStcFinal = processedNewProjectOpenedBasedOnStc.map((data) => {
+      return {
+        STC: data.STC,
+        [`New Projects opened in ${currentYear}`]: data.value,
+      };
+    });
+    const totalOpenProjectBasedOnStcFinal = processedTotalOpenProjectsBasedOnStc.map((data) => {
+      return {
+        STC: data.STC,
+        [`Total Open Projects`]: data.value,
+      };
+    });
+
+    const newApplicationFiledDataBasedOnStcFinal = processedNewAppsFiledBasedOnStc.map((data) => {
+      return {
+        STC: data.STC,
+        [`${currentYear} Filed`]: data.value,
+      };
+    });
+
+    const combinedSTCData: any[] = [];
+
+    const allSTC = new Set([
+      ...newProjectOpenedBasedOnStcFinal.map((data) => data.STC),
+      ...totalOpenProjectBasedOnStcFinal.map((data) => data.STC),
+      ...newApplicationFiledDataBasedOnStcFinal.map((data) => data.STC),
+    ]);
+
+    // return allSTC;
+    let allSTCArray = Array.from(allSTC);
+
+    if (allSTCArray.includes('Total')) {
+      allSTCArray = allSTCArray.filter((item) => item !== 'Total'); // Remove "total"
+      allSTCArray.push('Total'); // Add "total" at the end
+    }
+
+    allSTCArray.forEach((stc) => {
+      const newProject = newProjectOpenedBasedOnStcFinal.find((item) => item.STC === stc);
+      const totalProject = totalOpenProjectBasedOnStcFinal.find((item) => item.STC === stc);
+      const applicationFiled = newApplicationFiledDataBasedOnStcFinal.find((data) => data.STC === stc);
+
+      // Construct the final combined object for this SBU
+      const result = {
+        STC: stc,
+        [`New Projects opened in ${currentYear}`]: newProject ? newProject[`New Projects opened in ${currentYear}`] : 0,
+        [`Total Open Projects`]: totalProject ? totalProject[`Total Open Projects`] : 0,
+        [`${currentYear} Filed`]: applicationFiled ? applicationFiled[`${currentYear} Filed`] : 0,
+      };
+
+      // Add the result to the combinedData array
+      combinedSTCData.push(result);
+    });
+
+    await createExcelSheetFile(combinedSTCData, newFilePath, 'STC');
+    //second table
+    const newProjectOpened = processedOpenApplicationDisclosureCount.map((data) => {
+      return {
+        SBU: data.SBU,
+        [`New Projects opened in ${currentYear}`]: data.value,
+      };
+    });
+    const totalOpenProject = processedTotalActiveDisclosureCount.map((data) => {
+      return {
+        SBU: data.SBU,
+        [`Total Open Projects`]: data.value,
+      };
+    });
+
+    const newApplicationFiledData = processedCurrentYearApplicationFiledData.map((data) => {
+      return {
+        SBU: data.SBU,
+        [`${currentYear} Filed`]: data.value,
+      };
+    });
+
+    const combinedData: any[] = [];
+
+    const allSBUs = new Set([
+      ...newProjectOpened.map((data) => data.SBU),
+      ...totalOpenProject.map((data) => data.SBU),
+      ...newApplicationFiledData.map((data) => data.SBU),
+    ]);
+
+    let allSBUsArray = Array.from(allSBUs);
+    if (allSBUsArray.includes('Total')) {
+      allSBUsArray = allSBUsArray.filter((item) => item !== 'Total'); // Remove "total"
+      allSBUsArray.push('Total'); // Add "total" at the end
+    }
+
+    allSBUsArray.forEach((sbu) => {
+      // Find matching data for each SBU
+
+      const newProject = newProjectOpened.find((item) => item.SBU === sbu);
+      const totalProject = totalOpenProject.find((item) => item.SBU === sbu);
+      const applicationFiled = newApplicationFiledData.find((data) => data.SBU === sbu);
+
+      // Construct the final combined object for this SBU
+      const result = {
+        SBU: sbu,
+        [`New Projects opened in ${currentYear}`]: newProject ? newProject[`New Projects opened in ${currentYear}`] : 0,
+        [`Total Open Projects`]: totalProject ? totalProject[`Total Open Projects`] : 0,
+        [`${currentYear} Filed`]: applicationFiled ? applicationFiled[`${currentYear} Filed`] : 0,
+      };
+
+      // Add the result to the combinedData array
+      combinedData.push(result);
+    });
+    await createExcelSheetFile(combinedData, newFilePath, 'STC');
+
     await reportRequestService.updateReportRequest(requestedReportId, { status: 'processed' });
   } catch (err) {
+    console.log(err);
     await reportRequestService.updateReportRequest(requestedReportId, { status: 'failed' });
   }
 };
