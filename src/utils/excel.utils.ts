@@ -119,6 +119,121 @@ export async function writeDataToExcel(data: DataItem[], filePath: string): Prom
   console.log(`Excel file written successfully to ${filePath}`);
 }
 
+export async function createExcelSheetFile(
+  data: Array<Record<string, any>>, // Array of JSON objects with varying keys
+  filePath: string,
+  sheetName: string
+): Promise<void> {
+  const workbook = new ExcelJS.Workbook();
+
+  // Load the existing workbook or create a new one
+  try {
+    await workbook.xlsx.readFile(filePath);
+  } catch {
+    console.log('File does not exist. A new file will be created.');
+  }
+
+  let worksheet = workbook.getWorksheet(sheetName);
+
+  if (!worksheet) {
+    worksheet = workbook.addWorksheet(sheetName);
+  }
+
+  if (data.length === 0) {
+    console.error('No data provided to create the sheet.');
+    return;
+  }
+
+  // Calculate where to start adding the new table
+  const lastRow = worksheet.lastRow?.number || 0;
+  const startRow = lastRow + 2;
+
+  // Get all unique keys across the data
+  const allKeys = Array.from(new Set(data.flatMap((item) => Object.keys(item))));
+
+  // Dynamically generate columns and rows
+  const columns = allKeys.map((key) => ({ name: key, filterButton: true }));
+  const rows = data.map((item) => allKeys.map((key) => item[key] || ''));
+
+  // Define table reference (starting cell)
+  const tableRef = `A${startRow}`;
+
+  // Add a table to the worksheet
+  const table = worksheet.addTable({
+    name: `DynamicTable${startRow}`, // Unique table name
+    ref: tableRef,
+    headerRow: true,
+    totalsRow: false,
+    style: {
+      theme: 'TableStyleMedium9', // Default table style
+      showRowStripes: true,
+    },
+    columns,
+    rows,
+  });
+
+  // Apply custom styles for the table
+  // Style headers
+  // Style rows and adjust column widths dynamically
+  const columnWidths: number[] = [];
+  const headerRow = worksheet.getRow(startRow);
+  headerRow.eachCell((cell, colIndex) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4472C4' }, // Blue background
+    };
+    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' },
+    };
+    const cellValue = String(cell.value);
+    columnWidths[colIndex] = Math.max(columnWidths[colIndex] || 0, cellValue.length);
+  });
+
+  for (let i = startRow + 1; i < startRow + 1 + rows.length; i++) {
+    const row = worksheet.getRow(i);
+    row.eachCell((cell, colIndex) => {
+      cell.alignment = { vertical: 'middle', horizontal: 'left' };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+
+      // Dynamically calculate the max width for each column
+      const cellValue = String(cell.value);
+      columnWidths[colIndex] = Math.max(columnWidths[colIndex] || 0, cellValue.length);
+    });
+
+    // Add alternating row colors
+    if (i % 2 === 0) {
+      row.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'D9E1F2' }, // Light blue
+        };
+      });
+    }
+  }
+
+  // Apply the calculated dynamic widths to the columns
+  worksheet.columns = columns.map((col, index) => ({
+    ...col,
+    width: columnWidths[index] + 2, // Add a bit of padding
+  }));
+
+  // Save the workbook to the file
+  await workbook.xlsx.writeFile(filePath);
+  console.log(`Excel sheet "${sheetName}" updated/created in file: ${filePath}`);
+}
+
 export function excelDateToJSDate(serial: number) {
   const utc_days = Math.floor(serial - 25569);
   const utc_value = utc_days * 86400;
