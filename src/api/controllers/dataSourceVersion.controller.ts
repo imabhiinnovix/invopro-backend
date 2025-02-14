@@ -94,10 +94,10 @@ async function validateFileData({
   const errors: any[] = [];
 
   // Map the key of setting attribute with the value attribute
-  const reversedMapping = Object.entries(mapping).reduce((acc, [key, value]) => {
-    acc[value] = acc[value] ? [...acc[value], key] : [key];
-    return acc;
-  }, {});
+  // const reversedMapping = Object.entries(mapping).reduce((acc, [key, value]) => {
+  //   acc[value] = acc[value] ? [...acc[value], key] : [key];
+  //   return acc;
+  // }, {});
 
   const newRowData: any[] = [];
 
@@ -106,67 +106,67 @@ async function validateFileData({
 
     for (const attr of attributes) {
       const attrName = attr.name;
-      const fileKeyArray = reversedMapping[attrName];
-      if (fileKeyArray?.length === 1) {
-        const fileKey = fileKeyArray[0];
-        const value = row[fileKey];
+      // const fileKeyArray = reversedMapping[attrName];
+      // if (fileKeyArray?.length === 1) {
+      const fileKey = mapping[attrName];
+      const value = row[fileKey];
 
-        // Required field validation
-        if (attr.required === 'Mandatory' && (value === undefined || value === null || value === '')) {
-          errors.push({
-            entityId: entityId,
-            dataSourceId: dataSourceId,
-            dataSourceVersionId: dataSourceVersionId,
-            rowNumber: index + 1,
-            fileAttributeName: fileKey,
-            attributeName: attrName,
-            errorType: 'Not Found',
-            errorCode: '404',
-            errorMessage: `Error: Row ${index + 1} - The attribute "${attrName}" is required but is missing.`,
-          });
-        } else if (value !== undefined) {
-          const { isValid, convertedValue, attributeOptionValue } = await validateAndConvert({
-            value,
-            type: attr.type,
-            optionAttributeId: attr.optionAttributeId,
-            separator: separator[value],
-          });
+      // Required field validation
+      if (attr.required === 'Mandatory' && (value === undefined || value === null || value === '')) {
+        errors.push({
+          entityId: entityId,
+          dataSourceId: dataSourceId,
+          dataSourceVersionId: dataSourceVersionId,
+          rowNumber: index + 1,
+          fileAttributeName: fileKey,
+          attributeName: attrName,
+          errorType: 'Not Found',
+          errorCode: '404',
+          errorMessage: `Error: Row ${index + 1} - The attribute "${attrName}" is required but is missing.`,
+        });
+      } else if (value !== undefined) {
+        const { isValid, convertedValue, attributeOptionValue } = await validateAndConvert({
+          value,
+          type: attr.type,
+          optionAttributeId: attr.optionAttributeId,
+          separator: separator[value],
+        });
 
-          if (!isValid) {
-            if (['option', 'multioption'].includes(attr.type)) {
-              errors.push({
-                entityId: entityId,
-                dataSourceId: dataSourceId,
-                dataSourceVersionId: dataSourceVersionId,
-                rowNumber: index + 1,
-                fileAttributeName: fileKey,
-                fileAttributeValue: value,
-                attributeName: attrName,
-                errorType: 'Type Error',
-                errorCode: '400',
-                errorMessage: `Error: Row ${index + 1} - ${fileKey} has a value ${value}, but a value of type ${attr.type} was expected from one of the valid settings attribute(${attrName}) options ${attributeOptionValue}.`,
-              });
-            } else {
-              errors.push({
-                entityId: entityId,
-                dataSourceId: dataSourceId,
-                dataSourceVersionId: dataSourceVersionId,
-                rowNumber: index + 1,
-                fileAttributeName: fileKey,
-                fileAttributeValue: value,
-                attributeName: attrName,
-                errorType: 'Type Error',
-                errorCode: '400',
-                errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value} of type ${typeof value}, but a value of type ${attr.type} was expected for the settings attribute ${attrName}.`,
-              });
-            }
+        if (!isValid) {
+          if (['option', 'multioption'].includes(attr.type)) {
+            errors.push({
+              entityId: entityId,
+              dataSourceId: dataSourceId,
+              dataSourceVersionId: dataSourceVersionId,
+              rowNumber: index + 1,
+              fileAttributeName: fileKey,
+              fileAttributeValue: value,
+              attributeName: attrName,
+              errorType: 'Type Error',
+              errorCode: '400',
+              errorMessage: `Error: Row ${index + 1} - ${fileKey} has a value ${value}, but a value of type ${attr.type} was expected from one of the valid settings attribute(${attrName}) options ${attributeOptionValue}.`,
+            });
           } else {
-            newRow.rowData[attrName] = convertedValue;
+            errors.push({
+              entityId: entityId,
+              dataSourceId: dataSourceId,
+              dataSourceVersionId: dataSourceVersionId,
+              rowNumber: index + 1,
+              fileAttributeName: fileKey,
+              fileAttributeValue: value,
+              attributeName: attrName,
+              errorType: 'Type Error',
+              errorCode: '400',
+              errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value} of type ${typeof value}, but a value of type ${attr.type} was expected for the settings attribute ${attrName}.`,
+            });
           }
+        } else {
+          newRow.rowData[attrName] = convertedValue;
         }
-      } else {
-        errors.push(`Row Number ${index + 1}:${fileKeyArray?.join(',')} has duplicate mapping with ${attrName}.`);
       }
+      // } else {
+      //   errors.push(`Row Number ${index + 1}:${fileKeyArray?.join(',')} has duplicate mapping with ${attrName}.`);
+      // }
     }
 
     newRowData.push(newRow);
