@@ -7,6 +7,7 @@ import {
   getCurrentYearRenewalDue,
   getDisclosureCount,
   getProjectBasedOnStcs,
+  getReductionsAndCostSavings,
   getTotalPortfolio,
   getTotalPortfolioPercentage,
   percentageOfCurrentYearInventionDisclosureConvertedToFilings,
@@ -41,6 +42,16 @@ const generateMonthlyIpReport = async ({
   try {
     const currentYear = reportRequestPayload.versionValue.split('-')[0];
 
+    // let x = getReductionsAndCostSavings({
+    //   portfolioDataSourceVersionId,
+    //   sabicipDataSourceVersionId,
+    //   ctclinsabDataSourceVersionId,
+    //   annuitiesbDataSourceVersionId,
+    //   currentYear,
+    //   isCurrentYearReductionCount: true,
+    // });
+
+    // return x;
     const currentYearApplicationFiledData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -609,7 +620,8 @@ const generateMonthlyIpReport = async ({
     let allSTCArray = Array.from(allSTC);
 
     if (allSTCArray.includes('Total')) {
-      allSTCArray = allSTCArray.filter((item) => item !== 'Total'); // Remove "total"
+      allSTCArray = allSTCArray.filter((item) => item !== 'Total' && item !== 'Blank'); // Remove "total"
+      allSTCArray.push('Blank');
       allSTCArray.push('Total'); // Add "total" at the end
     }
 
@@ -662,7 +674,7 @@ const generateMonthlyIpReport = async ({
 
     let allSBUsArray = Array.from(allSBUs);
     if (allSBUsArray.includes('Total')) {
-      allSBUsArray = allSBUsArray.filter((item) => item !== 'Total'); // Remove "total"
+      allSBUsArray = allSBUsArray.filter((item) => item !== 'Total'); // Remove "total",blank
       allSBUsArray.push('Total'); // Add "total" at the end
     }
 
@@ -743,7 +755,7 @@ export const generateCustomReports = async (req: Request, res: Response, next: N
 
       const annuitiesbDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'annuities');
 
-      await generateMonthlyIpReport({
+      let x = await generateMonthlyIpReport({
         reportRequestPayload,
         requestedReportId: requestedReport._id as string,
         sampleFilePath: customReportDetails.sampleFilePath,
@@ -757,6 +769,7 @@ export const generateCustomReports = async (req: Request, res: Response, next: N
       res.status(201).json({
         success: true,
         message: 'Report Generated Successfully',
+        x,
       });
     }
   } catch (e) {
