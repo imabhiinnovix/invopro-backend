@@ -19,6 +19,7 @@ import * as dataSourceVersionServices from '../../database/services/dataSourceVe
 import * as reportRequestService from '../../database/services/reportRequest.services';
 import path from 'path';
 import { createExcelSheetFile, writeDataToExcel } from '../../utils/excel.utils';
+import { DateTime } from 'luxon';
 
 const generateMonthlyIpReport = async ({
   reportRequestPayload,
@@ -721,13 +722,14 @@ export const generateCustomReports = async (req: Request, res: Response, next: N
       query: { dataSourceId: { $in: dataSourceIds }, versionValue: versionValue, isCurrent: true },
     });
 
-    console.log(dataSourceVersionDetails);
     if (!dataSourceVersionDetails.data || dataSourceVersionDetails.data.length != dataSourceIds.length) {
       throw new Error(`Not all required data is available for this report with version value ${versionValue}.`);
     }
 
+    const currentDateTime = DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss');
+
     if (customReportDetails.reportName === 'monthlyip') {
-      const fileName = `${customReportDetails.reportName}_${versionValue}.xlsx`;
+      const fileName = `${customReportDetails.reportName}_${versionValue}_${currentDateTime}.xlsx`;
       const reportRequestPayload = {
         organizationId: organizationId,
         versionValue: versionValue,
@@ -785,7 +787,7 @@ export const listCustomReports = async (req: Request, res: Response, next: NextF
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
     const query: any = { organizationId: organizationId };
-    if (search) query.name = { $regex: search, $options: 'i' };
+    if (search) query.reportName = { $regex: search, $options: 'i' };
 
     let result: any = {};
     if (paginate) {
@@ -803,6 +805,47 @@ export const listCustomReports = async (req: Request, res: Response, next: NextF
     res.status(200).json({
       success: true,
       message: 'Custom Report List Fetched Successfully',
+      data: result.data,
+      totalCount: result.totalCount,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const listReportRequest = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { search, paginate = 'false' } = req.query;
+    const { organizationId, userId } = req.user;
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
+
+    const query: any = { organizationId: organizationId, createdBy: userId };
+    if (search) query.reportName = { $regex: search, $options: 'i' };
+
+    let result: any = {};
+    if (paginate) {
+      result = await reportRequestService.getReportRequestList({
+        query,
+        select: ['versionValue', 'status', 'createdAt'],
+        page,
+        limit,
+        populate: [
+          {
+            path: 'customReportId',
+            select: 'reportName', // Only populate reportName
+          },
+        ],
+      });
+    } else {
+      result = await reportRequestService.getReportRequestList({
+        query,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Report Request List Fetched Successfully',
       data: result.data,
       totalCount: result.totalCount,
     });

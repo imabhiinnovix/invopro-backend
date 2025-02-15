@@ -19,3 +19,36 @@ export const updateReportRequest = async (reportRequestId: string, reportRequest
     throw err;
   }
 };
+
+export const getReportRequestList = async ({
+  query,
+  select = '',
+  page,
+  limit,
+  sort = { updatedAt: -1 },
+  populate,
+}: any) => {
+  try {
+    // Remove the await keyword here
+    let reportRequestQuery: any = ReportRequestModel.find(query)
+      .select(select)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort(sort);
+
+    if (populate && Array.isArray(populate)) {
+      populate.forEach((field) => {
+        reportRequestQuery = reportRequestQuery.populate(field);
+      });
+    }
+
+    // Now await the final query execution
+    const reportRequestList = await reportRequestQuery.exec();
+
+    const totalCount = await ReportRequestModel.countDocuments(query);
+
+    return { data: reportRequestList, totalCount };
+  } catch (err) {
+    throw err;
+  }
+};
