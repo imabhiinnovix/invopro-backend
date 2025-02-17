@@ -1099,7 +1099,7 @@ export async function getReductionsAndCostSavings({
       }
     }
 
-    // return groupedCasesBasedOnFaimlyNumber;
+    return groupedCasesBasedOnFaimlyNumber['16PLAS0279'];
 
     const yearDateRange = {
       $gte: `${currentYear}-01-01T00:00:00.000Z`,
@@ -1114,7 +1114,17 @@ export async function getReductionsAndCostSavings({
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
           'rowData.Status Date': yearDateRange,
           'rowData.Status': { $in: currentStatus },
-          'rowData.Case_Reference1': { $not: { $regex: 'CNRO|EP-EPT|EP-PCT|EP-ETD|EP-EPD', $options: 'i' } },
+          'rowData.Case_Reference1': { $not: { $regex: 'CNRO' } },
+          $or: [
+            {
+              'rowData.Country': { $nin: ['EP', 'EA'] },
+            },
+            {
+              'rowData.Case Type': { $not: { $regex: 'EPT|EAT|PCT|ETD|EPD', $options: 'i' } },
+            },
+          ],
+          // 'rowData.Case Type': { $not: { $regex: 'EPT|EAT|PCT|ETD|EPD', $options: 'i' } },
+          // 'rowData.Country': { $nin: ['EP', 'EA'] },
 
           $and: [
             {
@@ -1167,18 +1177,25 @@ export async function getReductionsAndCostSavings({
             $not: { $regex: 'CNRO', $options: 'i' },
             $nin: [...annuityDropCaseReference],
           },
-          'rowData.Publication Date': { $eq: null },
-          'rowData.Grant Date': { $eq: null },
-          'rowData.Grant No': { $eq: null },
-          'rowData.Publication No': { $eq: null },
           $or: [
             { 'rowData.Country': { $ne: 'WO' } },
             { $and: [{ 'rowData.Country': 'WO' }, { 'rowData.Case Type': { $ne: 'PRI' } }] },
           ],
+          $and: [
+            {
+              $or: [
+                { 'rowData.Publication Date': { $eq: null } },
+                { 'rowData.Grant Date': { $eq: null } },
+                { 'rowData.Grant No': { $eq: null } },
+                { 'rowData.Publication No': { $eq: null } },
+              ],
+            },
+          ],
+
           // 'rowData.Case Type': {
           //   $nin: ['PCT', 'EPP', 'ORD', 'EPT', 'NP', 'PCD', 'DIV', 'CNT', 'EAT', 'ETD', 'CIP', 'CON'],
           // },
-          'rowData.IsFirstFiling': 1,
+          // 'rowData.IsFirstFiling': 1,
         },
       },
       {
@@ -1206,7 +1223,7 @@ export async function getReductionsAndCostSavings({
 
       const diffInMonths = statusDate.diff(filingDate, 'months').months;
 
-      return diffInMonths <= 24;
+      return diffInMonths <= 24 && item['IsFirstFiling'] === 1;
     });
 
     const priorityDropCount = priorityDrop.reduce((acc, item) => {
@@ -1274,62 +1291,102 @@ export async function getReductionsAndCostSavings({
             $not: { $regex: 'CNRO', $options: 'i' },
             $nin: [...annuityDropCaseReference, ...priorityDropCaseReference, ...pctDropCaseReference],
           },
+
+          $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }],
           $and: [
-            {
-              $or: [
-                { 'rowData.Country': { $ne: 'WO' } },
-                { $and: [{ 'rowData.Country': 'WO' }, { 'rowData.Case Type': { $ne: 'PRI' } }] },
-              ],
-            },
             {
               $or: [
                 {
                   $and: [
-                    { $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }] },
                     { 'rowData.IsFirstFiling': 1 },
                     { 'rowData.Publication Date': { $ne: null } },
                     { 'rowData.Publication No': { $ne: null } },
+                    { 'rowData.Case_Reference1': { $regex: 'WO-PCT|WO-ORD', $options: 'i' } },
+                    { 'rowData.In Force': 0 },
+                  ],
+                },
+                {
+                  $and: [
+                    { 'rowData.IsFirstFiling': 0 },
                     {
                       $or: [
                         {
                           $and: [
-                            { 'rowData.Case_Reference1': { $regex: 'WO-PCT', $options: 'i' } },
-                            { 'rowData.In Force': 0 },
+                            { 'rowData.Case Type': { $regex: 'PCT', $options: 'i' } },
+                            { 'rowData.Country': { $ne: 'WO' } },
                           ],
                         },
-                        { 'rowData.Case_Reference1': { $not: { $regex: 'WO-PCT', $options: 'i' } } },
+                        {
+                          $and: [
+                            { 'rowData.Case Type': { $regex: 'ORD|National Patent', $options: 'i' } },
+                            { 'rowData.Country': { $ne: 'WO' } },
+                          ],
+                        },
+                        { 'rowData.Case Type': { $regex: 'CON|DIV', $options: 'i' } },
                       ],
                     },
-                  ],
-                },
-                {
-                  $and: [
-                    // { $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }] },
-                    { 'rowData.Case Type': { $in: ['PCT'] } },
-                    { 'rowData.Country': { $ne: 'WO' } },
-                  ],
-                },
-                {
-                  $and: [
-                    // { $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }] },
-                    {
-                      'rowData.Case Type': { $in: ['CON', 'DIV'] },
-                    },
-                  ],
-                },
-                {
-                  $and: [
-                    // { $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }] },
-                    { 'rowData.IsFirstFiling': 0 },
-                    {
-                      'rowData.Case Type': 'ORD',
-                    },
-                    { 'rowData.Country': { $ne: 'WO' } },
                   ],
                 },
               ],
             },
           ],
+
+          // $and: [
+          //   {
+          //     $or: [
+          //       { 'rowData.Country': { $ne: 'WO' } },
+          //       { $and: [{ 'rowData.Country': 'WO' }, { 'rowData.Case Type': { $ne: 'PRI' } }] },
+          //     ],
+          //   },
+          //   {
+          //     $or: [
+          //       {
+          //         $and: [
+          //           { $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }] },
+          //           ,
+          //           { 'rowData.Publication Date': { $ne: null } },
+          //           { 'rowData.Publication No': { $ne: null } },
+          //           {
+          //             $or: [
+          //               {
+          //                 $and: [
+          //                   { 'rowData.Case_Reference1': { $regex: 'WO-PCT', $options: 'i' } },
+          //                   { 'rowData.In Force': 0 },
+          //                 ],
+          //               },
+          //               { 'rowData.Case_Reference1': { $not: { $regex: 'WO-PCT', $options: 'i' } } },
+          //             ],
+          //           },
+          //         ],
+          //       },
+          //       {
+          //         $and: [
+          //           // { $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }] },
+          //           { 'rowData.Case Type': { $in: ['PCT'] } },
+          //           { 'rowData.Country': { $ne: 'WO' } },
+          //         ],
+          //       },
+          //       {
+          //         $and: [
+          //           // { $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }] },
+          //           {
+          //             'rowData.Case Type': { $in: ['CON', 'DIV'] },
+          //           },
+          //         ],
+          //       },
+          //       {
+          //         $and: [
+          //           // { $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }] },
+          //           { 'rowData.IsFirstFiling': 0 },
+          //           {
+          //             'rowData.Case Type': 'ORD',
+          //           },
+          //           { 'rowData.Country': { $ne: 'WO' } },
+          //         ],
+          //       },
+          //     ],
+          //   },
+          // ],
         },
       },
       {
@@ -1340,29 +1397,54 @@ export async function getReductionsAndCostSavings({
           rowData: { $first: '$rowData' },
         },
       },
-      // {
-      //   $group: {
-      //     _id: '$SBU',
-      //     value: { $sum: 1 },
-      //   },
-      // },
+      {
+        $group: {
+          _id: '$SBU',
+          value: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          SBU: '$_id',
+          _id: 0,
+          value: 1,
+        },
+      },
     ];
 
     const prosecutionDrop = await DataSourceVersionValuePortfolio.aggregate(prosecutionDropAggregate);
 
     // return prosecutionDrop;
 
-    return {
-      // annuityDrop: annuityDrop.map((d) => d.rowData),
-      // annuityDropCountResult,
-      // priorityDrop,
-      // priorityDropCountResult,
-      // pctDrop,
-      // // // pctDrop: pctDrop.map((d) => d.rowData),
-      // pctDropCountResult,
-      // prosecutionDrop,
-      prosecutionDrop: prosecutionDrop.map((d) => d.rowData),
+    const mergedSBU = {};
+
+    const mergeValues = (arr) => {
+      arr.forEach(({ SBU, value }) => {
+        mergedSBU[SBU] = (mergedSBU[SBU] || 0) + value;
+      });
     };
+
+    // Merge all three arrays
+    mergeValues(annuityDropCountResult);
+    mergeValues(priorityDropCountResult);
+    mergeValues(pctDropCountResult);
+    mergeValues(prosecutionDrop);
+
+    // Convert merged object to array
+    const result = Object.entries(mergedSBU).map(([SBU, value]) => ({ SBU, value })) as DataItem[];
+    return result;
+
+    // return {
+    //   // annuityDrop: annuityDrop.map((d) => d.rowData),
+    //   annuityDropCountResult,
+    //   // // priorityDrop,
+    //   priorityDropCountResult,
+    //   // // pctDrop,
+    //   // // pctDrop: pctDrop.map((d) => d.rowData),
+    //   pctDropCountResult,
+    //   prosecutionDrop,
+    //   // prosecutionDrop: prosecutionDrop.map((d) => d.rowData),
+    // };
   } catch (e) {
     console.log('Error in getReductionsAndCostSavings', e);
     throw e;

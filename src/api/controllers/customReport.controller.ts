@@ -43,16 +43,6 @@ const generateMonthlyIpReport = async ({
   try {
     const currentYear = reportRequestPayload.versionValue.split('-')[0];
 
-    // let x = getReductionsAndCostSavings({
-    //   portfolioDataSourceVersionId,
-    //   sabicipDataSourceVersionId,
-    //   ctclinsabDataSourceVersionId,
-    //   annuitiesbDataSourceVersionId,
-    //   currentYear,
-    //   isCurrentYearReductionCount: true,
-    // });
-
-    // return x;
     const currentYearApplicationFiledData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -462,6 +452,29 @@ const generateMonthlyIpReport = async ({
       },
     });
 
+    let reductionCount = await getReductionsAndCostSavings({
+      portfolioDataSourceVersionId,
+      sabicipDataSourceVersionId,
+      ctclinsabDataSourceVersionId,
+      annuitiesbDataSourceVersionId,
+      currentYear,
+      isCurrentYearReductionCount: true,
+    });
+    const processedReductionCount = processData({
+      data: reductionCount,
+      cellMappings: {
+        'SBU T&I': 'B39',
+        'SBU Metals': 'C39',
+        'SBU Agri-nutrients': 'D39',
+        'SBU Chemicals': 'E39',
+        'SBU Polymers': 'F39',
+        // Petchem: 'G32',
+        'SBU SHPP': 'H39',
+        'SBU Strategy & Transformation': 'I39',
+        Total: 'J39',
+      },
+    });
+
     await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
     await fsPromises.copyFile(sampleFilePath, newFilePath);
     await writeDataToExcel(
@@ -487,6 +500,7 @@ const generateMonthlyIpReport = async ({
         ...processedTotalPortFolio,
         ...processedTotalPortFolioPercentage,
         ...processedCurrentYearRenewalDue,
+        ...processedReductionCount,
         { cellName: 'A3', value: `${currentYear} New Apps Filed`, SBU: '' },
         { cellName: 'A4', value: `% of ${currentYear} Invention Disclosures converted to Filings`, SBU: '' },
         { cellName: 'A5', value: `${currentYear} New Apps Estimate`, SBU: '' },
@@ -554,6 +568,11 @@ const generateMonthlyIpReport = async ({
         {
           cellName: 'A37',
           value: `${currentYear} Renewals Due(USD)`,
+          SBU: '',
+        },
+        {
+          cellName: 'A39',
+          value: ` Total No. of ${currentYear}** Reductions (Including reductions during prosecution)`,
           SBU: '',
         },
       ],
