@@ -1099,7 +1099,7 @@ export async function getReductionsAndCostSavings({
       }
     }
 
-    return groupedCasesBasedOnFaimlyNumber['16PLAS0279'];
+    // return groupedCasesBasedOnFaimlyNumber['16PLAS0279'];
 
     const yearDateRange = {
       $gte: `${currentYear}-01-01T00:00:00.000Z`,
@@ -1270,6 +1270,8 @@ export async function getReductionsAndCostSavings({
     const groupedPctDropFiltered = filterCombineData(groupedCasesBasedOnFaimlyNumber, pctDrop);
 
     // return groupedPctDropFiltered;
+
+    // return groupedPctDropFiltered;
     const pctDropCount = groupedPctDropFiltered.reduce((acc, item) => {
       const sbu = item['SBU'];
       acc[sbu] = (acc[sbu] || 0) + 1;
@@ -1277,6 +1279,7 @@ export async function getReductionsAndCostSavings({
     }, {});
     const pctDropCountResult = Object.entries(pctDropCount).map(([SBU, value]) => ({ SBU, value }));
 
+    // return pctDropCountResult;
     const pctDropCaseReference = groupedPctDropFiltered.map((data) => {
       return data.Case_Reference1;
     });
@@ -1296,13 +1299,28 @@ export async function getReductionsAndCostSavings({
           $and: [
             {
               $or: [
+                { 'rowData.Country': { $ne: 'WO' } },
+                { $and: [{ 'rowData.Country': 'WO' }, { 'rowData.Case Type': { $ne: 'PRI' } }] },
+              ],
+            },
+            {
+              $or: [
                 {
                   $and: [
                     { 'rowData.IsFirstFiling': 1 },
                     { 'rowData.Publication Date': { $ne: null } },
                     { 'rowData.Publication No': { $ne: null } },
-                    { 'rowData.Case_Reference1': { $regex: 'WO-PCT|WO-ORD', $options: 'i' } },
-                    { 'rowData.In Force': 0 },
+                    {
+                      $or: [
+                        { 'rowData.Case_Reference1': { $not: { $regex: 'WO-PCT|WO-ORD', $options: 'i' } } },
+                        {
+                          $and: [
+                            { 'rowData.Case_Reference1': { $regex: 'WO-PCT|WO-ORD', $options: 'i' } },
+                            { 'rowData.In Force': 0 },
+                          ],
+                        },
+                      ],
+                    },
                   ],
                 },
                 {
@@ -1330,63 +1348,6 @@ export async function getReductionsAndCostSavings({
               ],
             },
           ],
-
-          // $and: [
-          //   {
-          //     $or: [
-          //       { 'rowData.Country': { $ne: 'WO' } },
-          //       { $and: [{ 'rowData.Country': 'WO' }, { 'rowData.Case Type': { $ne: 'PRI' } }] },
-          //     ],
-          //   },
-          //   {
-          //     $or: [
-          //       {
-          //         $and: [
-          //           { $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }] },
-          //           ,
-          //           { 'rowData.Publication Date': { $ne: null } },
-          //           { 'rowData.Publication No': { $ne: null } },
-          //           {
-          //             $or: [
-          //               {
-          //                 $and: [
-          //                   { 'rowData.Case_Reference1': { $regex: 'WO-PCT', $options: 'i' } },
-          //                   { 'rowData.In Force': 0 },
-          //                 ],
-          //               },
-          //               { 'rowData.Case_Reference1': { $not: { $regex: 'WO-PCT', $options: 'i' } } },
-          //             ],
-          //           },
-          //         ],
-          //       },
-          //       {
-          //         $and: [
-          //           // { $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }] },
-          //           { 'rowData.Case Type': { $in: ['PCT'] } },
-          //           { 'rowData.Country': { $ne: 'WO' } },
-          //         ],
-          //       },
-          //       {
-          //         $and: [
-          //           // { $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }] },
-          //           {
-          //             'rowData.Case Type': { $in: ['CON', 'DIV'] },
-          //           },
-          //         ],
-          //       },
-          //       {
-          //         $and: [
-          //           // { $or: [{ 'rowData.Grant Date': { $eq: null } }, { 'rowData.Grant No': { $eq: null } }] },
-          //           { 'rowData.IsFirstFiling': 0 },
-          //           {
-          //             'rowData.Case Type': 'ORD',
-          //           },
-          //           { 'rowData.Country': { $ne: 'WO' } },
-          //         ],
-          //       },
-          //     ],
-          //   },
-          // ],
         },
       },
       {
@@ -1436,14 +1397,14 @@ export async function getReductionsAndCostSavings({
 
     // return {
     //   // annuityDrop: annuityDrop.map((d) => d.rowData),
-    //   annuityDropCountResult,
-    //   // // priorityDrop,
-    //   priorityDropCountResult,
-    //   // // pctDrop,
-    //   // // pctDrop: pctDrop.map((d) => d.rowData),
-    //   pctDropCountResult,
-    //   prosecutionDrop,
-    //   // prosecutionDrop: prosecutionDrop.map((d) => d.rowData),
+    //   // annuityDropCountResult,
+    //   // priorityDrop,
+    //   // priorityDropCountResult,
+    //   // groupedPctDropFiltered,
+    //   // pctDrop: pctDrop.map((d) => d.rowData),
+    //   // // pctDropCountResult,
+    //   // prosecutionDrop,
+    //   prosecutionDrop: prosecutionDrop.map((d) => d.rowData),
     // };
   } catch (e) {
     console.log('Error in getReductionsAndCostSavings', e);
