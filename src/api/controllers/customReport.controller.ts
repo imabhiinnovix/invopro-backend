@@ -18,7 +18,6 @@ export const generateCustomReports = async (req: Request, res: Response, next: N
     }
     // Extract all data source IDs
     const dataSourceIds = customReportDetails.dataSourceIds.map((ds) => ds.dataSourceId);
-    console.log(dataSourceIds);
 
     const dataSourceVersionDetails = await dataSourceVersionServices.getDataSourceVersionList({
       query: { dataSourceId: { $in: dataSourceIds }, versionValue: versionValue, isCurrent: true },
@@ -30,19 +29,19 @@ export const generateCustomReports = async (req: Request, res: Response, next: N
 
     const currentDateTime = DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss');
 
-    if (customReportDetails.reportName === 'monthlyip') {
-      const fileName = `${customReportDetails.reportName}_${versionValue}_${currentDateTime}.xlsx`;
-      const reportRequestPayload = {
-        organizationId: organizationId,
-        versionValue: versionValue,
-        customReportId: customReportDetails._id,
-        status: 'processing',
-        fileName: fileName,
-        filePath: path.join('uploads', organizationId, userId, 'generatedReports', `${fileName}`),
-        fileType: 'xlsx',
-        createdBy: userId,
-      };
+    const fileName = `${customReportDetails.reportName}_${versionValue}_${currentDateTime}.xlsx`;
+    const reportRequestPayload = {
+      organizationId: organizationId,
+      versionValue: versionValue,
+      customReportId: customReportDetails._id,
+      status: 'processing',
+      fileName: fileName,
+      filePath: path.join('uploads', organizationId, userId, 'generatedReports', `${fileName}`),
+      fileType: 'xlsx',
+      createdBy: userId,
+    };
 
+    if (customReportDetails.reportName === 'monthlyip') {
       const versionMap = Object.fromEntries(
         dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
       );
