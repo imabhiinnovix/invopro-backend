@@ -4,12 +4,13 @@ import path from 'path';
 import * as reportRequestService from '../../database/services/reportRequest.services';
 import {
   addCellMaping,
+  getAnnuitySavingsFromReductions,
   getAppsFiledBasedOnStc,
   getCurrentYearNewApplicationFiled,
   getCurrentYearRenewalDue,
   getDisclosureCount,
   getProjectBasedOnStcs,
-  getReductionsAndCostSavings,
+  getReductions,
   getTotalPortfolio,
   getTotalPortfolioPercentage,
   percentageOfCurrentYearInventionDisclosureConvertedToFilings,
@@ -459,17 +460,13 @@ export const generateMonthlyIpReport = async ({
       },
     });
 
-    let reductionCount = await getReductionsAndCostSavings({
+    let reductionData = await getReductions({
       portfolioDataSourceVersionId,
-      sabicipDataSourceVersionId,
-      ctclinsabDataSourceVersionId,
-      annuitiesbDataSourceVersionId,
       currentYear,
-      isCurrentYearReductionCount: true,
     });
 
     const processedReductionCount = processData({
-      data: reductionCount,
+      data: reductionData.dropCountResult,
       cellMappings: {
         'SBU T&I': 'B39',
         'SBU Metals': 'C39',
@@ -480,6 +477,90 @@ export const generateMonthlyIpReport = async ({
         'SBU SHPP': 'H39',
         'SBU Strategy & Transformation': 'I39',
         Total: 'J39',
+      },
+    });
+
+    const annuitySavingsForCurrentYear = await getAnnuitySavingsFromReductions({
+      portfolioDataSourceVersionId,
+      sabicipDataSourceVersionId,
+      ctclinsabDataSourceVersionId,
+      annuitiesbDataSourceVersionId,
+      currentYear,
+      annuityDrop: reductionData.annuityDropArray,
+      priorityDrop: reductionData.priorityDropArray,
+      pctDrop: reductionData.pctDropArray,
+      prosecutionDrop: reductionData.prosecutionDropArray,
+    });
+
+    const processedAnnuitySavingsForCurrentYear = processData({
+      data: annuitySavingsForCurrentYear,
+      cellMappings: {
+        'SBU T&I': 'B40',
+        'SBU Metals': 'C40',
+        'SBU Agri-nutrients': 'D40',
+        'SBU Chemicals': 'E40',
+        'SBU Polymers': 'F40',
+        // Petchem: 'G32',
+        'SBU SHPP': 'H40',
+        'SBU Strategy & Transformation': 'I40',
+        Total: 'J40',
+      },
+    });
+
+    const annuitySavingsForNextYear = await getAnnuitySavingsFromReductions({
+      portfolioDataSourceVersionId,
+      sabicipDataSourceVersionId,
+      ctclinsabDataSourceVersionId,
+      annuitiesbDataSourceVersionId,
+      currentYear: `${Number(currentYear) + 1}`,
+      annuityDrop: reductionData.annuityDropArray,
+      priorityDrop: reductionData.priorityDropArray,
+      pctDrop: reductionData.pctDropArray,
+      prosecutionDrop: reductionData.prosecutionDropArray,
+    });
+
+    const processedAnnuitySavingsForNextYear = processData({
+      data: annuitySavingsForNextYear,
+      cellMappings: {
+        'SBU T&I': 'B41',
+        'SBU Metals': 'C41',
+        'SBU Agri-nutrients': 'D41',
+        'SBU Chemicals': 'E41',
+        'SBU Polymers': 'F41',
+        // Petchem: 'G32',
+        'SBU SHPP': 'H41',
+        'SBU Strategy & Transformation': 'I41',
+        Total: 'J41',
+      },
+    });
+
+    const totalAnnuitySavingsMap = {};
+
+    annuitySavingsForCurrentYear.forEach((entry) => {
+      totalAnnuitySavingsMap[entry.SBU] = (totalAnnuitySavingsMap[entry.SBU] || 0) + entry.value;
+    });
+
+    annuitySavingsForNextYear.forEach((entry) => {
+      totalAnnuitySavingsMap[entry.SBU] = (totalAnnuitySavingsMap[entry.SBU] || 0) + entry.value;
+    });
+
+    const totalAnnuitySavings = Object.keys(totalAnnuitySavingsMap).map((SBU) => ({
+      SBU,
+      value: totalAnnuitySavingsMap[SBU],
+    }));
+
+    const processedTotalAnnuitySavings = processData({
+      data: totalAnnuitySavings,
+      cellMappings: {
+        'SBU T&I': 'B42',
+        'SBU Metals': 'C42',
+        'SBU Agri-nutrients': 'D42',
+        'SBU Chemicals': 'E42',
+        'SBU Polymers': 'F42',
+        // Petchem: 'G32',
+        'SBU SHPP': 'H42',
+        'SBU Strategy & Transformation': 'I42',
+        Total: 'J42',
       },
     });
 
@@ -509,6 +590,9 @@ export const generateMonthlyIpReport = async ({
         ...processedTotalPortFolioPercentage,
         ...processedCurrentYearRenewalDue,
         ...processedReductionCount,
+        ...processedAnnuitySavingsForCurrentYear,
+        ...processedAnnuitySavingsForNextYear,
+        ...processedTotalAnnuitySavings,
         { cellName: 'A3', value: `${currentYear} New Apps Filed`, SBU: '' },
         { cellName: 'A4', value: `% of ${currentYear} Invention Disclosures converted to Filings`, SBU: '' },
         { cellName: 'A5', value: `${currentYear} New Apps Estimate`, SBU: '' },
@@ -580,7 +664,37 @@ export const generateMonthlyIpReport = async ({
         },
         {
           cellName: 'A39',
-          value: ` Total No. of ${currentYear}** Reductions (Including reductions during prosecution)`,
+          value: `Total No. of ${currentYear}** Reductions (Including reductions during prosecution)`,
+          SBU: '',
+        },
+        {
+          cellName: 'A40',
+          value: `${currentYear} Annuity Savings from ${currentYear} reductions`,
+          SBU: '',
+        },
+        {
+          cellName: 'A41',
+          value: `${Number(currentYear) + 1} Annuity Savings from ${currentYear} reductions`,
+          SBU: '',
+        },
+        {
+          cellName: 'A42',
+          value: `${currentYear}-${Number(currentYear) + 1} Annuity Savings from ${currentYear} reductions`,
+          SBU: '',
+        },
+        {
+          cellName: 'A44',
+          value: `No. of Prosecution reductions in ${currentYear}`,
+          SBU: '',
+        },
+        {
+          cellName: 'A45',
+          value: `Prosecution cost Savings`,
+          SBU: '',
+        },
+        {
+          cellName: 'A47',
+          value: `Total Cost Savings: (${currentYear}-${Number(currentYear) + 1}) Annuity Savings + Prosecution savings from ${currentYear} reductions`,
           SBU: '',
         },
       ],

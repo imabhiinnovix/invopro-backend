@@ -1067,20 +1067,12 @@ function filterCombineData(combinedCases, data) {
 
   return result;
 }
-export async function getReductionsAndCostSavings({
+export async function getReductions({
   portfolioDataSourceVersionId,
-  sabicipDataSourceVersionId,
-  ctclinsabDataSourceVersionId,
-  annuitiesbDataSourceVersionId,
   currentYear,
-  isCurrentYearReductionCount,
 }: {
   portfolioDataSourceVersionId: string;
-  sabicipDataSourceVersionId: string;
-  ctclinsabDataSourceVersionId: string;
-  annuitiesbDataSourceVersionId: string;
   currentYear: string;
-  isCurrentYearReductionCount: boolean;
 }) {
   try {
     const allCasesFromPortfolio = await DataSourceVersionValuePortfolio.aggregate([
@@ -1098,8 +1090,6 @@ export async function getReductionsAndCostSavings({
         groupedCasesBasedOnFaimlyNumber[rowData['CaseNumber']] = [rowData];
       }
     }
-
-    // return groupedCasesBasedOnFaimlyNumber['16PLAS0279'];
 
     const yearDateRange = {
       $gte: `${currentYear}-01-01T00:00:00.000Z`,
@@ -1123,8 +1113,6 @@ export async function getReductionsAndCostSavings({
               'rowData.Case Type': { $not: { $regex: 'EPT|EAT|PCT|ETD|EPD', $options: 'i' } },
             },
           ],
-          // 'rowData.Case Type': { $not: { $regex: 'EPT|EAT|PCT|ETD|EPD', $options: 'i' } },
-          // 'rowData.Country': { $nin: ['EP', 'EA'] },
 
           $and: [
             {
@@ -1156,15 +1144,18 @@ export async function getReductionsAndCostSavings({
 
     const annuityDrop = await DataSourceVersionValuePortfolio.aggregate(annuityDropAggregate);
 
-    const annuityDropCount = annuityDrop.reduce((acc, item) => {
-      const sbu = item.rowData['SBU'];
+    const annuityDropArray = annuityDrop.map((data) => data.rowData);
+
+    const annuityDropCount = annuityDropArray.reduce((acc, item) => {
+      const sbu = item['SBU'];
       acc[sbu] = (acc[sbu] || 0) + 1;
       return acc;
     }, {});
+
     const annuityDropCountResult = Object.entries(annuityDropCount).map(([SBU, value]) => ({ SBU, value }));
 
-    const annuityDropCaseReference = annuityDrop.map((data) => {
-      return data.rowData.Case_Reference1;
+    const annuityDropCaseReference = annuityDropArray.map((data) => {
+      return data.Case_Reference1;
     });
 
     const priorityDropAggregate: any[] = [
@@ -1191,11 +1182,6 @@ export async function getReductionsAndCostSavings({
               ],
             },
           ],
-
-          // 'rowData.Case Type': {
-          //   $nin: ['PCT', 'EPP', 'ORD', 'EPT', 'NP', 'PCD', 'DIV', 'CNT', 'EAT', 'ETD', 'CIP', 'CON'],
-          // },
-          // 'rowData.IsFirstFiling': 1,
         },
       },
       {
@@ -1215,9 +1201,7 @@ export async function getReductionsAndCostSavings({
       priorityDropUnfilteredWithDate
     );
 
-    // return groupedPriorityDropFiltered.length;
-
-    const priorityDrop = groupedPriorityDropFiltered.filter((item) => {
+    const priorityDropArray = groupedPriorityDropFiltered.filter((item) => {
       const statusDate = DateTime.fromISO(item['Status Date']);
       const filingDate = DateTime.fromISO(item['Filing Date']);
 
@@ -1226,16 +1210,14 @@ export async function getReductionsAndCostSavings({
       return diffInMonths <= 24 && item['IsFirstFiling'] === 1;
     });
 
-    const priorityDropCount = priorityDrop.reduce((acc, item) => {
+    const priorityDropCount = priorityDropArray.reduce((acc, item) => {
       const sbu = item['SBU'];
       acc[sbu] = (acc[sbu] || 0) + 1;
       return acc;
     }, {});
     const priorityDropCountResult = Object.entries(priorityDropCount).map(([SBU, value]) => ({ SBU, value }));
 
-    // return priorityDropCountResult;
-
-    const priorityDropCaseReference = priorityDrop.map((data) => {
+    const priorityDropCaseReference = priorityDropArray.map((data) => {
       return data.Case_Reference1;
     });
 
@@ -1250,9 +1232,6 @@ export async function getReductionsAndCostSavings({
             $nin: [...annuityDropCaseReference, ...priorityDropCaseReference],
           },
           $and: [{ 'rowData.Country': 'WO' }, { 'rowData.Case Type': { $ne: 'PRI' } }],
-          // 'rowData.Case Type': {
-          //   $nin: ['PCT', 'EPP', 'ORD', 'EPT', 'NP', 'PCD', 'DIV', 'CNT', 'EAT', 'ETD', 'CIP', 'CON'],
-          // },
         },
       },
       {
@@ -1267,20 +1246,16 @@ export async function getReductionsAndCostSavings({
 
     const pctDrop = await DataSourceVersionValuePortfolio.aggregate(pctDropAggregate);
 
-    const groupedPctDropFiltered = filterCombineData(groupedCasesBasedOnFaimlyNumber, pctDrop);
+    const pctDropArray = filterCombineData(groupedCasesBasedOnFaimlyNumber, pctDrop);
 
-    // return groupedPctDropFiltered;
-
-    // return groupedPctDropFiltered;
-    const pctDropCount = groupedPctDropFiltered.reduce((acc, item) => {
+    const pctDropCount = pctDropArray.reduce((acc, item) => {
       const sbu = item['SBU'];
       acc[sbu] = (acc[sbu] || 0) + 1;
       return acc;
     }, {});
     const pctDropCountResult = Object.entries(pctDropCount).map(([SBU, value]) => ({ SBU, value }));
 
-    // return pctDropCountResult;
-    const pctDropCaseReference = groupedPctDropFiltered.map((data) => {
+    const pctDropCaseReference = pctDropArray.map((data) => {
       return data.Case_Reference1;
     });
 
@@ -1358,24 +1333,17 @@ export async function getReductionsAndCostSavings({
           rowData: { $first: '$rowData' },
         },
       },
-      {
-        $group: {
-          _id: '$SBU',
-          value: { $sum: 1 },
-        },
-      },
-      {
-        $project: {
-          SBU: '$_id',
-          _id: 0,
-          value: 1,
-        },
-      },
     ];
 
     const prosecutionDrop = await DataSourceVersionValuePortfolio.aggregate(prosecutionDropAggregate);
+    const prosecutionDropArray = prosecutionDrop.map((data) => data.rowData);
 
-    // return prosecutionDrop;
+    const prosecutionDropCount = prosecutionDropArray.reduce((acc, item) => {
+      const sbu = item['SBU'];
+      acc[sbu] = (acc[sbu] || 0) + 1;
+      return acc;
+    }, {});
+    const prosecutionDropCountResult = Object.entries(prosecutionDropCount).map(([SBU, value]) => ({ SBU, value }));
 
     const mergedSBU = {};
 
@@ -1389,25 +1357,170 @@ export async function getReductionsAndCostSavings({
     mergeValues(annuityDropCountResult);
     mergeValues(priorityDropCountResult);
     mergeValues(pctDropCountResult);
-    mergeValues(prosecutionDrop);
+    mergeValues(prosecutionDropCountResult);
 
     // Convert merged object to array
-    const result = Object.entries(mergedSBU).map(([SBU, value]) => ({ SBU, value })) as DataItem[];
-    return result;
+    const dropCountResult = Object.entries(mergedSBU).map(([SBU, value]) => ({ SBU, value })) as DataItem[];
 
-    // return {
-    //   // annuityDrop: annuityDrop.map((d) => d.rowData),
-    //   // annuityDropCountResult,
-    //   // priorityDrop,
-    //   // priorityDropCountResult,
-    //   // groupedPctDropFiltered,
-    //   // pctDrop: pctDrop.map((d) => d.rowData),
-    //   // // pctDropCountResult,
-    //   // prosecutionDrop,
-    //   prosecutionDrop: prosecutionDrop.map((d) => d.rowData),
-    // };
+    return {
+      annuityDropArray,
+      priorityDropArray,
+      pctDropArray,
+      prosecutionDropArray,
+      dropCountResult,
+    };
   } catch (e) {
     console.log('Error in getReductionsAndCostSavings', e);
+    throw e;
+  }
+}
+
+export async function getAnnuitySavingsFromReductions({
+  portfolioDataSourceVersionId,
+  sabicipDataSourceVersionId,
+  ctclinsabDataSourceVersionId,
+  annuitiesbDataSourceVersionId,
+  currentYear,
+  annuityDrop,
+  priorityDrop,
+  pctDrop,
+  prosecutionDrop,
+}: {
+  portfolioDataSourceVersionId: string;
+  sabicipDataSourceVersionId: string;
+  ctclinsabDataSourceVersionId: string;
+  annuitiesbDataSourceVersionId: string;
+  currentYear: string;
+  annuityDrop: any;
+  priorityDrop: any;
+  pctDrop: any;
+  prosecutionDrop: any;
+}) {
+  try {
+    const yearDateRange = {
+      $gte: `${currentYear}-01-01T00:00:00.000Z`,
+      $lte: `${currentYear}-12-31T00:00:00.000Z`,
+    };
+
+    const combinedDrops = [...annuityDrop, ...priorityDrop, ...pctDrop, ...prosecutionDrop];
+
+    // const annuityDropCaseReference = annuityDrop.map((data) => data.Case_Reference1);
+    // const priorityDropCaseReference = priorityDrop.map((data) => data.Case_Reference1);
+    // const pctDropCaseReference = pctDrop.map((data) => data.Case_Reference1);
+    // const prosecutionDropCaseReference = prosecutionDrop.map((data) => data.Case_Reference1);
+    const allDropCaseReference = combinedDrops.map((data) => data.Case_Reference1);
+
+    // const annuityDropProcedureAgentRef = annuityDrop.map((data) => data['Procedure Agent Ref']);
+    // const priorityDropProcedureAgentRef = priorityDrop.map((data) => data['Procedure Agent Ref']);
+    // const pctDropProcedureAgentRef = pctDrop.map((data) => data['Procedure Agent Ref']);
+    // const prosecutionDropProcedureAgentRef = prosecutionDrop.map((data) => data['Procedure Agent Ref']);
+    const allDropProcedureAgentRef = combinedDrops.map((data) => data['Procedure Agent Ref']);
+
+    const sbuTotals = {};
+
+    const sabicipData = await DataSourceVersionValueSabicips.aggregate([
+      {
+        $match: {
+          dataSourceVersionId: new ObjectId(sabicipDataSourceVersionId),
+          'rowData.Renewal Date During Budget Period': yearDateRange,
+          'rowData.Clients reference': {
+            $in: allDropCaseReference,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$rowData.Clients reference',
+          dataSourceVersionId: { $first: '$dataSourceVersionId' }, // Include these fields explicitly
+          rowData: { $first: '$rowData' },
+        },
+      },
+    ]);
+
+    const sabicipMap = {};
+    sabicipData.forEach((item) => {
+      const clientRef = item.rowData['Clients reference'];
+      if (clientRef) {
+        sabicipMap[clientRef] = item.rowData.Total ? item.rowData.Total : 0;
+      }
+    });
+
+    const ctclinsabData = await DataSourceVersionValueCtclinsabs.aggregate([
+      {
+        $match: {
+          dataSourceVersionId: new ObjectId(ctclinsabDataSourceVersionId),
+          'rowData.Renewal Date During Budget Period': yearDateRange,
+          'rowData.File number': {
+            $in: allDropProcedureAgentRef,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$rowData.File number',
+          dataSourceVersionId: { $first: '$dataSourceVersionId' }, // Include these fields explicitly
+          rowData: { $first: '$rowData' },
+        },
+      },
+    ]);
+
+    const ctclinsabMap = {};
+
+    ctclinsabData.forEach((item) => {
+      const fileNumber = item.rowData['File number'];
+      if (fileNumber) {
+        ctclinsabMap[fileNumber] = item.rowData.Total ? item.rowData.Total : 0;
+      }
+    });
+
+    const annuitiesData = await DataSourceVersionValueAnnuities.aggregate([
+      {
+        $match: {
+          dataSourceVersionId: new ObjectId(annuitiesbDataSourceVersionId),
+          'rowData.Due Date': yearDateRange,
+          'rowData.Other Reference No': {
+            $in: allDropCaseReference,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$rowData.Other Reference No',
+          dataSourceVersionId: { $first: '$dataSourceVersionId' }, // Include these fields explicitly
+          rowData: { $first: '$rowData' },
+        },
+      },
+    ]);
+
+    const annuitiesMap = {};
+    annuitiesData.forEach((item) => {
+      const otherReferenceNo = item.rowData['Other Reference No'];
+      if (otherReferenceNo) {
+        annuitiesMap[otherReferenceNo] = item.rowData.Amount ? item.rowData.Amount : 0;
+      }
+    });
+
+    combinedDrops.forEach((item) => {
+      const caseRef = item.Case_Reference1;
+      const procedureAgentRef = item['Procedure Agent Ref'];
+      const sbu = item.SBU;
+      const sabicTotal = sabicipMap[caseRef] || 0;
+      const ctclinsabTotal = ctclinsabMap[procedureAgentRef] || 0;
+      const annuitiesTotal = annuitiesMap[caseRef] || 0;
+      const total = sabicTotal + ctclinsabTotal + annuitiesTotal;
+
+      if (sbu) {
+        if (!sbuTotals[sbu]) {
+          sbuTotals[sbu] = 0;
+        }
+        sbuTotals[sbu] += total;
+      }
+    });
+
+    const dropSavingResult = Object.entries(sbuTotals).map(([SBU, value]) => ({ SBU, value })) as DataItem[];
+    return dropSavingResult;
+  } catch (e) {
+    console.log('Error in getAnnuitySavingsFromReductions function.', e);
     throw e;
   }
 }
