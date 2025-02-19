@@ -154,3 +154,33 @@ export const listReportRequest = async (req: Request, res: Response, next: NextF
     next(err);
   }
 };
+
+export const downloadReport = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { reportRequestId } = req.params;
+    const { userId } = req.user;
+
+    const reportDetails = await reportRequestService.findReportRequestById(reportRequestId);
+    if (reportDetails?.createdBy != userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'You do not have permission to download this report.',
+      });
+    }
+    if (reportDetails?.status !== 'processed') {
+      return res.status(400).json({
+        success: false,
+        message: `The report is currently in '${reportDetails?.status}' status and cannot be downloaded.`,
+      });
+    }
+    res.download(reportDetails.filePath!, reportDetails.fileName!, (err) => {
+      if (err) {
+        console.error('Error downloading file:', err);
+        res.status(500).send('Error downloading file');
+      }
+    });
+  } catch (err) {
+    console.log('Error in downloadReport', err);
+    next(err);
+  }
+};

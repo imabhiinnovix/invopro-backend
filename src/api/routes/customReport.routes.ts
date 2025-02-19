@@ -3,7 +3,12 @@ import { Router } from 'express';
 import { RoleId } from '../../enums/role.enum';
 import { roleAuthorization } from '../../middlewares/role.middleware';
 import { authenticateToken } from '../../middlewares/authenticate.middleware';
-import { generateCustomReports, listCustomReports, listReportRequest } from '../controllers/customReport.controller';
+import {
+  downloadReport,
+  generateCustomReports,
+  listCustomReports,
+  listReportRequest,
+} from '../controllers/customReport.controller';
 
 const router = Router();
 
@@ -16,4 +21,5 @@ router.post(
   generateCustomReports
 );
 
+router.get('/download/:reportRequestId', authenticateToken, downloadReport);
 export default router;

@@ -52,3 +52,13 @@ export const getReportRequestList = async ({
     throw err;
   }
 };
+
+export const findReportRequestById = async (id: string) => {
+  try {
+    const requestDetails = await ReportRequestModel.findById(id);
+
+    return requestDetails;
+  } catch (err) {
+    throw err;
+  }
+};
