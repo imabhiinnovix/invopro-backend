@@ -15,6 +15,54 @@ export interface DataItem {
   SBU: string;
   cellName?: string;
 }
+
+const epCountry = [
+  'EM',
+  'EU',
+  'EP',
+  'AL',
+  'AT',
+  'BE',
+  'BG',
+  'CH',
+  'CY',
+  'CZ',
+  'DE',
+  'DK',
+  'EE',
+  'ES',
+  'FI',
+  'FR',
+  'GB',
+  'GR',
+  'HR',
+  'HU',
+  'IE',
+  'IS',
+  'IT',
+  'LI',
+  'LT',
+  'LU',
+  'LV',
+  'MC',
+  'ME',
+  'MK',
+  'MT',
+  'NL',
+  'NO',
+  'PL',
+  'PT',
+  'RO',
+  'RS',
+  'SE',
+  'SI',
+  'SK',
+  'SM',
+  'TR',
+  'UP',
+  'BY',
+];
+
 export function processSTCData(data) {
   const mapping = {
     'stc houston': 'STC-HOUSTON',
@@ -140,10 +188,12 @@ export function processData({
     //   .reduce((sum, item) => sum + (item.value as number), 0);
 
     // Add totals to the processed data
-    processedData.push(
-      { value: totalDistinctCount + staticTotal, SBU: 'Total', cellName: cellMappings?.Total }
-      // { value: petchemTotal, SBU: 'Petchem Total', cellName: cellMappings?.Petchem }
-    );
+    const totalValue = totalDistinctCount + staticTotal;
+    processedData.push({
+      value: Number.isInteger(totalValue) ? totalValue : Number(totalValue.toFixed(2)),
+      SBU: 'Total',
+      cellName: cellMappings?.Total,
+    });
   }
 
   return processedData;
@@ -191,53 +241,6 @@ export async function getCurrentYearNewApplicationFiled({
   schemaName?: string;
 }) {
   try {
-    const epCountry = [
-      'EM',
-      'EU',
-      'EP',
-      'AL',
-      'AT',
-      'BE',
-      'BG',
-      'CH',
-      'CY',
-      'CZ',
-      'DE',
-      'DK',
-      'EE',
-      'ES',
-      'FI',
-      'FR',
-      'GB',
-      'GR',
-      'HR',
-      'HU',
-      'IE',
-      'IS',
-      'IT',
-      'LI',
-      'LT',
-      'LU',
-      'LV',
-      'MC',
-      'ME',
-      'MK',
-      'MT',
-      'NL',
-      'NO',
-      'PL',
-      'PT',
-      'RO',
-      'RS',
-      'SE',
-      'SI',
-      'SK',
-      'SM',
-      'TR',
-      'UP',
-      'BY',
-    ];
-
     const otherCountryNegative = [...epCountry, 'CN', 'US'];
     let matchCondition: Record<string, any> = {
       dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
@@ -1376,7 +1379,6 @@ export async function getReductions({
 }
 
 export async function getAnnuitySavingsFromReductions({
-  portfolioDataSourceVersionId,
   sabicipDataSourceVersionId,
   ctclinsabDataSourceVersionId,
   annuitiesbDataSourceVersionId,
@@ -1386,7 +1388,6 @@ export async function getAnnuitySavingsFromReductions({
   pctDrop,
   prosecutionDrop,
 }: {
-  portfolioDataSourceVersionId: string;
   sabicipDataSourceVersionId: string;
   ctclinsabDataSourceVersionId: string;
   annuitiesbDataSourceVersionId: string;
@@ -1404,16 +1405,8 @@ export async function getAnnuitySavingsFromReductions({
 
     const combinedDrops = [...annuityDrop, ...priorityDrop, ...pctDrop, ...prosecutionDrop];
 
-    // const annuityDropCaseReference = annuityDrop.map((data) => data.Case_Reference1);
-    // const priorityDropCaseReference = priorityDrop.map((data) => data.Case_Reference1);
-    // const pctDropCaseReference = pctDrop.map((data) => data.Case_Reference1);
-    // const prosecutionDropCaseReference = prosecutionDrop.map((data) => data.Case_Reference1);
     const allDropCaseReference = combinedDrops.map((data) => data.Case_Reference1);
 
-    // const annuityDropProcedureAgentRef = annuityDrop.map((data) => data['Procedure Agent Ref']);
-    // const priorityDropProcedureAgentRef = priorityDrop.map((data) => data['Procedure Agent Ref']);
-    // const pctDropProcedureAgentRef = pctDrop.map((data) => data['Procedure Agent Ref']);
-    // const prosecutionDropProcedureAgentRef = prosecutionDrop.map((data) => data['Procedure Agent Ref']);
     const allDropProcedureAgentRef = combinedDrops.map((data) => data['Procedure Agent Ref']);
 
     const sbuTotals = {};
@@ -1517,10 +1510,120 @@ export async function getAnnuitySavingsFromReductions({
       }
     });
 
-    const dropSavingResult = Object.entries(sbuTotals).map(([SBU, value]) => ({ SBU, value })) as DataItem[];
+    const dropSavingResult = Object.entries(sbuTotals).map(([SBU, value]) => ({
+      SBU,
+      value: Number((value as number).toFixed(2)),
+    })) as DataItem[];
     return dropSavingResult;
   } catch (e) {
     console.log('Error in getAnnuitySavingsFromReductions function.', e);
+    throw e;
+  }
+}
+
+export async function getNumberOfProsecutionReduction({
+  priorityDrop,
+  pctDrop,
+  prosecutionDrop,
+}: {
+  priorityDrop: any;
+  pctDrop: any;
+  prosecutionDrop: any;
+}) {
+  try {
+    const allProsecutionDrops = [...priorityDrop, ...pctDrop, ...prosecutionDrop];
+    const allProsecutionDropCount = allProsecutionDrops.reduce((acc, item) => {
+      const sbu = item['SBU'];
+      acc[sbu] = (acc[sbu] || 0) + 1;
+      return acc;
+    }, {});
+    const allProsecutionDropCountResult = Object.entries(allProsecutionDropCount).map(([SBU, value]) => ({
+      SBU,
+      value,
+    })) as DataItem[];
+    return allProsecutionDropCountResult;
+  } catch (e) {
+    console.log('Error in getNumberOfProsecutionReduction function', e);
+    throw e;
+  }
+}
+
+export async function getAllProsecutionSavings({
+  priorityDrop,
+  pctDrop,
+  prosecutionDrop,
+}: {
+  priorityDrop: any;
+  pctDrop: any;
+  prosecutionDrop: any;
+}) {
+  try {
+    const allProsecutionSavingsMap = {};
+
+    priorityDrop.forEach((item) => {
+      const sbu = item['SBU'];
+      allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 5676.81;
+    });
+
+    pctDrop.forEach((item) => {
+      const sbu = item['SBU'];
+      allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 16384.33;
+    });
+
+    prosecutionDrop.forEach((item) => {
+      const sbu = item['SBU'];
+      const country = item['Country'];
+      if (country === 'US') {
+        allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 3217.71;
+      } else if (epCountry.includes(country)) {
+        allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 2380.78;
+      } else if (country === 'KR') {
+        allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 2518.25;
+      } else if (country === 'CN') {
+        allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 3845.45;
+      } else {
+        allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 2500;
+      }
+    });
+
+    const allProsecutionSavingResult = Object.entries(allProsecutionSavingsMap).map(([SBU, value]) => ({
+      SBU,
+      value: Number((value as number).toFixed(2)),
+    })) as DataItem[];
+
+    return allProsecutionSavingResult;
+  } catch (e) {
+    console.log('Error in getAllProsecutionSavings function', e);
+    throw e;
+  }
+}
+
+export async function getTotalCostSavings({
+  totalAnnuitySavings,
+  allProsecutionSaving,
+}: {
+  totalAnnuitySavings: any;
+  allProsecutionSaving: any;
+}) {
+  try {
+    const totalCostSavingsMap = {};
+
+    totalAnnuitySavings.forEach((entry) => {
+      totalCostSavingsMap[entry.SBU] = (totalCostSavingsMap[entry.SBU] || 0) + entry.value;
+    });
+
+    allProsecutionSaving.forEach((entry) => {
+      totalCostSavingsMap[entry.SBU] = (totalCostSavingsMap[entry.SBU] || 0) + entry.value;
+    });
+
+    const totalCostSavings = Object.keys(totalCostSavingsMap).map((SBU) => ({
+      SBU,
+      value: Number(totalCostSavingsMap[SBU].toFixed(2)),
+    }));
+
+    return totalCostSavings;
+  } catch (e) {
+    console.log('Error in getTotalCostSavings function', e);
     throw e;
   }
 }
