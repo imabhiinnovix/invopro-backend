@@ -231,9 +231,10 @@ export async function createExcelSheetFile(
   // Apply the calculated dynamic widths to the columns
   worksheet.columns = columns.map((col, index) => ({
     ...col,
-    width: columnWidths[index] + 2, // Add a bit of padding
+    width: columnWidths[index] + 5, // Add a bit of padding
   }));
 
+  worksheet.getColumn(1).hidden = false;
   // Save the workbook to the file
   await workbook.xlsx.writeFile(filePath);
   console.log(`Excel sheet "${sheetName}" updated/created in file: ${filePath}`);
