@@ -108,9 +108,14 @@ export async function writeDataToExcel(data: DataItem[], filePath: string): Prom
   // Iterate through the data and write it to the sheet
   data.forEach((item) => {
     if (item.cellName) {
-      // If a specific cell is provided, write the value there
       const cell = sheet.getCell(item.cellName);
-      cell.value = `${item.value ?? ''}`;
+      cell.value = item.value;
+
+      if (item.numFormat === 'percentage') {
+        cell.numFmt = '0%'; // Apply percentage format
+      } else {
+        cell.numFmt = cell.numFmt || '0'; // Preserve existing format
+      }
     }
   });
 

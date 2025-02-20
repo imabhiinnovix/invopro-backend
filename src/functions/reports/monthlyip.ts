@@ -79,9 +79,9 @@ export const generateMonthlyIpReport = async ({
         disclosureDataSourceVersionId,
         currentYear
       );
-    const processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData = addCellMaping(
-      percentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
-      {
+    const processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData = addCellMaping({
+      data: percentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
+      cellMappings: {
         'SBU T&I': 'B4',
         'SBU Metals': 'C4',
         'SBU Agri-nutrients': 'D4',
@@ -91,8 +91,8 @@ export const generateMonthlyIpReport = async ({
         'SBU Strategy & Transformation': 'H4',
         'Scientific Design': 'I4',
         Total: 'J4',
-      }
-    );
+      },
+    });
 
     const draftedApplicationDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
@@ -300,19 +300,6 @@ export const generateMonthlyIpReport = async ({
       },
     });
 
-    //   {
-    //     'SBU T&I': 'B26',
-    //     'SBU Metals': 'C26',
-    //     'SBU Agri-nutrients': 'D26',
-    //     'SBU Chemicals': 'E26',
-    //     'SBU Polymers': 'F26',
-    //     // Petchem: 'G26',
-    //     'SBU SHPP': 'H26',
-    //     'SBU Strategy & Transformation': 'I26',
-    //     Total: 'J26',
-    //   },
-    //   staticTotal: 109,
-    // });
     const usIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -332,18 +319,6 @@ export const generateMonthlyIpReport = async ({
         'Scientific Design': 'I28',
         Total: 'J28',
       },
-
-      // {
-      //   'SBU T&I': 'B28',
-      //   'SBU Metals': 'C28',
-      //   'SBU Agri-nutrients': 'D28',
-      //   'SBU Chemicals': 'E28',
-      //   'SBU Polymers': 'F28',
-      //   // Petchem: 'G28',
-      //   'SBU SHPP': 'H28',
-      //   'SBU Strategy & Transformation': 'I28',
-      //   Total: 'J28',
-      // },
     });
     const epIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -431,7 +406,7 @@ export const generateMonthlyIpReport = async ({
       totalIssuedData: processedTotalIssuedApplication,
     });
 
-    const processedTotalPortFolio = processData({
+    const processedTotalPortFolio = addCellMaping({
       data: totalPortFolio,
       cellMappings: {
         'SBU T&I': 'B34',
@@ -444,11 +419,10 @@ export const generateMonthlyIpReport = async ({
         'Scientific Design': 'I34',
         Total: 'J34',
       },
-      isCellOnly: true,
     });
 
-    const totalPortFolioPercentage = getTotalPortfolioPercentage({ data: totalPortFolio });
-    const processedTotalPortFolioPercentage = processData({
+    const totalPortFolioPercentage = getTotalPortfolioPercentage({ data: processedTotalPortFolio });
+    const processedTotalPortFolioPercentage = addCellMaping({
       data: totalPortFolioPercentage,
       cellMappings: {
         'SBU T&I': 'B35',
@@ -461,7 +435,6 @@ export const generateMonthlyIpReport = async ({
         'Scientific Design': 'I35',
         Total: 'J35',
       },
-      isCellOnly: true,
     });
 
     const currentYearRenewalDue = await getCurrentYearRenewalDue({
@@ -748,7 +721,7 @@ export const generateMonthlyIpReport = async ({
         },
         {
           cellName: 'A37',
-          value: `${currentYear} Renewals Due(USD)`,
+          value: `${currentYear} Renewals Due`,
           SBU: '',
         },
         {

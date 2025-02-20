@@ -14,6 +14,7 @@ export interface DataItem {
   value: number | string;
   SBU: string;
   cellName?: string;
+  numFormat?: string;
 }
 
 const epCountry = [
@@ -115,8 +116,9 @@ export function getTotalPortfolioPercentage({ data }: { data: DataItem[] }) {
   const totalValue = totalItem ? Number(totalItem.value) : 0;
 
   return data.map((item) => ({
-    ...item,
-    value: totalValue > 0 ? parseFloat(((Number(item.value) / totalValue) * 100).toFixed(2)) : 0,
+    SBU: item.SBU,
+    value: totalValue > 0 ? Number(item.value) / totalValue : 0,
+    numFormat: 'percentage',
   }));
 }
 export async function getTotalPortfolio({
@@ -199,9 +201,20 @@ export function processData({
   return processedData;
 }
 
-export function addCellMaping(data: DataItem[], cellMappings?: Record<string, string>): DataItem[] {
+export function addCellMaping({
+  data,
+  cellMappings,
+}: {
+  data: DataItem[];
+  cellMappings?: Record<string, string>;
+}): DataItem[] {
   return data.map((item) => {
-    return { ...item, cellName: cellMappings?.[item.SBU] };
+    return {
+      SBU: item.SBU,
+      value: item.value,
+      cellName: cellMappings?.[item.SBU],
+      numFormat: item.numFormat,
+    };
   });
 }
 
@@ -753,11 +766,12 @@ const calculateCombinedPercentage = (
     const activeEntry = activeData.find((item) => item.SBU === total.SBU)?.value || 0;
 
     const combined = (newEntry as number) + (activeEntry as number);
-    const combinedPercentage = total.value ? ((combined / (total.value as number)) * 100).toFixed(2) : '0.00';
+    const combinedPercentage = total.value ? combined / (total.value as number) : 0;
 
     return {
       SBU: total.SBU,
       value: combinedPercentage,
+      numFormat: 'percentage',
     };
   });
 };
