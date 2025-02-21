@@ -1084,6 +1084,36 @@ function filterCombineData(combinedCases, data) {
 
   return result;
 }
+
+function filterProsecutionDrop(combinedCases, data) {
+  let result: any[] = [];
+  const invalidTypesRegex = new RegExp('WO-PCT|WO-ORD');
+  for (let i = 0; i < data.length; i++) {
+    const rowData = data[i].rowData;
+    const dataFaimlyNumber = rowData.CaseNumber;
+    const dataCaseRefrence = rowData['Case_Reference1'];
+    const groupedCases = combinedCases[dataFaimlyNumber];
+    const isFirstFilling = rowData.IsFirstFiling;
+    if (isFirstFilling === 1) {
+      const isInvalid = groupedCases.some((item) => {
+        let finalMatch = false;
+        if (item['Case_Reference1'] != dataCaseRefrence) {
+          finalMatch = invalidTypesRegex.test(item['Case_Reference1']);
+        }
+        if (finalMatch && item['In Force'] === 0) {
+          finalMatch = false;
+        }
+        return finalMatch;
+      });
+      if (!isInvalid) {
+        result.push(rowData);
+      }
+    } else {
+      result.push(rowData);
+    }
+  }
+  return result;
+}
 export async function getReductions({
   portfolioDataSourceVersionId,
   currentYear,
@@ -1302,17 +1332,17 @@ export async function getReductions({
                     { 'rowData.IsFirstFiling': 1 },
                     { 'rowData.Publication Date': { $ne: null } },
                     { 'rowData.Publication No': { $ne: null } },
-                    {
-                      $or: [
-                        { 'rowData.Case_Reference1': { $not: { $regex: 'WO-PCT|WO-ORD', $options: 'i' } } },
-                        {
-                          $and: [
-                            { 'rowData.Case_Reference1': { $regex: 'WO-PCT|WO-ORD', $options: 'i' } },
-                            { 'rowData.In Force': 0 },
-                          ],
-                        },
-                      ],
-                    },
+                    // {
+                    //   $or: [
+                    //     { 'rowData.Case_Reference1': { $not: { $regex: 'WO-PCT|WO-ORD', $options: 'i' } } },
+                    //     {
+                    //       $and: [
+                    //         { 'rowData.Case_Reference1': { $regex: 'WO-PCT|WO-ORD', $options: 'i' } },
+                    //         { 'rowData.In Force': 0 },
+                    //       ],
+                    //     },
+                    //   ],
+                    // },
                   ],
                 },
                 {
@@ -1353,7 +1383,8 @@ export async function getReductions({
     ];
 
     const prosecutionDrop = await DataSourceVersionValuePortfolio.aggregate(prosecutionDropAggregate);
-    const prosecutionDropArray = prosecutionDrop.map((data) => data.rowData);
+    // const prosecutionDropArray = prosecutionDrop.map((data) => data.rowData);
+    const prosecutionDropArray = filterProsecutionDrop(groupedCasesBasedOnFaimlyNumber, prosecutionDrop);
 
     const prosecutionDropCount = prosecutionDropArray.reduce((acc, item) => {
       const sbu = item['SBU'];
