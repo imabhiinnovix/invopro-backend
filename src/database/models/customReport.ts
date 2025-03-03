@@ -3,6 +3,7 @@ import { Schema, model, Document, Types } from 'mongoose';
 interface IDataSource {
   code: string;
   dataSourceId: string;
+  fileName: string[];
 }
 
 interface ICustomReport extends Document {
@@ -22,6 +23,7 @@ const CustomReportSchema = new Schema<ICustomReport>(
       {
         code: { type: String, required: true },
         dataSourceId: { type: String, required: true, ref: 'data_source' },
+        fileName: { type: [String] },
       },
     ],
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },

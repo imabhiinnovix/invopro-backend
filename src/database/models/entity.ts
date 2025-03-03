@@ -3,6 +3,7 @@ import { Schema, model, Document, Types } from 'mongoose';
 // Define the Attribute interface
 export interface IAttribute {
   name: string;
+  mappingName: string;
   type: 'number' | 'text' | 'date' | 'boolean' | 'richtext' | 'url' | 'option' | 'multioption' | 'user';
   validation?: string[];
   transformations?: string[];
@@ -26,6 +27,7 @@ interface IEntity extends Document {
 const attributeSchema = new Schema<IAttribute>(
   {
     name: { type: String, required: true },
+    mappingName: { type: String, required: true },
     type: {
       type: String,
       required: true,

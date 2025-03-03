@@ -6,6 +6,7 @@ import { authenticateToken } from '../../middlewares/authenticate.middleware';
 import {
   downloadReport,
   generateCustomReports,
+  getReportVersionValuesBasedOnReportIdAndVersionValue,
   listCustomReports,
   listReportRequest,
 } from '../controllers/customReport.controller';
@@ -14,6 +15,8 @@ const router = Router();
 
 router.get('/list', authenticateToken, listCustomReports);
 router.get('/listReportRequest', authenticateToken, listReportRequest);
+router.get('/getVersionValue', authenticateToken, getReportVersionValuesBasedOnReportIdAndVersionValue);
+
 router.post(
   '/generate',
   authenticateToken,

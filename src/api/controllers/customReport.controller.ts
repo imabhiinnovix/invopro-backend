@@ -3,10 +3,13 @@ import { Request, Response, NextFunction } from 'express';
 import * as customReportServices from '../../database/services/customReport.services';
 import * as dataSourceVersionServices from '../../database/services/dataSourceVersion.services';
 import * as reportRequestService from '../../database/services/reportRequest.services';
+import * as dataSourceService from '../../database/services/dataSource.services';
 
 import { DateTime } from 'luxon';
 import { generateMonthlyIpReport } from '../../functions/reports/monthlyip';
 import path from 'path';
+
+import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
 
 export const generateCustomReports = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -94,6 +97,7 @@ export const listCustomReports = async (req: Request, res: Response, next: NextF
     if (paginate) {
       result = await customReportServices.getCustomReportList({
         query,
+        select: ['_id', 'reportName'],
         page,
         limit,
       });
@@ -117,11 +121,11 @@ export const listCustomReports = async (req: Request, res: Response, next: NextF
 export const listReportRequest = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { search, paginate = 'false' } = req.query;
-    const { organizationId, userId } = req.user;
+    const { organizationId } = req.user;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
-    const query: any = { organizationId: organizationId, createdBy: userId };
+    const query: any = { organizationId: organizationId };
     if (search) query.reportName = { $regex: search, $options: 'i' };
 
     let result: any = {};
@@ -158,15 +162,15 @@ export const listReportRequest = async (req: Request, res: Response, next: NextF
 export const downloadReport = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { reportRequestId } = req.params;
-    const { userId } = req.user;
+    // const { userId } = req.user;
 
     const reportDetails = await reportRequestService.findReportRequestById(reportRequestId);
-    if (reportDetails?.createdBy != userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'You do not have permission to download this report.',
-      });
-    }
+    // if (reportDetails?.createdBy != userId) {
+    //   return res.status(401).json({
+    //     success: false,
+    //     message: 'You do not have permission to download this report.',
+    //   });
+    // }
     if (reportDetails?.status !== 'processed') {
       return res.status(400).json({
         success: false,
@@ -181,6 +185,69 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
     });
   } catch (err) {
     console.log('Error in downloadReport', err);
+    next(err);
+  }
+};
+
+export const getReportVersionValuesBasedOnReportIdAndVersionValue = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { reportRequestId, versionValue } = req.query as { reportRequestId: string; versionValue: string };
+
+    const customReportData = await customReportServices.findCustomReportById(reportRequestId);
+
+    const requiredDataSourceIds = customReportData?.dataSourceIds?.map((data) => data.dataSourceId);
+
+    const dataSourceResult = await dataSourceService.getDataSourceList({
+      query: { _id: { $in: requiredDataSourceIds } },
+
+      populate: [
+        {
+          path: 'entityId',
+          select: 'name attributes', // Specify the fields to populate
+        },
+      ],
+    });
+    const query: any = { dataSourceId: { $in: requiredDataSourceIds }, versionValue: versionValue, isCurrent: true };
+
+    const availableVersionValue = await dataSourceVersionService.getDataSourceVersionList({
+      query,
+    });
+
+    const versionMap = new Map<string, any[]>();
+
+    for (let i = 0; i < availableVersionValue?.data?.length || 0; i++) {
+      const version = availableVersionValue?.data[i];
+      if (versionMap[version.dataSourceId]) {
+        versionMap[version.dataSourceId].push(version);
+      } else {
+        versionMap[version.dataSourceId] = [version];
+      }
+    }
+
+    const reportDataSourceFileNameMap = new Map<string, any[]>();
+
+    for (let i = 0; i < customReportData?.dataSourceIds?.length! || 0; i++) {
+      const dataSource = customReportData?.dataSourceIds[i]!;
+      reportDataSourceFileNameMap[dataSource.dataSourceId] = dataSource.fileName;
+    }
+
+    const versionValueDetails = dataSourceResult?.data?.map((source) => ({
+      ...source,
+      requiredFiles: reportDataSourceFileNameMap[source._id],
+      reportName: customReportData?.reportName,
+      versions: versionMap[source._id] || [], // Include versions if available, else empty array
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: 'Report Request List Fetched Successfully',
+      versionValueDetails,
+    });
+  } catch (err) {
     next(err);
   }
 };

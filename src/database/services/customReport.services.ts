@@ -35,7 +35,7 @@ export const getCustomReportList = async ({
 
 export const findCustomReportById = async (id: string, populate = true) => {
   try {
-    return await CustomReportModel.findById(id);
+    return await CustomReportModel.findById(id).lean().exec(); // Ensures query execution and returns a plain object
   } catch (err) {
     throw err;
   }

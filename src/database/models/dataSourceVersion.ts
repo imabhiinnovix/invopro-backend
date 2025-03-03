@@ -25,7 +25,7 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     versionValue: { type: String, required: true },
-    versionName: { type: String, required: true },
+    versionName: { type: String },
     status: {
       type: String,
       enum: ['failed', 'processing', 'processed'], // Restricting the values of status
@@ -53,7 +53,7 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
 );
 
 dataSourceVersionSchema.index(
-  { dataSourceId: 1, versionValue: 1, versionName: 1 },
+  { dataSourceId: 1, versionValue: 1, isCurrent: 1 },
   { unique: true, collation: { locale: 'en', strength: 2 } }
 );
 

@@ -3,7 +3,7 @@ import * as entityService from '../../database/services/entity.services';
 
 export const createEntity = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, description, attributes } = req.body;
+    const { name, mappingName, description, attributes } = req.body;
     const { organizationId, userId } = req.user;
     const entityDetails = await entityService.findEntityByNameAndOrganization(name, organizationId);
     if (entityDetails) {
@@ -12,6 +12,7 @@ export const createEntity = async (req: Request, res: Response, next: NextFuncti
 
     await entityService.createEntity({
       name,
+      mappingName,
       description,
       attributes,
       organizationId,
@@ -29,7 +30,7 @@ export const createEntity = async (req: Request, res: Response, next: NextFuncti
 
 export const updateEntity = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, description, attributes } = req.body;
+    const { name, mappingName, description, attributes } = req.body;
     const { userId, organizationId } = req.user;
     const entityDetails = await entityService.findEntityByNameAndOrganization(name, organizationId);
     if (entityDetails && entityDetails._id != req.params.entityId) {
@@ -37,6 +38,7 @@ export const updateEntity = async (req: Request, res: Response, next: NextFuncti
     }
     await entityService.updateEntity(req.params.entityId, {
       name,
+      mappingName,
       description,
       attributes,
       updatedBy: userId,

@@ -386,12 +386,14 @@ export async function getDisclosureCount({
   isActive,
   isDrafted,
   isYearRequired,
+  isPercentage,
 }: {
   disclosureDataSourceVersionId: string;
   currentYear: string;
   isActive: boolean;
   isDrafted: boolean;
   isYearRequired: boolean;
+  isPercentage?: boolean;
 }) {
   try {
     const yearDateRange = {
@@ -429,6 +431,17 @@ export async function getDisclosureCount({
     }
     if (isYearRequired) {
       matchCondition['rowData.DisclosureDate'] = yearDateRange;
+    }
+    if (isPercentage) {
+      matchCondition['rowData.DisclosureStatus'] = {
+        $in: [
+          'Rated to Draft OC',
+          'Rated To Draft OC',
+          'Rated to Draft IH',
+          'Rated To Draft IH',
+          'RATED TO DRAFT IN HOUSE',
+        ],
+      };
     }
     const activeDisclosure = await DataSourceVersionValueDisclosure.aggregate([
       {
@@ -785,14 +798,15 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
     const newYearApplicationFiled = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
-      isPercentagePart: false,
+      isPercentagePart: true,
     });
     const activeDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,
       isActive: false,
-      isDrafted: true,
-      isYearRequired: false,
+      isDrafted: false,
+      isPercentage: true,
+      isYearRequired: true,
     });
     const totalDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
@@ -1087,7 +1101,7 @@ function filterCombineData(combinedCases, data) {
 
 function filterProsecutionDrop(combinedCases, data) {
   let result: any[] = [];
-  const invalidTypesRegex = new RegExp('WO-PCT|WO-ORD');
+  const invalidTypesRegex = new RegExp('WO-PCT|WO-ORD|WO-PRI');
   for (let i = 0; i < data.length; i++) {
     const rowData = data[i].rowData;
     const dataFaimlyNumber = rowData.CaseNumber;
