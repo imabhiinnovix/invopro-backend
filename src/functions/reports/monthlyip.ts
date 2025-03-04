@@ -94,7 +94,6 @@ export const generateMonthlyIpReport = async ({
       },
     });
 
-    return processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData;
     const draftedApplicationDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,
@@ -102,6 +101,7 @@ export const generateMonthlyIpReport = async ({
       isDrafted: true,
       isYearRequired: false,
     });
+
     const processedDraftedApplicationDisclosureCount = processData({
       data: draftedApplicationDisclosureCount,
       cellMappings: {

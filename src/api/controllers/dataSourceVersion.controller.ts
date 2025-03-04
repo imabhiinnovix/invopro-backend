@@ -113,8 +113,10 @@ async function validateFileData({
         // const fileKeyArray = reversedMapping[attrName];
         // if (fileKeyArray?.length === 1) {
         const fileKey = mapping[attrName];
-        const value = row[fileKey];
-
+        let value = row[fileKey];
+        if (typeof value === 'object') {
+          value = value.text;
+        }
         // Required field validation
         if (attr.required === 'Mandatory' && (value === undefined || value === null || value === '')) {
           errors.push({
