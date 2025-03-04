@@ -74,7 +74,7 @@ export const generateCustomReportsFunction = async ({
       let x = await generateMonthlyIpReport({
         reportRequestPayload,
         requestedReportId: requestedReport._id as string,
-        sampleFilePath: customReportDetails.sampleFilePath,
+        sampleFilePath: customReportDetails.sampleFilePath!,
         disclosureDataSourceVersionId: versionMap[disclosureDataSource?.dataSourceId!],
         portfolioDataSourceVersionId: versionMap[portfolioDataSource?.dataSourceId!],
         sabicipDataSourceVersionId: versionMap[sabicipDataSource?.dataSourceId!],
@@ -251,7 +251,7 @@ export const getReportVersionValuesBasedOnReportIdAndVersionValue = async (
 
     for (let i = 0; i < customReportData?.dataSourceIds?.length! || 0; i++) {
       const dataSource = customReportData?.dataSourceIds[i]!;
-      reportDataSourceFileNameMap[dataSource.dataSourceId] = dataSource.fileName;
+      reportDataSourceFileNameMap[dataSource.dataSourceId] = dataSource.fileDetails;
     }
 
     const versionValueDetails = dataSourceResult?.data?.map((source) => ({

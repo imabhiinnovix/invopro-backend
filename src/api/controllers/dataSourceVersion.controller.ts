@@ -394,14 +394,14 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
     for (let i = 0; i < customReportData?.dataSourceIds?.length!; i++) {
       const dataSourceInfo = customReportData?.dataSourceIds[i];
       const dataSourceId = dataSourceInfo?.dataSourceId!;
-      const fileDetails = dataSourceInfo?.fileName!;
+      const fileDetails = dataSourceInfo?.fileDetails!;
       let dataSourceVersion: any = '';
       let entityDetails: any = '';
       let dataSourceDetails: any = '';
       let validationErrors: any[] = [];
       let validatedFinalData: any[] = [];
       for (let j = 0; j < fileDetails.length; j++) {
-        const fileDetailName = fileDetails[j];
+        const fileDetailName = fileDetails[j].name;
         const file = files.find((file) => {
           return file.originalname.split('.')[0] === fileDetailName;
         });

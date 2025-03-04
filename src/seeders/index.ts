@@ -35,11 +35,27 @@ export async function seedDatabase() {
       reportName: 'monthlyip',
       functionName: 'generateMonthlyIpReport',
       dataSourceIds: [
-        { code: 'portfolio', dataSourceId: '67923590d31b8f4ea211147b' },
-        { code: 'disclosure', dataSourceId: '6792332a753ceb4945e5b3b8' },
-        { code: 'sabicip', dataSourceId: '67a3226221f5f8dd752ce644' },
-        { code: 'ctclinsab', dataSourceId: '67a33c7f22cb8a927a85e427' },
-        { code: 'annuities', dataSourceId: '67a3429322cb8a927a85e4b9' },
+        {
+          code: 'portfolio',
+          dataSourceId: '67923590d31b8f4ea211147b',
+          fileDetails: [{ name: 'Complete Portfolio' }, { name: 'Complete Portfolio _SHPP' }],
+        },
+        {
+          code: 'disclosure',
+          dataSourceId: '6792332a753ceb4945e5b3b8',
+          fileDetails: [{ name: 'All Disclosures' }, { name: 'All Disclosures _SHPP' }],
+        },
+        { code: 'sabicip', dataSourceId: '67a3226221f5f8dd752ce644', fileDetails: [{ name: 'AnnuitiesDueList_SHPP' }] },
+        {
+          code: 'ctclinsab',
+          dataSourceId: '67a33c7f22cb8a927a85e427',
+          fileDetails: [{ name: 'AnnuitiesDueList_Linde' }],
+        },
+        {
+          code: 'annuities',
+          dataSourceId: '67a3429322cb8a927a85e4b9',
+          fileDetails: [{ name: 'AnnuitiesDueList_CPi' }],
+        },
       ],
       organizationId: payload.organizationId,
       sampleFilePath: path.join('reports', 'sample', 'sample-monthly-ip-report.xlsx'),
