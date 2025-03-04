@@ -11,10 +11,20 @@ import path from 'path';
 
 import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
 
-export const generateCustomReports = async (req: Request, res: Response, next: NextFunction) => {
+export const generateCustomReportsFunction = async ({
+  userId,
+  organizationId,
+  versionValue,
+  customReportId,
+  orgCode,
+}: {
+  userId: string;
+  organizationId: string;
+  versionValue: string;
+  customReportId: string;
+  orgCode: string;
+}) => {
   try {
-    const { versionValue, customReportId } = req.body;
-    const { userId, organizationId, orgCode } = req?.user;
     const customReportDetails = await customReportServices.findCustomReportById(customReportId);
     if (!customReportDetails) {
       throw new Error('Custom report not found');
@@ -71,13 +81,22 @@ export const generateCustomReports = async (req: Request, res: Response, next: N
         ctclinsabDataSourceVersionId: versionMap[ctclinsabDataSource?.dataSourceId!],
         annuitiesbDataSourceVersionId: versionMap[annuitiesbDataSource?.dataSourceId!],
       });
-
-      res.status(201).json({
-        success: true,
-        message: 'Report Generated Successfully',
-        x,
-      });
+      return x;
     }
+  } catch (e) {
+    throw e;
+  }
+};
+export const generateCustomReports = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { versionValue, customReportId } = req.body;
+    const { userId, organizationId, orgCode } = req?.user;
+    let data = await generateCustomReportsFunction({ versionValue, userId, organizationId, orgCode, customReportId });
+    res.status(201).json({
+      success: true,
+      message: 'Report Generated Successfully',
+      data,
+    });
   } catch (e) {
     next(e);
   }

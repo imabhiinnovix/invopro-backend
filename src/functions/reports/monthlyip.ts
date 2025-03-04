@@ -94,6 +94,7 @@ export const generateMonthlyIpReport = async ({
       },
     });
 
+    return processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData;
     const draftedApplicationDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,

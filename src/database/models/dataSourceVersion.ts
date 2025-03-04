@@ -54,7 +54,7 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
 
 dataSourceVersionSchema.index(
   { dataSourceId: 1, versionValue: 1, isCurrent: 1 },
-  { unique: true, collation: { locale: 'en', strength: 2 } }
+  { collation: { locale: 'en', strength: 2 } }
 );
 
 const DataSourceVersion = model<IDataSourceVersion>('data_source_version', dataSourceVersionSchema);

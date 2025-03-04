@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { createDataSourceVersion } from './dataSourceVersion.controller';
+import {
+  createDataSourceVersion,
+  createMultipleDataSourceVersionBasedOnCustomReportId,
+} from './dataSourceVersion.controller';
 import { getAttributesFromXlsxOrCsvHeaders } from './getAttributesFromXlsxOrCsvHeaders.controller';
 
 export const handleFileUpload = async (req: Request, res: Response, next: NextFunction) => {
@@ -14,6 +17,8 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
       return await getAttributesFromXlsxOrCsvHeaders(req, res, next);
     } else if (operation.toLowerCase() === 'datasourceversion') {
       return await createDataSourceVersion(req, res, next);
+    } else if (operation.toLowerCase() === 'customreport') {
+      return await createMultipleDataSourceVersionBasedOnCustomReportId(req, res, next);
     } else {
       res.status(400).json({
         success: false,
