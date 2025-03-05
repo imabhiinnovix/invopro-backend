@@ -48,7 +48,7 @@ export const getDataSourceVersionList = async ({
   select = '',
   page,
   limit,
-  sort = { updatedAt: -1 },
+  sort = { createdAt: -1 },
   populate,
 }: any) => {
   try {
