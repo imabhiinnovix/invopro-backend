@@ -26,9 +26,11 @@ export const generateCustomReportsFunction = async ({
 }) => {
   try {
     const customReportDetails = await customReportServices.findCustomReportById(customReportId);
+
     if (!customReportDetails) {
       throw new Error('Custom report not found');
     }
+
     // Extract all data source IDs
     const dataSourceIds = customReportDetails.dataSourceIds.map((ds) => ds.dataSourceId);
 
@@ -37,7 +39,18 @@ export const generateCustomReportsFunction = async ({
     });
 
     if (!dataSourceVersionDetails.data || dataSourceVersionDetails.data.length != dataSourceIds.length) {
-      throw new Error(`Not all required data is available for this report with version value ${versionValue}.`);
+      let notFoundItems = customReportDetails.dataSourceIds.filter((ds) => {
+        return !dataSourceVersionDetails.data.some((dsv) => {
+          return dsv.dataSourceId.toString() === ds.dataSourceId.toString();
+        });
+      });
+
+      let notFoundFileNames = notFoundItems.map((dsv) => dsv.fileDetails);
+      let flattenedFileNames = notFoundFileNames.flatMap((files) => files.map((file) => file.name));
+
+      throw new Error(
+        `Not all required data is available for this report. Please upload the following files before generating the report: ${versionValue}. ${flattenedFileNames.join(', ')}`
+      );
     }
 
     const currentDateTime = DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss');
