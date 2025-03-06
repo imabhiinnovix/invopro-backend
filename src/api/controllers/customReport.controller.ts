@@ -10,6 +10,7 @@ import { generateMonthlyIpReport } from '../../functions/reports/monthlyip';
 import path from 'path';
 
 import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
+import { generateSupplementalIpReport } from '../../functions/reports/supplementalip';
 
 export const generateCustomReportsFunction = async ({
   userId,
@@ -95,6 +96,61 @@ export const generateCustomReportsFunction = async ({
         annuitiesbDataSourceVersionId: versionMap[annuitiesbDataSource?.dataSourceId!],
       });
       return x;
+    } else if (customReportDetails.reportName === 'supplementalip') {
+      const versionMap = Object.fromEntries(
+        dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
+      );
+
+      const requestedReport = await reportRequestService.createReportRequest(reportRequestPayload);
+
+      const disclosureDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'disclosure');
+
+      const portfolioDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'portfolio');
+
+      const sabicipDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'sabicip');
+
+      const ctclinsabDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'ctclinsab');
+
+      const annuitiesbDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'annuities');
+
+      const sabicContractDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'sabiccontracts');
+
+      const shppContractDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'shppcontracts');
+
+      const ksaContractDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'ksacontracts');
+
+      const attorneyMappingDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'attorneymapping');
+
+      const agreementTypeMappingDataSource = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'agreementtypemapping'
+      );
+
+      const ipAnalystDashboardDataSource = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'ipanalystdashboard'
+      );
+
+      const shppAccoladeDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'shppaccolade');
+
+      const sabicAccoladeDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'sabicaccolade');
+
+      return await generateSupplementalIpReport({
+        reportRequestPayload,
+        requestedReportId: requestedReport._id as string,
+        sampleFilePath: customReportDetails.sampleFilePath!,
+        disclosureDataSourceVersionId: versionMap[disclosureDataSource?.dataSourceId!],
+        portfolioDataSourceVersionId: versionMap[portfolioDataSource?.dataSourceId!],
+        sabicipDataSourceVersionId: versionMap[sabicipDataSource?.dataSourceId!],
+        ctclinsabDataSourceVersionId: versionMap[ctclinsabDataSource?.dataSourceId!],
+        annuitiesbDataSourceVersionId: versionMap[annuitiesbDataSource?.dataSourceId!],
+        sabicContractsDataSourceVersionId: versionMap[sabicContractDataSource?.dataSourceId!],
+        shppContractsDataSourceVersionId: versionMap[shppContractDataSource?.dataSourceId!],
+        ksaContractsDataSourceVersionId: versionMap[ksaContractDataSource?.dataSourceId!],
+        attorneyMappingDataSourceVersionId: versionMap[attorneyMappingDataSource?.dataSourceId!],
+        agreementTypeMappingDataSourceVersionId: versionMap[agreementTypeMappingDataSource?.dataSourceId!],
+        ipAnalystDataSourceVersionId: versionMap[ipAnalystDashboardDataSource?.dataSourceId!],
+        shppAccoladeDataSourceVersionId: versionMap[shppAccoladeDataSource?.dataSourceId!],
+        sabicAccoladeDataSourceVersionId: versionMap[sabicAccoladeDataSource?.dataSourceId!],
+      });
     }
   } catch (e) {
     throw e;

@@ -62,7 +62,7 @@ export async function seedDatabase() {
     // });
     await seedCustomReports({
       _id: '66b34cbbd40e24fca2e3e314',
-      reportName: 'supplemental ip',
+      reportName: 'supplementalip',
       functionName: 'generateSupplementalIpReport',
       dataSourceIds: [
         {
