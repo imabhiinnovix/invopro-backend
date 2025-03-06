@@ -5,12 +5,14 @@ import * as dataSourceVersionValueService from '../../database/services/defaultD
 import * as dataSourceService from '../../database/services/dataSource.services';
 import * as attributeOptionService from '../../database/services/attributeOption.services';
 import * as dataImportErrorServices from '../../database/services/dataImportError.services';
-import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
+import { getSchemaNameBasedOnVersionCodeAndOrgCode, sleep } from '../../utils/common.utils';
 import path from 'path';
 import { excelDateToJSDate, readExcelFile } from '../../utils/excel.utils';
 import { debounceManager } from '../../utils/debounce.utils';
 import * as customReportServices from '../../database/services/customReport.services';
 import { generateCustomReportsFunction } from './customReport.controller';
+import * as reportRequestService from '../../database/services/reportRequest.services';
+import { DateTime } from 'luxon';
 
 async function validateAndConvert({
   value,
@@ -393,6 +395,19 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
     const files = Array.isArray(req.files) ? req.files : Object.values(req.files!).flat();
     const customReportData = await customReportServices.findCustomReportById(customReportId);
     if (customReportData && customReportData.dataSourceIds) {
+      const currentDateTime = DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss');
+      const generateReportFileName = `${customReportData.reportName}_${versionValue}_${currentDateTime}.xlsx`;
+      const reportRequestPayload = {
+        organizationId: organizationId,
+        versionValue: versionValue,
+        customReportId: customReportData._id,
+        status: 'processing',
+        fileName: generateReportFileName,
+        filePath: path.join('uploads', organizationId, userId, 'generatedReports', `${generateReportFileName}`),
+        fileType: 'xlsx',
+        createdBy: userId,
+      };
+      const requestedReport = await reportRequestService.createReportRequest(reportRequestPayload);
       debounceManager.debounce(customReportId as string, async () => {
         const dAllJsonMapping = allJsonMapping;
         const dAllJsonSeparator = allJsonSeparator;
@@ -401,8 +416,13 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
         const dOrgCode = orgCode;
         const dFiles = files;
         const dcustomReportData = customReportData;
+        const reportRequestId = requestedReport._id;
+
         try {
           for (let i = 0; i < dcustomReportData?.dataSourceIds?.length!; i++) {
+            console.log('Before sleep');
+            await sleep(2000);
+            console.log('After sleep');
             const dataSourceInfo = dcustomReportData?.dataSourceIds[i];
             const dataSourceId = dataSourceInfo?.dataSourceId!;
 
@@ -530,6 +550,14 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
               }
             }
           }
+          await generateCustomReportsFunction({
+            versionValue,
+            userId: dUserId,
+            organizationId: dOrganizationId,
+            orgCode: dOrgCode,
+            customReportId,
+            reportRequestId,
+          });
         } catch (e) {
           console.error('An error occurred while processing data source versions.');
         }
@@ -538,7 +566,6 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
       throw 'Custom report details not found.';
     }
 
-    // await generateCustomReportsFunction({ versionValue, dUserId, dOrganizationId, dOrgCode, customReportId });
     return res.status(200).json({
       success: true,
       message: 'Data upload is in progress.',

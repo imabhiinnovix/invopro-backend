@@ -1,5 +1,6 @@
 import { getAgreementSigned, getIpAnalysis } from '../../database/services/supplementalipReport.services';
 import { createExcelSheetFile } from '../../utils/excel.utils';
+import * as reportRequestService from '../../database/services/reportRequest.services';
 
 export const generateSupplementalIpReport = async ({
   reportRequestPayload,
@@ -56,7 +57,9 @@ export const generateSupplementalIpReport = async ({
     await createExcelSheetFile(currentYearIpAnalysis.firstBarGraphChartData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
     await createExcelSheetFile(currentYearIpAnalysis.secondBarGraphChartData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
     await createExcelSheetFile(currentYearIpAnalysis.thirdBarGraphChartData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
+
+    await reportRequestService.updateReportRequest(requestedReportId, { status: 'completed' });
   } catch (e) {
-    throw e;
+    await reportRequestService.updateReportRequest(requestedReportId, { status: 'failed' });
   }
 };

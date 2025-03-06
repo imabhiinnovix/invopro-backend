@@ -7,3 +7,9 @@ export function getSchemaNameBasedOnVersionCodeAndOrgCode({
 }) {
   return `data_${orgCode}_${versionCode}`;
 }
+
+export function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}

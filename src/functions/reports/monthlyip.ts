@@ -49,16 +49,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
     });
     const newFilePath = reportRequestPayload.filePath;
-    // let reductionCount = await getReductionsAndCostSavings({
-    //   portfolioDataSourceVersionId,
-    //   sabicipDataSourceVersionId,
-    //   ctclinsabDataSourceVersionId,
-    //   annuitiesbDataSourceVersionId,
-    //   currentYear,
-    //   isCurrentYearReductionCount: true,
-    // });
 
-    // return reductionCount;
     const processedCurrentYearApplicationFiledData = processData({
       data: currentYearApplicationFiledData,
       cellMappings: {
@@ -903,7 +894,7 @@ export const generateMonthlyIpReport = async ({
     });
     await createExcelSheetFile(combinedData, newFilePath, 'STC');
 
-    await reportRequestService.updateReportRequest(requestedReportId, { status: 'processed' });
+    await reportRequestService.updateReportRequest(requestedReportId, { status: 'completed' });
   } catch (err) {
     console.log(err);
     await reportRequestService.updateReportRequest(requestedReportId, { status: 'failed' });

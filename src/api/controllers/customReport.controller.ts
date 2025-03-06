@@ -18,12 +18,14 @@ export const generateCustomReportsFunction = async ({
   versionValue,
   customReportId,
   orgCode,
+  reportRequestId,
 }: {
   userId: string;
   organizationId: string;
   versionValue: string;
   customReportId: string;
   orgCode: string;
+  reportRequestId?: any;
 }) => {
   try {
     const customReportDetails = await customReportServices.findCustomReportById(customReportId);
@@ -67,13 +69,14 @@ export const generateCustomReportsFunction = async ({
       fileType: 'xlsx',
       createdBy: userId,
     };
-
+    if (!reportRequestId) {
+      const requestedReport = await reportRequestService.createReportRequest(reportRequestPayload);
+      reportRequestId = requestedReport._id;
+    }
     if (customReportDetails.reportName === 'monthlyip') {
       const versionMap = Object.fromEntries(
         dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
       );
-
-      const requestedReport = await reportRequestService.createReportRequest(reportRequestPayload);
 
       const disclosureDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'disclosure');
 
@@ -85,9 +88,9 @@ export const generateCustomReportsFunction = async ({
 
       const annuitiesbDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'annuities');
 
-      let x = await generateMonthlyIpReport({
+      await generateMonthlyIpReport({
         reportRequestPayload,
-        requestedReportId: requestedReport._id as string,
+        requestedReportId: reportRequestId as string,
         sampleFilePath: customReportDetails.sampleFilePath!,
         disclosureDataSourceVersionId: versionMap[disclosureDataSource?.dataSourceId!],
         portfolioDataSourceVersionId: versionMap[portfolioDataSource?.dataSourceId!],
@@ -95,13 +98,10 @@ export const generateCustomReportsFunction = async ({
         ctclinsabDataSourceVersionId: versionMap[ctclinsabDataSource?.dataSourceId!],
         annuitiesbDataSourceVersionId: versionMap[annuitiesbDataSource?.dataSourceId!],
       });
-      return x;
     } else if (customReportDetails.reportName === 'supplementalip') {
       const versionMap = Object.fromEntries(
         dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
       );
-
-      const requestedReport = await reportRequestService.createReportRequest(reportRequestPayload);
 
       const disclosureDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'disclosure');
 
@@ -133,9 +133,9 @@ export const generateCustomReportsFunction = async ({
 
       const sabicAccoladeDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'sabicaccolade');
 
-      return await generateSupplementalIpReport({
+      await generateSupplementalIpReport({
         reportRequestPayload,
-        requestedReportId: requestedReport._id as string,
+        requestedReportId: reportRequestId,
         sampleFilePath: customReportDetails.sampleFilePath!,
         disclosureDataSourceVersionId: versionMap[disclosureDataSource?.dataSourceId!],
         portfolioDataSourceVersionId: versionMap[portfolioDataSource?.dataSourceId!],
@@ -151,9 +151,11 @@ export const generateCustomReportsFunction = async ({
         shppAccoladeDataSourceVersionId: versionMap[shppAccoladeDataSource?.dataSourceId!],
         sabicAccoladeDataSourceVersionId: versionMap[sabicAccoladeDataSource?.dataSourceId!],
       });
+    } else {
+      await reportRequestService.updateReportRequest(reportRequestId, { status: 'failed' });
     }
   } catch (e) {
-    throw e;
+    await reportRequestService.updateReportRequest(reportRequestId, { status: 'failed' });
   }
 };
 export const generateCustomReports = async (req: Request, res: Response, next: NextFunction) => {
