@@ -420,9 +420,6 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
 
         try {
           for (let i = 0; i < dcustomReportData?.dataSourceIds?.length!; i++) {
-            console.log('Before sleep');
-            await sleep(2000);
-            console.log('After sleep');
             const dataSourceInfo = dcustomReportData?.dataSourceIds[i];
             const dataSourceId = dataSourceInfo?.dataSourceId!;
 
@@ -433,6 +430,9 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
             let validationErrors: any[] = [];
             let validatedFinalData: any[] = [];
             for (let j = 0; j < fileDetails.length; j++) {
+              console.log('Before sleep');
+              await sleep(3000);
+              console.log('After sleep');
               const fileDetailName = fileDetails[j].name;
               const sheetName = fileDetails[j].sheetName;
               console.log('processing file name:', fileDetailName);
