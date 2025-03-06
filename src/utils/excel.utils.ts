@@ -192,7 +192,8 @@ export async function writeDataToExcel(data: DataItem[], filePath: string): Prom
 export async function createExcelSheetFile(
   data: Array<Record<string, any>>, // Array of JSON objects with varying keys
   filePath: string,
-  sheetName: string
+  sheetName: string,
+  titleHeading?: string
 ): Promise<void> {
   const workbook = new ExcelJS.Workbook();
 
@@ -204,7 +205,6 @@ export async function createExcelSheetFile(
   }
 
   let worksheet = workbook.getWorksheet(sheetName);
-
   if (!worksheet) {
     worksheet = workbook.addWorksheet(sheetName);
   }
@@ -214,12 +214,27 @@ export async function createExcelSheetFile(
     return;
   }
 
-  // Calculate where to start adding the new table
-  const lastRow = worksheet.lastRow?.number || 0;
-  const startRow = lastRow + 2;
-
   // Get all unique keys across the data
   const allKeys = Array.from(new Set(data.flatMap((item) => Object.keys(item))));
+
+  // Calculate where to start adding the new table
+  let lastRow = worksheet.lastRow?.number || 0;
+  let startRow = lastRow + 3; // Adjusted to leave an extra blank row
+
+  // If title heading is provided, insert it as a merged row
+  if (titleHeading) {
+    const titleRow = worksheet.getRow(startRow - 1);
+    titleRow.getCell(1).value = titleHeading;
+    titleRow.getCell(1).font = { bold: true, size: 14, color: { argb: 'FFFFFF' } };
+    titleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+    titleRow.getCell(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4472C4' },
+    };
+    titleRow.height = 20;
+    worksheet.mergeCells(startRow - 1, 1, startRow - 1, allKeys.length);
+  }
 
   // Dynamically generate columns and rows
   const columns = allKeys.map((key) => ({ name: key, filterButton: true }));
@@ -242,9 +257,7 @@ export async function createExcelSheetFile(
     rows,
   });
 
-  // Apply custom styles for the table
-  // Style headers
-  // Style rows and adjust column widths dynamically
+  // Apply custom styles for the table headers and data rows
   const columnWidths: number[] = [];
   const headerRow = worksheet.getRow(startRow);
   headerRow.eachCell((cell, colIndex) => {
@@ -275,13 +288,9 @@ export async function createExcelSheetFile(
         bottom: { style: 'thin' },
         right: { style: 'thin' },
       };
-
-      // Dynamically calculate the max width for each column
       const cellValue = String(cell.value);
       columnWidths[colIndex] = Math.max(columnWidths[colIndex] || 0, cellValue.length);
     });
-
-    // Add alternating row colors
     if (i % 2 === 0) {
       row.eachCell((cell) => {
         cell.fill = {
@@ -293,10 +302,10 @@ export async function createExcelSheetFile(
     }
   }
 
-  // Apply the calculated dynamic widths to the columns
+  // Apply dynamic widths to the columns
   worksheet.columns = columns.map((col, index) => ({
     ...col,
-    width: columnWidths[index] + 5, // Add a bit of padding
+    width: columnWidths[index] + 5, // Add some padding
   }));
 
   worksheet.getColumn(1).hidden = false;

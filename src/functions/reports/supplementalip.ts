@@ -59,7 +59,12 @@ export const generateSupplementalIpReport = async ({
     });
     await createExcelSheetFile(currentYearAgreementSigned, newFilePath, `Agreement signed in ${currentYear}`);
     await createExcelSheetFile(currentYearIpAnalysis.countData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
-    await createExcelSheetFile(currentYearIpAnalysis.firstBarGraphChartData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
+    await createExcelSheetFile(
+      currentYearIpAnalysis.firstBarGraphChartData,
+      newFilePath,
+      `CURRENT YEAR IP ANALYSIS`,
+      'GRAPH-BAR CHART'
+    );
     await createExcelSheetFile(currentYearIpAnalysis.secondBarGraphChartData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
     await createExcelSheetFile(currentYearIpAnalysis.thirdBarGraphChartData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
 
