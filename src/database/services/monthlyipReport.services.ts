@@ -1,12 +1,6 @@
 import mongoose from 'mongoose';
 import { DateTime } from 'luxon';
-import createDefaultDataSourceVersionModel from '../models/defaultDataSourceVersionModel';
-
-const DataSourceVersionValuePortfolio = createDefaultDataSourceVersionModel('data_reportivix_portfolios');
-const DataSourceVersionValueDisclosure = createDefaultDataSourceVersionModel('data_reportivix_disclosures');
-const DataSourceVersionValueAnnuities = createDefaultDataSourceVersionModel('data_reportivix_annuities');
-const DataSourceVersionValueCtclinsabs = createDefaultDataSourceVersionModel('data_reportivix_ctclinsabs');
-const DataSourceVersionValueSabicips = createDefaultDataSourceVersionModel('data_reportivix_sabicips');
+import { CustomReportModelAccessReturnType } from '../models/customReportModels';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -234,7 +228,7 @@ export async function getCurrentYearNewApplicationFiled({
   isCNIssuedApplication,
   isOtherIssuedApplication,
   isTotalIssuedApplication,
-  schemaName,
+  customReportModel,
 }: {
   portfolioDataSourceVersionId: string;
   currentYear: string;
@@ -251,7 +245,7 @@ export async function getCurrentYearNewApplicationFiled({
   isCNIssuedApplication?: boolean;
   isOtherIssuedApplication?: boolean;
   isTotalIssuedApplication?: boolean;
-  schemaName?: string;
+  customReportModel: CustomReportModelAccessReturnType;
 }) {
   try {
     const otherCountryNegative = [...epCountry, 'CN', 'US'];
@@ -347,7 +341,7 @@ export async function getCurrentYearNewApplicationFiled({
       matchCondition['rowData.In Force'] = 1;
     }
 
-    const newYearApplicationFiled = await DataSourceVersionValuePortfolio.aggregate([
+    const newYearApplicationFiled = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
       {
         $match: matchCondition,
       },
@@ -387,6 +381,7 @@ export async function getDisclosureCount({
   isDrafted,
   isYearRequired,
   isPercentage,
+  customReportModel,
 }: {
   disclosureDataSourceVersionId: string;
   currentYear: string;
@@ -394,6 +389,7 @@ export async function getDisclosureCount({
   isDrafted: boolean;
   isYearRequired: boolean;
   isPercentage?: boolean;
+  customReportModel: CustomReportModelAccessReturnType;
 }) {
   try {
     const yearDateRange = {
@@ -443,7 +439,7 @@ export async function getDisclosureCount({
         ],
       };
     }
-    const activeDisclosure = await DataSourceVersionValueDisclosure.aggregate([
+    const activeDisclosure = await customReportModel.DataSourceVersionValueDisclosure.aggregate([
       {
         $match: matchCondition,
       },
@@ -480,12 +476,14 @@ export async function getProjectBasedOnStcs({
   isActive,
   isDrafted,
   isYearRequired,
+  customReportModel,
 }: {
   disclosureDataSourceVersionId: string;
   currentYear: string;
   isActive: boolean;
   isDrafted: boolean;
   isYearRequired: boolean;
+  customReportModel: CustomReportModelAccessReturnType;
 }) {
   try {
     const yearDateRange = {
@@ -525,7 +523,7 @@ export async function getProjectBasedOnStcs({
     if (isYearRequired) {
       matchCondition['rowData.DisclosureDate'] = yearDateRange;
     }
-    const activeDisclosure = await DataSourceVersionValueDisclosure.aggregate([
+    const activeDisclosure = await customReportModel.DataSourceVersionValueDisclosure.aggregate([
       {
         $match: matchCondition,
       },
@@ -574,7 +572,7 @@ export async function getAppsFiledBasedOnStc({
   isCNIssuedApplication,
   isOtherIssuedApplication,
   isTotalIssuedApplication,
-  schemaName,
+  customReportModel,
 }: {
   portfolioDataSourceVersionId: string;
   currentYear: string;
@@ -591,7 +589,7 @@ export async function getAppsFiledBasedOnStc({
   isCNIssuedApplication?: boolean;
   isOtherIssuedApplication?: boolean;
   isTotalIssuedApplication?: boolean;
-  schemaName?: string;
+  customReportModel: CustomReportModelAccessReturnType;
 }) {
   try {
     const epCountry = [
@@ -735,7 +733,7 @@ export async function getAppsFiledBasedOnStc({
       matchCondition['rowData.In Force'] = 1;
     }
 
-    const newYearApplicationFiled = await DataSourceVersionValuePortfolio.aggregate([
+    const newYearApplicationFiled = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
       {
         $match: matchCondition,
       },
@@ -792,13 +790,15 @@ const calculateCombinedPercentage = (
 export async function percentageOfCurrentYearInventionDisclosureConvertedToFilings(
   portfolioDataSourceVersionId: string,
   disclosureDataSourceVersionId: string,
-  currentYear: string
+  currentYear: string,
+  customReportModel: CustomReportModelAccessReturnType
 ) {
   try {
     const newYearApplicationFiled = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
       isPercentagePart: true,
+      customReportModel,
     });
     const activeDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
@@ -807,6 +807,7 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       isDrafted: false,
       isPercentage: true,
       isYearRequired: true,
+      customReportModel,
     });
     const totalDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
@@ -814,6 +815,7 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       isActive: false,
       isDrafted: false,
       isYearRequired: true,
+      customReportModel,
     });
 
     const processedNewYearApplicationFiled = processData({ data: newYearApplicationFiled });
@@ -837,12 +839,14 @@ export async function getCurrentYearRenewalDue({
   ctclinsabDataSourceVersionId,
   annuitiesbDataSourceVersionId,
   currentYear,
+  customReportModel,
 }: {
   portfolioDataSourceVersionId: string;
   sabicipDataSourceVersionId: string;
   ctclinsabDataSourceVersionId: string;
   annuitiesbDataSourceVersionId: string;
   currentYear: string;
+  customReportModel: CustomReportModelAccessReturnType;
 }) {
   try {
     const yearDateRange = {
@@ -850,7 +854,7 @@ export async function getCurrentYearRenewalDue({
       $lte: `${currentYear}-12-31T00:00:00.000Z`,
     };
 
-    const sabicipData = await DataSourceVersionValueSabicips.aggregate([
+    const sabicipData = await customReportModel.DataSourceVersionValueSabicips.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(sabicipDataSourceVersionId),
@@ -867,7 +871,7 @@ export async function getCurrentYearRenewalDue({
       },
     ]);
 
-    const portfolioData = await DataSourceVersionValuePortfolio.aggregate([
+    const portfolioData = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
@@ -932,7 +936,7 @@ export async function getCurrentYearRenewalDue({
       value: (data as Record<string, any>).total,
     }));
 
-    const ctclinsabData = await DataSourceVersionValueCtclinsabs.aggregate([
+    const ctclinsabData = await customReportModel.DataSourceVersionValueCtclinsabs.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(ctclinsabDataSourceVersionId),
@@ -990,7 +994,7 @@ export async function getCurrentYearRenewalDue({
       value: (data as Record<string, any>).total,
     }));
 
-    const annuitiesData = await DataSourceVersionValueAnnuities.aggregate([
+    const annuitiesData = await customReportModel.DataSourceVersionValueAnnuities.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(annuitiesbDataSourceVersionId),
@@ -1131,12 +1135,14 @@ function filterProsecutionDrop(combinedCases, data) {
 export async function getReductions({
   portfolioDataSourceVersionId,
   currentYear,
+  customReportModel,
 }: {
   portfolioDataSourceVersionId: string;
   currentYear: string;
+  customReportModel: CustomReportModelAccessReturnType;
 }) {
   try {
-    const allCasesFromPortfolio = await DataSourceVersionValuePortfolio.aggregate([
+    const allCasesFromPortfolio = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
       { $match: { dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId) } },
     ]);
 
@@ -1203,7 +1209,7 @@ export async function getReductions({
       },
     ];
 
-    const annuityDrop = await DataSourceVersionValuePortfolio.aggregate(annuityDropAggregate);
+    const annuityDrop = await customReportModel.DataSourceVersionValuePortfolio.aggregate(annuityDropAggregate);
 
     const annuityDropArray = annuityDrop.map((data) => data.rowData);
 
@@ -1255,7 +1261,8 @@ export async function getReductions({
       },
     ];
 
-    const priorityDropUnfilteredWithDate = await DataSourceVersionValuePortfolio.aggregate(priorityDropAggregate);
+    const priorityDropUnfilteredWithDate =
+      await customReportModel.DataSourceVersionValuePortfolio.aggregate(priorityDropAggregate);
 
     const groupedPriorityDropFiltered = filterCombineData(
       groupedCasesBasedOnFaimlyNumber,
@@ -1305,7 +1312,7 @@ export async function getReductions({
       },
     ];
 
-    const pctDrop = await DataSourceVersionValuePortfolio.aggregate(pctDropAggregate);
+    const pctDrop = await customReportModel.DataSourceVersionValuePortfolio.aggregate(pctDropAggregate);
 
     const pctDropArray = filterCombineData(groupedCasesBasedOnFaimlyNumber, pctDrop);
 
@@ -1396,7 +1403,7 @@ export async function getReductions({
       },
     ];
 
-    const prosecutionDrop = await DataSourceVersionValuePortfolio.aggregate(prosecutionDropAggregate);
+    const prosecutionDrop = await customReportModel.DataSourceVersionValuePortfolio.aggregate(prosecutionDropAggregate);
     // const prosecutionDropArray = prosecutionDrop.map((data) => data.rowData);
     const prosecutionDropArray = filterProsecutionDrop(groupedCasesBasedOnFaimlyNumber, prosecutionDrop);
 
@@ -1446,6 +1453,7 @@ export async function getAnnuitySavingsFromReductions({
   priorityDrop,
   pctDrop,
   prosecutionDrop,
+  customReportModel,
 }: {
   sabicipDataSourceVersionId: string;
   ctclinsabDataSourceVersionId: string;
@@ -1455,6 +1463,7 @@ export async function getAnnuitySavingsFromReductions({
   priorityDrop: any;
   pctDrop: any;
   prosecutionDrop: any;
+  customReportModel: CustomReportModelAccessReturnType;
 }) {
   try {
     const yearDateRange = {
@@ -1470,7 +1479,7 @@ export async function getAnnuitySavingsFromReductions({
 
     const sbuTotals = {};
 
-    const sabicipData = await DataSourceVersionValueSabicips.aggregate([
+    const sabicipData = await customReportModel.DataSourceVersionValueSabicips.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(sabicipDataSourceVersionId),
@@ -1497,7 +1506,7 @@ export async function getAnnuitySavingsFromReductions({
       }
     });
 
-    const ctclinsabData = await DataSourceVersionValueCtclinsabs.aggregate([
+    const ctclinsabData = await customReportModel.DataSourceVersionValueCtclinsabs.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(ctclinsabDataSourceVersionId),
@@ -1525,7 +1534,7 @@ export async function getAnnuitySavingsFromReductions({
       }
     });
 
-    const annuitiesData = await DataSourceVersionValueAnnuities.aggregate([
+    const annuitiesData = await customReportModel.DataSourceVersionValueAnnuities.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(annuitiesbDataSourceVersionId),

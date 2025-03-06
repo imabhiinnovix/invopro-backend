@@ -21,6 +21,7 @@ import {
   processSTCData,
 } from '../../database/services/monthlyipReport.services';
 import { createExcelSheetFile, writeDataToExcel } from '../../utils/excel.utils';
+import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
 
 export const generateMonthlyIpReport = async ({
   reportRequestPayload,
@@ -31,6 +32,7 @@ export const generateMonthlyIpReport = async ({
   sabicipDataSourceVersionId,
   ctclinsabDataSourceVersionId,
   annuitiesbDataSourceVersionId,
+  customReportModel,
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
@@ -40,6 +42,7 @@ export const generateMonthlyIpReport = async ({
   sabicipDataSourceVersionId: string;
   ctclinsabDataSourceVersionId: string;
   annuitiesbDataSourceVersionId: string;
+  customReportModel: CustomReportModelAccessReturnType;
 }) => {
   try {
     const currentYear = reportRequestPayload.versionValue.split('-')[0];
@@ -47,6 +50,7 @@ export const generateMonthlyIpReport = async ({
     const currentYearApplicationFiledData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
+      customReportModel,
     });
     const newFilePath = reportRequestPayload.filePath;
 
@@ -68,7 +72,8 @@ export const generateMonthlyIpReport = async ({
       await percentageOfCurrentYearInventionDisclosureConvertedToFilings(
         portfolioDataSourceVersionId,
         disclosureDataSourceVersionId,
-        currentYear
+        currentYear,
+        customReportModel
       );
     const processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData = addCellMaping({
       data: percentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
@@ -91,6 +96,7 @@ export const generateMonthlyIpReport = async ({
       isActive: false,
       isDrafted: true,
       isYearRequired: false,
+      customReportModel,
     });
 
     const processedDraftedApplicationDisclosureCount = processData({
@@ -113,6 +119,7 @@ export const generateMonthlyIpReport = async ({
       isActive: false,
       isDrafted: false,
       isYearRequired: true,
+      customReportModel,
     });
     const processedOpenApplicationDisclosureCount = processData({
       data: openApplicationDisclosureCount,
@@ -135,6 +142,7 @@ export const generateMonthlyIpReport = async ({
       isActive: true,
       isDrafted: false,
       isYearRequired: false,
+      customReportModel,
     });
 
     const processedTotalActiveDisclosureCount = processData({
@@ -156,6 +164,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       isPercentagePart: false,
       isCurrentYearUSIssued: true,
+      customReportModel,
     });
     const processedCurrentYearUsIssued = processData({
       data: currentYearUsIssued,
@@ -176,6 +185,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       isPercentagePart: false,
       isCurrentYearINTIssued: true,
+      customReportModel,
     });
     const processedCurrentYearINTIssued = processData({
       data: currentYearINTIssued,
@@ -196,6 +206,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       isPercentagePart: false,
       isUSPendingApplication: true,
+      customReportModel,
     });
     const processedUSPendingApplication = processData({
       data: usPendingApplication,
@@ -216,6 +227,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       isPercentagePart: false,
       isEPPendingApplication: true,
+      customReportModel,
     });
     const processedEPPendingApplication = processData({
       data: epPendingApplication,
@@ -236,6 +248,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       isPercentagePart: false,
       isCNPendingApplication: true,
+      customReportModel,
     });
     const processedCNPendingApplication = processData({
       data: cnPendingApplication,
@@ -256,6 +269,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       isPercentagePart: false,
       isOtherPendingApplication: true,
+      customReportModel,
     });
     const processedOtherPendingApplication = processData({
       data: otherPendingApplication,
@@ -276,6 +290,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       isPercentagePart: false,
       isTotalPendingApplication: true,
+      customReportModel,
     });
     const processedTotalPendingApplication = processData({
       data: [...totalPendingApplication, { SBU: 'Scientific Design', value: 109 }],
@@ -297,6 +312,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       isPercentagePart: false,
       isUSIssuedApplication: true,
+      customReportModel,
     });
     const processedUSIssuedApplication = processData({
       data: usIssuedApplication,
@@ -317,6 +333,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       isPercentagePart: false,
       isEPIssuedApplication: true,
+      customReportModel,
     });
     const processedEPIssuedApplication = processData({
       data: epIssuedApplication,
@@ -337,6 +354,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       isPercentagePart: false,
       isCNIssuedApplication: true,
+      customReportModel,
     });
     const processedCNIssuedApplication = processData({
       data: cnIssuedApplication,
@@ -357,6 +375,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       isPercentagePart: false,
       isOtherIssuedApplication: true,
+      customReportModel,
     });
     const processedOtherIssuedApplication = processData({
       data: otherIssuedApplication,
@@ -377,6 +396,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       isPercentagePart: false,
       isTotalIssuedApplication: true,
+      customReportModel,
     });
     const processedTotalIssuedApplication = processData({
       data: [...totalIssuedApplication, { SBU: 'Scientific Design', value: 263 }],
@@ -435,6 +455,7 @@ export const generateMonthlyIpReport = async ({
       ctclinsabDataSourceVersionId,
       annuitiesbDataSourceVersionId,
       currentYear,
+      customReportModel,
     });
 
     const processedCurrentYearRenewalDue = processData({
@@ -455,6 +476,7 @@ export const generateMonthlyIpReport = async ({
     let reductionData = await getReductions({
       portfolioDataSourceVersionId,
       currentYear,
+      customReportModel,
     });
 
     const processedReductionCount = processData({
@@ -481,6 +503,7 @@ export const generateMonthlyIpReport = async ({
       priorityDrop: reductionData.priorityDropArray,
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
+      customReportModel,
     });
 
     const processedAnnuitySavingsForCurrentYear = processData({
@@ -507,6 +530,7 @@ export const generateMonthlyIpReport = async ({
       priorityDrop: reductionData.priorityDropArray,
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
+      customReportModel,
     });
 
     const processedAnnuitySavingsForNextYear = processData({
@@ -763,6 +787,7 @@ export const generateMonthlyIpReport = async ({
       isActive: false,
       isDrafted: false,
       isYearRequired: true,
+      customReportModel,
     });
 
     const processedNewProjectOpenedBasedOnStc = processSTCData(newProjectOpenedBasedOnStc);
@@ -773,6 +798,7 @@ export const generateMonthlyIpReport = async ({
       isActive: true,
       isDrafted: false,
       isYearRequired: false,
+      customReportModel,
     });
 
     const processedTotalOpenProjectsBasedOnStc = processSTCData(totalOpenProjectsBasedOnStc);
@@ -780,6 +806,7 @@ export const generateMonthlyIpReport = async ({
     const newAppsFiledBasedOnStc = await getAppsFiledBasedOnStc({
       portfolioDataSourceVersionId,
       currentYear,
+      customReportModel,
     });
 
     const processedNewAppsFiledBasedOnStc = processSTCData(newAppsFiledBasedOnStc);

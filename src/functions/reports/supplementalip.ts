@@ -1,6 +1,7 @@
 import { getAgreementSigned, getIpAnalysis } from '../../database/services/supplementalipReport.services';
 import { createExcelSheetFile } from '../../utils/excel.utils';
 import * as reportRequestService from '../../database/services/reportRequest.services';
+import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
 
 export const generateSupplementalIpReport = async ({
   reportRequestPayload,
@@ -19,6 +20,7 @@ export const generateSupplementalIpReport = async ({
   ipAnalystDataSourceVersionId,
   shppAccoladeDataSourceVersionId,
   sabicAccoladeDataSourceVersionId,
+  customReportModel,
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
@@ -36,6 +38,7 @@ export const generateSupplementalIpReport = async ({
   ipAnalystDataSourceVersionId: string;
   shppAccoladeDataSourceVersionId: string;
   sabicAccoladeDataSourceVersionId: string;
+  customReportModel: CustomReportModelAccessReturnType;
 }) => {
   try {
     const newFilePath = reportRequestPayload.filePath;
@@ -47,10 +50,12 @@ export const generateSupplementalIpReport = async ({
       attorneyMappingDataSourceVersionId,
       agreementTypeMappingDataSourceVersionId,
       currentYear,
+      customReportModel,
     });
 
     const currentYearIpAnalysis = await getIpAnalysis({
       ipAnalystDataSourceVersionId,
+      customReportModel,
     });
     await createExcelSheetFile(currentYearAgreementSigned, newFilePath, `Agreement signed in ${currentYear}`);
     await createExcelSheetFile(currentYearIpAnalysis.countData, newFilePath, `CURRENT YEAR IP ANALYSIS`);

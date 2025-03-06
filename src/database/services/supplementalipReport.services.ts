@@ -1,23 +1,9 @@
 import mongoose from 'mongoose';
 import { DateTime } from 'luxon';
 import createDefaultDataSourceVersionModel from '../models/defaultDataSourceVersionModel';
+import { CustomReportModelAccessReturnType } from '../models/customReportModels';
 const ObjectId = mongoose.Types.ObjectId;
 
-const DataSourceVersionValuePortfolio = createDefaultDataSourceVersionModel('data_reportivix_portfolios');
-const DataSourceVersionValueDisclosure = createDefaultDataSourceVersionModel('data_reportivix_disclosures');
-const DataSourceVersionValueAnnuities = createDefaultDataSourceVersionModel('data_reportivix_annuities');
-const DataSourceVersionValueCtclinsabs = createDefaultDataSourceVersionModel('data_reportivix_ctclinsabs');
-const DataSourceVersionValueSabicips = createDefaultDataSourceVersionModel('data_reportivix_sabicips');
-const DataSourceVersionValueSabicContracts = createDefaultDataSourceVersionModel('data_reportivix_sabiccontracts');
-const DataSourceVersionValueShppContracts = createDefaultDataSourceVersionModel('data_reportivix_shppcontracts');
-const DataSourceVersionValueKsaContracts = createDefaultDataSourceVersionModel('data_reportivix_ksacontracts');
-const DataSourceVersionValueAttorneyMapping = createDefaultDataSourceVersionModel('data_reportivix_attorneymapping');
-const DataSourceVersionValueAgreementTypemapping = createDefaultDataSourceVersionModel(
-  'data_reportivix_agreementtypemapping'
-);
-const DataSourceVersionValueIpAnalystDashboard = createDefaultDataSourceVersionModel(
-  'data_reportivix_ipanalystdashboard'
-);
 export async function getAgreementSigned({
   sabicContractsDataSourceVersionId,
   shppContractsDataSourceVersionId,
@@ -25,6 +11,7 @@ export async function getAgreementSigned({
   attorneyMappingDataSourceVersionId,
   agreementTypeMappingDataSourceVersionId,
   currentYear,
+  customReportModel,
 }: {
   sabicContractsDataSourceVersionId: string;
   shppContractsDataSourceVersionId: string;
@@ -32,6 +19,7 @@ export async function getAgreementSigned({
   attorneyMappingDataSourceVersionId: string;
   agreementTypeMappingDataSourceVersionId: string;
   currentYear: string;
+  customReportModel: CustomReportModelAccessReturnType;
 }) {
   try {
     const yearDateRange = {
@@ -39,7 +27,7 @@ export async function getAgreementSigned({
       $lte: `${currentYear}-12-31T00:00:00.000Z`,
     };
 
-    const sabicContractDetails = await DataSourceVersionValueSabicContracts.aggregate([
+    const sabicContractDetails = await customReportModel.DataSourceVersionValueSabicContracts.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(sabicContractsDataSourceVersionId),
@@ -50,7 +38,7 @@ export async function getAgreementSigned({
 
     const rowDataSabicContractDetails = sabicContractDetails?.map((data) => data.rowData);
 
-    const shppContractDetails = await DataSourceVersionValueShppContracts.aggregate([
+    const shppContractDetails = await customReportModel.DataSourceVersionValueShppContracts.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(shppContractsDataSourceVersionId),
@@ -61,7 +49,7 @@ export async function getAgreementSigned({
 
     const rowDataShppContractDetails = shppContractDetails?.map((data) => data.rowData);
 
-    const ksaContractDetails = await DataSourceVersionValueKsaContracts.aggregate([
+    const ksaContractDetails = await customReportModel.DataSourceVersionValueKsaContracts.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(ksaContractsDataSourceVersionId),
@@ -71,7 +59,7 @@ export async function getAgreementSigned({
 
     const rowDataKsaContractDetails = ksaContractDetails.map((data) => data.rowData);
 
-    const attorneyMappingContractDetails = await DataSourceVersionValueAttorneyMapping.aggregate([
+    const attorneyMappingContractDetails = await customReportModel.DataSourceVersionValueAttorneyMapping.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(attorneyMappingDataSourceVersionId),
@@ -81,13 +69,14 @@ export async function getAgreementSigned({
 
     const rowDataAttorneyMappingContractDetails = attorneyMappingContractDetails.map((data) => data.rowData);
 
-    const agreementTypeMappingContractDetails = await DataSourceVersionValueAgreementTypemapping.aggregate([
-      {
-        $match: {
-          dataSourceVersionId: new ObjectId(agreementTypeMappingDataSourceVersionId),
+    const agreementTypeMappingContractDetails =
+      await customReportModel.DataSourceVersionValueAgreementTypemapping.aggregate([
+        {
+          $match: {
+            dataSourceVersionId: new ObjectId(agreementTypeMappingDataSourceVersionId),
+          },
         },
-      },
-    ]);
+      ]);
 
     const rowDataAgreementTypeMappingContractDetails = agreementTypeMappingContractDetails.map((data) => data.rowData);
 
@@ -230,16 +219,22 @@ export async function getAgreementSigned({
   }
 }
 
-export async function getIpAnalysis({ ipAnalystDataSourceVersionId }: { ipAnalystDataSourceVersionId: string }) {
+export async function getIpAnalysis({
+  ipAnalystDataSourceVersionId,
+  customReportModel,
+}: {
+  ipAnalystDataSourceVersionId: string;
+  customReportModel: CustomReportModelAccessReturnType;
+}) {
   try {
-    const projectStarted = await DataSourceVersionValueIpAnalystDashboard.aggregate([
+    const projectStarted = await customReportModel.DataSourceVersionValueIpAnalystDashboard.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(ipAnalystDataSourceVersionId),
         },
       },
     ]);
-    const projectCompleted = await DataSourceVersionValueIpAnalystDashboard.aggregate([
+    const projectCompleted = await customReportModel.DataSourceVersionValueIpAnalystDashboard.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(ipAnalystDataSourceVersionId),
@@ -247,7 +242,7 @@ export async function getIpAnalysis({ ipAnalystDataSourceVersionId }: { ipAnalys
         },
       },
     ]);
-    const projectInProgress = await DataSourceVersionValueIpAnalystDashboard.aggregate([
+    const projectInProgress = await customReportModel.DataSourceVersionValueIpAnalystDashboard.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(ipAnalystDataSourceVersionId),
@@ -256,7 +251,7 @@ export async function getIpAnalysis({ ipAnalystDataSourceVersionId }: { ipAnalys
       },
     ]);
 
-    const projectYetToStartOrOnHold = await DataSourceVersionValueIpAnalystDashboard.aggregate([
+    const projectYetToStartOrOnHold = await customReportModel.DataSourceVersionValueIpAnalystDashboard.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(ipAnalystDataSourceVersionId),
@@ -268,7 +263,7 @@ export async function getIpAnalysis({ ipAnalystDataSourceVersionId }: { ipAnalys
     const countProjectCompleted = projectCompleted.length;
     const countProjectInProgress = projectInProgress.length;
     const countProjectYetToStartOrOnHold = projectYetToStartOrOnHold.length;
-    const firstBarGraphChartData = await DataSourceVersionValueIpAnalystDashboard.aggregate([
+    const firstBarGraphChartData = await customReportModel.DataSourceVersionValueIpAnalystDashboard.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(ipAnalystDataSourceVersionId),
@@ -292,7 +287,7 @@ export async function getIpAnalysis({ ipAnalystDataSourceVersionId }: { ipAnalys
         $sort: { value: -1 }, // Sorting in descending order
       },
     ]);
-    const secondBarGraphChartData = await DataSourceVersionValueIpAnalystDashboard.aggregate([
+    const secondBarGraphChartData = await customReportModel.DataSourceVersionValueIpAnalystDashboard.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(ipAnalystDataSourceVersionId),
@@ -317,7 +312,7 @@ export async function getIpAnalysis({ ipAnalystDataSourceVersionId }: { ipAnalys
       },
     ]);
 
-    const thirdBarGraphChartData = await DataSourceVersionValueIpAnalystDashboard.aggregate([
+    const thirdBarGraphChartData = await customReportModel.DataSourceVersionValueIpAnalystDashboard.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(ipAnalystDataSourceVersionId),

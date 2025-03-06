@@ -11,6 +11,7 @@ import path from 'path';
 
 import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
 import { generateSupplementalIpReport } from '../../functions/reports/supplementalip';
+import { CustomReportModelAccess } from '../../database/models/customReportModels';
 
 export const generateCustomReportsFunction = async ({
   userId,
@@ -59,7 +60,7 @@ export const generateCustomReportsFunction = async ({
     const currentDateTime = DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss');
 
     const fileName = `${customReportDetails.reportName}_${versionValue}_${currentDateTime}.xlsx`;
-    const reportRequestPayload = {
+    let reportRequestPayload: any = {
       organizationId: organizationId,
       versionValue: versionValue,
       customReportId: customReportDetails._id,
@@ -69,10 +70,14 @@ export const generateCustomReportsFunction = async ({
       fileType: 'xlsx',
       createdBy: userId,
     };
+    if (reportRequestId) {
+      reportRequestPayload = await reportRequestService.findReportRequestById(reportRequestId);
+    }
     if (!reportRequestId) {
       const requestedReport = await reportRequestService.createReportRequest(reportRequestPayload);
       reportRequestId = requestedReport._id;
     }
+    const customReportModel = await CustomReportModelAccess({ orgCode });
     if (customReportDetails.reportName === 'monthlyip') {
       const versionMap = Object.fromEntries(
         dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
@@ -97,6 +102,7 @@ export const generateCustomReportsFunction = async ({
         sabicipDataSourceVersionId: versionMap[sabicipDataSource?.dataSourceId!],
         ctclinsabDataSourceVersionId: versionMap[ctclinsabDataSource?.dataSourceId!],
         annuitiesbDataSourceVersionId: versionMap[annuitiesbDataSource?.dataSourceId!],
+        customReportModel,
       });
     } else if (customReportDetails.reportName === 'supplementalip') {
       const versionMap = Object.fromEntries(
@@ -150,6 +156,7 @@ export const generateCustomReportsFunction = async ({
         ipAnalystDataSourceVersionId: versionMap[ipAnalystDashboardDataSource?.dataSourceId!],
         shppAccoladeDataSourceVersionId: versionMap[shppAccoladeDataSource?.dataSourceId!],
         sabicAccoladeDataSourceVersionId: versionMap[sabicAccoladeDataSource?.dataSourceId!],
+        customReportModel,
       });
     } else {
       await reportRequestService.updateReportRequest(reportRequestId, { status: 'failed' });
@@ -261,7 +268,7 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
     //     message: 'You do not have permission to download this report.',
     //   });
     // }
-    if (reportDetails?.status !== 'processed') {
+    if (reportDetails?.status !== 'completed') {
       return res.status(400).json({
         success: false,
         message: `The report is currently in '${reportDetails?.status}' status and cannot be downloaded.`,
