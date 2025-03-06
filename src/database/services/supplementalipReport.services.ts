@@ -278,8 +278,8 @@ export async function getIpAnalysis({
       },
       {
         $project: {
-          SBU: '$_id',
           _id: 0,
+          SBU: '$_id',
           value: 1,
         },
       },
@@ -302,8 +302,8 @@ export async function getIpAnalysis({
       },
       {
         $project: {
-          Workscope: '$_id',
           _id: 0,
+          Workscope: '$_id',
           value: 1,
         },
       },
@@ -328,8 +328,8 @@ export async function getIpAnalysis({
       },
       {
         $project: {
-          WorkProduct: '$_id',
           _id: 0,
+          WorkProduct: '$_id',
           value: 1,
         },
       },
@@ -338,10 +338,10 @@ export async function getIpAnalysis({
       },
     ]);
     const countData = [
-      { 'Projects Started': countProjectStarted },
-      { Completed: countProjectCompleted },
-      { 'In-Progress': projectInProgress.length },
-      { 'Yet to start/ On Hold': countProjectYetToStartOrOnHold },
+      { 'Projects Status': 'Started', Count: countProjectStarted },
+      { 'Projects Status': 'Yet to start/ On Hold', Count: countProjectYetToStartOrOnHold },
+      { 'Projects Status': 'In-Progress', Count: projectInProgress.length },
+      { 'Projects Status': 'Completed', Count: countProjectCompleted },
     ];
     return {
       countData,
