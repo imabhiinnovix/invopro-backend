@@ -287,6 +287,12 @@ export async function getIpAnalysis({
         $sort: { value: -1 }, // Sorting in descending order
       },
     ]);
+
+    const formattedFirstBarGraphChartData = firstBarGraphChartData.map(({ SBU, value }) => ({
+      SBU: SBU, // Explicitly setting 'sbu' first
+      value: value,
+    }));
+
     const secondBarGraphChartData = await customReportModel.DataSourceVersionValueIpAnalystDashboard.aggregate([
       {
         $match: {
@@ -311,6 +317,11 @@ export async function getIpAnalysis({
         $sort: { value: -1 }, // Sorting in descending order
       },
     ]);
+
+    const formattedSecondBarGraphChartData = secondBarGraphChartData.map(({ Workscope, value }) => ({
+      Workscope: Workscope, // Explicitly setting 'sbu' first
+      value: value,
+    }));
 
     const thirdBarGraphChartData = await customReportModel.DataSourceVersionValueIpAnalystDashboard.aggregate([
       {
@@ -337,6 +348,11 @@ export async function getIpAnalysis({
         $sort: { value: -1 }, // Sorting in descending order
       },
     ]);
+
+    const formattedThirdBarGraphChartData = thirdBarGraphChartData.map(({ WorkProduct, value }) => ({
+      WorkProduct: WorkProduct, // Explicitly setting 'sbu' first
+      value: value,
+    }));
     const countData = [
       { 'Projects Status': 'Started', Count: countProjectStarted },
       { 'Projects Status': 'Yet to start/ On Hold', Count: countProjectYetToStartOrOnHold },
@@ -345,9 +361,9 @@ export async function getIpAnalysis({
     ];
     return {
       countData,
-      firstBarGraphChartData,
-      secondBarGraphChartData,
-      thirdBarGraphChartData,
+      firstBarGraphChartData: formattedFirstBarGraphChartData,
+      secondBarGraphChartData: formattedSecondBarGraphChartData,
+      thirdBarGraphChartData: formattedThirdBarGraphChartData,
     };
   } catch (e) {
     throw e;
