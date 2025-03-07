@@ -217,12 +217,17 @@ export const listCustomReports = async (req: Request, res: Response, next: NextF
 
 export const listReportRequest = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search, paginate = 'false' } = req.query;
+    const { search, paginate = 'false', status } = req.query;
     const { organizationId } = req.user;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
     const query: any = { organizationId: organizationId };
+    if (status && status === 'notprocessing') {
+      query.status = { $ne: 'processing' };
+    } else if (status) {
+      query.status = status;
+    }
     if (search) query.reportName = { $regex: search, $options: 'i' };
 
     let result: any = {};
@@ -343,6 +348,20 @@ export const getReportVersionValuesBasedOnReportIdAndVersionValue = async (
       success: true,
       message: 'Report Request List Fetched Successfully',
       versionValueDetails,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getReportRequestDetails = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { reportRequestId } = req.params;
+    const reportDetails = await reportRequestService.findReportRequestById(reportRequestId);
+    res.status(200).json({
+      success: true,
+      message: 'Report details retrieved successfully.',
+      reportDetails,
     });
   } catch (err) {
     next(err);

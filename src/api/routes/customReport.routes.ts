@@ -6,6 +6,7 @@ import { authenticateToken } from '../../middlewares/authenticate.middleware';
 import {
   downloadReport,
   generateCustomReports,
+  getReportRequestDetails,
   getReportVersionValuesBasedOnReportIdAndVersionValue,
   listCustomReports,
   listReportRequest,
@@ -25,4 +26,6 @@ router.post(
 );
 
 router.get('/download/:reportRequestId', authenticateToken, downloadReport);
+router.get('/reportDetails/:reportRequestId', authenticateToken, getReportRequestDetails);
+
 export default router;
