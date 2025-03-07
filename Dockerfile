@@ -55,6 +55,7 @@ WORKDIR /app
 
 # Copy the package.json and yarn.lock files to the working directory.
 COPY package.json .env ./
+COPY reports ./reports
 
 # Install dependencies.
 RUN yarn

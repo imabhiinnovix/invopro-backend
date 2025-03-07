@@ -68,7 +68,7 @@ export const getDataSourceList = async ({
     }
 
     // Now await the final query execution
-    const dataSource = await dataSourceQuery.exec();
+    const dataSource = await dataSourceQuery.lean().exec();
 
     const totalCount = await DataSource.countDocuments(query);
 

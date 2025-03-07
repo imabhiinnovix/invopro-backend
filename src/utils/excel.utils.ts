@@ -58,45 +58,110 @@ export async function getColumnNamesAndTypes(filePath: string, sheetName?: strin
   return columnsInfo;
 }
 
-export async function readExcelFile(filePath: string, sheetName?: string): Promise<any[]> {
-  const workbook = new ExcelJS.Workbook();
+// export async function readExcelFile(filePath: string, sheetName?: string): Promise<any[]> {
+//   const workbook = new ExcelJS.Workbook();
 
-  await workbook.xlsx.readFile(filePath);
-  const worksheet = sheetName ? workbook.getWorksheet(sheetName) : workbook.worksheets[0]; // Use the first sheet if no sheet name is provided
+//   await workbook.xlsx.readFile(filePath);
+//   const worksheet = sheetName ? workbook.getWorksheet(sheetName) : workbook.worksheets[0]; // Use the first sheet if no sheet name is provided
 
-  if (!worksheet) {
-    throw new Error(sheetName ? `Sheet "${sheetName}" not found` : 'No sheets found in the workbook.');
-  }
+//   if (!worksheet) {
+//     throw new Error(sheetName ? `Sheet "${sheetName}" not found` : 'No sheets found in the workbook.');
+//   }
 
-  const rows: any[] = [];
-  const headers: string[] = [];
+//   const rows: any[] = [];
+//   const headers: string[] = [];
 
-  worksheet.eachRow((row, rowIndex) => {
-    if (rowIndex === 1) {
-      // First row is the header
-      row.eachCell((cell, colNumber) => {
-        headers[colNumber - 1] = cell.text.trim(); // Store header names
-      });
+//   worksheet.eachRow((row, rowIndex) => {
+//     if (rowIndex === 1) {
+//       // First row is the header
+//       row.eachCell((cell, colNumber) => {
+//         headers[colNumber - 1] = cell.text.trim(); // Store header names
+//       });
+//     } else {
+//       // Process other rows
+//       const rowData: { [key: string]: any } = {};
+//       row.eachCell((cell, colNumber) => {
+//         const header = headers[colNumber - 1];
+//         if (header) {
+//           if (cell.type === ExcelJS.ValueType.Date) {
+//             // Convert date to ISO string
+//             rowData[header] = (cell.value as Date).toISOString();
+//           } else {
+//             // Handle other types
+//             rowData[header] = typeof cell.value === 'string' ? cell.value?.trim() : cell.value;
+//           }
+//         }
+//       });
+//       rows.push(rowData);
+//     }
+//   });
+
+//   return rows;
+// }
+
+export async function readExcelFile(filePath: string, sheetNames?: string[]): Promise<any[]> {
+  try {
+    console.log('Inside readExcelFile', filePath);
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(filePath);
+
+    let sheetsToRead: ExcelJS.Worksheet[] = [];
+
+    if (!sheetNames || sheetNames.length === 0) {
+      // If no sheet names are provided, read the first sheet
+      if (workbook.worksheets.length > 0) {
+        sheetsToRead.push(workbook.worksheets[0]);
+      }
     } else {
-      // Process other rows
-      const rowData: { [key: string]: any } = {};
-      row.eachCell((cell, colNumber) => {
-        const header = headers[colNumber - 1];
-        if (header) {
-          if (cell.type === ExcelJS.ValueType.Date) {
-            // Convert date to ISO string
-            rowData[header] = (cell.value as Date).toISOString();
-          } else {
-            // Handle other types
-            rowData[header] = typeof cell.value === 'string' ? cell.value?.trim() : cell.value;
-          }
+      // Read all specified sheets
+      sheetsToRead = sheetNames
+        .map((sheetName) => workbook.getWorksheet(sheetName))
+        .filter((sheet) => sheet !== undefined) as ExcelJS.Worksheet[];
+    }
+
+    if (sheetsToRead.length === 0) {
+      throw new Error(sheetNames ? `Sheets "${sheetNames.join(', ')}" not found` : 'No sheets found in the workbook.');
+    }
+
+    const allRows: any[] = [];
+
+    sheetsToRead.forEach((worksheet) => {
+      const rows: any[] = [];
+      const headers: string[] = [];
+
+      worksheet.eachRow((row, rowIndex) => {
+        if (rowIndex === 1) {
+          // First row is the header
+          row.eachCell((cell, colNumber) => {
+            headers[colNumber - 1] = cell.text.trim(); // Store header names
+          });
+        } else {
+          // Process other rows
+          const rowData: { [key: string]: any } = {};
+          row.eachCell((cell, colNumber) => {
+            const header = headers[colNumber - 1];
+            if (header) {
+              if (cell.type === ExcelJS.ValueType.Date) {
+                // Convert date to ISO string
+                rowData[header] = (cell.value as Date).toISOString();
+              } else {
+                // Handle other types
+                rowData[header] = typeof cell.value === 'string' ? cell.value?.trim() : cell.value;
+              }
+            }
+          });
+          rows.push(rowData);
         }
       });
-      rows.push(rowData);
-    }
-  });
 
-  return rows;
+      allRows.push(...rows);
+    });
+
+    return allRows;
+  } catch (e) {
+    console.log(e);
+    throw 'Error while reading excel file.';
+  }
 }
 
 export async function writeDataToExcel(data: DataItem[], filePath: string): Promise<void> {
@@ -108,15 +173,145 @@ export async function writeDataToExcel(data: DataItem[], filePath: string): Prom
   // Iterate through the data and write it to the sheet
   data.forEach((item) => {
     if (item.cellName) {
-      // If a specific cell is provided, write the value there
       const cell = sheet.getCell(item.cellName);
-      cell.value = `${item.value ?? ''}`;
+      cell.value = item.value;
+
+      if (item.numFormat === 'percentage') {
+        cell.numFmt = '0%'; // Apply percentage format
+      } else {
+        cell.numFmt = cell.numFmt || '0'; // Preserve existing format
+      }
     }
   });
 
   // Save the updated Excel file
   await workbook.xlsx.writeFile(filePath);
   console.log(`Excel file written successfully to ${filePath}`);
+}
+
+export async function createExcelSheetFile(
+  data: Array<Record<string, any>>, // Array of JSON objects with varying keys
+  filePath: string,
+  sheetName: string,
+  titleHeading?: string
+): Promise<void> {
+  const workbook = new ExcelJS.Workbook();
+
+  // Load the existing workbook or create a new one
+  try {
+    await workbook.xlsx.readFile(filePath);
+  } catch {
+    console.log('File does not exist. A new file will be created.');
+  }
+
+  let worksheet = workbook.getWorksheet(sheetName);
+  if (!worksheet) {
+    worksheet = workbook.addWorksheet(sheetName);
+  }
+
+  if (data.length === 0) {
+    console.error('No data provided to create the sheet.');
+    return;
+  }
+
+  // Get all unique keys across the data
+  const allKeys = Array.from(new Set(data.flatMap((item) => Object.keys(item))));
+
+  // Calculate where to start adding the new table
+  let lastRow = worksheet.lastRow?.number || 0;
+  let startRow = lastRow + 3; // Adjusted to leave an extra blank row
+
+  // If title heading is provided, insert it as a merged row
+  if (titleHeading) {
+    const titleRow = worksheet.getRow(startRow - 1);
+    titleRow.getCell(1).value = titleHeading;
+    titleRow.getCell(1).font = { bold: true, size: 14, color: { argb: 'FFFFFF' } };
+    titleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+    titleRow.getCell(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4472C4' },
+    };
+    titleRow.height = 20;
+    worksheet.mergeCells(startRow - 1, 1, startRow - 1, allKeys.length);
+  }
+
+  // Dynamically generate columns and rows
+  const columns = allKeys.map((key) => ({ name: key, filterButton: true }));
+  const rows = data.map((item) => allKeys.map((key) => item[key] || ''));
+
+  // Define table reference (starting cell)
+  const tableRef = `A${startRow}`;
+
+  // Add a table to the worksheet
+  const table = worksheet.addTable({
+    name: `DynamicTable${startRow}`, // Unique table name
+    ref: tableRef,
+    headerRow: true,
+    totalsRow: false,
+    style: {
+      theme: 'TableStyleMedium9', // Default table style
+      showRowStripes: true,
+    },
+    columns,
+    rows,
+  });
+
+  // Apply custom styles for the table headers and data rows
+  const columnWidths: number[] = [];
+  const headerRow = worksheet.getRow(startRow);
+  headerRow.eachCell((cell, colIndex) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4472C4' }, // Blue background
+    };
+    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' },
+    };
+    const cellValue = String(cell.value);
+    columnWidths[colIndex] = Math.max(columnWidths[colIndex] || 0, cellValue.length);
+  });
+
+  for (let i = startRow + 1; i < startRow + 1 + rows.length; i++) {
+    const row = worksheet.getRow(i);
+    row.eachCell((cell, colIndex) => {
+      cell.alignment = { vertical: 'middle', horizontal: 'left' };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+      const cellValue = String(cell.value);
+      columnWidths[colIndex] = Math.max(columnWidths[colIndex] || 0, cellValue.length);
+    });
+    if (i % 2 === 0) {
+      row.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'D9E1F2' }, // Light blue
+        };
+      });
+    }
+  }
+
+  // Apply dynamic widths to the columns
+  worksheet.columns = columns.map((col, index) => ({
+    ...col,
+    width: columnWidths[index] + 5, // Add some padding
+  }));
+
+  worksheet.getColumn(1).hidden = false;
+  // Save the workbook to the file
+  await workbook.xlsx.writeFile(filePath);
+  console.log(`Excel sheet "${sheetName}" updated/created in file: ${filePath}`);
 }
 
 export function excelDateToJSDate(serial: number) {

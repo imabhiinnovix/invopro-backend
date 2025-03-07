@@ -24,6 +24,8 @@ const defaultDataSourceVersionSchema = new Schema<IDefaultDataSourceVersionValue
   }
 );
 
+defaultDataSourceVersionSchema.index({ dataSourceVersionId: 1 });
+
 // Function to create a model with a dynamic schema name
 const createDefaultDataSourceVersionModel = (schemaName: string) => {
   if (models[schemaName]) {

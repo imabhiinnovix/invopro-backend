@@ -12,6 +12,7 @@ interface IDataSourceVersion extends Document {
   createdBy?: Types.ObjectId;
   isActive: boolean;
   versionName: string;
+  isCurrent: boolean;
   status: 'failed' | 'processing' | 'processed';
   fileName: string;
   mappings: Record<string, string>;
@@ -24,18 +25,14 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     versionValue: { type: String, required: true },
-    versionName: { type: String, required: true },
+    versionName: { type: String },
     status: {
       type: String,
       enum: ['failed', 'processing', 'processed'], // Restricting the values of status
       required: true,
       default: 'processing', // Optional: Default value for status
     },
-    mappings: {
-      type: Map, // Mongoose's Map type to store key-value pairs
-      of: String, // The values in the map are strings
-      default: {}, // Optional: Default to an empty map if no mappings are provided
-    },
+    mappings: { type: Schema.Types.Mixed },
     separator: {
       type: Map, // Mongoose's Map type to store key-value pairs
       of: String, // The values in the map are strings
@@ -45,6 +42,7 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
     filePath: { type: String },
     fileType: { type: String },
     fileSize: { type: String },
+    isCurrent: { type: Boolean, required: true },
     isActive: { type: Boolean, required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
@@ -55,8 +53,8 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
 );
 
 dataSourceVersionSchema.index(
-  { dataSourceId: 1, versionValue: 1, versionName: 1 },
-  { unique: true, collation: { locale: 'en', strength: 2 } }
+  { dataSourceId: 1, versionValue: 1, isCurrent: 1 },
+  { collation: { locale: 'en', strength: 2 } }
 );
 
 const DataSourceVersion = model<IDataSourceVersion>('data_source_version', dataSourceVersionSchema);

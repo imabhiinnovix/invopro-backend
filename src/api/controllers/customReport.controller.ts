@@ -1,401 +1,348 @@
 import { Request, Response, NextFunction } from 'express';
-import { promises as fsPromises } from 'fs';
-import {
-  addCellMaping,
-  getCurrentYearNewApplicationFiled,
-  getDisclosureCount,
-  percentageOfCurrentYearInventionDisclosureConvertedToFilings,
-  processData,
-} from '../../database/services/monthlyipReport.services';
+
+import * as customReportServices from '../../database/services/customReport.services';
+import * as dataSourceVersionServices from '../../database/services/dataSourceVersion.services';
+import * as reportRequestService from '../../database/services/reportRequest.services';
+import * as dataSourceService from '../../database/services/dataSource.services';
+
+import { DateTime } from 'luxon';
+import { generateMonthlyIpReport } from '../../functions/reports/monthlyip';
 import path from 'path';
-import { writeDataToExcel } from '../../utils/excel.utils';
 
-export const generateMonthlyIpReport = async (req: Request, res: Response, next: NextFunction) => {
+import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
+import { generateSupplementalIpReport } from '../../functions/reports/supplementalip';
+import { CustomReportModelAccess } from '../../database/models/customReportModels';
+
+export const generateCustomReportsFunction = async ({
+  userId,
+  organizationId,
+  versionValue,
+  customReportId,
+  orgCode,
+  reportRequestId,
+}: {
+  userId: string;
+  organizationId: string;
+  versionValue: string;
+  customReportId: string;
+  orgCode: string;
+  reportRequestId?: any;
+}) => {
   try {
-    const { disclosureDataSourceVersionId, portfolioDataSourceVersionId, currentYear } = req.body;
-    const { organizationId, userId } = req.user;
+    const customReportDetails = await customReportServices.findCustomReportById(customReportId);
 
-    // const currentYear = '2024';
-    const currentYearApplicationFiledData = await getCurrentYearNewApplicationFiled({
-      portfolioDataSourceVersionId,
-      currentYear,
+    if (!customReportDetails) {
+      throw new Error('Custom report not found');
+    }
+
+    // Extract all data source IDs
+    const dataSourceIds = customReportDetails.dataSourceIds.map((ds) => ds.dataSourceId);
+
+    const dataSourceVersionDetails = await dataSourceVersionServices.getDataSourceVersionList({
+      query: { dataSourceId: { $in: dataSourceIds }, versionValue: versionValue, isCurrent: true },
     });
 
-    const processedCurrentYearApplicationFiledData = processData(currentYearApplicationFiledData, {
-      'SBU SHPP': 'H3',
-      'SBU Agri-nutrients': 'D3',
-      'SBU Polymers': 'F3',
-      'SBU Chemicals': 'E3',
-      'SBU T&I': 'B3',
-      'SBU MISC': 'I3',
-      'SBU Metals': 'C3',
-      Total: 'J3',
-      Petchem: 'G3',
-    });
+    if (!dataSourceVersionDetails.data || dataSourceVersionDetails.data.length != dataSourceIds.length) {
+      let notFoundItems = customReportDetails.dataSourceIds.filter((ds) => {
+        return !dataSourceVersionDetails.data.some((dsv) => {
+          return dsv.dataSourceId.toString() === ds.dataSourceId.toString();
+        });
+      });
 
-    const percentageOfCurrentYearInventionDisclosureConvertedToFilingsData =
-      await percentageOfCurrentYearInventionDisclosureConvertedToFilings(
-        portfolioDataSourceVersionId,
-        disclosureDataSourceVersionId,
-        currentYear
+      let notFoundFileNames = notFoundItems.map((dsv) => dsv.fileDetails);
+      let flattenedFileNames = notFoundFileNames.flatMap((files) => files.map((file) => file.name));
+
+      throw new Error(
+        `Not all required data is available for this report. Please upload the following files before generating the report: ${versionValue}. ${flattenedFileNames.join(', ')}`
       );
-    const processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData = addCellMaping(
-      percentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
-      {
-        'SBU SHPP': 'H4',
-        'SBU Agri-nutrients': 'D4',
-        'SBU Polymers': 'F4',
-        'SBU Chemicals': 'E4',
-        'SBU T&I': 'B4',
-        'SBU MISC': 'I4',
-        'SBU Metals': 'C4',
-        Total: 'J4',
-        'Petchem Total': 'G4',
-      }
-    );
+    }
 
-    //TODO:here currern year filter need to discuss
-    const draftedApplicationDisclosureCount = await getDisclosureCount({
-      disclosureDataSourceVersionId,
-      currentYear,
-      isActive: false,
-      isDrafted: true,
-    });
-    const processedDraftedApplicationDisclosureCount = processData(draftedApplicationDisclosureCount, {
-      'SBU T&I': 'B11',
-      'SBU Metals': 'C11',
-      'SBU Agri-nutrients': 'D11',
-      'SBU Chemicals': 'E11',
-      'SBU Polymers': 'F11',
-      Petchem: 'G11',
-      'SBU SHPP': 'H11',
-      'SBU MISC': 'I11',
-      Total: 'J11',
-    });
-    const openApplicationDisclosureCount = await getDisclosureCount({
-      disclosureDataSourceVersionId,
-      currentYear,
-      isActive: false,
-      isDrafted: false,
-    });
+    const currentDateTime = DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss');
 
-    const processedOpenApplicationDisclosureCount = processData(openApplicationDisclosureCount, {
-      'SBU T&I': 'B12',
-      'SBU Metals': 'C12',
-      'SBU Agri-nutrients': 'D12',
-      'SBU Chemicals': 'E12',
-      'SBU Polymers': 'F12',
-      Petchem: 'G12',
-      'SBU SHPP': 'H12',
-      'SBU MISC': 'I12',
-      Total: 'J12',
-    });
+    const fileName = `${customReportDetails.reportName}_${versionValue}_${currentDateTime}.xlsx`;
+    let reportRequestPayload: any = {
+      organizationId: organizationId,
+      versionValue: versionValue,
+      customReportId: customReportDetails._id,
+      status: 'processing',
+      fileName: fileName,
+      filePath: path.join('uploads', organizationId, userId, 'generatedReports', `${fileName}`),
+      fileType: 'xlsx',
+      createdBy: userId,
+    };
+    if (reportRequestId) {
+      reportRequestPayload = await reportRequestService.findReportRequestById(reportRequestId);
+    }
+    if (!reportRequestId) {
+      const requestedReport = await reportRequestService.createReportRequest(reportRequestPayload);
+      reportRequestId = requestedReport._id;
+    }
+    const customReportModel = await CustomReportModelAccess({ orgCode });
+    if (customReportDetails.reportName === 'monthlyip') {
+      const versionMap = Object.fromEntries(
+        dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
+      );
 
-    const currentYearUsIssued = await getCurrentYearNewApplicationFiled({
-      portfolioDataSourceVersionId,
-      currentYear,
-      isPercentagePart: false,
-      isCurrentYearUSIssued: true,
-    });
+      const disclosureDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'disclosure');
 
-    const processedCurrentYearUsIssued = processData(currentYearUsIssued, {
-      'SBU T&I': 'B19',
-      'SBU Metals': 'C19',
-      'SBU Agri-nutrients': 'D19',
-      'SBU Chemicals': 'E19',
-      'SBU Polymers': 'F19',
-      Petchem: 'G19',
-      'SBU SHPP': 'H19',
-      'SBU MISC': 'I19',
-      Total: 'J19',
-    });
-    const currentYearINTIssued = await getCurrentYearNewApplicationFiled({
-      portfolioDataSourceVersionId,
-      currentYear,
-      isPercentagePart: false,
-      isCurrentYearINTIssued: true,
-    });
-    const processedCurrentYearINTIssued = processData(currentYearINTIssued, {
-      'SBU T&I': 'B20',
-      'SBU Metals': 'C20',
-      'SBU Agri-nutrients': 'D20',
-      'SBU Chemicals': 'E20',
-      'SBU Polymers': 'F20',
-      Petchem: 'G20',
-      'SBU SHPP': 'H20',
-      'SBU MISC': 'I20',
-      Total: 'J20',
-    });
+      const portfolioDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'portfolio');
 
-    const usPendingApplication = await getCurrentYearNewApplicationFiled({
-      portfolioDataSourceVersionId,
-      currentYear,
-      isPercentagePart: false,
-      isUSPendingApplication: true,
-    });
-    const processedUSPendingApplication = processData(usPendingApplication, {
-      'SBU T&I': 'B22',
-      'SBU Metals': 'C22',
-      'SBU Agri-nutrients': 'D22',
-      'SBU Chemicals': 'E22',
-      'SBU Polymers': 'F22',
-      Petchem: 'G22',
-      'SBU SHPP': 'H22',
-      'SBU MISC': 'I22',
-      Total: 'J22',
-    });
-    const epPendingApplication = await getCurrentYearNewApplicationFiled({
-      portfolioDataSourceVersionId,
-      currentYear,
-      isPercentagePart: false,
-      isEPPendingApplication: true,
-    });
+      const sabicipDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'sabicip');
 
-    const processedEPPendingApplication = processData(epPendingApplication, {
-      'SBU T&I': 'B23',
-      'SBU Metals': 'C23',
-      'SBU Agri-nutrients': 'D23',
-      'SBU Chemicals': 'E23',
-      'SBU Polymers': 'F23',
-      Petchem: 'G23',
-      'SBU SHPP': 'H23',
-      'SBU MISC': 'I23',
-      Total: 'J23',
-    });
-    const cnPendingApplication = await getCurrentYearNewApplicationFiled({
-      portfolioDataSourceVersionId,
-      currentYear,
-      isPercentagePart: false,
-      isCNPendingApplication: true,
-    });
+      const ctclinsabDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'ctclinsab');
 
-    const processedCNPendingApplication = processData(cnPendingApplication, {
-      'SBU T&I': 'B24',
-      'SBU Metals': 'C24',
-      'SBU Agri-nutrients': 'D24',
-      'SBU Chemicals': 'E24',
-      'SBU Polymers': 'F24',
-      Petchem: 'G24',
-      'SBU SHPP': 'H24',
-      'SBU MISC': 'I24',
-      Total: 'J24',
-    });
-    const otherPendingApplication = await getCurrentYearNewApplicationFiled({
-      portfolioDataSourceVersionId,
-      currentYear,
-      isPercentagePart: false,
-      isOtherPendingApplication: true,
-    });
+      const annuitiesbDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'annuities');
 
-    const processedOtherPendingApplication = processData(otherPendingApplication, {
-      'SBU T&I': 'B25',
-      'SBU Metals': 'C25',
-      'SBU Agri-nutrients': 'D25',
-      'SBU Chemicals': 'E25',
-      'SBU Polymers': 'F25',
-      Petchem: 'G25',
-      'SBU SHPP': 'H25',
-      'SBU MISC': 'I25',
-      Total: 'J25',
-    });
-    const totalPendingApplication = await getCurrentYearNewApplicationFiled({
-      portfolioDataSourceVersionId,
-      currentYear,
-      isPercentagePart: false,
-      isTotalPendingApplication: true,
-    });
+      await generateMonthlyIpReport({
+        reportRequestPayload,
+        requestedReportId: reportRequestId as string,
+        sampleFilePath: customReportDetails.sampleFilePath!,
+        disclosureDataSourceVersionId: versionMap[disclosureDataSource?.dataSourceId!],
+        portfolioDataSourceVersionId: versionMap[portfolioDataSource?.dataSourceId!],
+        sabicipDataSourceVersionId: versionMap[sabicipDataSource?.dataSourceId!],
+        ctclinsabDataSourceVersionId: versionMap[ctclinsabDataSource?.dataSourceId!],
+        annuitiesbDataSourceVersionId: versionMap[annuitiesbDataSource?.dataSourceId!],
+        customReportModel,
+      });
+    } else if (customReportDetails.reportName === 'supplementalip') {
+      const versionMap = Object.fromEntries(
+        dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
+      );
 
-    const processedTotalPendingApplication = processData(totalPendingApplication, {
-      'SBU T&I': 'B26',
-      'SBU Metals': 'C26',
-      'SBU Agri-nutrients': 'D26',
-      'SBU Chemicals': 'E26',
-      'SBU Polymers': 'F26',
-      Petchem: 'G26',
-      'SBU SHPP': 'H26',
-      'SBU MISC': 'I26',
-      Total: 'J26',
-    });
+      const disclosureDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'disclosure');
 
-    const usIssuedApplication = await getCurrentYearNewApplicationFiled({
-      portfolioDataSourceVersionId,
-      currentYear,
-      isPercentagePart: false,
-      isUSIssuedApplication: true,
-    });
+      const portfolioDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'portfolio');
 
-    const processedUSIssuedApplication = processData(usIssuedApplication, {
-      'SBU T&I': 'B28',
-      'SBU Metals': 'C28',
-      'SBU Agri-nutrients': 'D28',
-      'SBU Chemicals': 'E28',
-      'SBU Polymers': 'F28',
-      Petchem: 'G28',
-      'SBU SHPP': 'H28',
-      'SBU MISC': 'I28',
-      Total: 'J28',
-    });
-    const epIssuedApplication = await getCurrentYearNewApplicationFiled({
-      portfolioDataSourceVersionId,
-      currentYear,
-      isPercentagePart: false,
-      isEPIssuedApplication: true,
-    });
+      const sabicipDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'sabicip');
 
-    const processedEPIssuedApplication = processData(epIssuedApplication, {
-      'SBU T&I': 'B29',
-      'SBU Metals': 'C29',
-      'SBU Agri-nutrients': 'D29',
-      'SBU Chemicals': 'E29',
-      'SBU Polymers': 'F29',
-      Petchem: 'G29',
-      'SBU SHPP': 'H29',
-      'SBU MISC': 'I29',
-      Total: 'J29',
-    });
-    const cnIssuedApplication = await getCurrentYearNewApplicationFiled({
-      portfolioDataSourceVersionId,
-      currentYear,
-      isPercentagePart: false,
-      isCNIssuedApplication: true,
-    });
+      const ctclinsabDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'ctclinsab');
 
-    const processedCNIssuedApplication = processData(cnIssuedApplication, {
-      'SBU T&I': 'B30',
-      'SBU Metals': 'C30',
-      'SBU Agri-nutrients': 'D30',
-      'SBU Chemicals': 'E30',
-      'SBU Polymers': 'F30',
-      Petchem: 'G30',
-      'SBU SHPP': 'H30',
-      'SBU MISC': 'I30',
-      Total: 'J30',
-    });
-    const otherIssuedApplication = await getCurrentYearNewApplicationFiled({
-      portfolioDataSourceVersionId,
-      currentYear,
-      isPercentagePart: false,
-      isOtherIssuedApplication: true,
-    });
+      const annuitiesbDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'annuities');
 
-    const processedOtherIssuedApplication = processData(otherIssuedApplication, {
-      'SBU T&I': 'B31',
-      'SBU Metals': 'C31',
-      'SBU Agri-nutrients': 'D31',
-      'SBU Chemicals': 'E31',
-      'SBU Polymers': 'F31',
-      Petchem: 'G31',
-      'SBU SHPP': 'H31',
-      'SBU MISC': 'I31',
-      Total: 'J31',
-    });
-    const totalIssuedApplication = await getCurrentYearNewApplicationFiled({
-      portfolioDataSourceVersionId,
-      currentYear,
-      isPercentagePart: false,
-      isTotalIssuedApplication: true,
-    });
-    const processedTotalIssuedApplication = processData(totalIssuedApplication, {
-      'SBU T&I': 'B32',
-      'SBU Metals': 'C32',
-      'SBU Agri-nutrients': 'D32',
-      'SBU Chemicals': 'E32',
-      'SBU Polymers': 'F32',
-      Petchem: 'G32',
-      'SBU SHPP': 'H32',
-      'SBU MISC': 'I32',
-      Total: 'J32',
-    });
+      const sabicContractDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'sabiccontracts');
 
-    const newFilePath = path.join('reports', 'generated', organizationId, userId, `${Date.now()}.xlsx`);
-    const sampleFilePath = path.join('reports', 'sample', 'sample-monthly-ip-report.xlsx');
-    await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
-    await fsPromises.copyFile(sampleFilePath, newFilePath);
+      const shppContractDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'shppcontracts');
 
-    await writeDataToExcel(
-      [
-        ...processedCurrentYearApplicationFiledData,
-        ...processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
-        ...processedDraftedApplicationDisclosureCount,
-        ...processedDraftedApplicationDisclosureCount,
-        ...processedOpenApplicationDisclosureCount,
-        ...processedCurrentYearUsIssued,
-        ...processedCurrentYearINTIssued,
-        ...processedUSPendingApplication,
-        ...processedEPPendingApplication,
-        ...processedCNPendingApplication,
-        ...processedOtherPendingApplication,
-        ...processedTotalPendingApplication,
-        ...processedUSIssuedApplication,
-        ...processedEPIssuedApplication,
-        ...processedCNIssuedApplication,
-        ...processedOtherIssuedApplication,
-        ...processedTotalIssuedApplication,
-        { cellName: 'A3', value: `${currentYear} New Apps Filed`, SBU: '' },
-        { cellName: 'A4', value: `% of ${currentYear} Invention Disclosures converted to Filings`, SBU: '' },
-        { cellName: 'A5', value: `${currentYear} New Apps Estimate`, SBU: '' },
-        { cellName: 'A6', value: `${Number(currentYear) - 1} New Apps filed`, SBU: '' },
-        {
-          cellName: 'A7',
-          value: `${Number(currentYear) - 2} New Apps filed`,
-          SBU: '',
-        },
-        {
-          cellName: 'A8',
-          value: `${Number(currentYear) - 3} New Apps filed`,
-          SBU: '',
-        },
-        {
-          cellName: 'A9',
-          value: `${Number(currentYear) - 4} New Apps filed`,
-          SBU: '',
-        },
-        {
-          cellName: 'A12',
-          value: `Projects Opened in ${currentYear}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A12',
-          value: `Projects Opened in ${Number(currentYear) - 1}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A13',
-          value: `Projects Opened in ${Number(currentYear) - 2}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A14',
-          value: `Projects Opened in ${Number(currentYear) - 3}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A15',
-          value: `Projects Opened in ${Number(currentYear) - 4}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A16',
-          value: `Projects Opened in ${Number(currentYear) - 5}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A19',
-          value: `${currentYear} US Issued`,
-          SBU: '',
-        },
-        {
-          cellName: 'A20',
-          value: `${currentYear} Intl Issued`,
-          SBU: '',
-        },
-      ],
-      newFilePath
-    );
+      const ksaContractDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'ksacontracts');
+
+      const attorneyMappingDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'attorneymapping');
+
+      const agreementTypeMappingDataSource = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'agreementtypemapping'
+      );
+
+      const ipAnalystDashboardDataSource = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'ipanalystdashboard'
+      );
+
+      const shppAccoladeDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'shppaccolade');
+
+      const sabicAccoladeDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'sabicaccolade');
+
+      await generateSupplementalIpReport({
+        reportRequestPayload,
+        requestedReportId: reportRequestId,
+        sampleFilePath: customReportDetails.sampleFilePath!,
+        disclosureDataSourceVersionId: versionMap[disclosureDataSource?.dataSourceId!],
+        portfolioDataSourceVersionId: versionMap[portfolioDataSource?.dataSourceId!],
+        sabicipDataSourceVersionId: versionMap[sabicipDataSource?.dataSourceId!],
+        ctclinsabDataSourceVersionId: versionMap[ctclinsabDataSource?.dataSourceId!],
+        annuitiesbDataSourceVersionId: versionMap[annuitiesbDataSource?.dataSourceId!],
+        sabicContractsDataSourceVersionId: versionMap[sabicContractDataSource?.dataSourceId!],
+        shppContractsDataSourceVersionId: versionMap[shppContractDataSource?.dataSourceId!],
+        ksaContractsDataSourceVersionId: versionMap[ksaContractDataSource?.dataSourceId!],
+        attorneyMappingDataSourceVersionId: versionMap[attorneyMappingDataSource?.dataSourceId!],
+        agreementTypeMappingDataSourceVersionId: versionMap[agreementTypeMappingDataSource?.dataSourceId!],
+        ipAnalystDataSourceVersionId: versionMap[ipAnalystDashboardDataSource?.dataSourceId!],
+        shppAccoladeDataSourceVersionId: versionMap[shppAccoladeDataSource?.dataSourceId!],
+        sabicAccoladeDataSourceVersionId: versionMap[sabicAccoladeDataSource?.dataSourceId!],
+        customReportModel,
+      });
+    } else {
+      await reportRequestService.updateReportRequest(reportRequestId, { status: 'failed' });
+    }
+  } catch (e) {
+    await reportRequestService.updateReportRequest(reportRequestId, { status: 'failed' });
+  }
+};
+export const generateCustomReports = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { versionValue, customReportId } = req.body;
+    const { userId, organizationId, orgCode } = req?.user;
+    let data = await generateCustomReportsFunction({ versionValue, userId, organizationId, orgCode, customReportId });
     res.status(201).json({
       success: true,
       message: 'Report Generated Successfully',
+      data,
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+
+export const listCustomReports = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { search, paginate = 'false' } = req.query;
+    const { organizationId } = req.user;
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
+
+    const query: any = { organizationId: organizationId };
+    if (search) query.reportName = { $regex: search, $options: 'i' };
+
+    let result: any = {};
+    if (paginate) {
+      result = await customReportServices.getCustomReportList({
+        query,
+        select: ['_id', 'reportName'],
+        page,
+        limit,
+      });
+    } else {
+      result = await customReportServices.getCustomReportList({
+        query,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Custom Report List Fetched Successfully',
+      data: result.data,
+      totalCount: result.totalCount,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const listReportRequest = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { search, paginate = 'false' } = req.query;
+    const { organizationId } = req.user;
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
+
+    const query: any = { organizationId: organizationId };
+    if (search) query.reportName = { $regex: search, $options: 'i' };
+
+    let result: any = {};
+    if (paginate) {
+      result = await reportRequestService.getReportRequestList({
+        query,
+        select: ['versionValue', 'status', 'createdAt'],
+        page,
+        limit,
+        populate: [
+          {
+            path: 'customReportId',
+            select: 'reportName', // Only populate reportName
+          },
+        ],
+      });
+    } else {
+      result = await reportRequestService.getReportRequestList({
+        query,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Report Request List Fetched Successfully',
+      data: result.data,
+      totalCount: result.totalCount,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const downloadReport = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { reportRequestId } = req.params;
+    // const { userId } = req.user;
+
+    const reportDetails = await reportRequestService.findReportRequestById(reportRequestId);
+    // if (reportDetails?.createdBy != userId) {
+    //   return res.status(401).json({
+    //     success: false,
+    //     message: 'You do not have permission to download this report.',
+    //   });
+    // }
+    if (reportDetails?.status !== 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: `The report is currently in '${reportDetails?.status}' status and cannot be downloaded.`,
+      });
+    }
+    res.download(reportDetails.filePath!, reportDetails.fileName!, (err) => {
+      if (err) {
+        console.error('Error downloading file:', err);
+        res.status(500).send('Error downloading file');
+      }
+    });
+  } catch (err) {
+    console.log('Error in downloadReport', err);
+    next(err);
+  }
+};
+
+export const getReportVersionValuesBasedOnReportIdAndVersionValue = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { reportRequestId, versionValue } = req.query as { reportRequestId: string; versionValue: string };
+
+    const customReportData = await customReportServices.findCustomReportById(reportRequestId);
+
+    const requiredDataSourceIds = customReportData?.dataSourceIds?.map((data) => data.dataSourceId);
+
+    const dataSourceResult = await dataSourceService.getDataSourceList({
+      query: { _id: { $in: requiredDataSourceIds } },
+
+      populate: [
+        {
+          path: 'entityId',
+          select: 'name attributes', // Specify the fields to populate
+        },
+      ],
+    });
+    const query: any = { dataSourceId: { $in: requiredDataSourceIds }, versionValue: versionValue, isCurrent: true };
+
+    const availableVersionValue = await dataSourceVersionService.getDataSourceVersionList({
+      query,
+    });
+
+    const versionMap = new Map<string, any[]>();
+
+    for (let i = 0; i < availableVersionValue?.data?.length || 0; i++) {
+      const version = availableVersionValue?.data[i];
+      if (versionMap[version.dataSourceId]) {
+        versionMap[version.dataSourceId].push(version);
+      } else {
+        versionMap[version.dataSourceId] = [version];
+      }
+    }
+
+    const reportDataSourceFileNameMap = new Map<string, any[]>();
+
+    for (let i = 0; i < customReportData?.dataSourceIds?.length! || 0; i++) {
+      const dataSource = customReportData?.dataSourceIds[i]!;
+      reportDataSourceFileNameMap[dataSource.dataSourceId] = dataSource.fileDetails;
+    }
+
+    const versionValueDetails = dataSourceResult?.data?.map((source) => ({
+      ...source,
+      requiredFiles: reportDataSourceFileNameMap[source._id],
+      reportName: customReportData?.reportName,
+      versions: versionMap[source._id] || [], // Include versions if available, else empty array
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: 'Report Request List Fetched Successfully',
+      versionValueDetails,
     });
   } catch (err) {
     next(err);

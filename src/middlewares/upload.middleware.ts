@@ -29,7 +29,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 30 * 1024 * 1024, // 10MB in bytes
+    fileSize: 100 * 1024 * 1024, // 100MB in bytes
   },
 });
 

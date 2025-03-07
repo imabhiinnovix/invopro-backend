@@ -25,7 +25,6 @@ export const getOrganizationById = async (organizationId: string) => {
 
 export const updateOrganization = async (organizationId: string, organizationData: any) => {
   try {
-    console.log('Organizationkishan', organizationId, organizationData);
     const organization = await Organization.findByIdAndUpdate(organizationId, organizationData, { new: true });
     return organization;
   } catch (err) {

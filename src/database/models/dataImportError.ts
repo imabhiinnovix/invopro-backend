@@ -16,8 +16,8 @@ interface IDataImportError extends Document {
 const DataImportErrorSchema = new Schema<IDataImportError>(
   {
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
-    dataSourceId: { type: Schema.Types.ObjectId, ref: 'DataSource' },
-    dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'DataSourceVersion' },
+    dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
+    dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'data_source_version' },
     rowNumber: { type: Number },
     fileAttributeName: { type: String },
     attributeName: { type: String },
