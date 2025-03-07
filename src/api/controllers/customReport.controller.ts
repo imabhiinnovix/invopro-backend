@@ -348,3 +348,17 @@ export const getReportVersionValuesBasedOnReportIdAndVersionValue = async (
     next(err);
   }
 };
+
+export const getReportRequestDetails = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { reportRequestId } = req.params;
+    const reportDetails = await reportRequestService.findReportRequestById(reportRequestId);
+    res.status(200).json({
+      success: true,
+      message: 'Report details retrieved successfully.',
+      reportDetails,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
