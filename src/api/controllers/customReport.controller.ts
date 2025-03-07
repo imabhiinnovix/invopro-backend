@@ -362,3 +362,38 @@ export const getReportRequestDetails = async (req: Request, res: Response, next:
     next(err);
   }
 };
+
+export const getReportRequestsListBasedOnStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { search, paginate = 'false' } = req.query;
+    const { organizationId } = req.user;
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
+
+    const query: any = { organizationId: organizationId, status: 'completed' };
+    if (search) query.reportName = { $regex: search, $options: 'i' };
+
+    let result: any = {};
+    if (paginate) {
+      result = await reportRequestService.getReportRequestList({
+        query,
+        select: ['_id', 'status', 'createdAt'],
+        page,
+        limit,
+      });
+    } else {
+      result = await reportRequestService.getReportRequestList({
+        query,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Report Request List Fetched Successfully',
+      data: result.data,
+      totalCount: result.totalCount,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
