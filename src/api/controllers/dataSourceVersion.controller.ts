@@ -430,90 +430,94 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
             let validationErrors: any[] = [];
             let validatedFinalData: any[] = [];
             for (let j = 0; j < fileDetails.length; j++) {
-              console.log('Before sleep');
-              await sleep(3000);
-              console.log('After sleep');
-              const fileDetailName = fileDetails[j].name;
-              const sheetName = fileDetails[j].sheetName;
-              console.log('processing file name:', fileDetailName);
-              let mappingName = fileDetailName;
-              if (sheetName && sheetName.length > 0) {
-                mappingName = `${mappingName}_${sheetName}`;
-              }
-              const file = dFiles.find((file) => {
-                return (
-                  file.originalname.split('.')[0].replace(/\s+/g, '').toLowerCase() ===
-                  fileDetailName.replace(/\s+/g, '').toLowerCase()
-                );
-              });
-
-              if (file) {
-                const { originalname, path: filePath, size, mimetype } = file;
-                const fileName = originalname;
-                const fileExtension = fileName.split('.').pop();
-                const newFilePath = path.join(
-                  'uploads',
-                  dOrganizationId,
-                  dUserId,
-                  'dsvRequest',
-                  `${dataSourceId}_${versionValue}_${fileName}`
-                );
-                try {
-                  await fsPromises.access(filePath);
-                  await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
-                  await fsPromises.copyFile(filePath, newFilePath);
-                } catch (e) {
-                  console.error('File not found.', e);
+              try {
+                console.log('Before sleep');
+                await sleep(3000);
+                console.log('After sleep');
+                const fileDetailName = fileDetails[j].name;
+                const sheetName = fileDetails[j].sheetName;
+                console.log('processing file name:', fileDetailName);
+                let mappingName = fileDetailName;
+                if (sheetName && sheetName.length > 0) {
+                  mappingName = `${mappingName}_${sheetName}`;
                 }
+                const file = dFiles.find((file) => {
+                  return (
+                    file.originalname.split('.')[0].replace(/\s+/g, '').toLowerCase() ===
+                    fileDetailName.replace(/\s+/g, '').toLowerCase()
+                  );
+                });
 
-                if (fileExtension && ['xlsx', 'xls'].includes(fileExtension)) {
-                  const jsonMapping = dAllJsonMapping[mappingName] || {};
-                  const jsonSeparator = dAllJsonSeparator[fileDetailName] || {};
-                  if (!dataSourceVersion) {
-                    dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
-                    if (dataSourceDetails && dataSourceDetails.entityId) {
-                      dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
-                        entityId: dataSourceDetails.entityId._id,
-                        dataSourceId,
-                        versionValue,
-                        createdBy: dUserId,
-                        status: 'processing',
-                        separator: jsonSeparator,
-                        fileName: fileName,
-                        filePath: newFilePath,
-                        fileType: mimetype,
-                        fileSize: size,
-                        mappings: jsonMapping,
-                        isActive: true,
-                        isCurrent: false,
-                      });
-                      entityDetails = dataSourceDetails.entityId as any;
-                    } else {
-                      console.error('Data source details not found.');
+                if (file) {
+                  const { originalname, path: filePath, size, mimetype } = file;
+                  const fileName = originalname;
+                  const fileExtension = fileName.split('.').pop();
+                  const newFilePath = path.join(
+                    'uploads',
+                    dOrganizationId,
+                    dUserId,
+                    'dsvRequest',
+                    `${dataSourceId}_${versionValue}_${fileName}`
+                  );
+                  try {
+                    await fsPromises.access(filePath);
+                    await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
+                    await fsPromises.copyFile(filePath, newFilePath);
+                  } catch (e) {
+                    console.error('File not found.', e);
+                  }
+
+                  if (fileExtension && ['xlsx', 'xls'].includes(fileExtension)) {
+                    const jsonMapping = dAllJsonMapping[mappingName] || {};
+                    const jsonSeparator = dAllJsonSeparator[fileDetailName] || {};
+                    if (!dataSourceVersion) {
+                      dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+                      if (dataSourceDetails && dataSourceDetails.entityId) {
+                        dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
+                          entityId: dataSourceDetails.entityId._id,
+                          dataSourceId,
+                          versionValue,
+                          createdBy: dUserId,
+                          status: 'processing',
+                          separator: jsonSeparator,
+                          fileName: fileName,
+                          filePath: newFilePath,
+                          fileType: mimetype,
+                          fileSize: size,
+                          mappings: jsonMapping,
+                          isActive: true,
+                          isCurrent: false,
+                        });
+                        entityDetails = dataSourceDetails.entityId as any;
+                      } else {
+                        console.error('Data source details not found.');
+                      }
                     }
+
+                    const fileData = await readExcelFile(newFilePath, sheetName ? [sheetName] : []);
+
+                    const attributes = entityDetails?.attributes || [];
+
+                    const validatedData = await validateFileData({
+                      fileData,
+                      attributes,
+                      mapping: jsonMapping,
+                      separator: jsonSeparator,
+                      dataSourceId: dataSourceId,
+                      dataSourceVersionId: dataSourceVersion._id as string,
+                      entityId: entityDetails._id,
+                    });
+
+                    if (validatedData.errors.length > 0) {
+                      validationErrors = [...validationErrors, ...validatedData.errors];
+                    }
+                    validatedFinalData = [...validatedFinalData, ...validatedData.newRowData];
+                  } else {
+                    console.error('Invalid file type. Please upload a file in XLSX or XLS format.');
                   }
-
-                  const fileData = await readExcelFile(newFilePath, sheetName ? [sheetName] : []);
-
-                  const attributes = entityDetails?.attributes || [];
-
-                  const validatedData = await validateFileData({
-                    fileData,
-                    attributes,
-                    mapping: jsonMapping,
-                    separator: jsonSeparator,
-                    dataSourceId: dataSourceId,
-                    dataSourceVersionId: dataSourceVersion._id as string,
-                    entityId: entityDetails._id,
-                  });
-
-                  if (validatedData.errors.length > 0) {
-                    validationErrors = [...validationErrors, ...validatedData.errors];
-                  }
-                  validatedFinalData = [...validatedFinalData, ...validatedData.newRowData];
-                } else {
-                  console.error('Invalid file type. Please upload a file in XLSX or XLS format.');
                 }
+              } catch (e) {
+                console.log(`Error while processing the file: ${fileDetails[j].name}`, e);
               }
             }
             if (dataSourceVersion) {
