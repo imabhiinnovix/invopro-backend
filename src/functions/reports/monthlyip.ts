@@ -4,6 +4,7 @@ import path from 'path';
 import * as reportRequestService from '../../database/services/reportRequest.services';
 import {
   addCellMaping,
+  DataItem,
   getAllProsecutionSavings,
   getAnnuitySavingsFromReductions,
   getAppsFiledBasedOnStc,
@@ -33,6 +34,7 @@ export const generateMonthlyIpReport = async ({
   ctclinsabDataSourceVersionId,
   annuitiesbDataSourceVersionId,
   customReportModel,
+  isRowData,
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
@@ -43,6 +45,7 @@ export const generateMonthlyIpReport = async ({
   ctclinsabDataSourceVersionId: string;
   annuitiesbDataSourceVersionId: string;
   customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
 }) => {
   try {
     const currentYear = reportRequestPayload.versionValue.split('-')[0];
@@ -51,6 +54,7 @@ export const generateMonthlyIpReport = async ({
       portfolioDataSourceVersionId,
       currentYear,
       customReportModel,
+      isRowData,
     });
     const newFilePath = reportRequestPayload.filePath;
 
@@ -73,10 +77,12 @@ export const generateMonthlyIpReport = async ({
         portfolioDataSourceVersionId,
         disclosureDataSourceVersionId,
         currentYear,
-        customReportModel
+        customReportModel,
+        isRowData
       );
+
     const processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData = addCellMaping({
-      data: percentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
+      data: !isRowData ? (percentageOfCurrentYearInventionDisclosureConvertedToFilingsData as DataItem[]) : [],
       cellMappings: {
         'SBU T&I': 'B4',
         'SBU Metals': 'C4',
@@ -97,6 +103,7 @@ export const generateMonthlyIpReport = async ({
       isDrafted: true,
       isYearRequired: false,
       customReportModel,
+      isRowData,
     });
 
     const processedDraftedApplicationDisclosureCount = processData({
@@ -143,6 +150,7 @@ export const generateMonthlyIpReport = async ({
       isDrafted: false,
       isYearRequired: false,
       customReportModel,
+      isRowData,
     });
 
     const processedTotalActiveDisclosureCount = processData({
@@ -456,6 +464,7 @@ export const generateMonthlyIpReport = async ({
       annuitiesbDataSourceVersionId,
       currentYear,
       customReportModel,
+      isRowData,
     });
 
     const processedCurrentYearRenewalDue = processData({
@@ -639,6 +648,9 @@ export const generateMonthlyIpReport = async ({
         Total: 'J47',
       },
     });
+    if (isRowData) {
+      return { draftedApplicationDisclosureCount, currentYearRenewalDue };
+    }
     await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
     await fsPromises.copyFile(sampleFilePath, newFilePath);
     await writeDataToExcel(

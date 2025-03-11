@@ -229,6 +229,7 @@ export async function getCurrentYearNewApplicationFiled({
   isOtherIssuedApplication,
   isTotalIssuedApplication,
   customReportModel,
+  isRowData,
 }: {
   portfolioDataSourceVersionId: string;
   currentYear: string;
@@ -246,6 +247,7 @@ export async function getCurrentYearNewApplicationFiled({
   isOtherIssuedApplication?: boolean;
   isTotalIssuedApplication?: boolean;
   customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
 }) {
   try {
     const otherCountryNegative = [...epCountry, 'CN', 'US'];
@@ -341,7 +343,7 @@ export async function getCurrentYearNewApplicationFiled({
       matchCondition['rowData.In Force'] = 1;
     }
 
-    const newYearApplicationFiled = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
+    const aggreagatePipeline: any = [
       {
         $match: matchCondition,
       },
@@ -353,21 +355,24 @@ export async function getCurrentYearNewApplicationFiled({
           SBU: { $first: '$rowData.SBU' },
         },
       },
-      // Count the distinct Case_Reference1 by SBU
-      {
+    ];
+    if (!isRowData) {
+      aggreagatePipeline.push({
         $group: {
           _id: '$SBU',
           value: { $sum: 1 },
         },
-      },
-      {
+      });
+      aggreagatePipeline.push({
         $project: {
           SBU: '$_id',
           _id: 0,
           value: 1,
         },
-      },
-    ]);
+      });
+    }
+    const newYearApplicationFiled =
+      await customReportModel.DataSourceVersionValuePortfolio.aggregate(aggreagatePipeline);
     return newYearApplicationFiled;
   } catch (error) {
     throw error;
@@ -382,6 +387,7 @@ export async function getDisclosureCount({
   isYearRequired,
   isPercentage,
   customReportModel,
+  isRowData,
 }: {
   disclosureDataSourceVersionId: string;
   currentYear: string;
@@ -390,6 +396,7 @@ export async function getDisclosureCount({
   isYearRequired: boolean;
   isPercentage?: boolean;
   customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
 }) {
   try {
     const yearDateRange = {
@@ -439,7 +446,8 @@ export async function getDisclosureCount({
         ],
       };
     }
-    const activeDisclosure = await customReportModel.DataSourceVersionValueDisclosure.aggregate([
+
+    const aggreagatePipeline: any = [
       {
         $match: matchCondition,
       },
@@ -449,21 +457,25 @@ export async function getDisclosureCount({
           SBU: { $first: '$rowData.SBU' },
         },
       },
-      // Count the distinct Case_Reference1 by SBU
-      {
+    ];
+
+    if (!isRowData) {
+      aggreagatePipeline.push({
         $group: {
           _id: '$SBU',
           value: { $sum: 1 },
         },
-      },
-      {
+      });
+      aggreagatePipeline.push({
         $project: {
           SBU: '$_id',
           _id: 0,
           value: 1,
         },
-      },
-    ]);
+      });
+    }
+    const activeDisclosure = await customReportModel.DataSourceVersionValueDisclosure.aggregate(aggreagatePipeline);
+
     return activeDisclosure;
   } catch (error) {
     throw error;
@@ -791,7 +803,8 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
   portfolioDataSourceVersionId: string,
   disclosureDataSourceVersionId: string,
   currentYear: string,
-  customReportModel: CustomReportModelAccessReturnType
+  customReportModel: CustomReportModelAccessReturnType,
+  isRowData?: boolean
 ) {
   try {
     const newYearApplicationFiled = await getCurrentYearNewApplicationFiled({
@@ -799,6 +812,7 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       currentYear,
       isPercentagePart: true,
       customReportModel,
+      isRowData,
     });
     const activeDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
@@ -808,6 +822,7 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       isPercentage: true,
       isYearRequired: true,
       customReportModel,
+      isRowData,
     });
     const totalDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
@@ -816,6 +831,7 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       isDrafted: false,
       isYearRequired: true,
       customReportModel,
+      isRowData,
     });
 
     const processedNewYearApplicationFiled = processData({ data: newYearApplicationFiled });
@@ -827,6 +843,10 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       processedActiveDisclosureCount,
       processedTotalDisclosureCount
     );
+
+    if (isRowData) {
+      return { newYearApplicationFiled, activeDisclosureCount, totalDisclosureCount };
+    }
     return result;
   } catch (error) {
     throw error;
@@ -840,6 +860,7 @@ export async function getCurrentYearRenewalDue({
   annuitiesbDataSourceVersionId,
   currentYear,
   customReportModel,
+  isRowData,
 }: {
   portfolioDataSourceVersionId: string;
   sabicipDataSourceVersionId: string;
@@ -847,6 +868,7 @@ export async function getCurrentYearRenewalDue({
   annuitiesbDataSourceVersionId: string;
   currentYear: string;
   customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
 }) {
   try {
     const yearDateRange = {
@@ -1065,6 +1087,10 @@ export async function getCurrentYearRenewalDue({
       SBU,
       value: Number(value.toFixed(2)),
     }));
+    if (isRowData) {
+      return [...uniqueSabicIpPortFolioData, ...uniqueCtclinSabPortFolioData, ...uniqueAnnuitiesData];
+    }
+
     return finalCurrentYearRenewalDueResult;
   } catch (e) {
     console.log('Error in getCurrentYearRenewalDue function');

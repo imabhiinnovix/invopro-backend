@@ -20,6 +20,7 @@ export const generateCustomReportsFunction = async ({
   customReportId,
   orgCode,
   reportRequestId,
+  isRowData,
 }: {
   userId: string;
   organizationId: string;
@@ -27,8 +28,10 @@ export const generateCustomReportsFunction = async ({
   customReportId: string;
   orgCode: string;
   reportRequestId?: any;
+  isRowData?: boolean;
 }) => {
   try {
+    console.log('isRowData', isRowData);
     const customReportDetails = await customReportServices.findCustomReportById(customReportId);
 
     if (!customReportDetails) {
@@ -93,7 +96,7 @@ export const generateCustomReportsFunction = async ({
 
       const annuitiesbDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'annuities');
 
-      await generateMonthlyIpReport({
+      const data = await generateMonthlyIpReport({
         reportRequestPayload,
         requestedReportId: reportRequestId as string,
         sampleFilePath: customReportDetails.sampleFilePath!,
@@ -103,7 +106,12 @@ export const generateCustomReportsFunction = async ({
         ctclinsabDataSourceVersionId: versionMap[ctclinsabDataSource?.dataSourceId!],
         annuitiesbDataSourceVersionId: versionMap[annuitiesbDataSource?.dataSourceId!],
         customReportModel,
+        isRowData,
       });
+
+      if (isRowData) {
+        return data;
+      }
     } else if (customReportDetails.reportName === 'supplementalip') {
       const versionMap = Object.fromEntries(
         dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
@@ -167,9 +175,16 @@ export const generateCustomReportsFunction = async ({
 };
 export const generateCustomReports = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { versionValue, customReportId } = req.body;
+    const { versionValue, customReportId, isRowData } = req.body;
     const { userId, organizationId, orgCode } = req?.user;
-    let data = await generateCustomReportsFunction({ versionValue, userId, organizationId, orgCode, customReportId });
+    let data = await generateCustomReportsFunction({
+      versionValue,
+      userId,
+      organizationId,
+      orgCode,
+      customReportId,
+      isRowData,
+    });
     res.status(201).json({
       success: true,
       message: 'Report Generated Successfully',
