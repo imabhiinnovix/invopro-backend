@@ -116,7 +116,7 @@ async function validateFileData({
         // if (fileKeyArray?.length === 1) {
         const fileKey = mapping[attrName];
         let value = row[fileKey];
-        if (typeof value === 'object') {
+        if (typeof value === 'object' && value != null) {
           value = value.text;
         }
         // Required field validation
@@ -132,7 +132,7 @@ async function validateFileData({
             errorCode: '404',
             errorMessage: `Error: Row ${index + 1} - The attribute "${attrName}" is required but is missing.`,
           });
-        } else if (value !== undefined) {
+        } else if (value !== undefined && value != null) {
           const { isValid, convertedValue, attributeOptionValue } = await validateAndConvert({
             value,
             type: attr.type,
