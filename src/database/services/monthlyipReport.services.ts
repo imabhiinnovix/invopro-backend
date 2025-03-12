@@ -1672,31 +1672,37 @@ export async function getAllProsecutionSavings({
     priorityDrop.forEach((item) => {
       const sbu = item['SBU'];
       allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 5676.81;
-      rowDataProsecutionDropSaving.push({ ...item, saving: allProsecutionSavingsMap[sbu] });
+      rowDataProsecutionDropSaving.push({ ...item, saving: 5676.81 });
     });
 
     pctDrop.forEach((item) => {
       const sbu = item['SBU'];
       allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 16384.33;
-      rowDataProsecutionDropSaving.push({ ...item, saving: allProsecutionSavingsMap[sbu] });
+      rowDataProsecutionDropSaving.push({ ...item, saving: 16384.33 });
     });
 
     prosecutionDrop.forEach((item) => {
+      let rowDataSaving = 0;
       const sbu = item['SBU'];
       const country = item['Country'];
       if (country === 'US') {
         allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 3217.71;
+        rowDataSaving = 3217.71;
       } else if (epCountry.includes(country)) {
         allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 2380.78;
+        rowDataSaving = 2380.78;
       } else if (country === 'KR') {
         allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 2518.25;
+        rowDataSaving = 2518.25;
       } else if (country === 'CN') {
         allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 3845.45;
+        rowDataSaving = 3845.45;
       } else {
         allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 2500;
+        rowDataSaving = 2500;
       }
 
-      rowDataProsecutionDropSaving.push({ ...item, saving: allProsecutionSavingsMap[sbu] });
+      rowDataProsecutionDropSaving.push({ ...item, saving: rowDataSaving });
     });
 
     if (isRowData) {
