@@ -513,10 +513,11 @@ export const generateMonthlyIpReport = async ({
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
       customReportModel,
+      isRowData,
     });
 
     const processedAnnuitySavingsForCurrentYear = processData({
-      data: annuitySavingsForCurrentYear,
+      data: !isRowData ? (annuitySavingsForCurrentYear as DataItem[]) : [],
       cellMappings: {
         'SBU T&I': 'B40',
         'SBU Metals': 'C40',
@@ -540,10 +541,11 @@ export const generateMonthlyIpReport = async ({
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
       customReportModel,
+      isRowData,
     });
 
     const processedAnnuitySavingsForNextYear = processData({
-      data: annuitySavingsForNextYear,
+      data: !isRowData ? (annuitySavingsForNextYear as DataItem[]) : [],
       cellMappings: {
         'SBU T&I': 'B41',
         'SBU Metals': 'C41',
@@ -559,7 +561,7 @@ export const generateMonthlyIpReport = async ({
 
     const totalAnnuitySavingsMap = {};
 
-    annuitySavingsForCurrentYear.forEach((entry) => {
+    annuitySavingsForCurrentYear?.forEach((entry) => {
       totalAnnuitySavingsMap[entry.SBU] = (totalAnnuitySavingsMap[entry.SBU] || 0) + entry.value;
     });
 
@@ -612,6 +614,7 @@ export const generateMonthlyIpReport = async ({
       priorityDrop: reductionData.priorityDropArray,
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
+      isRowData,
     });
 
     const processedAllProsecutionSavings = processData({
