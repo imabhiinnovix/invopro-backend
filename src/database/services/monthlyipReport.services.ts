@@ -1480,6 +1480,7 @@ export async function getAnnuitySavingsFromReductions({
   pctDrop,
   prosecutionDrop,
   customReportModel,
+  isRowData,
 }: {
   sabicipDataSourceVersionId: string;
   ctclinsabDataSourceVersionId: string;
@@ -1490,6 +1491,7 @@ export async function getAnnuitySavingsFromReductions({
   pctDrop: any;
   prosecutionDrop: any;
   customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
 }) {
   try {
     const yearDateRange = {
@@ -1587,6 +1589,8 @@ export async function getAnnuitySavingsFromReductions({
       }
     });
 
+    const rowDataSavings: any = [];
+
     combinedDrops.forEach((item) => {
       const caseRef = item.Case_Reference1;
       const procedureAgentRef = item['Procedure Agent Ref'];
@@ -1596,6 +1600,10 @@ export async function getAnnuitySavingsFromReductions({
       const annuitiesTotal = annuitiesMap[caseRef] || 0;
       const total = sabicTotal + ctclinsabTotal + annuitiesTotal;
 
+      if (isRowData) {
+        rowDataSavings.push({ Case_Reference1: caseRef, saving: total });
+      }
+
       if (sbu) {
         if (!sbuTotals[sbu]) {
           sbuTotals[sbu] = 0;
@@ -1603,6 +1611,10 @@ export async function getAnnuitySavingsFromReductions({
         sbuTotals[sbu] += total;
       }
     });
+
+    if (isRowData) {
+      return rowDataSavings;
+    }
 
     const dropSavingResult = Object.entries(sbuTotals).map(([SBU, value]) => ({
       SBU,
@@ -1646,22 +1658,27 @@ export async function getAllProsecutionSavings({
   priorityDrop,
   pctDrop,
   prosecutionDrop,
+  isRowData,
 }: {
   priorityDrop: any;
   pctDrop: any;
   prosecutionDrop: any;
+  isRowData?: boolean;
 }) {
   try {
+    const rowDataProsecutionDropSaving: any = [];
     const allProsecutionSavingsMap = {};
 
     priorityDrop.forEach((item) => {
       const sbu = item['SBU'];
       allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 5676.81;
+      rowDataProsecutionDropSaving.push({ ...item, saving: allProsecutionSavingsMap[sbu] });
     });
 
     pctDrop.forEach((item) => {
       const sbu = item['SBU'];
       allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 16384.33;
+      rowDataProsecutionDropSaving.push({ ...item, saving: allProsecutionSavingsMap[sbu] });
     });
 
     prosecutionDrop.forEach((item) => {
@@ -1678,7 +1695,13 @@ export async function getAllProsecutionSavings({
       } else {
         allProsecutionSavingsMap[sbu] = (allProsecutionSavingsMap[sbu] ?? 0) + 2500;
       }
+
+      rowDataProsecutionDropSaving.push({ ...item, saving: allProsecutionSavingsMap[sbu] });
     });
+
+    if (isRowData) {
+      return rowDataProsecutionDropSaving;
+    }
 
     const allProsecutionSavingResult = Object.entries(allProsecutionSavingsMap).map(([SBU, value]) => ({
       SBU,
