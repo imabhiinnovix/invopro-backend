@@ -919,7 +919,8 @@ export async function getCurrentYearRenewalDue({
 
     const mergedSabicIpPortFolioData = sabicipData.reduce((result, sabicItem) => {
       const matchingPortfolioItem = portfolioData.find(
-        (portfolioItem) => portfolioItem.rowData.Case_Reference1 === sabicItem.rowData['Clients reference']
+        (portfolioItem) =>
+          portfolioItem.rowData.Case_Reference1?.toLowerCase() === sabicItem.rowData['Clients reference']?.toLowerCase()
       );
 
       if (matchingPortfolioItem) {
@@ -933,7 +934,9 @@ export async function getCurrentYearRenewalDue({
     }, []);
 
     const uniqueSabicIpPortFolioData = mergedSabicIpPortFolioData.reduce((acc, current) => {
-      const duplicate = acc.find((item) => item.Case_Reference1 === current.Case_Reference1);
+      const duplicate = acc.find(
+        (item) => item.Case_Reference1?.toLowerCase() === current.Case_Reference1?.toLowerCase()
+      );
       if (!duplicate) {
         acc.push(current);
       }
@@ -978,7 +981,9 @@ export async function getCurrentYearRenewalDue({
 
     const mergedCtclinSabPortFolioData = ctclinsabData?.reduce((result, ctclinsabItem) => {
       const matchingPortfolioItem = portfolioData.find(
-        (portfolioItem) => portfolioItem.rowData['Procedure Agent Ref'] === ctclinsabItem.rowData['File number']
+        (portfolioItem) =>
+          portfolioItem.rowData['Procedure Agent Ref']?.toLowerCase() ===
+          ctclinsabItem.rowData['File number']?.toLowerCase()
       );
 
       if (matchingPortfolioItem) {
@@ -991,7 +996,9 @@ export async function getCurrentYearRenewalDue({
     }, []);
 
     const uniqueCtclinSabPortFolioData = mergedCtclinSabPortFolioData?.reduce((acc, current) => {
-      const duplicate = acc.find((item) => item.Case_Reference1 === current.Case_Reference1);
+      const duplicate = acc.find(
+        (item) => item.Case_Reference1?.toLowerCase() === current.Case_Reference1?.toLowerCase()
+      );
       if (!duplicate) {
         acc.push(current);
       }
@@ -1035,7 +1042,9 @@ export async function getCurrentYearRenewalDue({
 
     const mergedAnnuitiesData = annuitiesData?.reduce((result, annuitiesItem) => {
       const matchingPortfolioItem = portfolioData.find(
-        (portfolioItem) => portfolioItem.rowData['Case_Reference1'] === annuitiesItem.rowData['Other Reference No']
+        (portfolioItem) =>
+          portfolioItem.rowData['Case_Reference1']?.toLowerCase() ===
+          annuitiesItem.rowData['Other Reference No']?.toLowerCase()
       );
 
       if (matchingPortfolioItem) {
@@ -1048,7 +1057,9 @@ export async function getCurrentYearRenewalDue({
     }, []);
 
     const uniqueAnnuitiesData = mergedAnnuitiesData?.reduce((acc, current) => {
-      const duplicate = acc.find((item) => item.Case_Reference1 === current.Case_Reference1);
+      const duplicate = acc.find(
+        (item) => item.Case_Reference1?.toLowerCase() === current.Case_Reference1?.toLowerCase()
+      );
       if (!duplicate) {
         acc.push(current);
       }
