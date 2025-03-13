@@ -439,7 +439,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                 console.log('processing file name:', fileDetailName);
                 let mappingName = fileDetailName;
                 if (sheetName && sheetName.length > 0) {
-                  mappingName = `${mappingName}_${sheetName}`;
+                  mappingName = `${mappingName}__${sheetName}`;
                 }
                 const file = dFiles.find((file) => {
                   return (
