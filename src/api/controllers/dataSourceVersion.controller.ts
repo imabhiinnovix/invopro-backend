@@ -437,6 +437,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                 const fileDetailName = fileDetails[j].name;
                 const sheetName = fileDetails[j].sheetName;
                 console.log('processing file name:', fileDetailName);
+
                 let mappingName = fileDetailName;
                 if (sheetName && sheetName.length > 0) {
                   mappingName = `${mappingName}__${sheetName}`;
@@ -494,7 +495,15 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                       }
                     }
 
-                    const fileData = await readExcelFile(newFilePath, sheetName ? [sheetName] : []);
+                    const readSheetName = sheetName ? [sheetName] : [];
+                    if (fileDetailName === 'KSA Contracts') {
+                      const currentYear = versionValue.split('-')[0];
+                      const prevYear = (Number(currentYear) - 1).toString();
+                      readSheetName.push(currentYear);
+                      readSheetName.push(prevYear);
+                    }
+
+                    const fileData = await readExcelFile(newFilePath, readSheetName);
 
                     const attributes = entityDetails?.attributes || [];
 
