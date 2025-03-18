@@ -53,6 +53,9 @@ export async function getAgreementSigned({
       {
         $match: {
           dataSourceVersionId: new ObjectId(ksaContractsDataSourceVersionId),
+          'rowData.StatusDate': yearDateRange,
+          'rowData.AgreementExecuted': { $in: ['Yes', 'yes', 'PROC', 'proc', 'Proc'] },
+          'rowData.ReferenceNumber': { $regex: 'PROC|REV', $options: 'i' },
         },
       },
     ]);
@@ -366,6 +369,81 @@ export async function getIpAnalysis({
       thirdBarGraphChartData: formattedThirdBarGraphChartData,
     };
   } catch (e) {
+    throw e;
+  }
+}
+
+export async function getAccoladeMappingSheet({
+  portfolioDataSourceVersionId,
+  disclosureDataSourceVersionId,
+  customReportModel,
+  currentYear,
+  isRowData,
+}: {
+  portfolioDataSourceVersionId: string;
+  disclosureDataSourceVersionId: string;
+  currentYear: string;
+  customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
+}) {
+  try {
+    const yearDateRange = {
+      $gte: `${currentYear}-01-01T00:00:00.000Z`,
+      $lte: `${currentYear}-12-31T00:00:00.000Z`,
+    };
+
+    const activeApplication = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
+      {
+        $match: {
+          dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
+          'rowData.In Force': 1,
+          'rowData.AccoladeID': {
+            $ne: null,
+            $not: { $regex: 'TSR', $options: 'i' },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$rowData.AccoladeID',
+          rowData: { $first: '$rowData' },
+        },
+      },
+      {
+        $project: {
+          rowData: 1,
+        },
+      },
+    ]);
+
+    const newFilingThisYear = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
+      {
+        $match: {
+          dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
+          'rowData.IsFirstFiling': 1,
+          'rowData.Filing Date': yearDateRange,
+          'rowData.AccoladeID': {
+            $ne: null,
+            $not: { $regex: 'TSR', $options: 'i' },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$rowData.AccoladeID',
+          rowData: { $first: '$rowData' },
+        },
+      },
+      {
+        $project: {
+          rowData: 1,
+        },
+      },
+    ]);
+
+    return newFilingThisYear;
+  } catch (e) {
+    console.log('Error in getAccoladeMappingSheet', e);
     throw e;
   }
 }

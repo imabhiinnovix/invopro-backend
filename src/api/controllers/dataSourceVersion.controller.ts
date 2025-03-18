@@ -451,6 +451,8 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
 
                 if (file) {
                   const { originalname, path: filePath, size, mimetype } = file;
+
+                  console.log('originalname', originalname);
                   const fileName = originalname;
                   const fileExtension = fileName.split('.').pop();
                   const newFilePath = path.join(
@@ -529,6 +531,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                 console.log(`Error while processing the file: ${fileDetails[j].name}`, e);
               }
             }
+
             if (dataSourceVersion) {
               if (validationErrors.length > 0) {
                 await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
@@ -572,7 +575,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
             reportRequestId,
           });
         } catch (e) {
-          console.error('An error occurred while processing data source versions.');
+          console.error('An error occurred while processing data source versions.', e);
         }
       });
     } else {

@@ -1,4 +1,8 @@
-import { getAgreementSigned, getIpAnalysis } from '../../database/services/supplementalipReport.services';
+import {
+  getAccoladeMappingSheet,
+  getAgreementSigned,
+  getIpAnalysis,
+} from '../../database/services/supplementalipReport.services';
 import { createExcelSheetFile } from '../../utils/excel.utils';
 import * as reportRequestService from '../../database/services/reportRequest.services';
 import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
@@ -21,6 +25,7 @@ export const generateSupplementalIpReport = async ({
   shppAccoladeDataSourceVersionId,
   sabicAccoladeDataSourceVersionId,
   customReportModel,
+  isRowData,
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
@@ -39,10 +44,20 @@ export const generateSupplementalIpReport = async ({
   shppAccoladeDataSourceVersionId: string;
   sabicAccoladeDataSourceVersionId: string;
   customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
 }) => {
   try {
     const newFilePath = reportRequestPayload.filePath;
     const currentYear = reportRequestPayload.versionValue.split('-')[0];
+
+    const accoladeMappingSheetData = await getAccoladeMappingSheet({
+      portfolioDataSourceVersionId,
+      disclosureDataSourceVersionId,
+      customReportModel,
+      currentYear,
+      isRowData,
+    });
+
     const currentYearAgreementSigned = await getAgreementSigned({
       sabicContractsDataSourceVersionId,
       shppContractsDataSourceVersionId,

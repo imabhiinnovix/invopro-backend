@@ -55,6 +55,9 @@ export const generateCustomReportsFunction = async ({
       let notFoundFileNames = notFoundItems.map((dsv) => dsv.fileDetails);
       let flattenedFileNames = notFoundFileNames.flatMap((files) => files.map((file) => file.name));
 
+      console.log(
+        `Not all required data is available for this report. Please upload the following files before generating the report: ${versionValue}. ${flattenedFileNames.join(', ')}`
+      );
       throw new Error(
         `Not all required data is available for this report. Please upload the following files before generating the report: ${versionValue}. ${flattenedFileNames.join(', ')}`
       );
@@ -147,7 +150,7 @@ export const generateCustomReportsFunction = async ({
 
       const sabicAccoladeDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'sabicaccolade');
 
-      await generateSupplementalIpReport({
+      const data = await generateSupplementalIpReport({
         reportRequestPayload,
         requestedReportId: reportRequestId,
         sampleFilePath: customReportDetails.sampleFilePath!,
@@ -166,6 +169,8 @@ export const generateCustomReportsFunction = async ({
         sabicAccoladeDataSourceVersionId: versionMap[sabicAccoladeDataSource?.dataSourceId!],
         customReportModel,
       });
+
+      return data;
     } else {
       await reportRequestService.updateReportRequest(reportRequestId, { status: 'failed' });
     }
@@ -191,6 +196,7 @@ export const generateCustomReports = async (req: Request, res: Response, next: N
       data,
     });
   } catch (e) {
+    console.log('Error in generateCustomReportsFunction', e);
     next(e);
   }
 };
