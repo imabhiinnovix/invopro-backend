@@ -13,7 +13,7 @@ interface IDataSourceVersion extends Document {
   isActive: boolean;
   versionName: string;
   isCurrent: boolean;
-  status: 'failed' | 'processing' | 'processed';
+  status: 'failed' | 'processing' | 'completed';
   fileName: string;
   mappings: Record<string, string>;
   separator: Record<string, string>;
@@ -28,7 +28,7 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
     versionName: { type: String },
     status: {
       type: String,
-      enum: ['failed', 'processing', 'processed'], // Restricting the values of status
+      enum: ['failed', 'processing', 'completed'], // Restricting the values of status
       required: true,
       default: 'processing', // Optional: Default value for status
     },

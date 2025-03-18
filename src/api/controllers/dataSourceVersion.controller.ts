@@ -13,6 +13,8 @@ import * as customReportServices from '../../database/services/customReport.serv
 import { generateCustomReportsFunction } from './customReport.controller';
 import * as reportRequestService from '../../database/services/reportRequest.services';
 import { DateTime } from 'luxon';
+import mongoose from 'mongoose';
+const ObjectId = mongoose.Types.ObjectId;
 
 async function validateAndConvert({
   value,
@@ -276,7 +278,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
                   updateFields: { isCurrent: false },
                 });
                 await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
-                  status: 'processed',
+                  status: 'completed',
                   isCurrent: true,
                 });
               }
@@ -550,7 +552,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                   updateFields: { isCurrent: false },
                 });
                 await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
-                  status: 'processed',
+                  status: 'completed',
                   isCurrent: true,
                 });
               }
@@ -590,3 +592,122 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
     next(e);
   }
 }
+
+export const createUpdateCustomDataSourceVersionValue = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dataSourceId, versionValue, versionData } = req.body;
+    const { userId, organizationId, orgCode } = req?.user;
+    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+
+    if (dataSourceDetails) {
+      if (Array.isArray(versionData)) {
+        const dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
+          entityId: dataSourceDetails.entityId._id,
+          dataSourceId,
+          versionValue,
+          createdBy: userId,
+          status: 'processing',
+          isActive: true,
+          isCurrent: false,
+          organizationId,
+        });
+
+        const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+          orgCode: orgCode,
+          versionCode: dataSourceDetails.code,
+        });
+
+        const finalData: any[] = [];
+        for (let i = 0; i < versionData.length; i++) {
+          const newRow = {
+            dataSourceId,
+            entityId: dataSourceDetails.entityId._id,
+            dataSourceVersionId: dataSourceVersion._id,
+            rowData: versionData[i],
+          };
+
+          finalData.push(newRow);
+        }
+        await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, finalData);
+        await dataSourceVersionService.updateDataSourceVersions({
+          query: { dataSourceId, versionValue },
+          updateFields: { isCurrent: false },
+        });
+        await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
+          status: 'completed',
+          isCurrent: true,
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: 'Data has been successfully updated.',
+        });
+      } else {
+        return res.status(400).json({ success: false, message: 'Invalid data format.' });
+      }
+    } else {
+      return res.status(404).json({ success: false, message: 'Data source not found.' });
+    }
+  } catch (e) {
+    console.log('Error in createUpdateDataSourceVersionValue', e);
+    next(e);
+  }
+};
+
+export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { dataSourceId, versionValue, page, limit } = req.query as {
+      dataSourceId: string;
+      versionValue: string;
+      page: string;
+      limit: string;
+    };
+
+    const pageNumber = page ? parseInt(page, 10) : 1;
+    const limitNumber = limit ? parseInt(limit, 10) : 10;
+    const { orgCode } = req?.user;
+    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+    if (dataSourceDetails) {
+      const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
+        query: { dataSourceId: dataSourceId, versionValue: versionValue, isCurrent: true },
+      });
+
+      if (dataSourceVersionDetails && dataSourceVersionDetails.data && dataSourceVersionDetails.data.length > 0) {
+        const dataSourceVersionDetail = dataSourceVersionDetails.data[0];
+        const dataSourceVersionId = dataSourceVersionDetail._id;
+        const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+          orgCode: orgCode,
+          versionCode: dataSourceDetails.code,
+        });
+
+        const query = { dataSourceVersionId: dataSourceVersionId };
+
+        const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
+          schemaName,
+          query,
+          page: pageNumber,
+          limit: limitNumber,
+        });
+        return res.status(200).json({
+          success: true,
+          message: 'Version data has been successfully retrieved.',
+          versionData: dataSourceVersionData,
+        });
+      }
+      return res.status(200).json({
+        success: true,
+        message: 'Version data has been successfully retrieved.',
+        versionData: [],
+      });
+    } else {
+      return res.status(404).json({ success: false, message: 'Data source not found.' });
+    }
+  } catch (e) {
+    console.log('Error in getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue.', e);
+    next(e);
+  }
+};
