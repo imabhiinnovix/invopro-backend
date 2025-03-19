@@ -31,7 +31,6 @@ export const generateCustomReportsFunction = async ({
   isRowData?: boolean;
 }) => {
   try {
-    console.log('isRowData', isRowData);
     const customReportDetails = await customReportServices.findCustomReportById(customReportId);
 
     if (!customReportDetails) {
@@ -41,16 +40,23 @@ export const generateCustomReportsFunction = async ({
     // Extract all data source IDs
     const dataSourceIds = customReportDetails.dataSourceIds.map((ds) => ds.dataSourceId);
 
+    const requiredDataSourceIds = customReportDetails.dataSourceIds
+      .filter((ds) => ds.isRequired === true)
+      .map((ds) => ds.dataSourceId);
+
     const dataSourceVersionDetails = await dataSourceVersionServices.getDataSourceVersionList({
       query: { dataSourceId: { $in: dataSourceIds }, versionValue: versionValue, isCurrent: true },
     });
 
-    if (!dataSourceVersionDetails.data || dataSourceVersionDetails.data.length != dataSourceIds.length) {
-      let notFoundItems = customReportDetails.dataSourceIds.filter((ds) => {
-        return !dataSourceVersionDetails.data.some((dsv) => {
-          return dsv.dataSourceId.toString() === ds.dataSourceId.toString();
-        });
-      });
+    const foundRequiredDataSourceIds = dataSourceVersionDetails.data.map((dsv) => dsv.dataSourceId.toString());
+    const missingRequiredIds = requiredDataSourceIds.filter(
+      (id) => !foundRequiredDataSourceIds.includes(id.toString())
+    );
+
+    if (missingRequiredIds.length > 0) {
+      let notFoundItems = customReportDetails.dataSourceIds.filter((ds) =>
+        missingRequiredIds.includes(ds.dataSourceId.toString())
+      );
 
       let notFoundFileNames = notFoundItems.map((dsv) => dsv.fileDetails);
       let flattenedFileNames = notFoundFileNames.flatMap((files) => files.map((file) => file.name));
@@ -99,6 +105,13 @@ export const generateCustomReportsFunction = async ({
 
       const annuitiesbDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'annuities');
 
+      const staticNewFilingsDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'newfilings');
+
+      const currentStaticEstimatesDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'estimates');
+
+      const staticProjectOpenedDataSource = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'projectsopened'
+      );
       const data = await generateMonthlyIpReport({
         reportRequestPayload,
         requestedReportId: reportRequestId as string,
@@ -108,8 +121,14 @@ export const generateCustomReportsFunction = async ({
         sabicipDataSourceVersionId: versionMap[sabicipDataSource?.dataSourceId!],
         ctclinsabDataSourceVersionId: versionMap[ctclinsabDataSource?.dataSourceId!],
         annuitiesbDataSourceVersionId: versionMap[annuitiesbDataSource?.dataSourceId!],
-        customReportModel,
+        staticNewFilingsDataSourceId: staticNewFilingsDataSource?.dataSourceId!,
+        staticEstimatesDataSourceId: currentStaticEstimatesDataSource?.dataSourceId!,
+        staticProjectOpenedDataSourceId: staticProjectOpenedDataSource?.dataSourceId!,
         isRowData,
+        userId,
+        organizationId,
+        orgCode,
+        customReportModel,
       });
 
       if (isRowData) {

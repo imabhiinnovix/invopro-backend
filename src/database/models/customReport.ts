@@ -4,6 +4,7 @@ interface IDataSource {
   code: string;
   dataSourceId: string;
   fileDetails: { name: string; sheetName: string; isRequired: boolean }[];
+  isRequired: boolean;
 }
 
 interface ICustomReport extends Document {
@@ -24,6 +25,7 @@ const CustomReportSchema = new Schema<ICustomReport>(
         code: { type: String, required: true },
         dataSourceId: { type: String, required: true, ref: 'data_source' },
         fileDetails: { type: [{ name: String, sheetName: String, isRequired: Boolean }] },
+        isRequired: { type: Boolean },
       },
     ],
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },

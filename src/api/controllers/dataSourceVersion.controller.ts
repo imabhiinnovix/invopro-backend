@@ -593,60 +593,82 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
   }
 }
 
+export const createUpdateCustomDataSourceVersionValueFunction = async ({
+  dataSourceId,
+  versionValue,
+  versionData,
+  userId,
+  organizationId,
+  orgCode,
+}) => {
+  try {
+    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+    if (dataSourceDetails) {
+      const dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
+        entityId: dataSourceDetails.entityId._id,
+        dataSourceId,
+        versionValue,
+        createdBy: userId,
+        status: 'processing',
+        isActive: true,
+        isCurrent: false,
+        organizationId,
+      });
+
+      const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+        orgCode: orgCode,
+        versionCode: dataSourceDetails.code,
+      });
+
+      const finalData: any[] = [];
+      for (let i = 0; i < versionData.length; i++) {
+        const newRow = {
+          dataSourceId,
+          entityId: dataSourceDetails.entityId._id,
+          dataSourceVersionId: dataSourceVersion._id,
+          rowData: versionData[i],
+        };
+
+        finalData.push(newRow);
+      }
+      await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, finalData);
+      await dataSourceVersionService.updateDataSourceVersions({
+        query: { dataSourceId, versionValue },
+        updateFields: { isCurrent: false },
+      });
+      await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
+        status: 'completed',
+        isCurrent: true,
+      });
+    } else {
+      throw 'Data source not found.';
+    }
+  } catch (e) {
+    console.log('Error in createUpdateCustomDataSourceVersionValueFunction.', e);
+    throw e;
+  }
+};
+
 export const createUpdateCustomDataSourceVersionValue = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { dataSourceId, versionValue, versionData } = req.body;
     const { userId, organizationId, orgCode } = req?.user;
-    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
 
-    if (dataSourceDetails) {
-      if (Array.isArray(versionData)) {
-        const dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
-          entityId: dataSourceDetails.entityId._id,
-          dataSourceId,
-          versionValue,
-          createdBy: userId,
-          status: 'processing',
-          isActive: true,
-          isCurrent: false,
-          organizationId,
-        });
-
-        const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
-          orgCode: orgCode,
-          versionCode: dataSourceDetails.code,
-        });
-
-        const finalData: any[] = [];
-        for (let i = 0; i < versionData.length; i++) {
-          const newRow = {
-            dataSourceId,
-            entityId: dataSourceDetails.entityId._id,
-            dataSourceVersionId: dataSourceVersion._id,
-            rowData: versionData[i],
-          };
-
-          finalData.push(newRow);
-        }
-        await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, finalData);
-        await dataSourceVersionService.updateDataSourceVersions({
-          query: { dataSourceId, versionValue },
-          updateFields: { isCurrent: false },
-        });
-        await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
-          status: 'completed',
-          isCurrent: true,
-        });
-
-        return res.status(200).json({
-          success: true,
-          message: 'Data has been successfully updated.',
-        });
-      } else {
-        return res.status(400).json({ success: false, message: 'Invalid data format.' });
-      }
+    if (Array.isArray(versionData)) {
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId,
+        versionValue,
+        versionData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+      return res.status(200).json({
+        success: true,
+        message: 'Data has been successfully updated.',
+      });
     } else {
-      return res.status(404).json({ success: false, message: 'Data source not found.' });
+      return res.status(400).json({ success: false, message: 'Invalid data format.' });
     }
   } catch (e) {
     console.log('Error in createUpdateDataSourceVersionValue', e);

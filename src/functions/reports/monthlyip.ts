@@ -19,10 +19,12 @@ import {
   getTotalPortfolioPercentage,
   percentageOfCurrentYearInventionDisclosureConvertedToFilings,
   processData,
+  processStaticData,
   processSTCData,
 } from '../../database/services/monthlyipReport.services';
 import { createExcelSheetFile, writeDataToExcel } from '../../utils/excel.utils';
 import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
+import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/dataSourceVersion.controller';
 
 export const generateMonthlyIpReport = async ({
   reportRequestPayload,
@@ -35,6 +37,12 @@ export const generateMonthlyIpReport = async ({
   annuitiesbDataSourceVersionId,
   customReportModel,
   isRowData,
+  staticNewFilingsDataSourceId,
+  staticEstimatesDataSourceId,
+  staticProjectOpenedDataSourceId,
+  userId,
+  orgCode,
+  organizationId,
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
@@ -46,9 +54,18 @@ export const generateMonthlyIpReport = async ({
   annuitiesbDataSourceVersionId: string;
   customReportModel: CustomReportModelAccessReturnType;
   isRowData?: boolean;
+  staticNewFilingsDataSourceId: string;
+  staticEstimatesDataSourceId: string;
+  staticProjectOpenedDataSourceId: string;
+  userId: string;
+  orgCode: string;
+  organizationId: string;
 }) => {
   try {
-    const currentYear = reportRequestPayload.versionValue.split('-')[0];
+    const versionValue = reportRequestPayload.versionValue;
+    const splitedVersionValue = versionValue.split('-');
+    const currentYear = splitedVersionValue[0];
+    const currentMonth = splitedVersionValue[1];
 
     const currentYearApplicationFiledData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -72,6 +89,7 @@ export const generateMonthlyIpReport = async ({
         Total: 'J3',
       },
     });
+
     const percentageOfCurrentYearInventionDisclosureConvertedToFilingsData =
       await percentageOfCurrentYearInventionDisclosureConvertedToFilings(
         portfolioDataSourceVersionId,
@@ -651,6 +669,16 @@ export const generateMonthlyIpReport = async ({
         Total: 'J47',
       },
     });
+
+    const staticData = await processStaticData({
+      staticNewFilingsDataSourceId,
+      staticEstimatesDataSourceId,
+      staticProjectOpenedDataSourceId,
+      currentYear,
+      currentMonth,
+      customReportModel,
+    });
+
     if (isRowData) {
       return { draftedApplicationDisclosureCount, currentYearRenewalDue };
     }
@@ -686,6 +714,7 @@ export const generateMonthlyIpReport = async ({
         ...processedAllProsecutionDrop,
         ...processedAllProsecutionSavings,
         ...processedTotalCostSavings,
+        ...staticData,
         { cellName: 'A3', value: `${currentYear} New Apps Filed`, SBU: '' },
         { cellName: 'A4', value: `% of ${currentYear} Invention Disclosures converted to Filings`, SBU: '' },
         { cellName: 'A5', value: `${currentYear} New Apps Estimate`, SBU: '' },
@@ -935,6 +964,28 @@ export const generateMonthlyIpReport = async ({
       combinedData.push(result);
     });
     await createExcelSheetFile(combinedData, newFilePath, 'STC');
+
+    await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: staticNewFilingsDataSourceId,
+      versionValue,
+      versionData: processedCurrentYearApplicationFiledData.map((data) => {
+        return { SBU: data.SBU, 'New Filings': data.value };
+      }),
+      userId,
+      organizationId,
+      orgCode,
+    });
+
+    await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: staticProjectOpenedDataSourceId,
+      versionValue,
+      versionData: processedOpenApplicationDisclosureCount.map((data) => {
+        return { SBU: data.SBU, 'Projects Opened': data.value };
+      }),
+      userId,
+      organizationId,
+      orgCode,
+    });
 
     await reportRequestService.updateReportRequest(requestedReportId, { status: 'completed' });
   } catch (err) {

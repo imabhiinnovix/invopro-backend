@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { DateTime } from 'luxon';
 import { CustomReportModelAccessReturnType } from '../models/customReportModels';
+import * as dataSourceVersionServices from '../../database/services/dataSourceVersion.services';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -1758,6 +1759,172 @@ export async function getTotalCostSavings({
     return totalCostSavings;
   } catch (e) {
     console.log('Error in getTotalCostSavings function', e);
+    throw e;
+  }
+}
+
+export async function processStaticData({
+  staticNewFilingsDataSourceId,
+  staticEstimatesDataSourceId,
+  staticProjectOpenedDataSourceId,
+  currentYear,
+  currentMonth,
+  customReportModel,
+}: {
+  staticNewFilingsDataSourceId: string;
+  staticEstimatesDataSourceId: string;
+  staticProjectOpenedDataSourceId: string;
+  currentYear: string;
+  currentMonth: string;
+  customReportModel: CustomReportModelAccessReturnType;
+}) {
+  try {
+    let finalStaticData: any = [];
+    const dataSourceVersionDetails = await dataSourceVersionServices.getDataSourceVersionList({
+      query: {
+        dataSourceId: {
+          $in: [staticNewFilingsDataSourceId, staticEstimatesDataSourceId, staticProjectOpenedDataSourceId],
+        },
+        versionValue: {
+          $in: [
+            `${currentYear}-${currentMonth}`,
+            `${Number(currentYear) - 1}-${currentMonth}`,
+            `${Number(currentYear) - 2}-${currentMonth}`,
+            `${Number(currentYear) - 3}-${currentMonth}`,
+            `${Number(currentYear) - 4}-${currentMonth}`,
+          ],
+        },
+        isCurrent: true,
+      },
+    });
+
+    const staticNewFilingData = {};
+    const staticEstimatesData = {};
+    const staticProjectOpenedData = {};
+    for (let i = 0; i < dataSourceVersionDetails.data.length; i++) {
+      const dataSourceVersion = dataSourceVersionDetails.data[i];
+      const dataSourceVersionValue = dataSourceVersion.versionValue;
+      const dataSourceVersionId = dataSourceVersion._id.toString();
+      const dataSourceId = dataSourceVersion.dataSourceId.toString();
+      if (dataSourceId === staticNewFilingsDataSourceId) {
+        const data = await customReportModel.DataSourceVersionValueStaticNewFilings.aggregate([
+          {
+            $match: {
+              dataSourceVersionId: new ObjectId(dataSourceVersionId),
+            },
+          },
+        ]);
+
+        staticNewFilingData[dataSourceVersionValue] = data.map((data) => {
+          const rowData = data.rowData;
+          return {
+            SBU: rowData.SBU,
+            value: rowData['New Filings'],
+          };
+        });
+      } else if (dataSourceId === staticEstimatesDataSourceId) {
+        const data = await customReportModel.DataSourceVersionValueStaticEstimates.aggregate([
+          {
+            $match: {
+              dataSourceVersionId: new ObjectId(dataSourceVersionId),
+            },
+          },
+        ]);
+
+        staticEstimatesData[dataSourceVersionValue] = data.map((data) => {
+          const rowData = data.rowData;
+          return {
+            SBU: rowData.SBU,
+            value: rowData['Estimates'],
+          };
+        });
+      } else if (dataSourceId === staticProjectOpenedDataSourceId) {
+        const data = await customReportModel.DataSourceVersionValueStaticProjectOpened.aggregate([
+          {
+            $match: {
+              dataSourceVersionId: new ObjectId(dataSourceVersionId),
+            },
+          },
+        ]);
+
+        staticProjectOpenedData[dataSourceVersionValue] = data.map((data) => {
+          const rowData = data.rowData;
+          return {
+            SBU: rowData.SBU,
+            value: rowData['Projects Opened'],
+          };
+        });
+      }
+    }
+
+    //process new filing
+    for (let i = 1; i <= 4; i++) {
+      const versionValue = `${Number(currentYear) - i}-${currentMonth}`;
+
+      if (staticNewFilingData[versionValue] && staticNewFilingData[versionValue].length > 0) {
+        const processedNewFiling = processData({
+          data: staticNewFilingData[versionValue],
+          cellMappings: {
+            'SBU T&I': `B${5 + i}`,
+            'SBU Metals': `C${5 + i}`,
+            'SBU Agri-nutrients': `D${5 + i}`,
+            'SBU Chemicals': `E${5 + i}`,
+            'SBU Polymers': `F${5 + i}`,
+            'SBU SHPP': `G${5 + i}`,
+            'SBU Strategy & Transformation': `H${5 + i}`,
+            'Scientific Design': `I${5 + i}`,
+            Total: `J${5 + i}`,
+          },
+        });
+
+        finalStaticData = [...finalStaticData, ...processedNewFiling];
+      }
+    }
+
+    //current year estimates
+    if (staticEstimatesData[`${currentYear}-${currentMonth}`]) {
+      const processedEstimatedData = processData({
+        data: staticEstimatesData[`${currentYear}-${currentMonth}`],
+        cellMappings: {
+          'SBU T&I': 'B5',
+          'SBU Metals': 'C5',
+          'SBU Agri-nutrients': 'D5',
+          'SBU Chemicals': 'E5',
+          'SBU Polymers': 'F5',
+          'SBU SHPP': 'G5',
+          'SBU Strategy & Transformation': 'H5',
+          'Scientific Design': 'I5',
+          Total: 'J5',
+        },
+      });
+      finalStaticData = [...finalStaticData, ...processedEstimatedData];
+    }
+    //project opened
+    for (let i = 1; i <= 4; i++) {
+      const versionValue = `${Number(currentYear) - i}-${currentMonth}`;
+
+      if (staticProjectOpenedData[versionValue] && staticProjectOpenedData[versionValue].length > 0) {
+        const processedProjectOpenedData = processData({
+          data: staticProjectOpenedData[versionValue],
+          cellMappings: {
+            'SBU T&I': `B${12 + i}`,
+            'SBU Metals': `C${12 + i}`,
+            'SBU Agri-nutrients': `D${12 + i}`,
+            'SBU Chemicals': `E${12 + i}`,
+            'SBU Polymers': `F${12 + i}`,
+            'SBU SHPP': `G${12 + i}`,
+            'SBU Strategy & Transformation': `H${12 + i}`,
+            'Scientific Design': `I${12 + i}`,
+            Total: `J${12 + i}`,
+          },
+        });
+
+        finalStaticData = [...finalStaticData, ...processedProjectOpenedData];
+      }
+    }
+    return finalStaticData;
+  } catch (e) {
+    console.log('Error in processStaticData function.', e);
     throw e;
   }
 }
