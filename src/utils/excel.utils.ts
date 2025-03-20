@@ -214,13 +214,14 @@ export async function writeDataToExcel(data: DataItem[], filePath: string): Prom
   data.forEach((item) => {
     if (item.cellName) {
       const cell = sheet.getCell(item.cellName);
-      cell.value = item.value;
 
-      if (item.numFormat === 'percentage') {
-        cell.numFmt = '0%'; // Apply percentage format
-      } else {
-        cell.numFmt = cell.numFmt || '0'; // Preserve existing format
-      }
+      // if (item.numFormat === 'percentage') {
+      //   cell.numFmt = '0%'; // Apply percentage format
+      // } else {
+      //   cell.numFmt = cell.numFmt || ''; // Preserve existing format
+      // }
+
+      cell.value = item.value;
     }
   });
 
