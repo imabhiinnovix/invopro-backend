@@ -719,13 +719,15 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
         return res.status(200).json({
           success: true,
           message: 'Version data has been successfully retrieved.',
-          versionData: dataSourceVersionData,
+          data: dataSourceVersionData.data,
+          totalCount: dataSourceVersionData.totalCount,
         });
       }
       return res.status(200).json({
         success: true,
         message: 'Version data has been successfully retrieved.',
-        versionData: [],
+        data: [],
+        totalCount: 0,
       });
     } else {
       return res.status(404).json({ success: false, message: 'Data source not found.' });
