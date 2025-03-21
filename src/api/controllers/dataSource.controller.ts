@@ -112,7 +112,9 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
-    const query: any = {};
+    const { organizationId } = req.user;
+
+    const query: any = {organizationId};
     if (search) query.name = { $regex: search, $options: 'i' };
 
     if (canEditInline) {
