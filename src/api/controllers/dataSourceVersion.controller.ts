@@ -437,11 +437,6 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                   const fileDetailName = fileDetails[j].name;
                   const sheetName = fileDetails[j].sheetName;
 
-                  const totalFiles = fileDetails.length;
-                  const currentFileIndex = j + 1;
-                  const progressPercentage = ((j / totalFiles) * 100).toFixed(0);
-                  console.log(`Processing file ${fileDetailName} [${currentFileIndex} of ${totalFiles}] (${progressPercentage}% complete)`);
-
                   let mappingName = fileDetailName;
                   if (sheetName && sheetName.length > 0) {
                     mappingName = `${mappingName}__${sheetName}`;
@@ -454,6 +449,10 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                   });
 
                   if (file) {
+                    const totalFiles = fileDetails.length;
+                    const currentFileIndex = j + 1;
+                    const progressPercentage = ((j / totalFiles) * 100).toFixed(0);
+                    console.log(`Processing file ${fileDetailName} [${currentFileIndex} of ${totalFiles}] (${progressPercentage}% complete)`);
                     const { originalname, path: filePath, size, mimetype } = file;
 
                     console.log('originalname', originalname);
@@ -530,11 +529,11 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                     } else {
                       console.error('Invalid file type. Please upload a file in XLSX or XLS format.');
                     }
+                    const progressPercentage2 = ((currentFileIndex / totalFiles) * 100).toFixed(0);
+                    console.log(`Processed file ${fileDetailName} [${currentFileIndex} of ${totalFiles}] (${progressPercentage2}% complete)`);
+                    console.log('Sleeping for 3 seconds...');
+                    await sleep(3000);
                   }
-                  const progressPercentage2 = ((currentFileIndex / totalFiles) * 100).toFixed(0);
-                  console.log(`Processed file ${fileDetailName} [${currentFileIndex} of ${totalFiles}] (${progressPercentage2}% complete)`);
-                  console.log('Sleeping for 3 seconds...');
-                  await sleep(3000);
                 } catch (e) {
                   console.log(`Error while processing the file: ${fileDetails[j].name}`, e);
                 }
@@ -575,6 +574,8 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
               }
             }
           }
+          console.log('Sleeping for 3 seconds before generating custom report...');
+          await sleep(3000);
           await generateCustomReportsFunction({
             versionValue,
             userId: dUserId,
