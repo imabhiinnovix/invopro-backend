@@ -1859,7 +1859,7 @@ export async function processStaticData({
 
     //process new filing
     for (let i = 1; i <= 4; i++) {
-      const versionValue = `${Number(currentYear) - i}-${currentMonth}`;
+      const versionValue = `${Number(currentYear) - i}-12`;
 
       if (staticNewFilingData[versionValue] && staticNewFilingData[versionValue].length > 0) {
         const processedNewFiling = processData({
@@ -1882,9 +1882,9 @@ export async function processStaticData({
     }
 
     //current year estimates
-    if (staticEstimatesData[`${currentYear}-${currentMonth}`]) {
+    if (staticEstimatesData[`${currentYear}-12`]) {
       const processedEstimatedData = processData({
-        data: staticEstimatesData[`${currentYear}-${currentMonth}`],
+        data: staticEstimatesData[`${currentYear}-12`],
         cellMappings: {
           'SBU T&I': 'B5',
           'SBU Metals': 'C5',
@@ -1901,7 +1901,7 @@ export async function processStaticData({
     }
     //project opened
     for (let i = 1; i <= 4; i++) {
-      const versionValue = `${Number(currentYear) - i}-${currentMonth}`;
+      const versionValue = `${Number(currentYear) - i}-12`;
 
       if (staticProjectOpenedData[versionValue] && staticProjectOpenedData[versionValue].length > 0) {
         const processedProjectOpenedData = processData({
