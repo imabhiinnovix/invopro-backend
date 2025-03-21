@@ -1787,11 +1787,11 @@ export async function processStaticData({
         },
         versionValue: {
           $in: [
-            `${currentYear}-${currentMonth}`,
-            `${Number(currentYear) - 1}-${currentMonth}`,
-            `${Number(currentYear) - 2}-${currentMonth}`,
-            `${Number(currentYear) - 3}-${currentMonth}`,
-            `${Number(currentYear) - 4}-${currentMonth}`,
+            `${currentYear}-12`,
+            `${Number(currentYear) - 1}-12`,
+            `${Number(currentYear) - 2}-12`,
+            `${Number(currentYear) - 3}-12`,
+            `${Number(currentYear) - 4}-12`,
           ],
         },
         isCurrent: true,
