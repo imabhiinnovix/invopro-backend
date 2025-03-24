@@ -15,6 +15,8 @@ export type CustomReportModelAccessReturnType = {
   DataSourceVersionValueStaticNewFilings: ReturnType<typeof createDefaultDataSourceVersionModel>;
   DataSourceVersionValueStaticEstimates: ReturnType<typeof createDefaultDataSourceVersionModel>;
   DataSourceVersionValueStaticProjectOpened: ReturnType<typeof createDefaultDataSourceVersionModel>;
+  DataSourceVersionValueShppAccolade: ReturnType<typeof createDefaultDataSourceVersionModel>;
+  DataSourceVersionValueSabicAccolade: ReturnType<typeof createDefaultDataSourceVersionModel>;
 };
 
 export async function CustomReportModelAccess({ orgCode }: { orgCode: string }) {
@@ -40,6 +42,10 @@ export async function CustomReportModelAccess({ orgCode }: { orgCode: string }) 
   const DataSourceVersionValueStaticProjectOpened = createDefaultDataSourceVersionModel(
     `data_${orgCode}_projectsopened`
   );
+
+  const DataSourceVersionValueShppAccolade = createDefaultDataSourceVersionModel(`data_${orgCode}_shppaccolade`);
+
+  const DataSourceVersionValueSabicAccolade = createDefaultDataSourceVersionModel(`data_${orgCode}_sabicaccolade`);
   return {
     DataSourceVersionValuePortfolio,
     DataSourceVersionValueDisclosure,
@@ -55,5 +61,7 @@ export async function CustomReportModelAccess({ orgCode }: { orgCode: string }) 
     DataSourceVersionValueStaticNewFilings,
     DataSourceVersionValueStaticEstimates,
     DataSourceVersionValueStaticProjectOpened,
+    DataSourceVersionValueShppAccolade,
+    DataSourceVersionValueSabicAccolade,
   };
 }

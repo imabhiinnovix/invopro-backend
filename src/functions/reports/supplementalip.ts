@@ -50,14 +50,6 @@ export const generateSupplementalIpReport = async ({
     const newFilePath = reportRequestPayload.filePath;
     const currentYear = reportRequestPayload.versionValue.split('-')[0];
 
-    const accoladeMappingSheetData = await getAccoladeMappingSheet({
-      portfolioDataSourceVersionId,
-      disclosureDataSourceVersionId,
-      customReportModel,
-      currentYear,
-      isRowData,
-    });
-
     const currentYearAgreementSigned = await getAgreementSigned({
       sabicContractsDataSourceVersionId,
       shppContractsDataSourceVersionId,
@@ -72,6 +64,92 @@ export const generateSupplementalIpReport = async ({
       ipAnalystDataSourceVersionId,
       customReportModel,
     });
+
+    //Supplement ip part-2
+    const accoladeMappingSheetData = await getAccoladeMappingSheet({
+      portfolioDataSourceVersionId,
+      disclosureDataSourceVersionId,
+      shppAccoladeDataSourceVersionId,
+      sabicAccoladeDataSourceVersionId,
+      customReportModel,
+      currentYear,
+      isRowData,
+    });
+
+    const noOfActiveApplicationGroup: Record<string, number> = {};
+
+    accoladeMappingSheetData.activeApplicationAccoladeStdData.forEach((entry) => {
+      const accoladeID = entry.activeApplicationData.AccoladeID;
+      if (accoladeID) {
+        noOfActiveApplicationGroup[accoladeID] = (noOfActiveApplicationGroup[accoladeID] || 0) + 1;
+      }
+    });
+
+    const noOfActiveApplicationCount = Object.entries(noOfActiveApplicationGroup).map(([AccoladeID, Count]) => ({
+      AccoladeID,
+      Count,
+    }));
+
+    const noOfnewFilingThisYearGroup: Record<string, number> = {};
+
+    accoladeMappingSheetData.newFilingThisYearAccoladeStdData.forEach((entry) => {
+      const accoladeID = entry.newFilingThisYearData.AccoladeID;
+      if (accoladeID) {
+        noOfnewFilingThisYearGroup[accoladeID] = (noOfnewFilingThisYearGroup[accoladeID] || 0) + 1;
+      }
+    });
+
+    const noOfnewFilingThisYearCount = Object.entries(noOfnewFilingThisYearGroup).map(([AccoladeID, Count]) => ({
+      AccoladeID,
+      Count,
+    }));
+
+    const openDisclosureMap: Record<string, { count: number; cases: string[] }> = {};
+
+    accoladeMappingSheetData.openDisclosureAccoladeStdData.forEach((entry) => {
+      const { Accolade, DisclosureNumber } = entry.openDisclosureData;
+
+      if (Accolade) {
+        if (!openDisclosureMap[Accolade]) {
+          openDisclosureMap[Accolade] = { count: 0, cases: [] };
+        }
+        openDisclosureMap[Accolade].count += 1;
+        if (DisclosureNumber) {
+          openDisclosureMap[Accolade].cases.push(DisclosureNumber);
+        }
+      }
+    });
+
+    // Transform the map into an array
+    const noOfopenDisclosureCount = Object.entries(openDisclosureMap).map(([Accolade, { count, cases }]) => ({
+      Accolade,
+      Count: count,
+      DisclosureNumbers: cases.join(', '),
+    }));
+
+    const draftDisclosureMap: Record<string, { count: number; cases: string[] }> = {};
+
+    accoladeMappingSheetData.draftDisclosureAccoladeStdData.forEach((entry) => {
+      const { Accolade, DisclosureNumber } = entry.draftDisclosureData;
+
+      if (Accolade) {
+        if (!draftDisclosureMap[Accolade]) {
+          draftDisclosureMap[Accolade] = { count: 0, cases: [] };
+        }
+        draftDisclosureMap[Accolade].count += 1;
+        if (DisclosureNumber) {
+          draftDisclosureMap[Accolade].cases.push(DisclosureNumber);
+        }
+      }
+    });
+
+    // Transform the map into an array
+    const noOfDraftDisclosureCount = Object.entries(draftDisclosureMap).map(([Accolade, { count, cases }]) => ({
+      Accolade,
+      Count: count,
+      DisclosureNumbers: cases.join(', '),
+    }));
+
     await createExcelSheetFile(currentYearAgreementSigned, newFilePath, `Agreement signed in ${currentYear}`);
     await createExcelSheetFile(currentYearIpAnalysis.countData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
     await createExcelSheetFile(
@@ -83,8 +161,13 @@ export const generateSupplementalIpReport = async ({
     await createExcelSheetFile(currentYearIpAnalysis.secondBarGraphChartData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
     await createExcelSheetFile(currentYearIpAnalysis.thirdBarGraphChartData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
 
+    await createExcelSheetFile(noOfActiveApplicationCount, newFilePath, `Active Application Count`);
+    await createExcelSheetFile(noOfnewFilingThisYearCount, newFilePath, `New Filing Current Year`);
+    await createExcelSheetFile(noOfopenDisclosureCount, newFilePath, `Open Disclosure Count`);
+    await createExcelSheetFile(noOfDraftDisclosureCount, newFilePath, `Draft Disclosure Count`);
     await reportRequestService.updateReportRequest(requestedReportId, { status: 'completed' });
   } catch (e) {
+    console.log('Error in generateSupplementalIpReport.', e);
     await reportRequestService.updateReportRequest(requestedReportId, { status: 'failed' });
   }
 };

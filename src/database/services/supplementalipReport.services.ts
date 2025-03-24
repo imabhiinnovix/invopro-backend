@@ -87,8 +87,8 @@ export async function getAgreementSigned({
       .map((data) => {
         let matchingAttorney = rowDataAttorneyMappingContractDetails.find(
           (attorney) =>
-            attorney.Counsel?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() ===
-            data.Counsel?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+            attorney?.Counsel?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() ===
+            data?.Counsel?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
         );
         if (matchingAttorney && data.Counsel) {
           return { ...data, SBU: matchingAttorney.SBU };
@@ -101,8 +101,8 @@ export async function getAgreementSigned({
       .map((data) => {
         let matchingAttorney = rowDataAttorneyMappingContractDetails.find(
           (attorney) =>
-            attorney.Counsel?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() ===
-            data.Counsel?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+            attorney?.Counsel?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() ===
+            data?.Counsel?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
         );
         if (matchingAttorney && data.Counsel) {
           return { ...data, SBU: matchingAttorney.SBU };
@@ -115,8 +115,8 @@ export async function getAgreementSigned({
       .map((data) => {
         let matchingAttorney = rowDataAttorneyMappingContractDetails.find(
           (attorney) =>
-            attorney.Counsel?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() ===
-            data.Attorneyies?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+            attorney?.Counsel?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() ===
+            data?.Attorneyies?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
         );
         if (matchingAttorney && data.Counsel) {
           return { ...data, SBU: matchingAttorney.SBU };
@@ -373,15 +373,69 @@ export async function getIpAnalysis({
   }
 }
 
+function categorizeStdProjectsAndRemoveRowDataExtraKey(projects) {
+  return projects.map((project) => {
+    let row = project.rowData;
+    let sbu = (row.SBU || '').toLowerCase().replace(/\s+/g, '');
+    let bu = (row.BU || '').toLowerCase().replace(/\s+/g, '');
+    let techGroup = (row.TechGroup || '').toLowerCase().replace(/\s+/g, '');
+    const tandI = (row.TI || '').toLowerCase().replace(/\s+/g, '');
+    let std = 'OTHER';
+
+    if (
+      techGroup.includes('crd') ||
+      sbu.includes('corporateresearchanddevelopment') ||
+      sbu.includes('crd') ||
+      tandI.includes('crd') ||
+      tandI.includes('corporateresearchanddevelopment')
+    ) {
+      std = 'CORPORATE';
+    } else if (sbu.includes('specialties') || tandI.includes('specialties')) {
+      std = 'SPECIALITIES';
+    } else if (sbu.includes('agri-nutrients') || tandI.includes('agri-nutrients')) {
+      std = 'AGRI-NUTRIENTS';
+    } else if (sbu.includes('hadeed') || tandI.includes('hadeed')) {
+      std = 'METAL';
+    } else if (
+      tandI.includes('chemicals') ||
+      tandI.includes('petrochemicals') ||
+      tandI.includes('functionalchemicals') ||
+      sbu.includes('petrochemicals') ||
+      bu.includes('chemicals') ||
+      bu.includes('functionalchemicals') ||
+      bu.includes('ksa')
+    ) {
+      std = 'PETCHEM-CHEMICALS';
+    } else if (
+      tandI.includes('polymers') ||
+      tandI.includes('functionalforms') ||
+      sbu.includes('functionalforms') ||
+      sbu.includes('petrochemicals') ||
+      (bu && bu !== '' && !['tbd', 'technologyventuring', ''].includes(sbu))
+    ) {
+      std = 'PETCHEM-POLYMERS';
+    }
+
+    return {
+      ...row,
+      STD: std,
+    };
+  });
+}
+
 export async function getAccoladeMappingSheet({
   portfolioDataSourceVersionId,
   disclosureDataSourceVersionId,
+  shppAccoladeDataSourceVersionId,
+  sabicAccoladeDataSourceVersionId,
   customReportModel,
   currentYear,
   isRowData,
 }: {
   portfolioDataSourceVersionId: string;
   disclosureDataSourceVersionId: string;
+  shppAccoladeDataSourceVersionId: string;
+  sabicAccoladeDataSourceVersionId: string;
   currentYear: string;
   customReportModel: CustomReportModelAccessReturnType;
   isRowData?: boolean;
@@ -392,7 +446,7 @@ export async function getAccoladeMappingSheet({
       $lte: `${currentYear}-12-31T00:00:00.000Z`,
     };
 
-    const activeApplication = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
+    const activeApplicationRawData = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
@@ -405,7 +459,7 @@ export async function getAccoladeMappingSheet({
       },
       {
         $group: {
-          _id: '$rowData.AccoladeID',
+          _id: '$rowData.Case_Reference1',
           rowData: { $first: '$rowData' },
         },
       },
@@ -416,7 +470,7 @@ export async function getAccoladeMappingSheet({
       },
     ]);
 
-    const newFilingThisYear = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
+    const newFilingThisYearRawData = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
@@ -430,7 +484,7 @@ export async function getAccoladeMappingSheet({
       },
       {
         $group: {
-          _id: '$rowData.AccoladeID',
+          _id: '$rowData.Case_Reference1',
           rowData: { $first: '$rowData' },
         },
       },
@@ -441,7 +495,151 @@ export async function getAccoladeMappingSheet({
       },
     ]);
 
-    return newFilingThisYear;
+    const openDisclosureRawData = await customReportModel.DataSourceVersionValueDisclosure.aggregate([
+      {
+        $match: {
+          dataSourceVersionId: new ObjectId(disclosureDataSourceVersionId),
+          'rowData.DisclosureStatus': {
+            $in: [
+              'Open',
+              'Rated to Search',
+              'Rated To Search',
+              'Rated to Hold',
+              'Rated To Hold',
+              'Rated to Draft OC',
+              'Rated To Draft OC',
+              'Rated to Draft IH',
+              'Rated To Draft IH',
+              'Filing Requested',
+              'RATED TO DRAFT IN HOUSE',
+              'Submitted',
+              'Review Rate to Draft',
+              'Review Rated to Draft',
+            ],
+          },
+          'rowData.Accolade': {
+            $ne: null,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$rowData.DisclosureNumber',
+          rowData: { $first: '$rowData' },
+        },
+      },
+      {
+        $project: {
+          rowData: 1,
+        },
+      },
+    ]);
+
+    const draftDisclosureRawData = await customReportModel.DataSourceVersionValueDisclosure.aggregate([
+      {
+        $match: {
+          dataSourceVersionId: new ObjectId(disclosureDataSourceVersionId),
+          'rowData.DisclosureStatus': {
+            $in: [
+              'Rated to Draft OC',
+              'Rated To Draft OC',
+              'Rated to Draft IH',
+              'Rated To Draft IH',
+              'RATED TO DRAFT IN HOUSE',
+            ],
+          },
+          'rowData.Accolade': {
+            $ne: null,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$rowData.DisclosureNumber',
+          rowData: { $first: '$rowData' },
+        },
+      },
+      {
+        $project: {
+          rowData: 1,
+        },
+      },
+    ]);
+
+    const shppAccoladeRawData = await customReportModel.DataSourceVersionValueShppAccolade.aggregate([
+      {
+        $match: {
+          dataSourceVersionId: new ObjectId(shppAccoladeDataSourceVersionId),
+          'rowData.ProjectID': {
+            $ne: null,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$rowData.ProjectID',
+          rowData: { $first: '$rowData' },
+        },
+      },
+      {
+        $project: {
+          rowData: 1,
+        },
+      },
+    ]);
+
+    const sabicAccoladeRawData = await customReportModel.DataSourceVersionValueSabicAccolade.aggregate([
+      {
+        $match: {
+          dataSourceVersionId: new ObjectId(sabicAccoladeDataSourceVersionId),
+          'rowData.ProjectID': {
+            $ne: null,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$rowData.ProjectID',
+          rowData: { $first: '$rowData' },
+        },
+      },
+      {
+        $project: {
+          rowData: 1,
+        },
+      },
+    ]);
+
+    const shppAccoladeStdData = categorizeStdProjectsAndRemoveRowDataExtraKey(shppAccoladeRawData);
+    const sabicAccoladeStdData = categorizeStdProjectsAndRemoveRowDataExtraKey(sabicAccoladeRawData);
+    const combinedAccoladeStdData = [...shppAccoladeStdData, ...sabicAccoladeStdData];
+
+    const activeApplicationAccoladeStdData = activeApplicationRawData.map((row) => {
+      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
+      return { accoladeStdData: matchingStd ? matchingStd : '', activeApplicationData: row.rowData };
+    });
+
+    const newFilingThisYearAccoladeStdData = newFilingThisYearRawData.map((row) => {
+      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
+      return { accoladeStdData: matchingStd ? matchingStd : '', newFilingThisYearData: row.rowData };
+    });
+
+    const openDisclosureAccoladeStdData = openDisclosureRawData.map((row) => {
+      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
+      return { accoladeStdData: matchingStd ? matchingStd : '', openDisclosureData: row.rowData };
+    });
+
+    const draftDisclosureAccoladeStdData = draftDisclosureRawData.map((row) => {
+      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
+      return { accoladeStdData: matchingStd ? matchingStd : '', draftDisclosureData: row.rowData };
+    });
+
+    return {
+      activeApplicationAccoladeStdData,
+      newFilingThisYearAccoladeStdData,
+      openDisclosureAccoladeStdData,
+      draftDisclosureAccoladeStdData,
+    };
   } catch (e) {
     console.log('Error in getAccoladeMappingSheet', e);
     throw e;
