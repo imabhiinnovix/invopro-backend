@@ -286,7 +286,7 @@ export async function createExcelSheetFile(
 
   // Add a table to the worksheet
   const table = worksheet.addTable({
-    name: `DynamicTable-${sheetName}-${startRow}`, // Unique table name
+    name: `DynamicTable_${sheetName.toLowerCase().replace(/[^a-z]/g, '')}_${startRow}`, // Unique table name
     ref: tableRef,
     headerRow: true,
     totalsRow: false,
