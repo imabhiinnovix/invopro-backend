@@ -247,7 +247,7 @@ export async function createExcelSheetFile(
 
   let worksheet = workbook.getWorksheet(sheetName);
   if (!worksheet) {
-    worksheet = workbook.addWorksheet(sheetName);
+    worksheet = workbook.addWorksheet(sheetName, { properties: { defaultColWidth: 20 } });
   }
 
   if (data.length === 0) {
@@ -286,7 +286,7 @@ export async function createExcelSheetFile(
 
   // Add a table to the worksheet
   const table = worksheet.addTable({
-    name: `DynamicTable${startRow}`, // Unique table name
+    name: `DynamicTable-${sheetName}-${startRow}`, // Unique table name
     ref: tableRef,
     headerRow: true,
     totalsRow: false,
@@ -298,8 +298,6 @@ export async function createExcelSheetFile(
     rows,
   });
 
-  // Apply custom styles for the table headers and data rows
-  const columnWidths: number[] = [];
   const headerRow = worksheet.getRow(startRow);
   headerRow.eachCell((cell, colIndex) => {
     cell.font = { bold: true, color: { argb: 'FFFFFF' } };
@@ -315,8 +313,6 @@ export async function createExcelSheetFile(
       bottom: { style: 'thin' },
       right: { style: 'thin' },
     };
-    const cellValue = String(cell.value);
-    columnWidths[colIndex] = Math.max(columnWidths[colIndex] || 0, cellValue.length);
   });
 
   for (let i = startRow + 1; i < startRow + 1 + rows.length; i++) {
@@ -329,8 +325,6 @@ export async function createExcelSheetFile(
         bottom: { style: 'thin' },
         right: { style: 'thin' },
       };
-      const cellValue = String(cell.value);
-      columnWidths[colIndex] = Math.max(columnWidths[colIndex] || 0, cellValue.length);
     });
     if (i % 2 === 0) {
       row.eachCell((cell) => {
@@ -342,12 +336,6 @@ export async function createExcelSheetFile(
       });
     }
   }
-
-  // Apply dynamic widths to the columns
-  worksheet.columns = columns.map((col, index) => ({
-    ...col,
-    width: columnWidths[index] + 5, // Add some padding
-  }));
 
   worksheet.getColumn(1).hidden = false;
   // Save the workbook to the file
