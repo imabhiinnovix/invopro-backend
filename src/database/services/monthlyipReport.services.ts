@@ -808,13 +808,35 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
   isRowData?: boolean
 ) {
   try {
-    const newYearApplicationFiled = await getCurrentYearNewApplicationFiled({
+    const newYearApplicationFiledRowData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
       isPercentagePart: true,
       customReportModel,
-      isRowData,
+      isRowData: true,
     });
+
+    const newYearApplicationFiledStartsWith: string = currentYear.slice(-2);
+
+    const newYearApplicationFiledFilteredData = newYearApplicationFiledRowData.filter((item: { _id: string }) =>
+      item._id.startsWith(newYearApplicationFiledStartsWith)
+    );
+
+    const newYearApplicationFiledSbuCount: Record<string, number> = newYearApplicationFiledFilteredData.reduce(
+      (acc: Record<string, number>, item: { SBU: string }) => {
+        acc[item.SBU] = (acc[item.SBU] || 0) + 1;
+        return acc;
+      },
+      {}
+    );
+
+    const newYearApplicationFiled = Object.entries(newYearApplicationFiledSbuCount).map(
+      ([SBU, value]: [string, number]) => ({
+        value,
+        SBU,
+      })
+    );
+
     const activeDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,
