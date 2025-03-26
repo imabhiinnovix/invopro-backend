@@ -6,6 +6,8 @@ import {
 import { createExcelSheetFile } from '../../utils/excel.utils';
 import * as reportRequestService from '../../database/services/reportRequest.services';
 import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
+import { ReportHeaders } from '../../utils/common.type';
+import { processReportHeaders } from '../../utils/common.report';
 
 export const generateSupplementalIpReport = async ({
   reportRequestPayload,
@@ -26,6 +28,7 @@ export const generateSupplementalIpReport = async ({
   sabicAccoladeDataSourceVersionId,
   customReportModel,
   isRowData,
+  headers,
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
@@ -45,6 +48,7 @@ export const generateSupplementalIpReport = async ({
   sabicAccoladeDataSourceVersionId: string;
   customReportModel: CustomReportModelAccessReturnType;
   isRowData?: boolean;
+  headers: ReportHeaders;
 }) => {
   try {
     const newFilePath = reportRequestPayload.filePath;
@@ -60,6 +64,25 @@ export const generateSupplementalIpReport = async ({
       customReportModel,
     });
 
+    const proceessedFinalAgreement = processReportHeaders({
+      data: currentYearAgreementSigned.finalAgreementResult,
+      headers: [
+        { reportHeader: 'Final AgreementType', attributeValues: ['Final AgreementType'] },
+        ...headers['finalAgreementTypes']['columns'],
+        { reportHeader: 'Total', attributeValues: ['Total'] },
+      ],
+    });
+
+    const proceessedOtherAgreement = processReportHeaders({
+      data: currentYearAgreementSigned.otherAgreementResult,
+      headers: [
+        { reportHeader: 'AgreementType', attributeValues: ['AgreementType'] },
+        ...headers['agreementTypes']['columns'],
+        { reportHeader: 'Total', attributeValues: ['Total'] },
+      ],
+    });
+
+    return proceessedOtherAgreement;
     const currentYearIpAnalysis = await getIpAnalysis({
       ipAnalystDataSourceVersionId,
       customReportModel,
@@ -150,7 +173,7 @@ export const generateSupplementalIpReport = async ({
       DisclosureNumbers: cases.join(', '),
     }));
 
-    await createExcelSheetFile(currentYearAgreementSigned, newFilePath, `Agreement signed in ${currentYear}`);
+    // await createExcelSheetFile(currentYearAgreementSigned, newFilePath, `Agreement signed in ${currentYear}`);
     await createExcelSheetFile(currentYearIpAnalysis.countData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
     await createExcelSheetFile(
       currentYearIpAnalysis.firstBarGraphChartData,

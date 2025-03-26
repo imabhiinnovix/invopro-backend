@@ -174,28 +174,70 @@ export async function getAgreementSigned({
     ];
 
     let countFinalAgreementResult = {};
+    let countOtherAgreementResult = {};
 
     allFinalAgreements.forEach((item) => {
-      let agreementType = item.finalAgreementType;
+      let finalAgreementType = item.finalAgreementType;
       let sbu = item.SBU;
+      if (finalAgreementType.toLowerCase() === 'others') {
+        const agreementType = item.AgreementType;
+        if (!countOtherAgreementResult[agreementType]) {
+          countOtherAgreementResult[agreementType] = {};
+        }
 
-      if (!countFinalAgreementResult[agreementType]) {
-        countFinalAgreementResult[agreementType] = {};
+        if (!countOtherAgreementResult[agreementType][sbu]) {
+          countOtherAgreementResult[agreementType][sbu] = 0;
+        }
+
+        if (!countOtherAgreementResult[agreementType]['Total']) {
+          countOtherAgreementResult[agreementType]['Total'] = 0;
+        }
+
+        countOtherAgreementResult[agreementType][sbu] += 1;
+        countOtherAgreementResult[agreementType]['Total'] += 1;
+      } else {
+        if (!countFinalAgreementResult[finalAgreementType]) {
+          countFinalAgreementResult[finalAgreementType] = {};
+        }
+
+        if (!countFinalAgreementResult[finalAgreementType][sbu]) {
+          countFinalAgreementResult[finalAgreementType][sbu] = 0;
+        }
+
+        if (!countFinalAgreementResult[finalAgreementType]['Total']) {
+          countFinalAgreementResult[finalAgreementType]['Total'] = 0;
+        }
+
+        countFinalAgreementResult[finalAgreementType][sbu] += 1;
+        countFinalAgreementResult[finalAgreementType]['Total'] += 1;
       }
-
-      if (!countFinalAgreementResult[agreementType][sbu]) {
-        countFinalAgreementResult[agreementType][sbu] = 0;
-      }
-
-      if (!countFinalAgreementResult[agreementType]['Total']) {
-        countFinalAgreementResult[agreementType]['Total'] = 0;
-      }
-
-      countFinalAgreementResult[agreementType][sbu] += 1;
-      countFinalAgreementResult[agreementType]['Total'] += 1;
     });
 
     const finalAgreementResult: any = Object.entries(countFinalAgreementResult).map(([agreementType, sbuData]) => {
+      const { Total, ...rest } = sbuData as Record<string, any>; // Extract Total while keeping other properties
+
+      return {
+        'Final AgreementType': agreementType,
+        ...rest, // Spread other properties first
+        Total, // Then add Total at the end
+      };
+    });
+
+    const finalAgreementTotalBasedOnSbu = { 'Final AgreementType': 'Total' };
+
+    finalAgreementResult.forEach((entry) => {
+      Object.entries(entry).forEach(([key, value]) => {
+        if (key !== 'Final AgreementType' && typeof value === 'number') {
+          finalAgreementTotalBasedOnSbu[key] = (finalAgreementTotalBasedOnSbu[key] || 0) + value;
+        }
+      });
+    });
+
+    finalAgreementResult.push(finalAgreementTotalBasedOnSbu);
+
+    //otherAgreement Result
+
+    const otherAgreementResult: any = Object.entries(countOtherAgreementResult).map(([agreementType, sbuData]) => {
       const { Total, ...rest } = sbuData as Record<string, any>; // Extract Total while keeping other properties
 
       return {
@@ -205,18 +247,18 @@ export async function getAgreementSigned({
       };
     });
 
-    const totalBasedOnSbu = { AgreementType: 'Total' };
+    const otherAgreementTotalBasedOnSbu = { AgreementType: 'Total' };
 
-    finalAgreementResult.forEach((entry) => {
+    otherAgreementResult.forEach((entry) => {
       Object.entries(entry).forEach(([key, value]) => {
         if (key !== 'AgreementType' && typeof value === 'number') {
-          totalBasedOnSbu[key] = (totalBasedOnSbu[key] || 0) + value;
+          otherAgreementTotalBasedOnSbu[key] = (otherAgreementTotalBasedOnSbu[key] || 0) + value;
         }
       });
     });
 
-    finalAgreementResult.push(totalBasedOnSbu);
-    return finalAgreementResult;
+    otherAgreementResult.push(otherAgreementTotalBasedOnSbu);
+    return { finalAgreementResult, otherAgreementResult };
   } catch (e) {
     throw e;
   }

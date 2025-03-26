@@ -186,6 +186,7 @@ export const generateCustomReportsFunction = async ({
         ipAnalystDataSourceVersionId: versionMap[ipAnalystDashboardDataSource?.dataSourceId!],
         shppAccoladeDataSourceVersionId: versionMap[shppAccoladeDataSource?.dataSourceId!],
         sabicAccoladeDataSourceVersionId: versionMap[sabicAccoladeDataSource?.dataSourceId!],
+        headers: customReportDetails.headers,
         customReportModel,
       });
 
