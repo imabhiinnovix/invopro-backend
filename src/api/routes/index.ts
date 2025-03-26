@@ -11,6 +11,8 @@ import dataSourceRoutes from './dataSource.routes';
 import customReports from './customReport.routes';
 import dataSourceVersion from './dataSourceVersion.routes';
 import dataImportErrorRoutes from './dataImportError.routes';
+import dashBoardRoutes from './dashboard.routes';
+import widgetTypeRoutes from './widgetType.routes';
 
 const router = Router();
 
@@ -25,5 +27,7 @@ router.use('/files', fileRoutes);
 router.use('/customReports', customReports);
 router.use('/dataSourceVersion', dataSourceVersion);
 router.use('/dataImportError', dataImportErrorRoutes);
+router.use('/dashboard', dashBoardRoutes);
+router.use('/widgetType', widgetTypeRoutes);
 
 export default router;

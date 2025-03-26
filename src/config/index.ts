@@ -29,6 +29,8 @@ const ENV = {
   OTP_TIME_LIMIT: parseInt(process.env.OTP_TIME_LIMIT as string, 10) || 15,
   OTP_LIMIT: parseInt(process.env.OTP_LIMIT as string, 10) || 5,
   OTP_EXPIRATION_TIME: parseInt(process.env.OTP_EXPIRATION_TIME as string, 10) || 5,
+
+  WIDGET_TYPE_ENUM: ['line', 'pie'],
 };
 
 export default ENV;
