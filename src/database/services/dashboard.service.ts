@@ -32,10 +32,36 @@ export const getDashboard = async (query: any) => {
   }
 };
 
-export const getAllDashboards = async (query: any) => {
+export const getAllDashboards = async ({
+  query,
+  select = '',
+  page,
+  limit,
+  sort = { createdAt: -1 },
+  populate,
+}: any) => {
   try {
-    const dashboard = await Dashboard.find(query).populate('createdBy organizationId', '-password');
-    return dashboard;
+    let dashboardQuery = Dashboard.find(query).select(select).sort(sort);
+
+    if (page && limit) {
+      dashboardQuery = dashboardQuery.skip((page - 1) * limit).limit(limit);
+    }
+
+    if (sort) {
+      dashboardQuery = dashboardQuery.sort(sort);
+    }
+
+    if (populate && Array.isArray(populate)) {
+      populate.forEach((field) => {
+        dashboardQuery = dashboardQuery.populate(field);
+      });
+    }
+
+    const users = await dashboardQuery.exec();
+
+    const totalCount = await Dashboard.countDocuments(query);
+
+    return { data: users, totalCount };
   } catch (error: any) {
     throw new Error(error.message);
   }
