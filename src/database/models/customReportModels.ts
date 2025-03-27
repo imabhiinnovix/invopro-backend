@@ -12,6 +12,11 @@ export type CustomReportModelAccessReturnType = {
   DataSourceVersionValueAttorneyMapping: ReturnType<typeof createDefaultDataSourceVersionModel>;
   DataSourceVersionValueAgreementTypemapping: ReturnType<typeof createDefaultDataSourceVersionModel>;
   DataSourceVersionValueIpAnalystDashboard: ReturnType<typeof createDefaultDataSourceVersionModel>;
+  DataSourceVersionValueStaticNewFilings: ReturnType<typeof createDefaultDataSourceVersionModel>;
+  DataSourceVersionValueStaticEstimates: ReturnType<typeof createDefaultDataSourceVersionModel>;
+  DataSourceVersionValueStaticProjectOpened: ReturnType<typeof createDefaultDataSourceVersionModel>;
+  DataSourceVersionValueShppAccolade: ReturnType<typeof createDefaultDataSourceVersionModel>;
+  DataSourceVersionValueSabicAccolade: ReturnType<typeof createDefaultDataSourceVersionModel>;
 };
 
 export async function CustomReportModelAccess({ orgCode }: { orgCode: string }) {
@@ -31,6 +36,16 @@ export async function CustomReportModelAccess({ orgCode }: { orgCode: string }) 
   const DataSourceVersionValueIpAnalystDashboard = createDefaultDataSourceVersionModel(
     `data_${orgCode}_ipanalystdashboard`
   );
+
+  const DataSourceVersionValueStaticNewFilings = createDefaultDataSourceVersionModel(`data_${orgCode}_newfilings`);
+  const DataSourceVersionValueStaticEstimates = createDefaultDataSourceVersionModel(`data_${orgCode}_estimates`);
+  const DataSourceVersionValueStaticProjectOpened = createDefaultDataSourceVersionModel(
+    `data_${orgCode}_projectsopened`
+  );
+
+  const DataSourceVersionValueShppAccolade = createDefaultDataSourceVersionModel(`data_${orgCode}_shppaccolade`);
+
+  const DataSourceVersionValueSabicAccolade = createDefaultDataSourceVersionModel(`data_${orgCode}_sabicaccolade`);
   return {
     DataSourceVersionValuePortfolio,
     DataSourceVersionValueDisclosure,
@@ -43,5 +58,10 @@ export async function CustomReportModelAccess({ orgCode }: { orgCode: string }) 
     DataSourceVersionValueAttorneyMapping,
     DataSourceVersionValueAgreementTypemapping,
     DataSourceVersionValueIpAnalystDashboard,
+    DataSourceVersionValueStaticNewFilings,
+    DataSourceVersionValueStaticEstimates,
+    DataSourceVersionValueStaticProjectOpened,
+    DataSourceVersionValueShppAccolade,
+    DataSourceVersionValueSabicAccolade,
   };
 }

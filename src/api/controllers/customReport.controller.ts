@@ -20,6 +20,7 @@ export const generateCustomReportsFunction = async ({
   customReportId,
   orgCode,
   reportRequestId,
+  isRowData,
 }: {
   userId: string;
   organizationId: string;
@@ -27,6 +28,7 @@ export const generateCustomReportsFunction = async ({
   customReportId: string;
   orgCode: string;
   reportRequestId?: any;
+  isRowData?: boolean;
 }) => {
   try {
     const customReportDetails = await customReportServices.findCustomReportById(customReportId);
@@ -38,20 +40,30 @@ export const generateCustomReportsFunction = async ({
     // Extract all data source IDs
     const dataSourceIds = customReportDetails.dataSourceIds.map((ds) => ds.dataSourceId);
 
+    const requiredDataSourceIds = customReportDetails.dataSourceIds
+      .filter((ds) => ds.isRequired === true)
+      .map((ds) => ds.dataSourceId);
+
     const dataSourceVersionDetails = await dataSourceVersionServices.getDataSourceVersionList({
       query: { dataSourceId: { $in: dataSourceIds }, versionValue: versionValue, isCurrent: true },
     });
 
-    if (!dataSourceVersionDetails.data || dataSourceVersionDetails.data.length != dataSourceIds.length) {
-      let notFoundItems = customReportDetails.dataSourceIds.filter((ds) => {
-        return !dataSourceVersionDetails.data.some((dsv) => {
-          return dsv.dataSourceId.toString() === ds.dataSourceId.toString();
-        });
-      });
+    const foundRequiredDataSourceIds = dataSourceVersionDetails.data.map((dsv) => dsv.dataSourceId.toString());
+    const missingRequiredIds = requiredDataSourceIds.filter(
+      (id) => !foundRequiredDataSourceIds.includes(id.toString())
+    );
+
+    if (missingRequiredIds.length > 0) {
+      let notFoundItems = customReportDetails.dataSourceIds.filter((ds) =>
+        missingRequiredIds.includes(ds.dataSourceId.toString())
+      );
 
       let notFoundFileNames = notFoundItems.map((dsv) => dsv.fileDetails);
       let flattenedFileNames = notFoundFileNames.flatMap((files) => files.map((file) => file.name));
 
+      console.log(
+        `Not all required data is available for this report. Please upload the following files before generating the report: ${versionValue}. ${flattenedFileNames.join(', ')}`
+      );
       throw new Error(
         `Not all required data is available for this report. Please upload the following files before generating the report: ${versionValue}. ${flattenedFileNames.join(', ')}`
       );
@@ -93,7 +105,14 @@ export const generateCustomReportsFunction = async ({
 
       const annuitiesbDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'annuities');
 
-      await generateMonthlyIpReport({
+      const staticNewFilingsDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'newfilings');
+
+      const currentStaticEstimatesDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'estimates');
+
+      const staticProjectOpenedDataSource = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'projectsopened'
+      );
+      const data = await generateMonthlyIpReport({
         reportRequestPayload,
         requestedReportId: reportRequestId as string,
         sampleFilePath: customReportDetails.sampleFilePath!,
@@ -102,8 +121,19 @@ export const generateCustomReportsFunction = async ({
         sabicipDataSourceVersionId: versionMap[sabicipDataSource?.dataSourceId!],
         ctclinsabDataSourceVersionId: versionMap[ctclinsabDataSource?.dataSourceId!],
         annuitiesbDataSourceVersionId: versionMap[annuitiesbDataSource?.dataSourceId!],
+        staticNewFilingsDataSourceId: staticNewFilingsDataSource?.dataSourceId!,
+        staticEstimatesDataSourceId: currentStaticEstimatesDataSource?.dataSourceId!,
+        staticProjectOpenedDataSourceId: staticProjectOpenedDataSource?.dataSourceId!,
+        isRowData,
+        userId,
+        organizationId,
+        orgCode,
         customReportModel,
       });
+
+      if (isRowData) {
+        return data;
+      }
     } else if (customReportDetails.reportName === 'supplementalip') {
       const versionMap = Object.fromEntries(
         dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
@@ -139,7 +169,7 @@ export const generateCustomReportsFunction = async ({
 
       const sabicAccoladeDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'sabicaccolade');
 
-      await generateSupplementalIpReport({
+      const data = await generateSupplementalIpReport({
         reportRequestPayload,
         requestedReportId: reportRequestId,
         sampleFilePath: customReportDetails.sampleFilePath!,
@@ -158,6 +188,8 @@ export const generateCustomReportsFunction = async ({
         sabicAccoladeDataSourceVersionId: versionMap[sabicAccoladeDataSource?.dataSourceId!],
         customReportModel,
       });
+
+      return data;
     } else {
       await reportRequestService.updateReportRequest(reportRequestId, { status: 'failed' });
     }
@@ -167,15 +199,23 @@ export const generateCustomReportsFunction = async ({
 };
 export const generateCustomReports = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { versionValue, customReportId } = req.body;
+    const { versionValue, customReportId, isRowData } = req.body;
     const { userId, organizationId, orgCode } = req?.user;
-    let data = await generateCustomReportsFunction({ versionValue, userId, organizationId, orgCode, customReportId });
+    let data = await generateCustomReportsFunction({
+      versionValue,
+      userId,
+      organizationId,
+      orgCode,
+      customReportId,
+      isRowData,
+    });
     res.status(201).json({
       success: true,
       message: 'Report Generated Successfully',
       data,
     });
   } catch (e) {
+    console.log('Error in generateCustomReportsFunction', e);
     next(e);
   }
 };
