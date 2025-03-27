@@ -64,8 +64,6 @@ export const generateSupplementalIpReport = async ({
       customReportModel,
     });
 
-    return currentYearAgreementSigned;
-
     const proceessedFinalAgreement = processReportHeaders({
       data: currentYearAgreementSigned.finalAgreementResult,
       headers: [
@@ -109,10 +107,10 @@ export const generateSupplementalIpReport = async ({
       }
     });
 
-    const noOfActiveApplicationCount = Object.entries(noOfActiveApplicationGroup).map(([AccoladeID, Count]) => ({
-      AccoladeID,
-      Count,
-    }));
+    // const noOfActiveApplicationCount = Object.entries(noOfActiveApplicationGroup).map(([AccoladeID, Count]) => ({
+    //   AccoladeID,
+    //   Count,
+    // }));
 
     const noOfnewFilingThisYearGroup: Record<string, number> = {};
 
@@ -122,11 +120,6 @@ export const generateSupplementalIpReport = async ({
         noOfnewFilingThisYearGroup[accoladeID] = (noOfnewFilingThisYearGroup[accoladeID] || 0) + 1;
       }
     });
-
-    const noOfnewFilingThisYearCount = Object.entries(noOfnewFilingThisYearGroup).map(([AccoladeID, Count]) => ({
-      AccoladeID,
-      Count,
-    }));
 
     const openDisclosureMap: Record<string, { count: number; cases: string[] }> = {};
 
@@ -145,11 +138,11 @@ export const generateSupplementalIpReport = async ({
     });
 
     // Transform the map into an array
-    const noOfopenDisclosureCount = Object.entries(openDisclosureMap).map(([Accolade, { count, cases }]) => ({
-      Accolade,
-      Count: count,
-      DisclosureNumbers: cases.join(', '),
-    }));
+    // const noOfopenDisclosureCount = Object.entries(openDisclosureMap).map(([Accolade, { count, cases }]) => ({
+    //   Accolade,
+    //   Count: count,
+    //   DisclosureNumbers: cases.join(', '),
+    // }));
 
     const draftDisclosureMap: Record<string, { count: number; cases: string[] }> = {};
 
@@ -168,14 +161,154 @@ export const generateSupplementalIpReport = async ({
     });
 
     // Transform the map into an array
-    const noOfDraftDisclosureCount = Object.entries(draftDisclosureMap).map(([Accolade, { count, cases }]) => ({
-      Accolade,
-      Count: count,
-      DisclosureNumbers: cases.join(', '),
-    }));
+    // const noOfDraftDisclosureCount = Object.entries(draftDisclosureMap).map(([Accolade, { count, cases }]) => ({
+    //   Accolade,
+    //   Count: count,
+    //   DisclosureNumbers: cases.join(', '),
+    // }));
+
+    const checkExistingProjectId = {};
+    const allAccoladeMappingSheet: any[] = [];
+    for (let i = 0; i < accoladeMappingSheetData.allStdData.length; i++) {
+      const stdData = accoladeMappingSheetData.allStdData[i];
+      const projectId = stdData.ProjectID;
+      if (!checkExistingProjectId[projectId]) {
+        allAccoladeMappingSheet.push({
+          ...stdData,
+          noOfActiveApplications: noOfActiveApplicationGroup[projectId],
+          noOfNewApplications: noOfnewFilingThisYearGroup[projectId],
+          noOfActiveDisclosures: openDisclosureMap[projectId]?.count,
+          listOfActiveDisclosures: openDisclosureMap[projectId]?.cases.join(','),
+          noOfRTDDisclosures: draftDisclosureMap[projectId]?.count,
+          'List of RTD Disclosures': draftDisclosureMap[projectId]?.cases.join(','),
+        });
+
+        checkExistingProjectId[projectId] = true;
+      }
+    }
+
+    const accoladeMappingSheetHeaders = [
+      {
+        reportHeader: 'SBU',
+        attributeValues: ['SBU'],
+      },
+      {
+        reportHeader: 'BU',
+        attributeValues: ['BU'],
+      },
+      {
+        reportHeader: 'Tech Group',
+        attributeValues: ['TechGroup'],
+      },
+      {
+        reportHeader: 'Product Line',
+        attributeValues: ['ProductLine'],
+      },
+      {
+        reportHeader: 'Project ID',
+        attributeValues: ['ProjectID'],
+      },
+      {
+        reportHeader: 'STD. SBU',
+        attributeValues: ['STD'],
+      },
+      {
+        reportHeader: 'Strategic Reporting Class',
+        attributeValues: ['StrategicReportingClass'],
+      },
+      {
+        reportHeader: 'Sustainability Impact Classification',
+        attributeValues: ['SustainabilityImpactClassification'],
+      },
+      {
+        reportHeader: 'Sustainability Score',
+        attributeValues: ['SUSTotalSCORE'],
+      },
+      {
+        reportHeader: 'No. of Active Applications',
+        attributeValues: ['noOfActiveApplications'],
+      },
+      {
+        reportHeader: 'No. of New Applications',
+        attributeValues: ['noOfNewApplications'],
+      },
+      {
+        reportHeader: 'No. of Active Disclosures',
+        attributeValues: ['noOfActiveDisclosures'],
+      },
+      {
+        reportHeader: 'List of Active Disclosures',
+        attributeValues: ['listOfActiveDisclosures'],
+      },
+      {
+        reportHeader: 'No. of RTD Disclosures',
+        attributeValues: ['noOfRTDDisclosures'],
+      },
+      {
+        reportHeader: 'List of RTD Disclosures',
+        attributeValues: ['List of RTD Disclosures'],
+      },
+      {
+        reportHeader: 'Project Name',
+        attributeValues: ['ProjectName'],
+      },
+      {
+        reportHeader: 'Risk-Adjusted NPV',
+        attributeValues: ['RiskAdjustedNPV'],
+      },
+      {
+        reportHeader: 'NPV',
+        attributeValues: ['NPV'],
+      },
+      {
+        reportHeader: 'Project Current Stage Name',
+        attributeValues: ['ProjectCurrentStageName'],
+      },
+      {
+        reportHeader: 'Project Last Gate Decision',
+        attributeValues: ['ProjectLastGateDecision'],
+      },
+      {
+        reportHeader: 'Project Closed',
+        attributeValues: ['ProjectClosed'],
+      },
+      {
+        reportHeader: 'Project Stage Relative Position',
+        attributeValues: ['ProjectStageRelativePosition'],
+      },
+      {
+        reportHeader: 'Top Project',
+        attributeValues: ['TopProject'],
+      },
+      {
+        reportHeader: 'Project Leader Name',
+        attributeValues: ['ProjectLeaderName'],
+      },
+      {
+        reportHeader: 'Project Type',
+        attributeValues: ['ProjectType'],
+      },
+      {
+        reportHeader: 'T&I',
+        attributeValues: ['TI'],
+      },
+      {
+        reportHeader: 'IP Legal Counsil Member Assigned',
+        attributeValues: ['IPLegalCounsilMemberAssigned'],
+      },
+      {
+        reportHeader: 'SVR',
+        attributeValues: ['SVR'],
+      },
+    ];
+
+    const proceessedMappingSheetData = processReportHeaders({
+      data: allAccoladeMappingSheet,
+      headers: accoladeMappingSheetHeaders,
+    });
 
     await createUpdateExcelTable({
-      data: currentYearAgreementSigned.finalAgreementResult,
+      data: proceessedFinalAgreement,
       filePath: newFilePath,
       sheetName: 'Agreements',
       gap: 2,
@@ -187,6 +320,7 @@ export const generateSupplementalIpReport = async ({
         ...headers['finalAgreementTypes']['columns'].map((data) => data.reportHeader),
         'Total',
       ],
+      isWhiteBackGround: true,
     });
 
     await createUpdateExcelTable({
@@ -198,10 +332,11 @@ export const generateSupplementalIpReport = async ({
       headerColor: 'fff2cc',
       headers: ['Final AgreementType', 'Others'],
       onlyHeader: true,
+      isWhiteBackGround: true,
     });
 
     await createUpdateExcelTable({
-      data: currentYearAgreementSigned.otherAgreementResult,
+      data: proceessedOtherAgreement,
       filePath: newFilePath,
       sheetName: 'Agreements',
       gap: 2,
@@ -209,6 +344,7 @@ export const generateSupplementalIpReport = async ({
       headerColor: '9dc3e6',
       lastRowColor: '9dc3e6',
       headers: ['AgreementType', ...headers['agreementTypes']['columns'].map((data) => data.reportHeader), 'Total'],
+      isWhiteBackGround: true,
     });
 
     await createUpdateExcelTable({
@@ -220,6 +356,7 @@ export const generateSupplementalIpReport = async ({
       headerColor: '9dc3e6',
       lastRowColor: '9dc3e6',
       headers: ['Current Status', 'Count of Serial No'],
+      isWhiteBackGround: true,
     });
 
     await createUpdateExcelTable({
@@ -231,6 +368,7 @@ export const generateSupplementalIpReport = async ({
       headerColor: 'fff2cc',
       headers: ['Current Status', 'Completed'],
       onlyHeader: true,
+      isWhiteBackGround: true,
     });
 
     await createUpdateExcelTable({
@@ -242,6 +380,7 @@ export const generateSupplementalIpReport = async ({
       headerColor: '9dc3e6',
       lastRowColor: '9dc3e6',
       headers: ['SBU', 'Count of Serial No'],
+      isWhiteBackGround: true,
     });
 
     await createUpdateExcelTable({
@@ -253,6 +392,7 @@ export const generateSupplementalIpReport = async ({
       headerColor: 'fff2cc',
       headers: ['Current Status', 'Completed'],
       onlyHeader: true,
+      isWhiteBackGround: true,
     });
 
     await createUpdateExcelTable({
@@ -264,6 +404,7 @@ export const generateSupplementalIpReport = async ({
       headerColor: '9dc3e6',
       lastRowColor: '9dc3e6',
       headers: ['Workscope', 'Count of Serial No'],
+      isWhiteBackGround: true,
     });
 
     await createUpdateExcelTable({
@@ -277,6 +418,7 @@ export const generateSupplementalIpReport = async ({
       cellBold: true,
       headers: ['Current Status', 'Completed'],
       onlyHeader: false,
+      isWhiteBackGround: true,
     });
 
     await createUpdateExcelTable({
@@ -288,21 +430,20 @@ export const generateSupplementalIpReport = async ({
       headerColor: '9dc3e6',
       lastRowColor: '9dc3e6',
       headers: ['Work Product', 'Count of Serial No'],
+      isWhiteBackGround: true,
     });
-    // await createExcelSheetFile(currentYearIpAnalysis.countData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
-    // await createExcelSheetFile(
-    //   currentYearIpAnalysis.firstBarGraphChartData,
-    //   newFilePath,
-    //   `CURRENT YEAR IP ANALYSIS`,
-    //   'GRAPH-BAR CHART'
-    // );
-    // await createExcelSheetFile(currentYearIpAnalysis.secondBarGraphChartData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
-    // await createExcelSheetFile(currentYearIpAnalysis.thirdBarGraphChartData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
 
-    // await createExcelSheetFile(noOfActiveApplicationCount, newFilePath, `Active Application Count`);
-    // await createExcelSheetFile(noOfnewFilingThisYearCount, newFilePath, `New Filing Current Year`);
-    // await createExcelSheetFile(noOfopenDisclosureCount, newFilePath, `Open Disclosure Count`);
-    // await createExcelSheetFile(noOfDraftDisclosureCount, newFilePath, `Draft Disclosure Count`);
+    await createUpdateExcelTable({
+      data: proceessedMappingSheetData,
+      filePath: newFilePath,
+      sheetName: 'Accolade Mapping Sheet',
+      gap: 0,
+      startTableColumn: 'A',
+      headerColor: '9dc3e6',
+      headers: accoladeMappingSheetHeaders.map((data) => data.reportHeader),
+      isWhiteBackGround: false,
+    });
+
     await reportRequestService.updateReportRequest(requestedReportId, { status: 'completed' });
   } catch (e) {
     console.log('Error in generateSupplementalIpReport.', e);

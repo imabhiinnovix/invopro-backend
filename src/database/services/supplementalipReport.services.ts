@@ -694,24 +694,37 @@ export async function getAccoladeMappingSheet({
     const shppAccoladeStdData = categorizeStdProjectsAndRemoveRowDataExtraKey(shppAccoladeRawData);
     const sabicAccoladeStdData = categorizeStdProjectsAndRemoveRowDataExtraKey(sabicAccoladeRawData);
     const combinedAccoladeStdData = [...shppAccoladeStdData, ...sabicAccoladeStdData];
+    const allStdData: any[] = [];
 
     const activeApplicationAccoladeStdData = activeApplicationRawData.map((row) => {
       const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
+      if (matchingStd) {
+        allStdData.push(matchingStd);
+      }
       return { accoladeStdData: matchingStd ? matchingStd : '', activeApplicationData: row.rowData };
     });
 
     const newFilingThisYearAccoladeStdData = newFilingThisYearRawData.map((row) => {
       const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
+      if (matchingStd) {
+        allStdData.push(matchingStd);
+      }
       return { accoladeStdData: matchingStd ? matchingStd : '', newFilingThisYearData: row.rowData };
     });
 
     const openDisclosureAccoladeStdData = openDisclosureRawData.map((row) => {
       const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
+      if (matchingStd) {
+        allStdData.push(matchingStd);
+      }
       return { accoladeStdData: matchingStd ? matchingStd : '', openDisclosureData: row.rowData };
     });
 
     const draftDisclosureAccoladeStdData = draftDisclosureRawData.map((row) => {
       const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
+      if (matchingStd) {
+        allStdData.push(matchingStd);
+      }
       return { accoladeStdData: matchingStd ? matchingStd : '', draftDisclosureData: row.rowData };
     });
 
@@ -720,6 +733,7 @@ export async function getAccoladeMappingSheet({
       newFilingThisYearAccoladeStdData,
       openDisclosureAccoladeStdData,
       draftDisclosureAccoladeStdData,
+      allStdData,
     };
   } catch (e) {
     console.log('Error in getAccoladeMappingSheet', e);

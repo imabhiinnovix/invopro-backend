@@ -358,6 +358,7 @@ export async function createUpdateExcelTable({
   onlyHeader,
   cellColor,
   cellBold,
+  isWhiteBackGround,
 }: {
   data: Array<Record<string, any>>; // Array of JSON objects with varying keys
   filePath: string;
@@ -373,6 +374,7 @@ export async function createUpdateExcelTable({
   onlyHeader?: boolean;
   cellColor?: string;
   cellBold?: boolean;
+  isWhiteBackGround?: boolean;
 }): Promise<void> {
   const workbook = new ExcelJS.Workbook();
 
@@ -385,10 +387,16 @@ export async function createUpdateExcelTable({
 
   let worksheet = workbook.getWorksheet(sheetName);
   if (!worksheet) {
-    worksheet = workbook.addWorksheet(sheetName, {
-      properties: { defaultColWidth: 22 },
-      views: [{ showGridLines: false }],
-    });
+    if (isWhiteBackGround) {
+      worksheet = workbook.addWorksheet(sheetName, {
+        properties: { defaultColWidth: 22 },
+        views: [{ showGridLines: false }],
+      });
+    } else {
+      worksheet = workbook.addWorksheet(sheetName, {
+        properties: { defaultColWidth: 22 },
+      });
+    }
   }
 
   if (data.length === 0) {
