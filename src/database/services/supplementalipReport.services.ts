@@ -54,7 +54,7 @@ export async function getAgreementSigned({
         $match: {
           dataSourceVersionId: new ObjectId(ksaContractsDataSourceVersionId),
           'rowData.StatusDate': yearDateRange,
-          'rowData.AgreementExecuted': { $in: ['Yes', 'yes', 'PROC', 'proc', 'Proc'] },
+          'rowData.AgreementExecuted': { $regex: 'PROC|YES', $options: 'i' },
           'rowData.ReferenceNumber': { $regex: 'PROC|REV', $options: 'i' },
         },
       },
