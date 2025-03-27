@@ -4,6 +4,7 @@ import config from '../../config';
 interface IWidgetType extends Document {
   name: string;
   description: string;
+  chartType: string;
   type: string;
   code: string;
   isActive: boolean;
@@ -13,10 +14,10 @@ const WidgetTypeSchema = new Schema<IWidgetType>(
   {
     name: { type: Schema.Types.String, required: true },
     description: { type: Schema.Types.String },
-    type: {
+    chartType: {
       type: Schema.Types.String,
       required: true,
-      enum: config.WIDGET_TYPE_ENUM,
+      enum: config.CHART_TYPE_ENUM,
     }, // Added more types
     code: { type: Schema.Types.String },
     isActive: { type: Boolean, default: true, required: true },

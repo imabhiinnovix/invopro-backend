@@ -5,16 +5,16 @@ import config from '../../config';
 
 export const createWidget = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, type, code } = req.body;
+    const { name, chartType, code } = req.body;
 
-    if (!config.WIDGET_TYPE_ENUM.includes(type)) {
+    if (!config.CHART_TYPE_ENUM.includes(chartType)) {
       throw new Error('Invalid type');
     }
 
     const widgetTypeExist = await widgetTypeService.getWidgetType({
       name,
       code: code.toLowerCase() || name.toLowerCase(),
-      type: type.toLowerCase(),
+      chartType: chartType.toLowerCase(),
     });
 
     if (widgetTypeExist) {
@@ -55,7 +55,7 @@ export const updateWidgetType = async (req: Request, res: Response, next: NextFu
     const { name, description, type, isActive } = req.body;
 
     if (type) {
-      if (!config.WIDGET_TYPE_ENUM.includes(type)) {
+      if (!config.CHART_TYPE_ENUM.includes(type)) {
         throw new Error('Invalid type');
       }
     }
