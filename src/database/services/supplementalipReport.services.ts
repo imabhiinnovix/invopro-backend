@@ -296,18 +296,28 @@ export async function getIpAnalysis({
       },
     ]);
 
-    const projectYetToStartOrOnHold = await customReportModel.DataSourceVersionValueIpAnalystDashboard.aggregate([
+    const projectYetToStart = await customReportModel.DataSourceVersionValueIpAnalystDashboard.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(ipAnalystDataSourceVersionId),
-          'rowData.CurrentStatus': { $regex: 'Yet to start|On Hold', $options: 'i' },
+          'rowData.CurrentStatus': { $regex: 'Yet to start', $options: 'i' },
+        },
+      },
+    ]);
+
+    const projectOnHold = await customReportModel.DataSourceVersionValueIpAnalystDashboard.aggregate([
+      {
+        $match: {
+          dataSourceVersionId: new ObjectId(ipAnalystDataSourceVersionId),
+          'rowData.CurrentStatus': { $regex: 'On Hold', $options: 'i' },
         },
       },
     ]);
     const countProjectStarted = projectStarted.length;
     const countProjectCompleted = projectCompleted.length;
     const countProjectInProgress = projectInProgress.length;
-    const countProjectYetToStartOrOnHold = projectYetToStartOrOnHold.length;
+    const countProjectYetToStart = projectYetToStart.length;
+    const countProjectOnHold = projectOnHold.length;
     const firstBarGraphChartData = await customReportModel.DataSourceVersionValueIpAnalystDashboard.aggregate([
       {
         $match: {
@@ -335,8 +345,16 @@ export async function getIpAnalysis({
 
     const formattedFirstBarGraphChartData = firstBarGraphChartData.map(({ SBU, value }) => ({
       SBU: SBU, // Explicitly setting 'sbu' first
-      value: value,
+      'Count of Serial No': value,
     }));
+
+    const totalFirstBarGraphChartDataValue = firstBarGraphChartData.reduce((sum, { value }) => sum + value, 0);
+
+    // Add "Total" row
+    formattedFirstBarGraphChartData.push({
+      SBU: 'Total',
+      'Count of Serial No': totalFirstBarGraphChartDataValue,
+    });
 
     const secondBarGraphChartData = await customReportModel.DataSourceVersionValueIpAnalystDashboard.aggregate([
       {
@@ -365,8 +383,16 @@ export async function getIpAnalysis({
 
     const formattedSecondBarGraphChartData = secondBarGraphChartData.map(({ Workscope, value }) => ({
       Workscope: Workscope, // Explicitly setting 'sbu' first
-      value: value,
+      'Count of Serial No': value,
     }));
+
+    const totalSecondBarGraphChartDataValue = secondBarGraphChartData.reduce((sum, { value }) => sum + value, 0);
+
+    // Add "Total" row
+    formattedSecondBarGraphChartData.push({
+      Workscope: 'Total',
+      'Count of Serial No': totalSecondBarGraphChartDataValue,
+    });
 
     const thirdBarGraphChartData = await customReportModel.DataSourceVersionValueIpAnalystDashboard.aggregate([
       {
@@ -395,14 +421,27 @@ export async function getIpAnalysis({
     ]);
 
     const formattedThirdBarGraphChartData = thirdBarGraphChartData.map(({ WorkProduct, value }) => ({
-      WorkProduct: WorkProduct, // Explicitly setting 'sbu' first
-      value: value,
+      'Work Product': WorkProduct, // Explicitly setting 'sbu' first
+      'Count of Serial No': value,
     }));
+
+    const totalThirdBarGraphChartDataValue = thirdBarGraphChartData.reduce((sum, { value }) => sum + value, 0);
+
+    // Add "Total" row
+    formattedThirdBarGraphChartData.push({
+      'Work Product': 'Total',
+      'Count of Serial No': totalThirdBarGraphChartDataValue,
+    });
     const countData = [
-      { 'Projects Status': 'Started', Count: countProjectStarted },
-      { 'Projects Status': 'Yet to start/ On Hold', Count: countProjectYetToStartOrOnHold },
-      { 'Projects Status': 'In-Progress', Count: projectInProgress.length },
-      { 'Projects Status': 'Completed', Count: countProjectCompleted },
+      { 'Current Status': 'Completed', 'Count of Serial No': countProjectCompleted },
+      { 'Current Status': 'In progress', 'Count of Serial No': countProjectInProgress },
+      { 'Current Status': 'On hold', 'Count of Serial No': countProjectOnHold },
+      { 'Current Status': 'Yet to start', 'Count of Serial No': countProjectYetToStart },
+      {
+        'Current Status': 'Project Started',
+        'Count of Serial No':
+          countProjectCompleted + countProjectInProgress + countProjectOnHold + countProjectYetToStart,
+      },
     ];
     return {
       countData,

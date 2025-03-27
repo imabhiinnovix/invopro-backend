@@ -356,6 +356,8 @@ export async function createUpdateExcelTable({
   lastRowColor,
   gap,
   onlyHeader,
+  cellColor,
+  cellBold,
 }: {
   data: Array<Record<string, any>>; // Array of JSON objects with varying keys
   filePath: string;
@@ -369,6 +371,8 @@ export async function createUpdateExcelTable({
   lastRowColor?: string;
   gap?: number;
   onlyHeader?: boolean;
+  cellColor?: string;
+  cellBold?: boolean;
 }): Promise<void> {
   const workbook = new ExcelJS.Workbook();
 
@@ -473,10 +477,13 @@ export async function createUpdateExcelTable({
       const row = worksheet.getRow(rowNumber);
       row.eachCell((cell) => {
         cell.alignment = { vertical: 'middle', horizontal: 'left' };
+        if (cellBold) {
+          cell.font = { bold: true, color: { argb: '000000' } };
+        }
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: 'FFFFFF' }, // whit background
+          fgColor: { argb: cellColor ? cellColor : 'FFFFFF' }, // whit background
         };
         cell.border = {
           top: { style: 'thin' },

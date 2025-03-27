@@ -3,7 +3,7 @@ import {
   getAgreementSigned,
   getIpAnalysis,
 } from '../../database/services/supplementalipReport.services';
-import { createExcelSheetFile } from '../../utils/excel.utils';
+import { createExcelSheetFile, createUpdateExcelTable } from '../../utils/excel.utils';
 import * as reportRequestService from '../../database/services/reportRequest.services';
 import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
 import { ReportHeaders } from '../../utils/common.type';
@@ -64,6 +64,8 @@ export const generateSupplementalIpReport = async ({
       customReportModel,
     });
 
+    return currentYearAgreementSigned;
+
     const proceessedFinalAgreement = processReportHeaders({
       data: currentYearAgreementSigned.finalAgreementResult,
       headers: [
@@ -82,7 +84,6 @@ export const generateSupplementalIpReport = async ({
       ],
     });
 
-    return proceessedOtherAgreement;
     const currentYearIpAnalysis = await getIpAnalysis({
       ipAnalystDataSourceVersionId,
       customReportModel,
@@ -173,21 +174,135 @@ export const generateSupplementalIpReport = async ({
       DisclosureNumbers: cases.join(', '),
     }));
 
-    // await createExcelSheetFile(currentYearAgreementSigned, newFilePath, `Agreement signed in ${currentYear}`);
-    await createExcelSheetFile(currentYearIpAnalysis.countData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
-    await createExcelSheetFile(
-      currentYearIpAnalysis.firstBarGraphChartData,
-      newFilePath,
-      `CURRENT YEAR IP ANALYSIS`,
-      'GRAPH-BAR CHART'
-    );
-    await createExcelSheetFile(currentYearIpAnalysis.secondBarGraphChartData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
-    await createExcelSheetFile(currentYearIpAnalysis.thirdBarGraphChartData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
+    await createUpdateExcelTable({
+      data: currentYearAgreementSigned.finalAgreementResult,
+      filePath: newFilePath,
+      sheetName: 'Agreements',
+      gap: 2,
+      startTableColumn: 'B',
+      headerColor: '9dc3e6',
+      lastRowColor: '9dc3e6',
+      headers: [
+        'Final AgreementType',
+        ...headers['finalAgreementTypes']['columns'].map((data) => data.reportHeader),
+        'Total',
+      ],
+    });
 
-    await createExcelSheetFile(noOfActiveApplicationCount, newFilePath, `Active Application Count`);
-    await createExcelSheetFile(noOfnewFilingThisYearCount, newFilePath, `New Filing Current Year`);
-    await createExcelSheetFile(noOfopenDisclosureCount, newFilePath, `Open Disclosure Count`);
-    await createExcelSheetFile(noOfDraftDisclosureCount, newFilePath, `Draft Disclosure Count`);
+    await createUpdateExcelTable({
+      data: [{ 'Final AgreementType': '', Others: '' }],
+      filePath: newFilePath,
+      sheetName: 'Agreements',
+      gap: 3,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      headers: ['Final AgreementType', 'Others'],
+      onlyHeader: true,
+    });
+
+    await createUpdateExcelTable({
+      data: currentYearAgreementSigned.otherAgreementResult,
+      filePath: newFilePath,
+      sheetName: 'Agreements',
+      gap: 2,
+      startTableColumn: 'B',
+      headerColor: '9dc3e6',
+      lastRowColor: '9dc3e6',
+      headers: ['AgreementType', ...headers['agreementTypes']['columns'].map((data) => data.reportHeader), 'Total'],
+    });
+
+    await createUpdateExcelTable({
+      data: currentYearIpAnalysis.countData,
+      filePath: newFilePath,
+      sheetName: 'BANGALORE IP GROUP',
+      gap: 2,
+      startTableColumn: 'B',
+      headerColor: '9dc3e6',
+      lastRowColor: '9dc3e6',
+      headers: ['Current Status', 'Count of Serial No'],
+    });
+
+    await createUpdateExcelTable({
+      data: [{ 'Current Status': '', Completed: '' }],
+      filePath: newFilePath,
+      sheetName: 'BANGALORE IP GROUP',
+      gap: 3,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      headers: ['Current Status', 'Completed'],
+      onlyHeader: true,
+    });
+
+    await createUpdateExcelTable({
+      data: currentYearIpAnalysis.firstBarGraphChartData,
+      filePath: newFilePath,
+      sheetName: 'BANGALORE IP GROUP',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: '9dc3e6',
+      lastRowColor: '9dc3e6',
+      headers: ['SBU', 'Count of Serial No'],
+    });
+
+    await createUpdateExcelTable({
+      data: [{ 'Current Status': '', Completed: '' }],
+      filePath: newFilePath,
+      sheetName: 'BANGALORE IP GROUP',
+      gap: 3,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      headers: ['Current Status', 'Completed'],
+      onlyHeader: true,
+    });
+
+    await createUpdateExcelTable({
+      data: currentYearIpAnalysis.secondBarGraphChartData,
+      filePath: newFilePath,
+      sheetName: 'BANGALORE IP GROUP',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: '9dc3e6',
+      lastRowColor: '9dc3e6',
+      headers: ['Workscope', 'Count of Serial No'],
+    });
+
+    await createUpdateExcelTable({
+      data: [{ 'Current Status': 'Workscope', Completed: 'SEARCH & ANALYSIS' }],
+      filePath: newFilePath,
+      sheetName: 'BANGALORE IP GROUP',
+      gap: 3,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      cellColor: 'fff2cc',
+      cellBold: true,
+      headers: ['Current Status', 'Completed'],
+      onlyHeader: false,
+    });
+
+    await createUpdateExcelTable({
+      data: currentYearIpAnalysis.thirdBarGraphChartData,
+      filePath: newFilePath,
+      sheetName: 'BANGALORE IP GROUP',
+      gap: 1,
+      startTableColumn: 'B',
+      headerColor: '9dc3e6',
+      lastRowColor: '9dc3e6',
+      headers: ['Work Product', 'Count of Serial No'],
+    });
+    // await createExcelSheetFile(currentYearIpAnalysis.countData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
+    // await createExcelSheetFile(
+    //   currentYearIpAnalysis.firstBarGraphChartData,
+    //   newFilePath,
+    //   `CURRENT YEAR IP ANALYSIS`,
+    //   'GRAPH-BAR CHART'
+    // );
+    // await createExcelSheetFile(currentYearIpAnalysis.secondBarGraphChartData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
+    // await createExcelSheetFile(currentYearIpAnalysis.thirdBarGraphChartData, newFilePath, `CURRENT YEAR IP ANALYSIS`);
+
+    // await createExcelSheetFile(noOfActiveApplicationCount, newFilePath, `Active Application Count`);
+    // await createExcelSheetFile(noOfnewFilingThisYearCount, newFilePath, `New Filing Current Year`);
+    // await createExcelSheetFile(noOfopenDisclosureCount, newFilePath, `Open Disclosure Count`);
+    // await createExcelSheetFile(noOfDraftDisclosureCount, newFilePath, `Draft Disclosure Count`);
     await reportRequestService.updateReportRequest(requestedReportId, { status: 'completed' });
   } catch (e) {
     console.log('Error in generateSupplementalIpReport.', e);
