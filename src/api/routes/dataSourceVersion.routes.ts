@@ -3,6 +3,8 @@ import { Router } from 'express';
 import { authenticateToken } from '../../middlewares/authenticate.middleware';
 import {
   checkDataSourceVersionNameAvailableOrNot,
+  createUpdateCustomDataSourceVersionValue,
+  getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue,
   listDataSourceVersion,
 } from '../controllers/dataSourceVersion.controller';
 
@@ -15,5 +17,9 @@ router.get(
   authenticateToken,
   checkDataSourceVersionNameAvailableOrNot
 );
+
+router.post('/create', authenticateToken, createUpdateCustomDataSourceVersionValue);
+
+router.get('/versionData', authenticateToken, getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue);
 
 export default router;

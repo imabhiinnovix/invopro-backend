@@ -9,9 +9,9 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
   try {
     const { operation } = req.body;
 
-    if (!req.files?.length) {
-      return res.status(400).send('No files uploaded.');
-    }
+    // if (!req.files?.length) {
+    //   return res.status(400).send('No files uploaded.');
+    // }
 
     if (operation === 'getAttributesFromXlsxOrCsvHeaders') {
       return await getAttributesFromXlsxOrCsvHeaders(req, res, next);

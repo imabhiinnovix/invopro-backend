@@ -108,13 +108,18 @@ export const checkDataSourceNameAvailableOrNot = async (req: Request, res: Respo
 
 export const listDataSource = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search, paginate = 'false' } = req.query;
+    const { search, paginate = false, canEditInline = false } = req.query;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
-    const query: any = {};
+    const { organizationId } = req.user;
+
+    const query: any = {organizationId};
     if (search) query.name = { $regex: search, $options: 'i' };
 
+    if (canEditInline) {
+      query['canEditInline'] = true;
+    }
     let result: any = {};
     if (paginate) {
       result = await dataSourceService.getDataSourceList({
@@ -132,7 +137,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
           },
           {
             path: 'entityId',
-            select: 'name attributes', // Specify the fields to populate
+            select: 'name attributes canEditInline', // Specify the fields to populate
           },
         ],
       });

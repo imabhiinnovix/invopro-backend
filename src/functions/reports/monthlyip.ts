@@ -4,6 +4,7 @@ import path from 'path';
 import * as reportRequestService from '../../database/services/reportRequest.services';
 import {
   addCellMaping,
+  DataItem,
   getAllProsecutionSavings,
   getAnnuitySavingsFromReductions,
   getAppsFiledBasedOnStc,
@@ -18,10 +19,12 @@ import {
   getTotalPortfolioPercentage,
   percentageOfCurrentYearInventionDisclosureConvertedToFilings,
   processData,
+  processStaticData,
   processSTCData,
 } from '../../database/services/monthlyipReport.services';
 import { createExcelSheetFile, writeDataToExcel } from '../../utils/excel.utils';
 import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
+import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/dataSourceVersion.controller';
 
 export const generateMonthlyIpReport = async ({
   reportRequestPayload,
@@ -33,6 +36,13 @@ export const generateMonthlyIpReport = async ({
   ctclinsabDataSourceVersionId,
   annuitiesbDataSourceVersionId,
   customReportModel,
+  isRowData,
+  staticNewFilingsDataSourceId,
+  staticEstimatesDataSourceId,
+  staticProjectOpenedDataSourceId,
+  userId,
+  orgCode,
+  organizationId,
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
@@ -43,14 +53,25 @@ export const generateMonthlyIpReport = async ({
   ctclinsabDataSourceVersionId: string;
   annuitiesbDataSourceVersionId: string;
   customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
+  staticNewFilingsDataSourceId: string;
+  staticEstimatesDataSourceId: string;
+  staticProjectOpenedDataSourceId: string;
+  userId: string;
+  orgCode: string;
+  organizationId: string;
 }) => {
   try {
-    const currentYear = reportRequestPayload.versionValue.split('-')[0];
+    const versionValue = reportRequestPayload.versionValue;
+    const splitedVersionValue = versionValue.split('-');
+    const currentYear = splitedVersionValue[0];
+    const currentMonth = splitedVersionValue[1];
 
     const currentYearApplicationFiledData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
       customReportModel,
+      isRowData,
     });
     const newFilePath = reportRequestPayload.filePath;
 
@@ -68,15 +89,18 @@ export const generateMonthlyIpReport = async ({
         Total: 'J3',
       },
     });
+
     const percentageOfCurrentYearInventionDisclosureConvertedToFilingsData =
       await percentageOfCurrentYearInventionDisclosureConvertedToFilings(
         portfolioDataSourceVersionId,
         disclosureDataSourceVersionId,
         currentYear,
-        customReportModel
+        customReportModel,
+        isRowData
       );
+
     const processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData = addCellMaping({
-      data: percentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
+      data: !isRowData ? (percentageOfCurrentYearInventionDisclosureConvertedToFilingsData as DataItem[]) : [],
       cellMappings: {
         'SBU T&I': 'B4',
         'SBU Metals': 'C4',
@@ -97,6 +121,7 @@ export const generateMonthlyIpReport = async ({
       isDrafted: true,
       isYearRequired: false,
       customReportModel,
+      isRowData,
     });
 
     const processedDraftedApplicationDisclosureCount = processData({
@@ -143,6 +168,7 @@ export const generateMonthlyIpReport = async ({
       isDrafted: false,
       isYearRequired: false,
       customReportModel,
+      isRowData,
     });
 
     const processedTotalActiveDisclosureCount = processData({
@@ -456,6 +482,7 @@ export const generateMonthlyIpReport = async ({
       annuitiesbDataSourceVersionId,
       currentYear,
       customReportModel,
+      isRowData,
     });
 
     const processedCurrentYearRenewalDue = processData({
@@ -504,10 +531,11 @@ export const generateMonthlyIpReport = async ({
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
       customReportModel,
+      isRowData,
     });
 
     const processedAnnuitySavingsForCurrentYear = processData({
-      data: annuitySavingsForCurrentYear,
+      data: !isRowData ? (annuitySavingsForCurrentYear as DataItem[]) : [],
       cellMappings: {
         'SBU T&I': 'B40',
         'SBU Metals': 'C40',
@@ -531,10 +559,11 @@ export const generateMonthlyIpReport = async ({
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
       customReportModel,
+      isRowData,
     });
 
     const processedAnnuitySavingsForNextYear = processData({
-      data: annuitySavingsForNextYear,
+      data: !isRowData ? (annuitySavingsForNextYear as DataItem[]) : [],
       cellMappings: {
         'SBU T&I': 'B41',
         'SBU Metals': 'C41',
@@ -550,7 +579,7 @@ export const generateMonthlyIpReport = async ({
 
     const totalAnnuitySavingsMap = {};
 
-    annuitySavingsForCurrentYear.forEach((entry) => {
+    annuitySavingsForCurrentYear?.forEach((entry) => {
       totalAnnuitySavingsMap[entry.SBU] = (totalAnnuitySavingsMap[entry.SBU] || 0) + entry.value;
     });
 
@@ -603,6 +632,7 @@ export const generateMonthlyIpReport = async ({
       priorityDrop: reductionData.priorityDropArray,
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
+      isRowData,
     });
 
     const processedAllProsecutionSavings = processData({
@@ -639,6 +669,19 @@ export const generateMonthlyIpReport = async ({
         Total: 'J47',
       },
     });
+
+    const staticData = await processStaticData({
+      staticNewFilingsDataSourceId,
+      staticEstimatesDataSourceId,
+      staticProjectOpenedDataSourceId,
+      currentYear,
+      currentMonth,
+      customReportModel,
+    });
+
+    if (isRowData) {
+      return { draftedApplicationDisclosureCount, currentYearRenewalDue };
+    }
     await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
     await fsPromises.copyFile(sampleFilePath, newFilePath);
     await writeDataToExcel(
@@ -671,6 +714,7 @@ export const generateMonthlyIpReport = async ({
         ...processedAllProsecutionDrop,
         ...processedAllProsecutionSavings,
         ...processedTotalCostSavings,
+        ...staticData,
         { cellName: 'A3', value: `${currentYear} New Apps Filed`, SBU: '' },
         { cellName: 'A4', value: `% of ${currentYear} Invention Disclosures converted to Filings`, SBU: '' },
         { cellName: 'A5', value: `${currentYear} New Apps Estimate`, SBU: '' },
@@ -920,6 +964,28 @@ export const generateMonthlyIpReport = async ({
       combinedData.push(result);
     });
     await createExcelSheetFile(combinedData, newFilePath, 'STC');
+
+    await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: staticNewFilingsDataSourceId,
+      versionValue,
+      versionData: processedCurrentYearApplicationFiledData.map((data) => {
+        return { SBU: data.SBU, 'New Filings': data.value };
+      }),
+      userId,
+      organizationId,
+      orgCode,
+    });
+
+    await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: staticProjectOpenedDataSourceId,
+      versionValue,
+      versionData: processedOpenApplicationDisclosureCount.map((data) => {
+        return { SBU: data.SBU, 'Projects Opened': data.value };
+      }),
+      userId,
+      organizationId,
+      orgCode,
+    });
 
     await reportRequestService.updateReportRequest(requestedReportId, { status: 'completed' });
   } catch (err) {
