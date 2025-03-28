@@ -122,18 +122,6 @@ export const createWidget = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const deleteDashboard = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await dashboardService.updateDashboard(req.params.dashboardId, {
-      isDeleted: true,
-    });
-
-    res.status(200).json({ success: true, message: 'Dashboard deleted successfully' });
-  } catch (err) {
-    next(err);
-  }
-};
-
 export const updateWidget = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, dimensions, groupBy, conditions, aggregation, dataSourceId, position } = req.body;
@@ -153,6 +141,18 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
       success: true,
       message: 'Widget updated successfully',
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteDashboard = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await dashboardService.updateDashboard(req.params.dashboardId, {
+      isDeleted: true,
+    });
+
+    res.status(200).json({ success: true, message: 'Dashboard deleted successfully' });
   } catch (err) {
     next(err);
   }

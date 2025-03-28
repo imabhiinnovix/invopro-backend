@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// import { buildAggregationPipeline } from '../../utils/aggregationPipeline';
+import { buildAggregationPipeline } from '../../utils/aggregationPipeline';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
 import Dashboard from '../models/dashboard';
 import DashboardWidget from '../models/dashboardWidget';
@@ -93,61 +93,6 @@ export const deleteDashboard = async (id: string) => {
   }
 };
 
-// export const getDashboardChartData = async (payload: any) => {
-//   try {
-//     const { orgCode } = payload;
-//     const aggreagatePipeline: any = [
-//       {
-//         $match: { dashboardId: payload.dashboardId },
-//       },
-//       {
-//         $lookup: {
-//           from: 'widget_types',
-//           localField: 'widgetTypeId',
-//           foreignField: '_id',
-//           as: 'widgetDetails',
-//         },
-//       },
-//       {
-//         $unwind: '$widgetDetails',
-//       },
-//       {
-//         $lookup: {
-//           from: 'data_sources',
-//           localField: 'dataSourceId',
-//           foreignField: '_id',
-//           as: 'dataSourceDetails',
-//         },
-//       },
-//       {
-//         $unwind: '$dataSourceDetails',
-//       },
-//     ];
-
-//     const DashboardWidgetData = await DashboardWidget.aggregate(aggreagatePipeline);
-
-//     const dataValue: any = [];
-//     for (const element of DashboardWidgetData) {
-//       const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
-//         orgCode: orgCode,
-//         versionCode: element.dataSourceDetails.code,
-//       });
-
-//       const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
-
-//       const aggregationPipeline: any[] = [{ $skip: 0 }, { $limit: 1 }];
-
-//       const dataSourceValue: any = await DataSourceVersionValue.aggregate(aggregationPipeline).exec();
-
-//       dataValue.push(dataSourceValue);
-//     }
-
-//     return { data: DashboardWidgetData, dataSourceValue: dataValue };
-//   } catch (err) {
-//     throw err;
-//   }
-// };
-
 export const getDashboardChartData = async (payload: any) => {
   try {
     const { orgCode } = payload;
@@ -177,7 +122,7 @@ export const getDashboardChartData = async (payload: any) => {
     // const chartDataResults: any = [];
 
     for (const widget of dashboardWidgets) {
-      // const aggregationPipeline = buildAggregationPipeline(widget);
+      const aggregationPipeline = buildAggregationPipeline(widget);
       // console.log('aggregationPipelineDy', JSON.stringify(aggregationPipeline));
 
       // console.log('aggregationPipeline', aggregationPipeline);
@@ -187,56 +132,56 @@ export const getDashboardChartData = async (payload: any) => {
       });
       const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
 
-      const aggregationPipeline: any = [
-        {
-          $addFields: {
-            convertedDate: {
-              $dateFromString: {
-                dateString: '$rowData.DisclosureDate',
-              },
-            },
-          },
-        },
-        {
-          $match: {
-            dataSourceId: widget.dataSourceId,
-            convertedDate: {
-              $gt: new Date('2024-01-01T00:00:00.000Z'),
-              $lt: new Date('2025-01-01T00:00:00.000Z'),
-            },
-          },
-        },
-        {
-          $group: {
-            _id: {
-              name: '$rowData.SBU',
-              ...widget.groupBy.reduce((acc, field) => {
-                acc[field] = `$rowData.${field}`;
-                return acc;
-              }, {}),
-            },
-            count: { $sum: 1 },
-          },
-        },
-        // New stage to flatten the structure
-        {
-          $replaceRoot: {
-            newRoot: {
-              $mergeObjects: [
-                '$_id', // Bring all _id fields to root
-                { data: '$count' }, // Include the count
-              ],
-            },
-          },
-        },
-      ];
+      console.log('aggregationPipeline', aggregationPipeline);
+      // const aggregationPipeline: any = [
+      //   {
+      //     $addFields: {
+      //       convertedDate: {
+      //         $dateFromString: {
+      //           dateString: '$rowData.DisclosureDate',
+      //         },
+      //       },
+      //     },
+      //   },
+      //   {
+      //     $match: {
+      //       dataSourceId: widget.dataSourceId,
+      //       convertedDate: {
+      //         $gt: new Date('2024-01-01T00:00:00.000Z'),
+      //         $lt: new Date('2025-01-01T00:00:00.000Z'),
+      //       },
+      //     },
+      //   },
+      //   {
+      //     $group: {
+      //       _id: {
+      //         name: '$rowData.SBU',
+      //         ...widget.groupBy.reduce((acc, field) => {
+      //           acc[field] = `$rowData.${field}`;
+      //           return acc;
+      //         }, {}),
+      //       },
+      //       count: { $sum: 1 },
+      //     },
+      //   },
+      //   // New stage to flatten the structure
+      //   {
+      //     $replaceRoot: {
+      //       newRoot: {
+      //         $mergeObjects: [
+      //           '$_id', // Bring all _id fields to root
+      //           { data: '$count' }, // Include the count
+      //         ],
+      //       },
+      //     },
+      //   },
+      // ];
 
       // console.log('aggregationPipeline >>>', JSON.stringify(aggregationPipeline));
       // // Execute aggregation
       const dataResults: any = await DataSourceModel.aggregate(aggregationPipeline).exec();
 
       widget.data = dataResults;
-      // chartDataResults.push(dataResults);
     }
 
     return { data: dashboardWidgets };
