@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Schema, model, Document, Types } from 'mongoose';
 
 interface IDashboardWidget extends Document {
@@ -28,9 +29,9 @@ interface IDashboardWidget extends Document {
 const dashboardWidgetSchema = new Schema<IDashboardWidget>(
   {
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
-    dashboardId: { type: Schema.Types.ObjectId, ref: 'Dashboard' },
+    dashboardId: { type: Schema.Types.ObjectId, ref: 'dashboard' },
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
-    widgetTypeId: { type: Schema.Types.ObjectId, ref: 'widgetType' },
+    widgetTypeId: { type: Schema.Types.ObjectId, ref: 'widget_type' },
     name: { type: Schema.Types.String },
     description: { type: Schema.Types.String },
     position: {
@@ -43,7 +44,7 @@ const dashboardWidgetSchema = new Schema<IDashboardWidget>(
       index: { type: Schema.Types.Number },
     },
     // New fields based on the image and sample object
-    dataSourceId: { type: Schema.Types.ObjectId, ref: 'DataSource' },
+    dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
     dimensions: [String],
     groupBy: [String], // Array of selected attributes for dimensions
     aggregation: {

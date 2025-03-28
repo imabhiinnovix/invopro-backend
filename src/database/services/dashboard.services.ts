@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// import { buildAggregationPipeline } from '../../utils/aggregationPipeline';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
 import Dashboard from '../models/dashboard';
 import DashboardWidget from '../models/dashboardWidget';
@@ -173,9 +174,13 @@ export const getDashboardChartData = async (payload: any) => {
     ];
 
     const dashboardWidgets = await DashboardWidget.aggregate(aggregatePipeline);
-    const chartDataResults: any = [];
+    // const chartDataResults: any = [];
 
     for (const widget of dashboardWidgets) {
+      // const aggregationPipeline = buildAggregationPipeline(widget);
+      // console.log('aggregationPipelineDy', JSON.stringify(aggregationPipeline));
+
+      // console.log('aggregationPipeline', aggregationPipeline);
       const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
         orgCode,
         versionCode: widget.dataSourceDetails.code,
@@ -226,13 +231,15 @@ export const getDashboardChartData = async (payload: any) => {
         },
       ];
 
-      // Execute aggregation
+      // console.log('aggregationPipeline >>>', JSON.stringify(aggregationPipeline));
+      // // Execute aggregation
       const dataResults: any = await DataSourceModel.aggregate(aggregationPipeline).exec();
 
-      chartDataResults.push(dataResults);
+      widget.data = dataResults;
+      // chartDataResults.push(dataResults);
     }
 
-    return { data: dashboardWidgets, dataResults: chartDataResults };
+    return { data: dashboardWidgets };
   } catch (err) {
     throw err;
   }

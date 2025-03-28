@@ -94,14 +94,22 @@ export const updateDashboard = async (req: Request, res: Response, next: NextFun
 
 export const createWidget = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { dashboardId, widgetTypeId } = req.body;
+    const { dashboardId, widgetTypeId, name, dimensions, groupBy, conditions, aggregation, dataSourceId, position } =
+      req.body;
     const { organizationId, userId } = req.user;
 
     const dashboardWidget = await dashboardWidgetdService.createDashboardWidget({
       dashboardId,
       widgetTypeId,
       organizationId,
-      userId,
+      createdBy: userId,
+      name,
+      dimensions,
+      groupBy,
+      conditions,
+      aggregation,
+      dataSourceId,
+      position,
     });
 
     res.status(200).json({
@@ -130,7 +138,6 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
   try {
     const { name, dimensions, groupBy, conditions, aggregation, dataSourceId, position } = req.body;
     const { dashboardWidgetId } = req.params;
-    const { organizationId, userId } = req.user;
 
     await dashboardWidgetdService.updateDashboardWidget(dashboardWidgetId, {
       ...(name && { name }),
@@ -151,20 +158,37 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
+export const getDashboardWidgetList = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const dashboardWidgets = await dashboardWidgetdService.getAllDashboardWidgets({
+      query: {},
+      populate: ['widgetTypeId', 'dataSourceId'],
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Dashboard widgets fetched successfully',
+      ...dashboardWidgets,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getChartData = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { dashboardId, widgetTypeId } = req.params;
-    const { organizationId, userId, orgCode } = req.user;
+    const { dashboardId } = req.params;
+    const { orgCode } = req.user;
 
-    // const data: any = await dashboardService.getDashboardChartData({
-    //   dashboardId: new mongoose.Types.ObjectId(dashboardId),
-    //   orgCode,
-    // });
+    const data: any = await dashboardService.getDashboardChartData({
+      dashboardId: new mongoose.Types.ObjectId(dashboardId),
+      orgCode,
+    });
 
     res.status(200).json({
       success: true,
       message: 'Chart data fetched successfully',
-      // ...data,
+      ...data,
     });
   } catch (err) {
     next(err);

@@ -7,6 +7,7 @@ import {
   getChartData,
   getDashboardById,
   getDashboards,
+  getDashboardWidgetList,
   updateDashboard,
   updateWidget,
 } from '../controllers/dashboard.controller';
@@ -20,8 +21,9 @@ router.get('/get/:dashboardId', authenticateToken, getDashboardById);
 router.get('/list', authenticateToken, getDashboards);
 
 // Dashboard widget
-// router.get('/getChartData/:dashboardId', authenticateToken, getChartData);
-router.post('/create-widget', authenticateToken, createWidget);
-router.post('/update-widget/:dashboardWidgetId', authenticateToken, updateWidget);
+router.get('/widget/getChartData/:dashboardId', authenticateToken, getChartData);
+router.get('/widget/list', authenticateToken, getDashboardWidgetList);
+router.post('/widget/create', authenticateToken, createWidget);
+router.post('/widget/update/:dashboardWidgetId', authenticateToken, updateWidget);
 
 export default router;
