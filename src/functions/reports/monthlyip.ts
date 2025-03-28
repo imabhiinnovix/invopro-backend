@@ -679,9 +679,6 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
     });
 
-    if (isRowData) {
-      return { draftedApplicationDisclosureCount, currentYearRenewalDue };
-    }
     await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
     await fsPromises.copyFile(sampleFilePath, newFilePath);
     await writeDataToExcel(
@@ -832,9 +829,8 @@ export const generateMonthlyIpReport = async ({
       isDrafted: false,
       isYearRequired: true,
       customReportModel,
+      isRowData,
     });
-
-    const processedNewProjectOpenedBasedOnStc = processSTCData(newProjectOpenedBasedOnStc);
 
     const totalOpenProjectsBasedOnStc = await getProjectBasedOnStcs({
       disclosureDataSourceVersionId,
@@ -843,16 +839,18 @@ export const generateMonthlyIpReport = async ({
       isDrafted: false,
       isYearRequired: false,
       customReportModel,
+      isRowData,
     });
-
-    const processedTotalOpenProjectsBasedOnStc = processSTCData(totalOpenProjectsBasedOnStc);
 
     const newAppsFiledBasedOnStc = await getAppsFiledBasedOnStc({
       portfolioDataSourceVersionId,
       currentYear,
       customReportModel,
+      isRowData,
     });
 
+    const processedNewProjectOpenedBasedOnStc = processSTCData(newProjectOpenedBasedOnStc);
+    const processedTotalOpenProjectsBasedOnStc = processSTCData(totalOpenProjectsBasedOnStc);
     const processedNewAppsFiledBasedOnStc = processSTCData(newAppsFiledBasedOnStc);
 
     const newProjectOpenedBasedOnStcFinal = processedNewProjectOpenedBasedOnStc.map((data) => {

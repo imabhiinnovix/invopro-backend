@@ -490,6 +490,7 @@ export async function getProjectBasedOnStcs({
   isDrafted,
   isYearRequired,
   customReportModel,
+  isRowData,
 }: {
   disclosureDataSourceVersionId: string;
   currentYear: string;
@@ -497,6 +498,7 @@ export async function getProjectBasedOnStcs({
   isDrafted: boolean;
   isYearRequired: boolean;
   customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
 }) {
   try {
     const yearDateRange = {
@@ -536,34 +538,56 @@ export async function getProjectBasedOnStcs({
     if (isYearRequired) {
       matchCondition['rowData.DisclosureDate'] = yearDateRange;
     }
-    const activeDisclosure = await customReportModel.DataSourceVersionValueDisclosure.aggregate([
-      {
-        $match: matchCondition,
-      },
-      {
-        $group: {
-          _id: '$rowData.DisclosureNumber',
-          OriginalSTCs: { $first: '$rowData.OriginalSTCs' },
+    if (isRowData) {
+      const activeDisclosure = await customReportModel.DataSourceVersionValueDisclosure.aggregate([
+        {
+          $match: matchCondition,
         },
-      },
-
-      {
-        $group: {
-          _id: '$OriginalSTCs',
-          value: { $sum: 1 },
-        },
-      },
-      {
-        $project: {
-          STC: {
-            $ifNull: ['$_id', 'Blank'], // Replace null with "Blank"
+        {
+          $group: {
+            _id: '$rowData.DisclosureNumber',
+            OriginalSTCs: { $first: '$rowData.OriginalSTCs' },
           },
-          _id: 0,
-          value: 1,
         },
-      },
-    ]);
-    return activeDisclosure;
+        {
+          $project: {
+            _id: 0, // Exclude _id
+            DisclosureNumber: '$_id', // Rename _id to DisclosureNumber
+            OriginalSTCs: 1, // Keep OriginalSTCs
+          },
+        },
+      ]);
+      return activeDisclosure;
+    } else {
+      const activeDisclosure = await customReportModel.DataSourceVersionValueDisclosure.aggregate([
+        {
+          $match: matchCondition,
+        },
+        {
+          $group: {
+            _id: '$rowData.DisclosureNumber',
+            OriginalSTCs: { $first: '$rowData.OriginalSTCs' },
+          },
+        },
+
+        {
+          $group: {
+            _id: '$OriginalSTCs',
+            value: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            STC: {
+              $ifNull: ['$_id', 'Blank'], // Replace null with "Blank"
+            },
+            _id: 0,
+            value: 1,
+          },
+        },
+      ]);
+      return activeDisclosure;
+    }
   } catch (error) {
     throw error;
   }
@@ -586,6 +610,7 @@ export async function getAppsFiledBasedOnStc({
   isOtherIssuedApplication,
   isTotalIssuedApplication,
   customReportModel,
+  isRowData,
 }: {
   portfolioDataSourceVersionId: string;
   currentYear: string;
@@ -603,6 +628,7 @@ export async function getAppsFiledBasedOnStc({
   isOtherIssuedApplication?: boolean;
   isTotalIssuedApplication?: boolean;
   customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
 }) {
   try {
     const epCountry = [
@@ -746,36 +772,60 @@ export async function getAppsFiledBasedOnStc({
       matchCondition['rowData.In Force'] = 1;
     }
 
-    const newYearApplicationFiled = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
-      {
-        $match: matchCondition,
-      },
+    if (isRowData) {
+      const newYearApplicationFiled = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
+        {
+          $match: matchCondition,
+        },
 
-      // Group by rowData.Case_Reference1 and count distinct cases
-      {
-        $group: {
-          _id: '$rowData.Case_Reference1',
-          'Original STCs': { $first: '$rowData.Original STCs' },
-        },
-      },
-      // Count the distinct Case_Reference1 by SBU
-      {
-        $group: {
-          _id: '$Original STCs',
-          value: { $sum: 1 },
-        },
-      },
-      {
-        $project: {
-          STC: {
-            $ifNull: ['$_id', 'Blank'], // Replace null with "Blank"
+        // Group by rowData.Case_Reference1 and count distinct cases
+        {
+          $group: {
+            _id: '$rowData.Case_Reference1',
+            'Original STCs': { $first: '$rowData.Original STCs' },
           },
-          _id: 0,
-          value: 1,
         },
-      },
-    ]);
-    return newYearApplicationFiled;
+        {
+          $project: {
+            _id: 0, // Exclude _id
+            Case_Reference1: '$_id', // Rename _id to DisclosureNumber
+            'Original STCs': 1, // Keep OriginalSTCs
+          },
+        },
+      ]);
+      return newYearApplicationFiled;
+    } else {
+      const newYearApplicationFiled = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
+        {
+          $match: matchCondition,
+        },
+
+        // Group by rowData.Case_Reference1 and count distinct cases
+        {
+          $group: {
+            _id: '$rowData.Case_Reference1',
+            'Original STCs': { $first: '$rowData.Original STCs' },
+          },
+        },
+        // Count the distinct Case_Reference1 by SBU
+        {
+          $group: {
+            _id: '$Original STCs',
+            value: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            STC: {
+              $ifNull: ['$_id', 'Blank'], // Replace null with "Blank"
+            },
+            _id: 0,
+            value: 1,
+          },
+        },
+      ]);
+      return newYearApplicationFiled;
+    }
   } catch (error) {
     throw error;
   }
