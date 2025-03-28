@@ -22,7 +22,7 @@ import {
   processStaticData,
   processSTCData,
 } from '../../database/services/monthlyipReport.services';
-import { createExcelSheetFile, writeDataToExcel } from '../../utils/excel.utils';
+import { createExcelSheetFile, createUpdateExcelTable, writeDataToExcel } from '../../utils/excel.utils';
 import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
 import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/dataSourceVersion.controller';
 
@@ -909,7 +909,6 @@ export const generateMonthlyIpReport = async ({
       combinedSTCData.push(result);
     });
 
-    await createExcelSheetFile(combinedSTCData, newFilePath, 'STC');
     //second table
     const newProjectOpened = processedOpenApplicationDisclosureCount.map((data) => {
       return {
@@ -963,7 +962,30 @@ export const generateMonthlyIpReport = async ({
       // Add the result to the combinedData array
       combinedData.push(result);
     });
-    await createExcelSheetFile(combinedData, newFilePath, 'STC');
+
+    await createUpdateExcelTable({
+      data: combinedSTCData,
+      filePath: newFilePath,
+      sheetName: 'STC',
+      gap: 0,
+      startTableColumn: 'A',
+      headerColor: '9dc3e6',
+      lastRowColor: '9dc3e6',
+      // headers: ['SBU', 'Count of Serial No'],
+      isWhiteBackGround: false,
+    });
+
+    await createUpdateExcelTable({
+      data: combinedData,
+      filePath: newFilePath,
+      sheetName: 'STC',
+      gap: 2,
+      startTableColumn: 'A',
+      headerColor: '9dc3e6',
+      lastRowColor: '9dc3e6',
+      // headers: ['SBU', 'Count of Serial No'],
+      isWhiteBackGround: false,
+    });
 
     await createUpdateCustomDataSourceVersionValueFunction({
       dataSourceId: staticNewFilingsDataSourceId,
