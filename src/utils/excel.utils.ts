@@ -359,6 +359,8 @@ export async function createUpdateExcelTable({
   cellColor,
   cellBold,
   isWhiteBackGround,
+  cellFormats,
+  startCellNumber,
 }: {
   data: Array<Record<string, any>>; // Array of JSON objects with varying keys
   filePath: string;
@@ -375,6 +377,8 @@ export async function createUpdateExcelTable({
   cellColor?: string;
   cellBold?: boolean;
   isWhiteBackGround?: boolean;
+  cellFormats?: Record<string, string>;
+  startCellNumber?: number;
 }): Promise<void> {
   const workbook = new ExcelJS.Workbook();
 
@@ -468,7 +472,7 @@ export async function createUpdateExcelTable({
       pattern: 'solid',
       fgColor: { argb: headerColor ? headerColor : '4472C4' }, // Blue background
     };
-    cell.alignment = { vertical: 'middle', horizontal: 'left' };
+    cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
     cell.border = {
       top: { style: 'thin' },
       left: { style: 'thin' },
@@ -483,11 +487,18 @@ export async function createUpdateExcelTable({
     for (let i = 0; i < totalTableRows; i++) {
       const rowNumber = startRow + 1 + i; // Data starts after header row
       const row = worksheet.getRow(rowNumber);
-      row.eachCell((cell) => {
+      row.eachCell((cell, colIndex) => {
         cell.alignment = { vertical: 'middle', horizontal: 'left' };
         if (cellBold) {
           cell.font = { bold: true, color: { argb: '000000' } };
         }
+
+        const columnKey = allKeys[colIndex - (startCellNumber ? startCellNumber : 0)];
+        console.log(colIndex, cell.name, columnKey);
+        if (cellFormats && columnKey in cellFormats) {
+          cell.numFmt = cellFormats[columnKey];
+        }
+
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',

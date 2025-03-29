@@ -1,5 +1,6 @@
 import {
   getAccoladeMappingSheet,
+  getActivePatentValueCoverage,
   getAgreementSigned,
   getIpAnalysis,
 } from '../../database/services/supplementalipReport.services';
@@ -307,6 +308,10 @@ export const generateSupplementalIpReport = async ({
       headers: accoladeMappingSheetHeaders,
     });
 
+    const activePatentValueCoverage = getActivePatentValueCoverage({
+      allAccoladeMappingSheetData: allAccoladeMappingSheet,
+    });
+
     await createUpdateExcelTable({
       data: proceessedFinalAgreement,
       filePath: newFilePath,
@@ -442,6 +447,39 @@ export const generateSupplementalIpReport = async ({
       headerColor: '9dc3e6',
       headers: accoladeMappingSheetHeaders.map((data) => data.reportHeader),
       isWhiteBackGround: false,
+    });
+
+    await createUpdateExcelTable({
+      data: activePatentValueCoverage,
+      filePath: newFilePath,
+      sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
+      gap: 1,
+      startTableColumn: 'B',
+      headerColor: '9dc3e6',
+      lastRowColor: '9dc3e6',
+      headers: [
+        'SBU',
+        'RANPV OF PHASE 1-5 PROJECTS ($M)',
+        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
+        '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
+        'No Disclosure for filing',
+        '% OF RANPVE COVERED-No Disclosure for filing',
+        'Disclosure for Filing',
+        '% OF RANPVE COVERED-Disclosure available for filing',
+        'Patent application filing in progress(Rated to Draft)',
+        '% COVERED-Patent application filing in progress',
+      ],
+      isWhiteBackGround: true,
+      cellFormats: {
+        'RANPV OF PHASE 1-5 PROJECTS ($M)': '"$" #,##0,, "M"',
+        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '"$" #,##0,, "M"',
+        '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '0%',
+        'Disclosure for Filing': '"$" #,##0,, "M"',
+        '% OF RANPVE COVERED-Disclosure available for filing': '0%',
+        'Patent application filing in progress(Rated to Draft)': '"$" #,##0,, "M"',
+        '% COVERED-Patent application filing in progress': '0%',
+      },
+      startCellNumber: 2,
     });
 
     await reportRequestService.updateReportRequest(requestedReportId, { status: 'completed' });

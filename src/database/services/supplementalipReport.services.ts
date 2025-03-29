@@ -740,3 +740,96 @@ export async function getAccoladeMappingSheet({
     throw e;
   }
 }
+
+export function getActivePatentValueCoverage({
+  allAccoladeMappingSheetData,
+}: {
+  allAccoladeMappingSheetData: Record<string, any>[];
+}) {
+  try {
+    const filteredProjects = allAccoladeMappingSheetData.filter((project) => {
+      return (
+        project.ProjectClosed?.toLowerCase() === 'open' &&
+        project.ProjectLastGateDecision?.toLowerCase() !== 'hold' &&
+        project.ProjectLastGateDecision?.toLowerCase() !== 'stop' &&
+        /stage [1-5]/i.test(project.ProjectCurrentStageName) &&
+        project.StrategicReportingClass?.toLowerCase() !== 'asset support' &&
+        !project.ProjectType?.toLowerCase().includes('tsr')
+      );
+    });
+
+    const allRANPVGroup: Record<string, number> = {};
+    const activePatentFillingRANPVGroup: Record<string, number> = {};
+    const noOfActiveDisclosuresRANPVGroup: Record<string, number> = {};
+    const noOfRTDDisclosuresRANPVGroup: Record<string, number> = {};
+
+    filteredProjects.forEach((project) => {
+      const { STD, RiskAdjustedNPV, noOfActiveApplications, noOfActiveDisclosures, noOfRTDDisclosures } = project;
+
+      if (!allRANPVGroup[STD]) {
+        allRANPVGroup[STD] = 0;
+      }
+      if (!allRANPVGroup['Total']) {
+        allRANPVGroup['Total'] = 0;
+      }
+
+      if (noOfActiveApplications) {
+        if (!activePatentFillingRANPVGroup[STD]) {
+          activePatentFillingRANPVGroup[STD] = 0;
+        }
+        if (!activePatentFillingRANPVGroup['Total']) {
+          activePatentFillingRANPVGroup['Total'] = 0;
+        }
+        activePatentFillingRANPVGroup[STD] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+        activePatentFillingRANPVGroup['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      }
+
+      if (noOfActiveDisclosures) {
+        if (!noOfActiveDisclosuresRANPVGroup[STD]) {
+          noOfActiveDisclosuresRANPVGroup[STD] = 0;
+        }
+        if (!noOfActiveDisclosuresRANPVGroup['Total']) {
+          noOfActiveDisclosuresRANPVGroup['Total'] = 0;
+        }
+        noOfActiveDisclosuresRANPVGroup[STD] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+        noOfActiveDisclosuresRANPVGroup['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      }
+
+      if (noOfRTDDisclosures) {
+        if (!noOfRTDDisclosuresRANPVGroup[STD]) {
+          noOfRTDDisclosuresRANPVGroup[STD] = 0;
+        }
+        if (!noOfRTDDisclosuresRANPVGroup['Total']) {
+          noOfRTDDisclosuresRANPVGroup['Total'] = 0;
+        }
+        noOfRTDDisclosuresRANPVGroup[STD] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+        noOfRTDDisclosuresRANPVGroup['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      }
+
+      allRANPVGroup[STD] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      allRANPVGroup['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+    });
+
+    let patentValueCoverageActive = Object.entries(allRANPVGroup).map(([STD, sum]: [string, number]) => ({
+      SBU: STD,
+      'RANPV OF PHASE 1-5 PROJECTS ($M)': sum,
+      'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': activePatentFillingRANPVGroup[STD],
+      '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': activePatentFillingRANPVGroup[STD] / sum,
+      'No Disclosure for filing': '',
+      '% OF RANPVE COVERED-No Disclosure for filing': '',
+      'Disclosure for Filing': noOfActiveDisclosuresRANPVGroup[STD],
+      '% OF RANPVE COVERED-Disclosure available for filing': noOfActiveDisclosuresRANPVGroup[STD] / sum,
+      'Patent application filing in progress(Rated to Draft)': noOfRTDDisclosuresRANPVGroup[STD],
+      '% COVERED-Patent application filing in progress': noOfRTDDisclosuresRANPVGroup[STD] / sum,
+    }));
+
+    patentValueCoverageActive = [
+      ...patentValueCoverageActive.filter((item) => item.SBU !== 'Total'), // Keep all except "Total"
+      ...patentValueCoverageActive.filter((item) => item.SBU === 'Total'), // Add "Total" at the end
+    ];
+    return patentValueCoverageActive;
+  } catch (e) {
+    console.log('Error in getActivePatentValueCoverage function.', e);
+    throw e;
+  }
+}
