@@ -450,10 +450,89 @@ export const generateSupplementalIpReport = async ({
     });
 
     await createUpdateExcelTable({
-      data: activePatentValueCoverage,
+      data: [],
       filePath: newFilePath,
       sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
       gap: 1,
+      startTableColumn: 'B',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Project Closed= OPEN',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Project Last Gate Decision= Exclude HOLD/STOP',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Project Current Stage Name= STAGE 1-STAGE 5',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Strategic Reporting Class = Exclude ASSET SUPPORT',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Project Type= Exclude the items that CONTAINS TSR',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: activePatentValueCoverage,
+      filePath: newFilePath,
+      sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
+      gap: 3,
       startTableColumn: 'B',
       headerColor: '9dc3e6',
       lastRowColor: '9dc3e6',
