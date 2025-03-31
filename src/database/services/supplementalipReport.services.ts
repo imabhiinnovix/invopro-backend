@@ -761,6 +761,7 @@ export function getActivePatentValueCoverage({
     const allRANPVGroup: Record<string, number> = {};
     const activePatentFillingRANPVGroup: Record<string, number> = {};
     const noOfActiveDisclosuresRANPVGroup: Record<string, number> = {};
+    const noDisclosuresForFilingRANPVGroup: Record<string, number> = {};
     const noOfRTDDisclosuresRANPVGroup: Record<string, number> = {};
 
     filteredProjects.forEach((project) => {
@@ -793,6 +794,15 @@ export function getActivePatentValueCoverage({
         }
         noOfActiveDisclosuresRANPVGroup[STD] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
         noOfActiveDisclosuresRANPVGroup['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      } else {
+        if (!noDisclosuresForFilingRANPVGroup[STD]) {
+          noDisclosuresForFilingRANPVGroup[STD] = 0;
+        }
+        if (!noDisclosuresForFilingRANPVGroup['Total']) {
+          noDisclosuresForFilingRANPVGroup['Total'] = 0;
+        }
+        noDisclosuresForFilingRANPVGroup[STD] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+        noDisclosuresForFilingRANPVGroup['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
       }
 
       if (noOfRTDDisclosures) {
@@ -815,8 +825,8 @@ export function getActivePatentValueCoverage({
       'RANPV OF PHASE 1-5 PROJECTS ($M)': sum,
       'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': activePatentFillingRANPVGroup[STD],
       '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': activePatentFillingRANPVGroup[STD] / sum,
-      'No Disclosure for filing': '',
-      '% OF RANPVE COVERED-No Disclosure for filing': '',
+      'No Disclosure for filing': noDisclosuresForFilingRANPVGroup[STD],
+      '% OF RANPVE COVERED-No Disclosure for filing': noDisclosuresForFilingRANPVGroup[STD] / sum,
       'Disclosure for Filing': noOfActiveDisclosuresRANPVGroup[STD],
       '% OF RANPVE COVERED-Disclosure available for filing': noOfActiveDisclosuresRANPVGroup[STD] / sum,
       'Patent application filing in progress(Rated to Draft)': noOfRTDDisclosuresRANPVGroup[STD],
@@ -830,6 +840,28 @@ export function getActivePatentValueCoverage({
     return patentValueCoverageActive;
   } catch (e) {
     console.log('Error in getActivePatentValueCoverage function.', e);
+    throw e;
+  }
+}
+
+function getNewPatentValueCoverage({
+  allAccoladeMappingSheetData,
+}: {
+  allAccoladeMappingSheetData: Record<string, any>[];
+}) {
+  try {
+    const filteredProjects = allAccoladeMappingSheetData.filter((project) => {
+      return (
+        project.ProjectClosed?.toLowerCase() === 'open' &&
+        project.ProjectLastGateDecision?.toLowerCase() !== 'hold' &&
+        project.ProjectLastGateDecision?.toLowerCase() !== 'stop' &&
+        /stage [3-5]/i.test(project.ProjectCurrentStageName) &&
+        project.StrategicReportingClass?.toLowerCase() !== 'asset support' &&
+        !project.ProjectType?.toLowerCase().includes('tsr')
+      );
+    });
+  } catch (e) {
+    console.log('Error in getNewPatentValueCoverage function.', e);
     throw e;
   }
 }

@@ -312,6 +312,10 @@ export const generateSupplementalIpReport = async ({
       allAccoladeMappingSheetData: allAccoladeMappingSheet,
     });
 
+    // const newPatentValueCoverage = getNewPatentValueCoverage({
+    //   allAccoladeMappingSheetData: allAccoladeMappingSheet,
+    // });
+
     await createUpdateExcelTable({
       data: proceessedFinalAgreement,
       filePath: newFilePath,
@@ -553,6 +557,8 @@ export const generateSupplementalIpReport = async ({
         'RANPV OF PHASE 1-5 PROJECTS ($M)': '"$" #,##0,, "M"',
         'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '"$" #,##0,, "M"',
         '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '0%',
+        'No Disclosure for filing': '"$" #,##0,, "M"',
+        '% OF RANPVE COVERED-No Disclosure for filing': '0%',
         'Disclosure for Filing': '"$" #,##0,, "M"',
         '% OF RANPVE COVERED-Disclosure available for filing': '0%',
         'Patent application filing in progress(Rated to Draft)': '"$" #,##0,, "M"',
