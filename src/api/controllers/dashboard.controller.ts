@@ -96,6 +96,7 @@ export const createWidget = async (req: Request, res: Response, next: NextFuncti
   try {
     const { dashboardId, widgetTypeId, name, dimensions, groupBy, conditions, aggregation, dataSourceId, position } =
       req.body;
+
     const { organizationId, userId } = req.user;
 
     const dashboardWidget = await dashboardWidgetdService.createDashboardWidget({
@@ -105,7 +106,7 @@ export const createWidget = async (req: Request, res: Response, next: NextFuncti
       createdBy: userId,
       name,
       dimensions,
-      groupBy,
+      groupBy: groupBy ? groupBy : [],
       conditions,
       aggregation,
       dataSourceId,
