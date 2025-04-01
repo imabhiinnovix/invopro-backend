@@ -844,10 +844,12 @@ export function getActivePatentValueCoverage({
   }
 }
 
-function getNewPatentValueCoverage({
+export function getNewPatentValueCoverage({
   allAccoladeMappingSheetData,
+  newFilingThisYearAccoladeStdData,
 }: {
   allAccoladeMappingSheetData: Record<string, any>[];
+  newFilingThisYearAccoladeStdData?: Record<string, Record<string, any>[]>;
 }) {
   try {
     const filteredProjects = allAccoladeMappingSheetData.filter((project) => {
@@ -860,6 +862,73 @@ function getNewPatentValueCoverage({
         !project.ProjectType?.toLowerCase().includes('tsr')
       );
     });
+    const noOfTotalFirstFilling: Record<string, number> = {};
+    const noOfAccoladeProjectsCovered: Record<string, number> = {};
+    const newFillingRANPV: Record<string, number> = {};
+    const totalRANPV: Record<string, number> = {};
+    filteredProjects.forEach((project) => {
+      const { STD, RiskAdjustedNPV, noOfNewApplications } = project;
+      if (!noOfTotalFirstFilling[STD]) {
+        noOfTotalFirstFilling[STD] = 0;
+      }
+      if (!noOfTotalFirstFilling['Total']) {
+        noOfTotalFirstFilling['Total'] = 0;
+      }
+      if (noOfNewApplications && noOfNewApplications > 0) {
+        noOfTotalFirstFilling[STD] += noOfNewApplications;
+        noOfTotalFirstFilling['Total'] += noOfNewApplications;
+      }
+
+      if (!noOfAccoladeProjectsCovered[STD]) {
+        noOfAccoladeProjectsCovered[STD] = 0;
+      }
+      if (!noOfAccoladeProjectsCovered['Total']) {
+        noOfAccoladeProjectsCovered['Total'] = 0;
+      }
+      if (noOfNewApplications && noOfNewApplications > 0) {
+        noOfAccoladeProjectsCovered[STD] += 1;
+        noOfAccoladeProjectsCovered['Total'] += 1;
+      }
+
+      if (!newFillingRANPV[STD]) {
+        newFillingRANPV[STD] = 0;
+      }
+      if (!newFillingRANPV['Total']) {
+        newFillingRANPV['Total'] = 0;
+      }
+      if (noOfNewApplications && noOfNewApplications > 0) {
+        newFillingRANPV[STD] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+        newFillingRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      }
+
+      if (!totalRANPV[STD]) {
+        totalRANPV[STD] = 0;
+      }
+      if (!totalRANPV['Total']) {
+        totalRANPV['Total'] = 0;
+      }
+
+      totalRANPV[STD] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      totalRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+    });
+
+    let patentValueCoverageNew = Object.entries(totalRANPV).map(([STD, sum]: [string, number]) => ({
+      SBU: STD,
+      'TOTAL FIRST FILINGS': noOfTotalFirstFilling[STD],
+      'FILINGS HAVING AT LEAST ONE ACCOLADE NUMBER /TSR': '',
+      'FILINGS HAVING NO ACCOLADE NUMBER /TSR': '',
+      'NO. OF ACCOLADE PROJECTS COVERED': noOfAccoladeProjectsCovered[STD],
+      'RANPV OF PHASE 3-5 PROJECTS ($M)': sum,
+      'RANPV OF PHASE 3-5 PROJECTS COVERED BY NEW PATENT FILINGS ($M)': newFillingRANPV[STD],
+      '% OF TOTAL RANPV COVERED BY NEW PATENT FILINGS': newFillingRANPV[STD] / sum,
+    }));
+
+    patentValueCoverageNew = [
+      ...patentValueCoverageNew.filter((item) => item.SBU !== 'Total'), // Keep all except "Total"
+      ...patentValueCoverageNew.filter((item) => item.SBU === 'Total'), // Add "Total" at the end
+    ];
+
+    return patentValueCoverageNew;
   } catch (e) {
     console.log('Error in getNewPatentValueCoverage function.', e);
     throw e;

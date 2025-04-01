@@ -3,6 +3,7 @@ import {
   getActivePatentValueCoverage,
   getAgreementSigned,
   getIpAnalysis,
+  getNewPatentValueCoverage,
 } from '../../database/services/supplementalipReport.services';
 import { createExcelSheetFile, createUpdateExcelTable } from '../../utils/excel.utils';
 import * as reportRequestService from '../../database/services/reportRequest.services';
@@ -312,9 +313,9 @@ export const generateSupplementalIpReport = async ({
       allAccoladeMappingSheetData: allAccoladeMappingSheet,
     });
 
-    // const newPatentValueCoverage = getNewPatentValueCoverage({
-    //   allAccoladeMappingSheetData: allAccoladeMappingSheet,
-    // });
+    const newPatentValueCoverage = getNewPatentValueCoverage({
+      allAccoladeMappingSheetData: allAccoladeMappingSheet,
+    });
 
     await createUpdateExcelTable({
       data: proceessedFinalAgreement,
@@ -567,6 +568,111 @@ export const generateSupplementalIpReport = async ({
       startCellNumber: 2,
     });
 
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'PATENT VALUE COVERAGE-NEW',
+      gap: 1,
+      startTableColumn: 'B',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Project Closed= OPEN',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'PATENT VALUE COVERAGE-NEW',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Project Last Gate Decision= Exclude HOLD/STOP',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'PATENT VALUE COVERAGE-NEW',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Project Current Stage Name= STAGE 3-STAGE 5',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'PATENT VALUE COVERAGE-NEW',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Strategic Reporting Class = Exclude ASSET SUPPORT',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'PATENT VALUE COVERAGE-NEW',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Project Type= Exclude the items that CONTAINS TSR',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: newPatentValueCoverage,
+      filePath: newFilePath,
+      sheetName: 'PATENT VALUE COVERAGE-NEW',
+      gap: 3,
+      startTableColumn: 'B',
+      headerColor: '9dc3e6',
+      lastRowColor: '9dc3e6',
+      headers: [
+        'SBU',
+        'TOTAL FIRST FILINGS',
+        'FILINGS HAVING AT LEAST ONE ACCOLADE NUMBER /TSR',
+        'FILINGS HAVING NO ACCOLADE NUMBER /TSR',
+        'NO. OF ACCOLADE PROJECTS COVERED',
+        'RANPV OF PHASE 3-5 PROJECTS ($M)',
+        'RANPV OF PHASE 3-5 PROJECTS COVERED BY NEW PATENT FILINGS ($M)',
+        '% OF TOTAL RANPV COVERED BY NEW PATENT FILINGS',
+      ],
+      isWhiteBackGround: true,
+      cellFormats: {
+        'RANPV OF PHASE 3-5 PROJECTS ($M)': '"$" #,##0,, "M"',
+        'RANPV OF PHASE 3-5 PROJECTS COVERED BY NEW PATENT FILINGS ($M)': '"$" #,##0,, "M"',
+        '% OF TOTAL RANPV COVERED BY NEW PATENT FILINGS': '0%',
+      },
+      startCellNumber: 2,
+    });
     await reportRequestService.updateReportRequest(requestedReportId, { status: 'completed' });
   } catch (e) {
     console.log('Error in generateSupplementalIpReport.', e);
