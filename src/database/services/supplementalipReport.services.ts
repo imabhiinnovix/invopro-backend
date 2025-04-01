@@ -934,3 +934,81 @@ export function getNewPatentValueCoverage({
     throw e;
   }
 }
+
+export function getStrategicReportingClass({
+  allAccoladeMappingSheetData,
+}: {
+  allAccoladeMappingSheetData: Record<string, any>[];
+}) {
+  try {
+    const filteredProjects = allAccoladeMappingSheetData.filter((project) => {
+      return (
+        project.ProjectClosed?.toLowerCase() === 'open' &&
+        project.ProjectLastGateDecision?.toLowerCase() !== 'hold' &&
+        project.ProjectLastGateDecision?.toLowerCase() !== 'stop' &&
+        /stage [1-5]/i.test(project.ProjectCurrentStageName) &&
+        project.StrategicReportingClass &&
+        project.StrategicReportingClass?.toLowerCase() !== '[empty]' &&
+        project.StrategicReportingClass?.toLowerCase() !== 'empty' &&
+        project.StrategicReportingClass?.toLowerCase() !== 'no'
+      );
+    });
+
+    const totalRANPV: Record<string, number> = {};
+    const activeFillingRANPV: Record<string, number> = {};
+    const countAccoladeNumber: Record<string, number> = {};
+
+    filteredProjects.forEach((project) => {
+      const { StrategicReportingClass, RiskAdjustedNPV, noOfActiveApplications } = project;
+      if (!totalRANPV[StrategicReportingClass]) {
+        totalRANPV[StrategicReportingClass] = 0;
+      }
+      if (!totalRANPV['Total']) {
+        totalRANPV['Total'] = 0;
+      }
+
+      if (noOfActiveApplications) {
+        if (!activeFillingRANPV[StrategicReportingClass]) {
+          activeFillingRANPV[StrategicReportingClass] = 0;
+        }
+        if (!activeFillingRANPV['Total']) {
+          activeFillingRANPV['Total'] = 0;
+        }
+        activeFillingRANPV[StrategicReportingClass] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+        activeFillingRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      }
+
+      if (!countAccoladeNumber[StrategicReportingClass]) {
+        countAccoladeNumber[StrategicReportingClass] = 0;
+      }
+      if (!countAccoladeNumber['Total']) {
+        countAccoladeNumber['Total'] = 0;
+      }
+
+      countAccoladeNumber[StrategicReportingClass] += 1;
+      countAccoladeNumber['Total'] += 1;
+
+      totalRANPV[StrategicReportingClass] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      totalRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+    });
+
+    let strategicReportingClass = Object.entries(totalRANPV).map(
+      ([StrategicReportingClass, sum]: [string, number]) => ({
+        'Strategic Reporting Class': StrategicReportingClass,
+        'RANPV OF PHASE 1-5 PROJECTS ($M) ': sum,
+        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M) ':
+          activeFillingRANPV[StrategicReportingClass],
+        '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': activeFillingRANPV[StrategicReportingClass] / sum,
+        '# OF ACCOLADE PROJECTS': countAccoladeNumber[StrategicReportingClass],
+      })
+    );
+
+    strategicReportingClass = [
+      ...strategicReportingClass.filter((item) => item['Strategic Reporting Class'] !== 'Total'), // Keep all except "Total"
+      ...strategicReportingClass.filter((item) => item['Strategic Reporting Class'] === 'Total'), // Add "Total" at the end
+    ];
+  } catch (e) {
+    console.log('Error in  getStrategicReportingClass', e);
+    throw e;
+  }
+}
