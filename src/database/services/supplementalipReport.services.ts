@@ -995,8 +995,8 @@ export function getStrategicReportingClass({
     let strategicReportingClass = Object.entries(totalRANPV).map(
       ([StrategicReportingClass, sum]: [string, number]) => ({
         'Strategic Reporting Class': StrategicReportingClass,
-        'RANPV OF PHASE 1-5 PROJECTS ($M) ': sum,
-        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M) ':
+        'RANPV OF PHASE 1-5 PROJECTS ($M)': sum,
+        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)':
           activeFillingRANPV[StrategicReportingClass],
         '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': activeFillingRANPV[StrategicReportingClass] / sum,
         '# OF ACCOLADE PROJECTS': countAccoladeNumber[StrategicReportingClass],
@@ -1007,6 +1007,7 @@ export function getStrategicReportingClass({
       ...strategicReportingClass.filter((item) => item['Strategic Reporting Class'] !== 'Total'), // Keep all except "Total"
       ...strategicReportingClass.filter((item) => item['Strategic Reporting Class'] === 'Total'), // Add "Total" at the end
     ];
+    return strategicReportingClass;
   } catch (e) {
     console.log('Error in  getStrategicReportingClass', e);
     throw e;

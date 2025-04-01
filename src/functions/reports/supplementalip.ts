@@ -4,6 +4,7 @@ import {
   getAgreementSigned,
   getIpAnalysis,
   getNewPatentValueCoverage,
+  getStrategicReportingClass,
 } from '../../database/services/supplementalipReport.services';
 import { createExcelSheetFile, createUpdateExcelTable } from '../../utils/excel.utils';
 import * as reportRequestService from '../../database/services/reportRequest.services';
@@ -314,6 +315,10 @@ export const generateSupplementalIpReport = async ({
     });
 
     const newPatentValueCoverage = getNewPatentValueCoverage({
+      allAccoladeMappingSheetData: allAccoladeMappingSheet,
+    });
+
+    const strategicReportingClassData = getStrategicReportingClass({
       allAccoladeMappingSheetData: allAccoladeMappingSheet,
     });
 
@@ -670,6 +675,78 @@ export const generateSupplementalIpReport = async ({
         'RANPV OF PHASE 3-5 PROJECTS ($M)': '"$" #,##0,, "M"',
         'RANPV OF PHASE 3-5 PROJECTS COVERED BY NEW PATENT FILINGS ($M)': '"$" #,##0,, "M"',
         '% OF TOTAL RANPV COVERED BY NEW PATENT FILINGS': '0%',
+      },
+      startCellNumber: 2,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Strategic Reporting Class',
+      gap: 1,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Project Closed= OPEN',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Strategic Reporting Class',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Project Last Gate Decision= Exclude HOLD/STOP',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Strategic Reporting Class',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Project Current Stage Name= STAGE 1-STAGE 5',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: strategicReportingClassData,
+      filePath: newFilePath,
+      sheetName: 'Strategic Reporting Class',
+      gap: 3,
+      startTableColumn: 'B',
+      headerColor: '9dc3e6',
+      lastRowColor: '9dc3e6',
+      headers: [
+        'Strategic Reporting Class',
+        'RANPV OF PHASE 1-5 PROJECTS ($M)',
+        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
+        '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
+        '# OF ACCOLADE PROJECTS',
+      ],
+      isWhiteBackGround: true,
+      cellFormats: {
+        'RANPV OF PHASE 1-5 PROJECTS ($M)': '"$" #,##0,, "M"',
+        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '"$" #,##0,, "M"',
+        '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '0%',
       },
       startCellNumber: 2,
     });
