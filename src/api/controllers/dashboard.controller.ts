@@ -9,6 +9,7 @@ import * as dataSourceVersionService from '../../database/services/dataSourceVer
 import { buildAggregationPipeline } from '../../utils/aggregationPipeline';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
 import createDefaultDataSourceVersionModel from '../../database/models/defaultDataSourceVersionModel';
+import { DashboardWidget, DashboardWidgetResponse, DataSourceVersion, Widget } from '../../types/widget.types';
 
 export const createDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -201,46 +202,68 @@ export const getChartData = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const getWidgetById = async (req: Request, res: Response, next: NextFunction) => {
+export const getWidgetById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { dashboardWidgetId } = req.params;
     const { orgCode } = req.user;
 
-    let dashboardWidget: any = await dashboardWidgetdService.getDashboardWidget(
-      {
-        _id: dashboardWidgetId,
-      },
-      ['widgetTypeId', 'dataSourceId']
-    );
-    dashboardWidget = dashboardWidget.toJSON();
+    // 1. Fetch dashboard widget with related data
+    const dashboardWidget: any = await dashboardWidgetdService.getDashboardWidget({ _id: dashboardWidgetId }, [
+      'widgetTypeId',
+      'dataSourceId',
+    ]);
 
-    const dataSourceVersion: any = await dataSourceVersionService.getDataSourceVersion({
+    if (!dashboardWidget) {
+      throw new Error('Dashboard widget not found');
+    }
+
+    const widgetData: any = dashboardWidget.toJSON() as DashboardWidget;
+
+    // 2. Fetch current active data source version
+    const dataSourceVersion = (await dataSourceVersionService.getDataSourceVersion({
       query: {
-        dataSourceId: dashboardWidget.dataSourceId._id,
+        dataSourceId: widgetData.dataSourceId._id,
         isCurrent: true,
         isActive: true,
       },
-    });
+    })) as DataSourceVersion;
 
-    const aggregationPipeline = await buildAggregationPipeline({
-      ...dashboardWidget,
+    if (!dataSourceVersion) {
+      throw new Error('No active data source version found');
+    }
+
+    // 3. Build aggregation pipeline
+    const widget: Widget = {
+      ...widgetData,
       dataSourceVersionId: dataSourceVersion._id,
-    });
+      dimensions: widgetData.dimensions || [],
+      groupBy: widgetData.groupBy || [],
+      aggregation: widgetData.aggregation || { type: 'Count', attributeName: '' },
+    };
 
+    const aggregationPipeline = buildAggregationPipeline(widget);
+
+    // 4. Get schema name and create model
     const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
       orgCode,
-      versionCode: dashboardWidget.dataSourceId.code,
+      versionCode: widgetData.dataSourceId.code,
     });
     const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
 
-    const dataResults: any = await DataSourceModel.aggregate(aggregationPipeline).exec();
-    dashboardWidget.data = dataResults;
+    // 5. Execute aggregation
+    const dataResults = await DataSourceModel.aggregate(aggregationPipeline).exec();
 
-    res.status(200).json({
+    // 6. Prepare response
+    const response: DashboardWidgetResponse = {
       success: true,
       message: 'Chart data fetched successfully',
-      data: dashboardWidget,
-    });
+      data: {
+        ...widgetData,
+        data: dataResults,
+      },
+    };
+
+    res.status(200).json(response);
   } catch (err) {
     next(err);
   }
