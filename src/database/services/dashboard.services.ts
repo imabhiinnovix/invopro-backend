@@ -104,7 +104,7 @@ export const getDashboardChartData = async (payload: any) => {
       populate: ['widgetTypeId', 'dataSourceId'],
     });
 
-    return { data: dashboardWidgets };
+    return dashboardWidgets;
   } catch (err) {
     throw err;
   }
