@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import DataSourceVersion from '../models/dataSourceVersion';
 
 export const createDataSourceVersion = async (createDataSourceVersionValue: any) => {
@@ -84,6 +85,25 @@ export const updateDataSourceVersions = async ({ query, updateFields }: any) => 
     });
 
     return updateResult;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getDataSourceVersion = async ({ query, populate }: any) => {
+  try {
+    // Perform the update operation
+    let dataSourceVersionQuery = DataSourceVersion.findOne(query);
+
+    if (populate && Array.isArray(populate)) {
+      populate.forEach((field) => {
+        dataSourceVersionQuery = dataSourceVersionQuery.populate(field);
+      });
+    }
+
+    const dataSourceVersion = await dataSourceVersionQuery.exec();
+
+    return dataSourceVersion;
   } catch (err) {
     throw err;
   }

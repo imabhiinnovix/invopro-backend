@@ -5,6 +5,8 @@ import Dashboard from '../models/dashboard';
 import DashboardWidget from '../models/dashboardWidget';
 import createDefaultDataSourceVersionModel from '../models/defaultDataSourceVersionModel';
 
+import * as DashboardWidgetService from '../services/dashboardWidget.services';
+
 export const createDashboard = async (dashboardData: any) => {
   try {
     const dashboard = new Dashboard(dashboardData);
@@ -95,6 +97,21 @@ export const deleteDashboard = async (id: string) => {
 
 export const getDashboardChartData = async (payload: any) => {
   try {
+    const { dashboardId } = payload;
+
+    const dashboardWidgets = await DashboardWidgetService.getAllDashboardWidgets({
+      query: { dashboardId },
+      populate: ['widgetTypeId', 'dataSourceId'],
+    });
+
+    return { data: dashboardWidgets };
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getWidgetByIdData = async (payload: any) => {
+  try {
     const { orgCode } = payload;
     const aggregatePipeline: any = [
       { $match: { dashboardId: payload.dashboardId } },
@@ -123,7 +140,7 @@ export const getDashboardChartData = async (payload: any) => {
 
     for (const widget of dashboardWidgets) {
       const aggregationPipeline = buildAggregationPipeline(widget);
-      // console.log('aggregationPipelineDy', JSON.stringify(aggregationPipeline));
+      console.log('aggregationPipelineDy >>', JSON.stringify(aggregationPipeline));
 
       // console.log('aggregationPipeline', aggregationPipeline);
       const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
@@ -132,7 +149,7 @@ export const getDashboardChartData = async (payload: any) => {
       });
       const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
 
-      console.log('aggregationPipeline', aggregationPipeline);
+      // console.log('aggregationPipeline', aggregationPipeline);
       // const aggregationPipeline: any = [
       //   {
       //     $addFields: {

@@ -11,10 +11,19 @@ export const createDashboardWidget = async (widgetData: any) => {
   }
 };
 
-export const getDashboardWidget = async (query: any) => {
+export const getDashboardWidget = async (query: any, populate: any) => {
   try {
-    const widget = await DashboardWidget.findOne(query);
-    return widget;
+    let widgetsQuery = DashboardWidget.findOne(query);
+
+    if (populate && Array.isArray(populate)) {
+      populate.forEach((field) => {
+        widgetsQuery = widgetsQuery.populate(field);
+      });
+    }
+
+    const dashboardWidget = await widgetsQuery.exec();
+
+    return dashboardWidget;
   } catch (err) {
     throw err;
   }

@@ -4,6 +4,11 @@ import mongoose from 'mongoose';
 
 import * as dashboardService from '../../database/services/dashboard.services';
 import * as dashboardWidgetdService from '../../database/services/dashboardWidget.services';
+import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
+
+import { buildAggregationPipeline } from '../../utils/aggregationPipeline';
+import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
+import createDefaultDataSourceVersionModel from '../../database/models/defaultDataSourceVersionModel';
 
 export const createDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -190,6 +195,51 @@ export const getChartData = async (req: Request, res: Response, next: NextFuncti
       success: true,
       message: 'Chart data fetched successfully',
       ...data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getWidgetById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dashboardWidgetId } = req.params;
+    const { orgCode } = req.user;
+
+    let dashboardWidget: any = await dashboardWidgetdService.getDashboardWidget(
+      {
+        _id: dashboardWidgetId,
+      },
+      ['widgetTypeId', 'dataSourceId']
+    );
+    dashboardWidget = dashboardWidget.toJSON();
+
+    const dataSourceVersion: any = await dataSourceVersionService.getDataSourceVersion({
+      query: {
+        dataSourceId: dashboardWidget.dataSourceId._id,
+        isCurrent: true,
+        isActive: true,
+      },
+    });
+
+    const aggregationPipeline = await buildAggregationPipeline({
+      ...dashboardWidget,
+      dataSourceVersionId: dataSourceVersion._id,
+    });
+
+    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dashboardWidget.dataSourceId.code,
+    });
+    const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
+
+    const dataResults: any = await DataSourceModel.aggregate(aggregationPipeline).exec();
+    dashboardWidget.data = dataResults;
+
+    res.status(200).json({
+      success: true,
+      message: 'Chart data fetched successfully',
+      data: dashboardWidget,
     });
   } catch (err) {
     next(err);
