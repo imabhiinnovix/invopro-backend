@@ -3,6 +3,7 @@ import {
   getActivePatentValueCoverage,
   getAgreementSigned,
   getIpAnalysis,
+  getNewCoverage,
   getNewPatentValueCoverage,
   getStrategicReportingClass,
 } from '../../database/services/supplementalipReport.services';
@@ -321,6 +322,8 @@ export const generateSupplementalIpReport = async ({
     const strategicReportingClassData = getStrategicReportingClass({
       allAccoladeMappingSheetData: allAccoladeMappingSheet,
     });
+
+    const newCoverageData = getNewCoverage({ allAccoladeMappingSheetData: allAccoladeMappingSheet });
 
     await createUpdateExcelTable({
       data: proceessedFinalAgreement,
@@ -741,6 +744,144 @@ export const generateSupplementalIpReport = async ({
         'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
         '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
         '# OF ACCOLADE PROJECTS',
+      ],
+      isWhiteBackGround: true,
+      cellFormats: {
+        'RANPV OF PHASE 1-5 PROJECTS ($M)': '"$" #,##0,, "M"',
+        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '"$" #,##0,, "M"',
+        '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '0%',
+      },
+      startCellNumber: 2,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'New Coverage',
+      gap: 1,
+      startTableColumn: 'B',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Project Closed= OPEN',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'New Coverage',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Project Last Gate Decision= Exclude HOLD/STOP',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'New Coverage',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Project Current Stage Name= STAGE 1-STAGE 5',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'New Coverage',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Strategic Reporting Class = Exclude ASSET SUPPORT',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'New Coverage',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 2,
+      mergeEndColumn: 5,
+      titleHeading: '·        Project Type= Exclude the items that CONTAINS TSR',
+      cellBold: false,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'New Coverage',
+      gap: 2,
+      startTableColumn: 'C',
+      headerColor: 'bfbfbf',
+      titleHeadingColor: 'bfbfbf',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 3,
+      mergeEndColumn: 5,
+      titleHeading: 'CURRENT',
+      cellBold: true,
+      titleCellAlignment: 'center',
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'New Coverage',
+      gap: -1,
+      startTableColumn: 'F',
+      headerColor: 'fff2cc',
+      titleHeadingColor: 'fff2cc',
+      headers: [],
+      isWhiteBackGround: true,
+      startCellNumber: 6,
+      mergeEndColumn: 8,
+      titleHeading: 'NEW',
+      cellBold: true,
+      titleCellAlignment: 'center',
+    });
+    await createUpdateExcelTable({
+      data: newCoverageData,
+      filePath: newFilePath,
+      sheetName: 'New Coverage',
+      gap: 0,
+      startTableColumn: 'B',
+      headerColor: '9dc3e6',
+      lastRowColor: '9dc3e6',
+      headers: [
+        'SBU',
+        'RANPV OF PHASE 1-5 PROJECTS ($M)',
+        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
+        '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
+        'NEW RANPV OF PHASE 1-5 PROJECTS ($M)',
+        'NEW RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
+        'NEW % OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
       ],
       isWhiteBackGround: true,
       cellFormats: {

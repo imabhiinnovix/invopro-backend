@@ -1013,3 +1013,68 @@ export function getStrategicReportingClass({
     throw e;
   }
 }
+
+export function getNewCoverage({
+  allAccoladeMappingSheetData,
+}: {
+  allAccoladeMappingSheetData: Record<string, any>[];
+}) {
+  try {
+    const filteredProjects = allAccoladeMappingSheetData.filter((project) => {
+      return (
+        project.ProjectClosed?.toLowerCase() === 'open' &&
+        project.ProjectLastGateDecision?.toLowerCase() !== 'hold' &&
+        project.ProjectLastGateDecision?.toLowerCase() !== 'stop' &&
+        /stage [1-5]/i.test(project.ProjectCurrentStageName) &&
+        project.StrategicReportingClass?.toLowerCase() !== 'asset support' &&
+        !project.ProjectType?.toLowerCase().includes('tsr')
+      );
+    });
+
+    const allRANPVGroup: Record<string, number> = {};
+    const activePatentFillingRANPVGroup: Record<string, number> = {};
+
+    filteredProjects.forEach((project) => {
+      const { STD, RiskAdjustedNPV, noOfActiveApplications } = project;
+      if (!allRANPVGroup[STD]) {
+        allRANPVGroup[STD] = 0;
+      }
+      if (!allRANPVGroup['Total']) {
+        allRANPVGroup['Total'] = 0;
+      }
+
+      if (noOfActiveApplications) {
+        if (!activePatentFillingRANPVGroup[STD]) {
+          activePatentFillingRANPVGroup[STD] = 0;
+        }
+        if (!activePatentFillingRANPVGroup['Total']) {
+          activePatentFillingRANPVGroup['Total'] = 0;
+        }
+        activePatentFillingRANPVGroup[STD] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+        activePatentFillingRANPVGroup['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      }
+
+      allRANPVGroup[STD] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      allRANPVGroup['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+    });
+
+    let newCoverage = Object.entries(allRANPVGroup).map(([STD, sum]: [string, number]) => ({
+      SBU: STD,
+      'RANPV OF PHASE 1-5 PROJECTS ($M)': sum,
+      'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': activePatentFillingRANPVGroup[STD],
+      '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': activePatentFillingRANPVGroup[STD] / sum,
+      'NEW RANPV OF PHASE 1-5 PROJECTS ($M)': '',
+      'NEW RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '',
+      'NEW % OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '',
+    }));
+
+    newCoverage = [
+      ...newCoverage.filter((item) => item.SBU !== 'Total'), // Keep all except "Total"
+      ...newCoverage.filter((item) => item.SBU === 'Total'), // Add "Total" at the end
+    ];
+    return newCoverage;
+  } catch (e) {
+    console.log('Error in  getNewCoverage.', e);
+    throw e;
+  }
+}

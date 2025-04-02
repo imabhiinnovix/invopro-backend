@@ -362,6 +362,8 @@ export async function createUpdateExcelTable({
   cellFormats,
   startCellNumber,
   mergeEndColumn,
+  titleCellBorder,
+  titleCellAlignment,
 }: {
   data: Array<Record<string, any>>; // Array of JSON objects with varying keys
   filePath: string;
@@ -381,6 +383,16 @@ export async function createUpdateExcelTable({
   cellFormats?: Record<string, string>;
   startCellNumber?: number;
   mergeEndColumn?: number;
+  titleCellBorder?: boolean;
+  titleCellAlignment?:
+    | 'left'
+    | 'center'
+    | 'right'
+    | 'fill'
+    | 'justify'
+    | 'centerContinuous'
+    | 'distributed'
+    | undefined;
 }): Promise<void> {
   try {
     const workbook = new ExcelJS.Workbook();
@@ -429,14 +441,24 @@ export async function createUpdateExcelTable({
     if (titleHeading) {
       console.log('Writing title heading...');
       const titleRow = worksheet.getRow(startRow);
-      titleRow.getCell(startCellNumber ?? 1).value = titleHeading;
-      titleRow.getCell(startCellNumber ?? 1).font = { bold: cellBold ?? false, size: 14, color: { argb: '000000' } };
-      titleRow.getCell(startCellNumber ?? 1).alignment = { horizontal: 'left', vertical: 'middle' };
-      titleRow.getCell(startCellNumber ?? 1).fill = {
+      const titleCell = titleRow.getCell(startCellNumber ?? 1);
+      titleCell.value = titleHeading;
+      titleCell.font = { bold: cellBold ?? false, size: 14, color: { argb: '000000' } };
+      titleCell.alignment = { horizontal: titleCellAlignment ? titleCellAlignment : 'left', vertical: 'middle' };
+      titleCell.fill = {
         type: 'pattern',
         pattern: 'solid',
         fgColor: { argb: titleHeadingColor ?? '4472C4' },
       };
+      if (titleCellBorder) {
+        titleCell.border = {
+          top: { style: 'thick', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } },
+        };
+      }
+
       titleRow.height = 20;
       worksheet.mergeCells(startRow, startCellNumber ?? 1, startRow, mergeEndColumn ?? 5);
     } else {
