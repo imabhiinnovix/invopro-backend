@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import DataSource from '../models/dataSource';
 
 export const createDataSourcce = async (dataSourceData: any) => {
@@ -73,6 +74,15 @@ export const getDataSourceList = async ({
     const totalCount = await DataSource.countDocuments(query);
 
     return { data: dataSource, totalCount };
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getDataSource = async (query: any) => {
+  try {
+    const dataSource = await DataSource.findOne(query);
+    return dataSource;
   } catch (err) {
     throw err;
   }

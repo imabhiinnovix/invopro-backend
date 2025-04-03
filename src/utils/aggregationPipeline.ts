@@ -8,69 +8,104 @@ export const buildAggregationPipeline = (widget: any) => {
     dataSourceVersionId: widget.dataSourceVersionId,
   };
 
+  // Helper function to get field type from entity
+  const getFieldType = (fieldName: string) => {
+    const attribute = widget.entity.attributes.find((attr: any) => attr.name === fieldName);
+    return attribute ? attribute.type : 'string';
+  };
+
+  // Helper function to get field path
+  const getFieldPath = (fieldName: string) => {
+    return `$${fieldName}`;
+  };
+
   widget.conditions?.forEach((condition) => {
+    const fieldType = getFieldType(condition.field);
+    const fieldPath = getFieldPath(`rowData.${condition.field}`);
+
     if (condition.operator === 'between' && condition.value?.startDate && condition.value?.endDate) {
       const convertedField = `converted_${condition.field}`;
 
-      // Add date conversion
-      dateConversions[convertedField] = {
-        $dateFromString: { dateString: `$rowData.${condition.field}` },
-      };
+      // Handle date conversion based on field type
+      if (fieldType === 'date') {
+        dateConversions[convertedField] = {
+          $cond: {
+            if: { $eq: [{ $type: fieldPath }, 'date'] },
+            then: fieldPath,
+            else: {
+              $dateFromString: {
+                dateString: fieldPath,
+                format: '%Y-%m-%dT%H:%M:%S.%LZ', // ISO format
+              },
+            },
+          },
+        };
+      } else {
+        dateConversions[convertedField] = {
+          $dateFromString: {
+            dateString: fieldPath,
+            format: '%Y-%m-%dT%H:%M:%S.%LZ', // ISO format
+          },
+        };
+      }
 
-      // Add date range match
       matchConditions[convertedField] = {
         $gt: new Date(condition.value.startDate),
         $lt: new Date(condition.value.endDate),
       };
     } else {
-      // Handle other operators
-      const fieldPath = `rowData.${condition.field}`;
+      // Convert value based on field type
+      let convertedValue = condition.value;
+      if (fieldType === 'number') {
+        convertedValue = Number(condition.value);
+      } else if (fieldType === 'date') {
+        convertedValue = new Date(condition.value);
+      } else if (fieldType === 'boolean') {
+        convertedValue = condition.value === 'true';
+      }
+
       switch (condition.operator) {
         case 'equal':
-          matchConditions[fieldPath] = condition.value;
+          matchConditions[`rowData.${condition.field}`] = convertedValue;
           break;
         case 'lt':
         case 'lte':
         case 'gt':
         case 'gte':
         case 'ne':
-          matchConditions[fieldPath] = { [`$${condition.operator}`]: condition.value };
+          matchConditions[`rowData.${condition.field}`] = { [`$${condition.operator}`]: convertedValue };
           break;
         case 'blank':
-          matchConditions[fieldPath] = null;
+          matchConditions[`rowData.${condition.field}`] = null;
           break;
         case 'notblank':
-          matchConditions[fieldPath] = { $ne: null };
+          matchConditions[`rowData.${condition.field}`] = { $ne: null };
           break;
         case 'contains':
-          matchConditions[fieldPath] = { $regex: condition.value, $options: 'i' };
+          matchConditions[`rowData.${condition.field}`] = { $regex: convertedValue, $options: 'i' };
           break;
         case 'notcontains':
-          matchConditions[fieldPath] = { $not: { $regex: condition.value, $options: 'i' } };
+          matchConditions[`rowData.${condition.field}`] = { $not: { $regex: convertedValue, $options: 'i' } };
           break;
         case 'startswith':
-          matchConditions[fieldPath] = { $regex: `^${condition.value}`, $options: 'i' };
+          matchConditions[`rowData.${condition.field}`] = { $regex: `^${convertedValue}`, $options: 'i' };
           break;
         case 'endswith':
-          matchConditions[fieldPath] = { $regex: `${condition.value}$`, $options: 'i' };
+          matchConditions[`rowData.${condition.field}`] = { $regex: `${convertedValue}$`, $options: 'i' };
           break;
-
-        // Date conditions
         case 'before':
         case 'after':
-          matchConditions[fieldPath] = {
-            [`$${condition.operator === 'before' ? 'lt' : 'gt'}`]: new Date(condition.value),
+          matchConditions[`rowData.${condition.field}`] = {
+            [`$${condition.operator === 'before' ? 'lt' : 'gt'}`]: convertedValue,
           };
           break;
         case 'on':
         case 'noton': {
-          const startOfDay = new Date(condition.value);
+          const startOfDay = new Date(convertedValue);
           startOfDay.setUTCHours(0, 0, 0, 0);
-
-          const endOfDay = new Date(condition.value);
+          const endOfDay = new Date(convertedValue);
           endOfDay.setUTCHours(23, 59, 59, 999);
-
-          matchConditions[fieldPath] =
+          matchConditions[`rowData.${condition.field}`] =
             condition.operator === 'on'
               ? { $gte: startOfDay, $lt: endOfDay }
               : { $not: { $gte: startOfDay, $lt: endOfDay } };
@@ -83,9 +118,9 @@ export const buildAggregationPipeline = (widget: any) => {
   // 2. Build grouping structure
   const groupFields = [...widget.dimensions, ...widget.groupBy].reduce((acc, field) => {
     if (field === widget.dimensions[0]) {
-      acc['name'] = `$rowData.${field}`;
+      acc['name'] = getFieldPath(`rowData.${field}`);
     } else {
-      acc[field] = `$rowData.${field}`;
+      acc[field] = getFieldPath(`rowData.${field}`);
     }
     return acc;
   }, {});
@@ -99,10 +134,10 @@ export const buildAggregationPipeline = (widget: any) => {
       aggregationOperation = { count: { $sum: 1 } };
       break;
     case 'Sum':
-      aggregationOperation = { total: { $sum: `$rowData.${aggregationField}` } };
+      aggregationOperation = { total: { $sum: getFieldPath(`rowData.${aggregationField}`) } };
       break;
     case 'Average':
-      aggregationOperation = { average: { $avg: `$rowData.${aggregationField}` } };
+      aggregationOperation = { average: { $avg: getFieldPath(`rowData.${aggregationField}`) } };
       break;
     default:
       aggregationOperation = { count: { $sum: 1 } };

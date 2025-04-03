@@ -7,7 +7,7 @@ import {
   getDashboardById,
   getDashboards,
   getDashboardWidgetList,
-  getWidgetById,
+  getWidgetData,
   updateDashboard,
   updateWidget,
 } from '../controllers/dashboard.controller';
@@ -22,7 +22,7 @@ router.get('/list', authenticateToken, getDashboards);
 
 // Dashboard widget
 router.get('/widget/getWidgets/:dashboardId', authenticateToken, getDashboardWidgetList);
-router.get('/widget/getWidgetById/:dashboardWidgetId', authenticateToken, getWidgetById);
+router.post('/widget/getWidgetData', authenticateToken, getWidgetData);
 router.post('/widget/create', authenticateToken, createWidget);
 router.post('/widget/update/:dashboardWidgetId', authenticateToken, updateWidget);
 

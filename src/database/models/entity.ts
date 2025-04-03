@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Schema, model, Document, Types } from 'mongoose';
 
 // Define the Attribute interface

@@ -5,11 +5,13 @@ import mongoose from 'mongoose';
 import * as dashboardService from '../../database/services/dashboard.services';
 import * as dashboardWidgetdService from '../../database/services/dashboardWidget.services';
 import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
+import * as entityService from '../../database/services/entity.services';
+import * as dataSourceService from '../../database/services/dataSource.services';
 
 import { buildAggregationPipeline } from '../../utils/aggregationPipeline';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
 import createDefaultDataSourceVersionModel from '../../database/models/defaultDataSourceVersionModel';
-import { DashboardWidget, DashboardWidgetResponse, DataSourceVersion, Widget } from '../../types/widget.types';
+import { DataSourceVersion, Widget } from '../../types/widget.types';
 
 export const createDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -185,27 +187,28 @@ export const getDashboardWidgetList = async (req: Request, res: Response, next: 
   }
 };
 
-export const getWidgetById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getWidgetData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { dashboardWidgetId } = req.params;
+    const { dataSourceId, entityId, dimensions, groupBy, aggregation, conditions } = req.body;
     const { orgCode } = req.user;
 
-    // 1. Fetch dashboard widget with related data
-    const dashboardWidget: any = await dashboardWidgetdService.getDashboardWidget({ _id: dashboardWidgetId }, [
-      'widgetTypeId',
-      'dataSourceId',
-    ]);
+    // 1. Fetch entity data for field type information
+    const entity: any = await entityService.getEntity({
+      _id: entityId,
+    });
 
-    if (!dashboardWidget) {
-      throw new Error('Dashboard widget not found');
+    if (!entity) {
+      throw new Error('Entity not found');
     }
 
-    const widgetData: any = dashboardWidget.toJSON() as DashboardWidget;
+    const dataSource: any = await dataSourceService.getDataSource({
+      _id: dataSourceId,
+    });
 
     // 2. Fetch current active data source version
-    const dataSourceVersion = (await dataSourceVersionService.getDataSourceVersion({
+    const dataSourceVersion: any = (await dataSourceVersionService.getDataSourceVersion({
       query: {
-        dataSourceId: widgetData.dataSourceId._id,
+        dataSourceId: dataSourceId,
         isCurrent: true,
         isActive: true,
       },
@@ -215,21 +218,23 @@ export const getWidgetById = async (req: Request, res: Response, next: NextFunct
       throw new Error('No active data source version found');
     }
 
-    // 3. Build aggregation pipeline
+    // 3. Build widget object for aggregation
     const widget: Widget = {
-      ...widgetData,
+      dataSourceId: { _id: dataSourceId },
       dataSourceVersionId: dataSourceVersion._id,
-      dimensions: widgetData.dimensions || [],
-      groupBy: widgetData.groupBy || [],
-      aggregation: widgetData.aggregation || { type: 'Count', attributeName: '' },
+      dimensions,
+      groupBy,
+      aggregation,
+      entity, // Pass entity data for field type conversion
+      conditions,
     };
 
-    const aggregationPipeline = buildAggregationPipeline(widget);
+    const aggregationPipeline = await buildAggregationPipeline(widget);
 
     // 4. Get schema name and create model
     const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
       orgCode,
-      versionCode: widgetData.dataSourceId.code,
+      versionCode: dataSource?.code,
     });
     const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
 
@@ -237,17 +242,15 @@ export const getWidgetById = async (req: Request, res: Response, next: NextFunct
     const dataResults = await DataSourceModel.aggregate(aggregationPipeline).exec();
 
     // 6. Prepare response
-    const response: DashboardWidgetResponse = {
+    const response = {
       success: true,
       message: 'Chart data fetched successfully',
-      data: {
-        ...widgetData,
-        data: dataResults,
-      },
+      data: dataResults,
     };
 
     res.status(200).json(response);
   } catch (err) {
+    console.error('Error in getWidgetData:', err);
     next(err);
   }
 };

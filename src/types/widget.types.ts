@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Enums
 export enum OperatorType {
   EQUALS = 'equal',
@@ -49,6 +50,7 @@ export interface Widget {
   groupBy: string[];
   conditions?: Condition[];
   aggregation: Aggregation;
+  entity: any;
 }
 
 // MongoDB specific types
@@ -69,7 +71,6 @@ export interface MongoOperator {
   $not?: any;
 }
 
-export type DateConversion = Record<string, { $dateFromString: { dateString: string } }>;
 export type MatchCondition = Record<string, any>;
 export type GroupFields = Record<string, string>;
 export type AggregationOperation = Record<string, { $sum: number | string } | { $avg: string }>;

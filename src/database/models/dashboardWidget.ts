@@ -6,6 +6,7 @@ interface IDashboardWidget extends Document {
   dashboardId: Types.ObjectId;
   organizationId: Types.ObjectId;
   widgetTypeId: Types.ObjectId;
+  entityId: Types.ObjectId;
   name: string;
   description: string;
   position: any;
@@ -32,6 +33,7 @@ const dashboardWidgetSchema = new Schema<IDashboardWidget>(
     dashboardId: { type: Schema.Types.ObjectId, ref: 'dashboard' },
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
     widgetTypeId: { type: Schema.Types.ObjectId, ref: 'widget_type' },
+    entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     name: { type: Schema.Types.String },
     description: { type: Schema.Types.String },
     position: {
