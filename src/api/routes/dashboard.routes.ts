@@ -4,7 +4,6 @@ import {
   createDashboard,
   createWidget,
   deleteDashboard,
-  getChartData,
   getDashboardById,
   getDashboards,
   getDashboardWidgetList,
@@ -22,9 +21,8 @@ router.get('/get/:dashboardId', authenticateToken, getDashboardById);
 router.get('/list', authenticateToken, getDashboards);
 
 // Dashboard widget
-router.get('/widget/getChartData/:dashboardId', authenticateToken, getChartData);
-router.get('/widget/:dashboardWidgetId', authenticateToken, getWidgetById);
-router.get('/widget/list', authenticateToken, getDashboardWidgetList);
+router.get('/widget/getWidgets/:dashboardId', authenticateToken, getDashboardWidgetList);
+router.get('/widget/getWidgetById/:dashboardWidgetId', authenticateToken, getWidgetById);
 router.post('/widget/create', authenticateToken, createWidget);
 router.post('/widget/update/:dashboardWidgetId', authenticateToken, updateWidget);
 

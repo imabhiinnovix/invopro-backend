@@ -167,23 +167,6 @@ export const deleteDashboard = async (req: Request, res: Response, next: NextFun
 
 export const getDashboardWidgetList = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const dashboardWidgets = await dashboardWidgetdService.getAllDashboardWidgets({
-      query: {},
-      populate: ['widgetTypeId', 'dataSourceId'],
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Dashboard widgets fetched successfully',
-      ...dashboardWidgets,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const getChartData = async (req: Request, res: Response, next: NextFunction) => {
-  try {
     const { dashboardId } = req.params;
     const { orgCode } = req.user;
 
