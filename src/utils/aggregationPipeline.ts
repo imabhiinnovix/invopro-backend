@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { Types } from 'mongoose';
+
 export const buildAggregationPipeline = (widget: any) => {
   // 1. Handle date conversions for 'between' conditions
   const dateConversions = {};
   const matchConditions: any = {
-    dataSourceId: widget.dataSourceId._id,
-    dataSourceVersionId: widget.dataSourceVersionId,
+    dataSourceId: new Types.ObjectId(widget.dataSourceId),
+    dataSourceVersionId: new Types.ObjectId(widget.dataSourceVersionId),
   };
 
   // Helper function to get field type from entity

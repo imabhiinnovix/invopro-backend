@@ -220,8 +220,8 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
 
     // 3. Build widget object for aggregation
     const widget: Widget = {
-      dataSourceId: { _id: dataSourceId },
-      dataSourceVersionId: dataSourceVersion._id,
+      dataSourceId: dataSourceId.toString(),
+      dataSourceVersionId: dataSourceVersion._id.toString(),
       dimensions,
       groupBy,
       aggregation,
@@ -229,7 +229,7 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       conditions,
     };
 
-    const aggregationPipeline = await buildAggregationPipeline(widget);
+    const aggregationPipeline = buildAggregationPipeline(widget);
 
     // 4. Get schema name and create model
     const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
