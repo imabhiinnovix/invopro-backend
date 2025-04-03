@@ -107,6 +107,24 @@ export const createWidget = async (req: Request, res: Response, next: NextFuncti
 
     const { organizationId, userId } = req.user;
 
+    // Check for duplicate widget name in the same dashboard
+    const existingWidget = await dashboardWidgetdService.getDashboardWidget(
+      {
+        dashboardId,
+        name,
+        isActive: true,
+      },
+      []
+    );
+
+    if (existingWidget) {
+      throw new Error('A widget with this name already exists in this dashboard. Please use a different name.');
+    }
+
+    // Get the current highest index for this dashboard
+    const lastWidget = await dashboardWidgetdService.getLastWidgetIndex(dashboardId);
+    const nextIndex = (lastWidget?.position?.index || 0) + 1;
+
     const dashboardWidget = await dashboardWidgetdService.createDashboardWidget({
       dashboardId,
       widgetTypeId,
@@ -118,7 +136,10 @@ export const createWidget = async (req: Request, res: Response, next: NextFuncti
       conditions,
       aggregation,
       dataSourceId,
-      position,
+      position: {
+        ...position,
+        index: nextIndex,
+      },
     });
 
     res.status(200).json({
@@ -251,6 +272,65 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     res.status(200).json(response);
   } catch (err) {
     console.error('Error in getWidgetData:', err);
+    next(err);
+  }
+};
+
+export const saveDashboardWidgets = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { widgets } = req.body;
+    const { organizationId, userId } = req.user;
+
+    if (!Array.isArray(widgets)) {
+      throw new Error('Widgets must be an array');
+    }
+
+    // Check for duplicate widget names within the input array
+    const widgetNames = widgets.map((widget) => widget.name);
+    const uniqueWidgetNames = new Set(widgetNames);
+    if (widgetNames.length !== uniqueWidgetNames.size) {
+      throw new Error('Duplicate widget names found in the input. Each widget must have a unique name.');
+    }
+
+    // Check for existing widgets with same names in the dashboard
+    const dashboardId = widgets[0].dashboardId;
+    const existingWidgets = await dashboardWidgetdService.getAllDashboardWidgets({
+      query: {
+        dashboardId,
+        name: { $in: widgetNames },
+        isActive: true,
+      },
+    });
+
+    if (existingWidgets.data.length > 0) {
+      throw new Error('Some widget names already exist in this dashboard. Please use different names.');
+    }
+
+    // Get the current highest index for this dashboard
+    const lastWidget = await dashboardWidgetdService.getLastWidgetIndex(dashboardId);
+    let nextIndex = (lastWidget?.position?.index || 0) + 1;
+
+    await Promise.all(
+      widgets.map(async (widget) => {
+        const widgetWithIndex = {
+          ...widget,
+          organizationId,
+          createdBy: userId,
+          isActive: true,
+          position: {
+            ...widget.position,
+            index: nextIndex++,
+          },
+        };
+        return await dashboardWidgetdService.createDashboardWidget(widgetWithIndex);
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Widgets created successfully',
+    });
+  } catch (err) {
     next(err);
   }
 };

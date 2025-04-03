@@ -8,6 +8,7 @@ import {
   getDashboards,
   getDashboardWidgetList,
   getWidgetData,
+  saveDashboardWidgets,
   updateDashboard,
   updateWidget,
 } from '../controllers/dashboard.controller';
@@ -24,6 +25,7 @@ router.get('/list', authenticateToken, getDashboards);
 router.get('/widget/getWidgets/:dashboardId', authenticateToken, getDashboardWidgetList);
 router.post('/widget/getWidgetData', authenticateToken, getWidgetData);
 router.post('/widget/create', authenticateToken, createWidget);
+router.post('/widget/save', authenticateToken, saveDashboardWidgets);
 router.post('/widget/update/:dashboardWidgetId', authenticateToken, updateWidget);
 
 export default router;

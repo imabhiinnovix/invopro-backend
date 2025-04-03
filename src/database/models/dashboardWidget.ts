@@ -9,11 +9,14 @@ interface IDashboardWidget extends Document {
   entityId: Types.ObjectId;
   name: string;
   description: string;
-  position: any;
-  index: number;
+  position: {
+    x: number;
+    y: number;
+    index: number;
+  };
   dataSourceId: Types.ObjectId;
-  dimensions: string;
-  groupBy: string;
+  dimensions: string[];
+  groupBy: string[];
   aggregation: {
     type: string;
     attributeName: string;
@@ -21,40 +24,36 @@ interface IDashboardWidget extends Document {
   conditions: {
     field: string;
     operator: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     value: any;
+    fieldType: string;
   }[];
   isActive: boolean;
 }
 
 const dashboardWidgetSchema = new Schema<IDashboardWidget>(
   {
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
-    dashboardId: { type: Schema.Types.ObjectId, ref: 'dashboard' },
-    organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
-    widgetTypeId: { type: Schema.Types.ObjectId, ref: 'widget_type' },
-    entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
-    name: { type: Schema.Types.String },
-    description: { type: Schema.Types.String },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    dashboardId: { type: Schema.Types.ObjectId, ref: 'dashboard', required: true },
+    organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
+    widgetTypeId: { type: Schema.Types.ObjectId, ref: 'widget_type', required: true },
+    entityId: { type: Schema.Types.ObjectId, ref: 'Entity', required: true },
+    name: { type: Schema.Types.String, required: true, trim: true },
+    description: { type: Schema.Types.String, trim: true },
     position: {
-      x: {
-        type: Schema.Types.Number,
-      },
-      y: {
-        type: Schema.Types.Number,
-      },
-      index: { type: Schema.Types.Number },
+      x: { type: Schema.Types.Number, required: true, min: 0 },
+      y: { type: Schema.Types.Number, required: true, min: 0 },
+      index: { type: Schema.Types.Number, required: true, min: 0 },
     },
-    // New fields based on the image and sample object
-    dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
-    dimensions: [String],
-    groupBy: [String], // Array of selected attributes for dimensions
+    dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source', required: true },
+    dimensions: { type: [String], default: [] },
+    groupBy: { type: [String], default: [] },
     aggregation: {
       type: {
         type: String,
-        enum: ['Count', 'Sum', 'Average'], // Aggregation type
+        required: true,
+        enum: ['Count', 'Sum', 'Average'],
       },
-      attributeName: String, // Renamed from "field" to match image terminology
+      attributeName: { type: String, required: true },
     },
     conditions: [
       {
@@ -63,7 +62,7 @@ const dashboardWidgetSchema = new Schema<IDashboardWidget>(
         value: Schema.Types.Mixed, // Value (supports various data types)
       },
     ],
-    isActive: { type: Schema.Types.Boolean, default: true },
+    isActive: { type: Schema.Types.Boolean, default: true, required: true },
   },
   {
     timestamps: true,

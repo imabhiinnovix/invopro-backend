@@ -77,3 +77,15 @@ export const deleteDashboardWidget = async (id: string) => {
     throw err;
   }
 };
+
+export const getLastWidgetIndex = async (dashboardId: string) => {
+  try {
+    const lastWidget = await DashboardWidget.findOne({ dashboardId })
+      .sort({ 'position.index': -1 })
+      .select('position.index')
+      .lean();
+    return lastWidget;
+  } catch (err) {
+    throw err;
+  }
+};

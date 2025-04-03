@@ -67,7 +67,7 @@ export const buildAggregationPipeline = (widget: any) => {
       }
 
       switch (condition.operator) {
-        case 'equal':
+        case 'eq':
           matchConditions[`rowData.${condition.field}`] = convertedValue;
           break;
         case 'lt':
@@ -113,6 +113,50 @@ export const buildAggregationPipeline = (widget: any) => {
               : { $not: { $gte: startOfDay, $lt: endOfDay } };
           break;
         }
+        case 'in':
+          matchConditions[`rowData.${condition.field}`] = {
+            $in: Array.isArray(convertedValue) ? convertedValue : [convertedValue],
+          };
+          break;
+        case 'nin':
+          matchConditions[`rowData.${condition.field}`] = {
+            $nin: Array.isArray(convertedValue) ? convertedValue : [convertedValue],
+          };
+          break;
+        case 'exists':
+          matchConditions[`rowData.${condition.field}`] = { $exists: true };
+          break;
+        case 'notexists':
+          matchConditions[`rowData.${condition.field}`] = { $exists: false };
+          break;
+        case 'regex':
+          matchConditions[`rowData.${condition.field}`] = { $regex: convertedValue };
+          break;
+        case 'notregex':
+          matchConditions[`rowData.${condition.field}`] = { $not: { $regex: convertedValue } };
+          break;
+        case 'size':
+          matchConditions[`rowData.${condition.field}`] = { $size: Number(convertedValue) };
+          break;
+        case 'type':
+          matchConditions[`rowData.${condition.field}`] = { $type: convertedValue };
+          break;
+        case 'mod':
+          matchConditions[`rowData.${condition.field}`] = {
+            $mod: Array.isArray(convertedValue) ? convertedValue : [convertedValue, 0],
+          };
+          break;
+        case 'all':
+          matchConditions[`rowData.${condition.field}`] = {
+            $all: Array.isArray(convertedValue) ? convertedValue : [convertedValue],
+          };
+          break;
+        case 'elemMatch':
+          matchConditions[`rowData.${condition.field}`] = { $elemMatch: convertedValue };
+          break;
+        default:
+          console.warn(`Unsupported operator: ${condition.operator}`);
+          break;
       }
     }
   });
