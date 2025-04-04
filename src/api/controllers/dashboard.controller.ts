@@ -57,6 +57,7 @@ export const getDashboards = async (req: Request, res: Response, next: NextFunct
         isDeleted: false,
         isActive: true,
       },
+      populate: ['createdBy'],
     });
 
     res.status(200).json({ success: true, message: 'Dashboard get successfully', ...data });
