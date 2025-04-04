@@ -72,7 +72,7 @@ export const validatorOperatorData: FieldTypeOperators[] = [
     ],
   },
   {
-    fieldType: 'string',
+    fieldType: 'text',
     operatorType: 'field',
     operators: [
       {
@@ -168,26 +168,218 @@ export const validatorOperatorData: FieldTypeOperators[] = [
     ],
   },
   {
-    fieldType: 'result',
-    operatorType: 'result',
+    fieldType: 'boolean',
+    operatorType: 'field',
     operators: [
       {
-        operatorKey: 'present_both',
-        operatorName: 'Present in both',
+        operatorKey: 'eq',
+        operatorName: 'Equals',
+        valueRequired: true,
+        order: 1,
+      },
+      {
+        operatorKey: 'ne',
+        operatorName: 'Not Equals',
+        valueRequired: true,
+        order: 2,
+      },
+      {
+        operatorKey: 'blank',
+        operatorName: 'Is Blank',
+        valueRequired: false,
+        order: 3,
+      },
+      {
+        operatorKey: 'notblank',
+        operatorName: 'Is Not Blank',
+        valueRequired: false,
+        order: 4,
+      },
+    ],
+  },
+  {
+    fieldType: 'richtext',
+    operatorType: 'field',
+    operators: [
+      {
+        operatorKey: 'blank',
+        operatorName: 'Is Blank',
         valueRequired: false,
         order: 1,
       },
       {
-        operatorKey: 'present_file1',
-        operatorName: 'Present in file 1 not in file 2',
+        operatorKey: 'notblank',
+        operatorName: 'Is Not Blank',
         valueRequired: false,
         order: 2,
       },
       {
-        operatorKey: 'present_file2',
-        operatorName: 'Present in file 2 not in file 1',
-        valueRequired: false,
+        operatorKey: 'contains',
+        operatorName: 'Contains',
+        valueRequired: true,
         order: 3,
+      },
+      {
+        operatorKey: 'notcontains',
+        operatorName: 'Does Not Contain',
+        valueRequired: true,
+        order: 4,
+      },
+      {
+        operatorKey: 'eq',
+        operatorName: 'Equals',
+        valueRequired: true,
+        order: 5,
+      },
+      {
+        operatorKey: 'ne',
+        operatorName: 'Not Equals',
+        valueRequired: true,
+        order: 6,
+      },
+    ],
+  },
+  {
+    fieldType: 'url',
+    operatorType: 'field',
+    operators: [
+      {
+        operatorKey: 'blank',
+        operatorName: 'Is Blank',
+        valueRequired: false,
+        order: 1,
+      },
+      {
+        operatorKey: 'notblank',
+        operatorName: 'Is Not Blank',
+        valueRequired: false,
+        order: 2,
+      },
+      {
+        operatorKey: 'contains',
+        operatorName: 'Contains',
+        valueRequired: true,
+        order: 3,
+      },
+      {
+        operatorKey: 'notcontains',
+        operatorName: 'Does Not Contain',
+        valueRequired: true,
+        order: 4,
+      },
+      {
+        operatorKey: 'eq',
+        operatorName: 'Equals',
+        valueRequired: true,
+        order: 5,
+      },
+      {
+        operatorKey: 'ne',
+        operatorName: 'Not Equals',
+        valueRequired: true,
+        order: 6,
+      },
+    ],
+  },
+  {
+    fieldType: 'option',
+    operatorType: 'field',
+    operators: [
+      {
+        operatorKey: 'blank',
+        operatorName: 'Is Blank',
+        valueRequired: false,
+        order: 1,
+      },
+      {
+        operatorKey: 'notblank',
+        operatorName: 'Is Not Blank',
+        valueRequired: false,
+        order: 2,
+      },
+      {
+        operatorKey: 'eq',
+        operatorName: 'Equals',
+        valueRequired: true,
+        order: 3,
+      },
+      {
+        operatorKey: 'ne',
+        operatorName: 'Not Equals',
+        valueRequired: true,
+        order: 4,
+      },
+    ],
+  },
+  {
+    fieldType: 'multioption',
+    operatorType: 'field',
+    operators: [
+      {
+        operatorKey: 'blank',
+        operatorName: 'Is Blank',
+        valueRequired: false,
+        order: 1,
+      },
+      {
+        operatorKey: 'notblank',
+        operatorName: 'Is Not Blank',
+        valueRequired: false,
+        order: 2,
+      },
+      {
+        operatorKey: 'contains',
+        operatorName: 'Contains',
+        valueRequired: true,
+        order: 3,
+      },
+      {
+        operatorKey: 'notcontains',
+        operatorName: 'Does Not Contain',
+        valueRequired: true,
+        order: 4,
+      },
+      {
+        operatorKey: 'eq',
+        operatorName: 'Equals',
+        valueRequired: true,
+        order: 5,
+      },
+      {
+        operatorKey: 'ne',
+        operatorName: 'Not Equals',
+        valueRequired: true,
+        order: 6,
+      },
+    ],
+  },
+  {
+    fieldType: 'user',
+    operatorType: 'field',
+    operators: [
+      {
+        operatorKey: 'blank',
+        operatorName: 'Is Blank',
+        valueRequired: false,
+        order: 1,
+      },
+      {
+        operatorKey: 'notblank',
+        operatorName: 'Is Not Blank',
+        valueRequired: false,
+        order: 2,
+      },
+      {
+        operatorKey: 'eq',
+        operatorName: 'Equals',
+        valueRequired: true,
+        order: 3,
+      },
+      {
+        operatorKey: 'ne',
+        operatorName: 'Not Equals',
+        valueRequired: true,
+        order: 4,
       },
     ],
   },

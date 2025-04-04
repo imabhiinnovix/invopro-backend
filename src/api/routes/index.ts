@@ -13,6 +13,7 @@ import dataSourceVersion from './dataSourceVersion.routes';
 import dataImportErrorRoutes from './dataImportError.routes';
 import dashBoardRoutes from './dashboard.routes';
 import widgetTypeRoutes from './widgetType.routes';
+import operatorRoutes from './operator.routes';
 
 const router = Router();
 
@@ -29,5 +30,6 @@ router.use('/dataSourceVersion', dataSourceVersion);
 router.use('/dataImportError', dataImportErrorRoutes);
 router.use('/dashboard', dashBoardRoutes);
 router.use('/widgetType', widgetTypeRoutes);
+router.use('/operator', operatorRoutes);
 
 export default router;
