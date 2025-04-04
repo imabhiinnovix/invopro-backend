@@ -25,6 +25,8 @@ import {
 import { createExcelSheetFile, createUpdateExcelTable, writeDataToExcel } from '../../utils/excel.utils';
 import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
 import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/dataSourceVersion.controller';
+import { processReportHeaders } from '../../utils/common.report';
+import { ReportHeaders } from '../../utils/common.type';
 
 export const generateMonthlyIpReport = async ({
   reportRequestPayload,
@@ -43,6 +45,7 @@ export const generateMonthlyIpReport = async ({
   userId,
   orgCode,
   organizationId,
+  headers,
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
@@ -60,12 +63,20 @@ export const generateMonthlyIpReport = async ({
   userId: string;
   orgCode: string;
   organizationId: string;
+  headers: ReportHeaders;
 }) => {
   try {
     const versionValue = reportRequestPayload.versionValue;
     const splitedVersionValue = versionValue.split('-');
     const currentYear = splitedVersionValue[0];
     const currentMonth = splitedVersionValue[1];
+    const newFilePath = reportRequestPayload.filePath;
+    const toBeProcessedReportHeaders = [
+      { reportHeader: 'SBU', attributeValues: ['SBU'] },
+      ...headers['global']['columns'],
+      { reportHeader: 'Totals', attributeValues: ['Totals'] },
+    ];
+    const reportHeaders = toBeProcessedReportHeaders.map((data) => data.reportHeader);
 
     const currentYearApplicationFiledData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -73,22 +84,16 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
       isRowData,
     });
-    const newFilePath = reportRequestPayload.filePath;
 
-    const processedCurrentYearApplicationFiledData = processData({
-      data: currentYearApplicationFiledData,
-      cellMappings: {
-        'SBU T&I': 'B3',
-        'SBU Metals': 'C3',
-        'SBU Agri-nutrients': 'D3',
-        'SBU Chemicals': 'E3',
-        'SBU Polymers': 'F3',
-        'SBU SHPP': 'G3',
-        'SBU Strategy & Transformation': 'H3',
-        'Scientific Design': 'I3',
-        Total: 'J3',
-      },
-    });
+    const partiallyProcessedCurrentYearApplicationFiledData: Record<string, any> = {
+      SBU: `${currentYear} New Apps Filed`,
+    };
+    for (let item of currentYearApplicationFiledData) {
+      partiallyProcessedCurrentYearApplicationFiledData[item.SBU] =
+        (partiallyProcessedCurrentYearApplicationFiledData[item.SBU] || 0) + item.value;
+      partiallyProcessedCurrentYearApplicationFiledData['Totals'] =
+        (partiallyProcessedCurrentYearApplicationFiledData['Totals'] || 0) + item.value;
+    }
 
     const percentageOfCurrentYearInventionDisclosureConvertedToFilingsData =
       await percentageOfCurrentYearInventionDisclosureConvertedToFilings(
@@ -99,19 +104,60 @@ export const generateMonthlyIpReport = async ({
         isRowData
       );
 
-    const processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData = addCellMaping({
-      data: !isRowData ? (percentageOfCurrentYearInventionDisclosureConvertedToFilingsData as DataItem[]) : [],
-      cellMappings: {
-        'SBU T&I': 'B4',
-        'SBU Metals': 'C4',
-        'SBU Agri-nutrients': 'D4',
-        'SBU Chemicals': 'E4',
-        'SBU Polymers': 'F4',
-        'SBU SHPP': 'G4',
-        'SBU Strategy & Transformation': 'H4',
-        'Scientific Design': 'I4',
-        Total: 'J4',
-      },
+    const partiallyProcessedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData: Record<string, any> = {
+      SBU: `% of ${currentYear} Invention Disclosures converted to Filings`,
+    };
+    for (let item of percentageOfCurrentYearInventionDisclosureConvertedToFilingsData as DataItem[]) {
+      partiallyProcessedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData[item.SBU] =
+        (partiallyProcessedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData[item.SBU] || 0) +
+        item.value;
+      partiallyProcessedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData['Totals'] =
+        (partiallyProcessedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData['Totals'] || 0) +
+        item.value;
+    }
+
+    const staticData = await processStaticData({
+      staticNewFilingsDataSourceId,
+      staticEstimatesDataSourceId,
+      staticProjectOpenedDataSourceId,
+      currentYear,
+      currentMonth,
+      customReportModel,
+    });
+    const processedData = processReportHeaders({
+      data: [
+        { SBU: 'First Filings' },
+        partiallyProcessedCurrentYearApplicationFiledData,
+        partiallyProcessedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
+        ...staticData.allNewEstimates,
+      ],
+      headers: toBeProcessedReportHeaders,
+    });
+
+    await createUpdateExcelTable({
+      data: processedData,
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableColumn: 'A',
+      headerColor: 'ffffff',
+      headerBackgroundColor: '7b7b7b',
+      headers: reportHeaders,
+      isWhiteBackGround: false,
+      tableRowBackGroundColor: { 2: 'ffc000' },
+      tableRowAlignment: { 2: 'center' },
+      tableRowCellFormat: { 4: '0%' },
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 2,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
     });
 
     const draftedApplicationDisclosureCount = await getDisclosureCount({
@@ -577,435 +623,435 @@ export const generateMonthlyIpReport = async ({
       },
     });
 
-    const totalAnnuitySavingsMap = {};
+    // const totalAnnuitySavingsMap = {};
 
-    annuitySavingsForCurrentYear?.forEach((entry) => {
-      totalAnnuitySavingsMap[entry.SBU] = (totalAnnuitySavingsMap[entry.SBU] || 0) + entry.value;
-    });
+    // annuitySavingsForCurrentYear?.forEach((entry) => {
+    //   totalAnnuitySavingsMap[entry.SBU] = (totalAnnuitySavingsMap[entry.SBU] || 0) + entry.value;
+    // });
 
-    annuitySavingsForNextYear.forEach((entry) => {
-      totalAnnuitySavingsMap[entry.SBU] = (totalAnnuitySavingsMap[entry.SBU] || 0) + entry.value;
-    });
+    // annuitySavingsForNextYear.forEach((entry) => {
+    //   totalAnnuitySavingsMap[entry.SBU] = (totalAnnuitySavingsMap[entry.SBU] || 0) + entry.value;
+    // });
 
-    const totalAnnuitySavings = Object.keys(totalAnnuitySavingsMap).map((SBU) => ({
-      SBU,
-      value: totalAnnuitySavingsMap[SBU],
-    }));
+    // const totalAnnuitySavings = Object.keys(totalAnnuitySavingsMap).map((SBU) => ({
+    //   SBU,
+    //   value: totalAnnuitySavingsMap[SBU],
+    // }));
 
-    const processedTotalAnnuitySavings = processData({
-      data: totalAnnuitySavings,
-      cellMappings: {
-        'SBU T&I': 'B42',
-        'SBU Metals': 'C42',
-        'SBU Agri-nutrients': 'D42',
-        'SBU Chemicals': 'E42',
-        'SBU Polymers': 'F42',
-        'SBU SHPP': 'G42',
-        'SBU Strategy & Transformation': 'H42',
-        'Scientific Design': 'I42',
-        Total: 'J42',
-      },
-    });
+    // const processedTotalAnnuitySavings = processData({
+    //   data: totalAnnuitySavings,
+    //   cellMappings: {
+    //     'SBU T&I': 'B42',
+    //     'SBU Metals': 'C42',
+    //     'SBU Agri-nutrients': 'D42',
+    //     'SBU Chemicals': 'E42',
+    //     'SBU Polymers': 'F42',
+    //     'SBU SHPP': 'G42',
+    //     'SBU Strategy & Transformation': 'H42',
+    //     'Scientific Design': 'I42',
+    //     Total: 'J42',
+    //   },
+    // });
 
-    const allProsecutionDrop = await getNumberOfProsecutionReduction({
-      priorityDrop: reductionData.priorityDropArray,
-      pctDrop: reductionData.pctDropArray,
-      prosecutionDrop: reductionData.prosecutionDropArray,
-    });
+    // const allProsecutionDrop = await getNumberOfProsecutionReduction({
+    //   priorityDrop: reductionData.priorityDropArray,
+    //   pctDrop: reductionData.pctDropArray,
+    //   prosecutionDrop: reductionData.prosecutionDropArray,
+    // });
 
-    const processedAllProsecutionDrop = processData({
-      data: allProsecutionDrop,
-      cellMappings: {
-        'SBU T&I': 'B44',
-        'SBU Metals': 'C44',
-        'SBU Agri-nutrients': 'D44',
-        'SBU Chemicals': 'E44',
-        'SBU Polymers': 'F44',
-        'SBU SHPP': 'G44',
-        'SBU Strategy & Transformation': 'H44',
-        'Scientific Design': 'I44',
-        Total: 'J44',
-      },
-    });
+    // const processedAllProsecutionDrop = processData({
+    //   data: allProsecutionDrop,
+    //   cellMappings: {
+    //     'SBU T&I': 'B44',
+    //     'SBU Metals': 'C44',
+    //     'SBU Agri-nutrients': 'D44',
+    //     'SBU Chemicals': 'E44',
+    //     'SBU Polymers': 'F44',
+    //     'SBU SHPP': 'G44',
+    //     'SBU Strategy & Transformation': 'H44',
+    //     'Scientific Design': 'I44',
+    //     Total: 'J44',
+    //   },
+    // });
 
-    const allProsecutionSavings = await getAllProsecutionSavings({
-      priorityDrop: reductionData.priorityDropArray,
-      pctDrop: reductionData.pctDropArray,
-      prosecutionDrop: reductionData.prosecutionDropArray,
-      isRowData,
-    });
+    // const allProsecutionSavings = await getAllProsecutionSavings({
+    //   priorityDrop: reductionData.priorityDropArray,
+    //   pctDrop: reductionData.pctDropArray,
+    //   prosecutionDrop: reductionData.prosecutionDropArray,
+    //   isRowData,
+    // });
 
-    const processedAllProsecutionSavings = processData({
-      data: allProsecutionSavings,
-      cellMappings: {
-        'SBU T&I': 'B45',
-        'SBU Metals': 'C45',
-        'SBU Agri-nutrients': 'D45',
-        'SBU Chemicals': 'E45',
-        'SBU Polymers': 'F45',
-        'SBU SHPP': 'G45',
-        'SBU Strategy & Transformation': 'H45',
-        'Scientific Design': 'I45',
-        Total: 'J45',
-      },
-    });
+    // const processedAllProsecutionSavings = processData({
+    //   data: allProsecutionSavings,
+    //   cellMappings: {
+    //     'SBU T&I': 'B45',
+    //     'SBU Metals': 'C45',
+    //     'SBU Agri-nutrients': 'D45',
+    //     'SBU Chemicals': 'E45',
+    //     'SBU Polymers': 'F45',
+    //     'SBU SHPP': 'G45',
+    //     'SBU Strategy & Transformation': 'H45',
+    //     'Scientific Design': 'I45',
+    //     Total: 'J45',
+    //   },
+    // });
 
-    const totalCostSavings = await getTotalCostSavings({
-      totalAnnuitySavings,
-      allProsecutionSaving: allProsecutionSavings,
-    });
+    // const totalCostSavings = await getTotalCostSavings({
+    //   totalAnnuitySavings,
+    //   allProsecutionSaving: allProsecutionSavings,
+    // });
 
-    const processedTotalCostSavings = processData({
-      data: totalCostSavings,
-      cellMappings: {
-        'SBU T&I': 'B47',
-        'SBU Metals': 'C47',
-        'SBU Agri-nutrients': 'D47',
-        'SBU Chemicals': 'E47',
-        'SBU Polymers': 'F47',
-        'SBU SHPP': 'G47',
-        'SBU Strategy & Transformation': 'H47',
-        'Scientific Design': 'I47',
-        Total: 'J47',
-      },
-    });
+    // const processedTotalCostSavings = processData({
+    //   data: totalCostSavings,
+    //   cellMappings: {
+    //     'SBU T&I': 'B47',
+    //     'SBU Metals': 'C47',
+    //     'SBU Agri-nutrients': 'D47',
+    //     'SBU Chemicals': 'E47',
+    //     'SBU Polymers': 'F47',
+    //     'SBU SHPP': 'G47',
+    //     'SBU Strategy & Transformation': 'H47',
+    //     'Scientific Design': 'I47',
+    //     Total: 'J47',
+    //   },
+    // });
 
-    const staticData = await processStaticData({
-      staticNewFilingsDataSourceId,
-      staticEstimatesDataSourceId,
-      staticProjectOpenedDataSourceId,
-      currentYear,
-      currentMonth,
-      customReportModel,
-    });
+    // const staticData = await processStaticData({
+    //   staticNewFilingsDataSourceId,
+    //   staticEstimatesDataSourceId,
+    //   staticProjectOpenedDataSourceId,
+    //   currentYear,
+    //   currentMonth,
+    //   customReportModel,
+    // });
 
-    await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
-    await fsPromises.copyFile(sampleFilePath, newFilePath);
-    await writeDataToExcel(
-      [
-        ...processedCurrentYearApplicationFiledData,
-        ...processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
-        ...processedDraftedApplicationDisclosureCount,
-        ...processedDraftedApplicationDisclosureCount,
-        ...processedOpenApplicationDisclosureCount,
-        ...processedCurrentYearUsIssued,
-        ...processedCurrentYearINTIssued,
-        ...processedUSPendingApplication,
-        ...processedEPPendingApplication,
-        ...processedCNPendingApplication,
-        ...processedOtherPendingApplication,
-        ...processedTotalPendingApplication,
-        ...processedUSIssuedApplication,
-        ...processedEPIssuedApplication,
-        ...processedCNIssuedApplication,
-        ...processedOtherIssuedApplication,
-        ...processedTotalIssuedApplication,
-        ...processedTotalActiveDisclosureCount,
-        ...processedTotalPortFolio,
-        ...processedTotalPortFolioPercentage,
-        ...processedCurrentYearRenewalDue,
-        ...processedReductionCount,
-        ...processedAnnuitySavingsForCurrentYear,
-        ...processedAnnuitySavingsForNextYear,
-        ...processedTotalAnnuitySavings,
-        ...processedAllProsecutionDrop,
-        ...processedAllProsecutionSavings,
-        ...processedTotalCostSavings,
-        ...staticData,
-        { cellName: 'A3', value: `${currentYear} New Apps Filed`, SBU: '' },
-        { cellName: 'A4', value: `% of ${currentYear} Invention Disclosures converted to Filings`, SBU: '' },
-        { cellName: 'A5', value: `${currentYear} New Apps Estimate`, SBU: '' },
-        { cellName: 'A6', value: `${Number(currentYear) - 1} New Apps filed`, SBU: '' },
-        {
-          cellName: 'A7',
-          value: `${Number(currentYear) - 2} New Apps filed`,
-          SBU: '',
-        },
-        {
-          cellName: 'A8',
-          value: `${Number(currentYear) - 3} New Apps filed`,
-          SBU: '',
-        },
-        {
-          cellName: 'A9',
-          value: `${Number(currentYear) - 4} New Apps filed`,
-          SBU: '',
-        },
-        {
-          cellName: 'A12',
-          value: `Projects Opened in ${currentYear}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A13',
-          value: `Projects Opened in ${Number(currentYear) - 1}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A14',
-          value: `Projects Opened in ${Number(currentYear) - 2}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A15',
-          value: `Projects Opened in ${Number(currentYear) - 3}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A16',
-          value: `Projects Opened in ${Number(currentYear) - 4}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A18',
-          value: `${currentYear} Issued`,
-          SBU: '',
-        },
-        {
-          cellName: 'A19',
-          value: `${currentYear} US Issued`,
-          SBU: '',
-        },
-        {
-          cellName: 'A20',
-          value: `${currentYear} Intl Issued`,
-          SBU: '',
-        },
-        {
-          cellName: 'A36',
-          value: `${currentYear} Renewals Due`,
-          SBU: '',
-        },
-        {
-          cellName: 'A37',
-          value: `${currentYear} Renewals Due`,
-          SBU: '',
-        },
-        {
-          cellName: 'A39',
-          value: `Total No. of ${currentYear}** Reductions (Including reductions during prosecution)`,
-          SBU: '',
-        },
-        {
-          cellName: 'A40',
-          value: `${currentYear} Annuity Savings from ${currentYear} reductions`,
-          SBU: '',
-        },
-        {
-          cellName: 'A41',
-          value: `${Number(currentYear) + 1} Annuity Savings from ${currentYear} reductions`,
-          SBU: '',
-        },
-        {
-          cellName: 'A42',
-          value: `${currentYear}-${Number(currentYear) + 1} Annuity Savings from ${currentYear} reductions`,
-          SBU: '',
-        },
-        {
-          cellName: 'A44',
-          value: `No. of Prosecution reductions in ${currentYear}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A45',
-          value: `Prosecution cost Savings`,
-          SBU: '',
-        },
-        {
-          cellName: 'A47',
-          value: `Total Cost Savings: (${currentYear}-${Number(currentYear) + 1}) Annuity Savings + Prosecution savings from ${currentYear} reductions`,
-          SBU: '',
-        },
-      ],
-      newFilePath
-    );
+    // await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
+    // await fsPromises.copyFile(sampleFilePath, newFilePath);
+    // // await writeDataToExcel(
+    // //   [
+    // //     ...processedCurrentYearApplicationFiledData,
+    // //     ...processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
+    // //     ...processedDraftedApplicationDisclosureCount,
+    // //     ...processedDraftedApplicationDisclosureCount,
+    // //     ...processedOpenApplicationDisclosureCount,
+    // //     ...processedCurrentYearUsIssued,
+    // //     ...processedCurrentYearINTIssued,
+    // //     ...processedUSPendingApplication,
+    // //     ...processedEPPendingApplication,
+    // //     ...processedCNPendingApplication,
+    // //     ...processedOtherPendingApplication,
+    // //     ...processedTotalPendingApplication,
+    // //     ...processedUSIssuedApplication,
+    // //     ...processedEPIssuedApplication,
+    // //     ...processedCNIssuedApplication,
+    // //     ...processedOtherIssuedApplication,
+    // //     ...processedTotalIssuedApplication,
+    // //     ...processedTotalActiveDisclosureCount,
+    // //     ...processedTotalPortFolio,
+    // //     ...processedTotalPortFolioPercentage,
+    // //     ...processedCurrentYearRenewalDue,
+    // //     ...processedReductionCount,
+    // //     ...processedAnnuitySavingsForCurrentYear,
+    // //     ...processedAnnuitySavingsForNextYear,
+    // //     ...processedTotalAnnuitySavings,
+    // //     ...processedAllProsecutionDrop,
+    // //     ...processedAllProsecutionSavings,
+    // //     ...processedTotalCostSavings,
+    // //     ...staticData,
+    // //     { cellName: 'A3', value: `${currentYear} New Apps Filed`, SBU: '' },
+    // //     { cellName: 'A4', value: `% of ${currentYear} Invention Disclosures converted to Filings`, SBU: '' },
+    // //     { cellName: 'A5', value: `${currentYear} New Apps Estimate`, SBU: '' },
+    // //     { cellName: 'A6', value: `${Number(currentYear) - 1} New Apps filed`, SBU: '' },
+    // //     {
+    // //       cellName: 'A7',
+    // //       value: `${Number(currentYear) - 2} New Apps filed`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A8',
+    // //       value: `${Number(currentYear) - 3} New Apps filed`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A9',
+    // //       value: `${Number(currentYear) - 4} New Apps filed`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A12',
+    // //       value: `Projects Opened in ${currentYear}`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A13',
+    // //       value: `Projects Opened in ${Number(currentYear) - 1}`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A14',
+    // //       value: `Projects Opened in ${Number(currentYear) - 2}`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A15',
+    // //       value: `Projects Opened in ${Number(currentYear) - 3}`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A16',
+    // //       value: `Projects Opened in ${Number(currentYear) - 4}`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A18',
+    // //       value: `${currentYear} Issued`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A19',
+    // //       value: `${currentYear} US Issued`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A20',
+    // //       value: `${currentYear} Intl Issued`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A36',
+    // //       value: `${currentYear} Renewals Due`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A37',
+    // //       value: `${currentYear} Renewals Due`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A39',
+    // //       value: `Total No. of ${currentYear}** Reductions (Including reductions during prosecution)`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A40',
+    // //       value: `${currentYear} Annuity Savings from ${currentYear} reductions`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A41',
+    // //       value: `${Number(currentYear) + 1} Annuity Savings from ${currentYear} reductions`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A42',
+    // //       value: `${currentYear}-${Number(currentYear) + 1} Annuity Savings from ${currentYear} reductions`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A44',
+    // //       value: `No. of Prosecution reductions in ${currentYear}`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A45',
+    // //       value: `Prosecution cost Savings`,
+    // //       SBU: '',
+    // //     },
+    // //     {
+    // //       cellName: 'A47',
+    // //       value: `Total Cost Savings: (${currentYear}-${Number(currentYear) + 1}) Annuity Savings + Prosecution savings from ${currentYear} reductions`,
+    // //       SBU: '',
+    // //     },
+    // //   ],
+    // //   newFilePath
+    // // );
 
-    //stc tab
-    //first table
-    const newProjectOpenedBasedOnStc = await getProjectBasedOnStcs({
-      disclosureDataSourceVersionId,
-      currentYear,
-      isActive: false,
-      isDrafted: false,
-      isYearRequired: true,
-      customReportModel,
-      isRowData,
-    });
+    // //stc tab
+    // //first table
+    // const newProjectOpenedBasedOnStc = await getProjectBasedOnStcs({
+    //   disclosureDataSourceVersionId,
+    //   currentYear,
+    //   isActive: false,
+    //   isDrafted: false,
+    //   isYearRequired: true,
+    //   customReportModel,
+    //   isRowData,
+    // });
 
-    const totalOpenProjectsBasedOnStc = await getProjectBasedOnStcs({
-      disclosureDataSourceVersionId,
-      currentYear,
-      isActive: true,
-      isDrafted: false,
-      isYearRequired: false,
-      customReportModel,
-      isRowData,
-    });
+    // const totalOpenProjectsBasedOnStc = await getProjectBasedOnStcs({
+    //   disclosureDataSourceVersionId,
+    //   currentYear,
+    //   isActive: true,
+    //   isDrafted: false,
+    //   isYearRequired: false,
+    //   customReportModel,
+    //   isRowData,
+    // });
 
-    const newAppsFiledBasedOnStc = await getAppsFiledBasedOnStc({
-      portfolioDataSourceVersionId,
-      currentYear,
-      customReportModel,
-      isRowData,
-    });
+    // const newAppsFiledBasedOnStc = await getAppsFiledBasedOnStc({
+    //   portfolioDataSourceVersionId,
+    //   currentYear,
+    //   customReportModel,
+    //   isRowData,
+    // });
 
-    const processedNewProjectOpenedBasedOnStc = processSTCData(newProjectOpenedBasedOnStc);
-    const processedTotalOpenProjectsBasedOnStc = processSTCData(totalOpenProjectsBasedOnStc);
-    const processedNewAppsFiledBasedOnStc = processSTCData(newAppsFiledBasedOnStc);
+    // const processedNewProjectOpenedBasedOnStc = processSTCData(newProjectOpenedBasedOnStc);
+    // const processedTotalOpenProjectsBasedOnStc = processSTCData(totalOpenProjectsBasedOnStc);
+    // const processedNewAppsFiledBasedOnStc = processSTCData(newAppsFiledBasedOnStc);
 
-    const newProjectOpenedBasedOnStcFinal = processedNewProjectOpenedBasedOnStc.map((data) => {
-      return {
-        STC: data.STC,
-        [`New Projects opened in ${currentYear}`]: data.value,
-      };
-    });
-    const totalOpenProjectBasedOnStcFinal = processedTotalOpenProjectsBasedOnStc.map((data) => {
-      return {
-        STC: data.STC,
-        [`Total Open Projects`]: data.value,
-      };
-    });
+    // const newProjectOpenedBasedOnStcFinal = processedNewProjectOpenedBasedOnStc.map((data) => {
+    //   return {
+    //     STC: data.STC,
+    //     [`New Projects opened in ${currentYear}`]: data.value,
+    //   };
+    // });
+    // const totalOpenProjectBasedOnStcFinal = processedTotalOpenProjectsBasedOnStc.map((data) => {
+    //   return {
+    //     STC: data.STC,
+    //     [`Total Open Projects`]: data.value,
+    //   };
+    // });
 
-    const newApplicationFiledDataBasedOnStcFinal = processedNewAppsFiledBasedOnStc.map((data) => {
-      return {
-        STC: data.STC,
-        [`${currentYear} Filed`]: data.value,
-      };
-    });
+    // const newApplicationFiledDataBasedOnStcFinal = processedNewAppsFiledBasedOnStc.map((data) => {
+    //   return {
+    //     STC: data.STC,
+    //     [`${currentYear} Filed`]: data.value,
+    //   };
+    // });
 
-    const combinedSTCData: any[] = [];
+    // const combinedSTCData: any[] = [];
 
-    const allSTC = new Set([
-      ...newProjectOpenedBasedOnStcFinal.map((data) => data.STC),
-      ...totalOpenProjectBasedOnStcFinal.map((data) => data.STC),
-      ...newApplicationFiledDataBasedOnStcFinal.map((data) => data.STC),
-    ]);
+    // const allSTC = new Set([
+    //   ...newProjectOpenedBasedOnStcFinal.map((data) => data.STC),
+    //   ...totalOpenProjectBasedOnStcFinal.map((data) => data.STC),
+    //   ...newApplicationFiledDataBasedOnStcFinal.map((data) => data.STC),
+    // ]);
 
-    // return allSTC;
-    let allSTCArray = Array.from(allSTC);
+    // // return allSTC;
+    // let allSTCArray = Array.from(allSTC);
 
-    if (allSTCArray.includes('Total')) {
-      allSTCArray = allSTCArray.filter((item) => item !== 'Total' && item !== 'Blank'); // Remove "total"
-      allSTCArray.push('Blank');
-      allSTCArray.push('Total'); // Add "total" at the end
-    }
+    // if (allSTCArray.includes('Total')) {
+    //   allSTCArray = allSTCArray.filter((item) => item !== 'Total' && item !== 'Blank'); // Remove "total"
+    //   allSTCArray.push('Blank');
+    //   allSTCArray.push('Total'); // Add "total" at the end
+    // }
 
-    allSTCArray.forEach((stc) => {
-      const newProject = newProjectOpenedBasedOnStcFinal.find((item) => item.STC === stc);
-      const totalProject = totalOpenProjectBasedOnStcFinal.find((item) => item.STC === stc);
-      const applicationFiled = newApplicationFiledDataBasedOnStcFinal.find((data) => data.STC === stc);
+    // allSTCArray.forEach((stc) => {
+    //   const newProject = newProjectOpenedBasedOnStcFinal.find((item) => item.STC === stc);
+    //   const totalProject = totalOpenProjectBasedOnStcFinal.find((item) => item.STC === stc);
+    //   const applicationFiled = newApplicationFiledDataBasedOnStcFinal.find((data) => data.STC === stc);
 
-      // Construct the final combined object for this SBU
-      const result = {
-        STC: stc,
-        [`New Projects opened in ${currentYear}`]: newProject ? newProject[`New Projects opened in ${currentYear}`] : 0,
-        [`Total Open Projects`]: totalProject ? totalProject[`Total Open Projects`] : 0,
-        [`${currentYear} Filed`]: applicationFiled ? applicationFiled[`${currentYear} Filed`] : 0,
-      };
+    //   // Construct the final combined object for this SBU
+    //   const result = {
+    //     STC: stc,
+    //     [`New Projects opened in ${currentYear}`]: newProject ? newProject[`New Projects opened in ${currentYear}`] : 0,
+    //     [`Total Open Projects`]: totalProject ? totalProject[`Total Open Projects`] : 0,
+    //     [`${currentYear} Filed`]: applicationFiled ? applicationFiled[`${currentYear} Filed`] : 0,
+    //   };
 
-      // Add the result to the combinedData array
-      combinedSTCData.push(result);
-    });
+    //   // Add the result to the combinedData array
+    //   combinedSTCData.push(result);
+    // });
 
-    //second table
-    const newProjectOpened = processedOpenApplicationDisclosureCount.map((data) => {
-      return {
-        SBU: data.SBU,
-        [`New Projects opened in ${currentYear}`]: data.value,
-      };
-    });
-    const totalOpenProject = processedTotalActiveDisclosureCount.map((data) => {
-      return {
-        SBU: data.SBU,
-        [`Total Open Projects`]: data.value,
-      };
-    });
+    // //second table
+    // const newProjectOpened = processedOpenApplicationDisclosureCount.map((data) => {
+    //   return {
+    //     SBU: data.SBU,
+    //     [`New Projects opened in ${currentYear}`]: data.value,
+    //   };
+    // });
+    // const totalOpenProject = processedTotalActiveDisclosureCount.map((data) => {
+    //   return {
+    //     SBU: data.SBU,
+    //     [`Total Open Projects`]: data.value,
+    //   };
+    // });
 
-    const newApplicationFiledData = processedCurrentYearApplicationFiledData.map((data) => {
-      return {
-        SBU: data.SBU,
-        [`${currentYear} Filed`]: data.value,
-      };
-    });
+    // // const newApplicationFiledData = processedCurrentYearApplicationFiledData.map((data) => {
+    // //   return {
+    // //     SBU: data.SBU,
+    // //     [`${currentYear} Filed`]: data.value,
+    // //   };
+    // // });
 
-    const combinedData: any[] = [];
+    // const combinedData: any[] = [];
 
-    const allSBUs = new Set([
-      ...newProjectOpened.map((data) => data.SBU),
-      ...totalOpenProject.map((data) => data.SBU),
-      ...newApplicationFiledData.map((data) => data.SBU),
-    ]);
+    // const allSBUs = new Set([
+    //   ...newProjectOpened.map((data) => data.SBU),
+    //   ...totalOpenProject.map((data) => data.SBU),
+    //   ...newApplicationFiledData.map((data) => data.SBU),
+    // ]);
 
-    let allSBUsArray = Array.from(allSBUs);
-    if (allSBUsArray.includes('Total')) {
-      allSBUsArray = allSBUsArray.filter((item) => item !== 'Total'); // Remove "total",blank
-      allSBUsArray.push('Total'); // Add "total" at the end
-    }
+    // let allSBUsArray = Array.from(allSBUs);
+    // if (allSBUsArray.includes('Total')) {
+    //   allSBUsArray = allSBUsArray.filter((item) => item !== 'Total'); // Remove "total",blank
+    //   allSBUsArray.push('Total'); // Add "total" at the end
+    // }
 
-    allSBUsArray.forEach((sbu) => {
-      // Find matching data for each SBU
+    // allSBUsArray.forEach((sbu) => {
+    //   // Find matching data for each SBU
 
-      const newProject = newProjectOpened.find((item) => item.SBU === sbu);
-      const totalProject = totalOpenProject.find((item) => item.SBU === sbu);
-      const applicationFiled = newApplicationFiledData.find((data) => data.SBU === sbu);
+    //   const newProject = newProjectOpened.find((item) => item.SBU === sbu);
+    //   const totalProject = totalOpenProject.find((item) => item.SBU === sbu);
+    //   const applicationFiled = newApplicationFiledData.find((data) => data.SBU === sbu);
 
-      // Construct the final combined object for this SBU
-      const result = {
-        SBU: sbu,
-        [`New Projects opened in ${currentYear}`]: newProject ? newProject[`New Projects opened in ${currentYear}`] : 0,
-        [`Total Open Projects`]: totalProject ? totalProject[`Total Open Projects`] : 0,
-        [`${currentYear} Filed`]: applicationFiled ? applicationFiled[`${currentYear} Filed`] : 0,
-      };
+    //   // Construct the final combined object for this SBU
+    //   const result = {
+    //     SBU: sbu,
+    //     [`New Projects opened in ${currentYear}`]: newProject ? newProject[`New Projects opened in ${currentYear}`] : 0,
+    //     [`Total Open Projects`]: totalProject ? totalProject[`Total Open Projects`] : 0,
+    //     [`${currentYear} Filed`]: applicationFiled ? applicationFiled[`${currentYear} Filed`] : 0,
+    //   };
 
-      // Add the result to the combinedData array
-      combinedData.push(result);
-    });
+    //   // Add the result to the combinedData array
+    //   combinedData.push(result);
+    // });
 
-    await createUpdateExcelTable({
-      data: combinedSTCData,
-      filePath: newFilePath,
-      sheetName: 'STC',
-      gap: 0,
-      startTableColumn: 'A',
-      headerColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      // headers: ['SBU', 'Count of Serial No'],
-      isWhiteBackGround: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: combinedSTCData,
+    //   filePath: newFilePath,
+    //   sheetName: 'STC',
+    //   gap: 0,
+    //   startTableColumn: 'A',
+    //   headerBackgroundColor: '9dc3e6',
+    //   lastRowColor: '9dc3e6',
+    //   // headers: ['SBU', 'Count of Serial No'],
+    //   isWhiteBackGround: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: combinedData,
-      filePath: newFilePath,
-      sheetName: 'STC',
-      gap: 2,
-      startTableColumn: 'A',
-      headerColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      // headers: ['SBU', 'Count of Serial No'],
-      isWhiteBackGround: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: combinedData,
+    //   filePath: newFilePath,
+    //   sheetName: 'STC',
+    //   gap: 2,
+    //   startTableColumn: 'A',
+    //   headerBackgroundColor: '9dc3e6',
+    //   lastRowColor: '9dc3e6',
+    //   // headers: ['SBU', 'Count of Serial No'],
+    //   isWhiteBackGround: false,
+    // });
 
-    await createUpdateCustomDataSourceVersionValueFunction({
-      dataSourceId: staticNewFilingsDataSourceId,
-      versionValue,
-      versionData: processedCurrentYearApplicationFiledData.map((data) => {
-        return { SBU: data.SBU, 'New Filings': data.value };
-      }),
-      userId,
-      organizationId,
-      orgCode,
-    });
+    // await createUpdateCustomDataSourceVersionValueFunction({
+    //   dataSourceId: staticNewFilingsDataSourceId,
+    //   versionValue,
+    //   versionData: processedCurrentYearApplicationFiledData.map((data) => {
+    //     return { SBU: data.SBU, 'New Filings': data.value };
+    //   }),
+    //   userId,
+    //   organizationId,
+    //   orgCode,
+    // });
 
-    await createUpdateCustomDataSourceVersionValueFunction({
-      dataSourceId: staticProjectOpenedDataSourceId,
-      versionValue,
-      versionData: processedOpenApplicationDisclosureCount.map((data) => {
-        return { SBU: data.SBU, 'Projects Opened': data.value };
-      }),
-      userId,
-      organizationId,
-      orgCode,
-    });
+    // await createUpdateCustomDataSourceVersionValueFunction({
+    //   dataSourceId: staticProjectOpenedDataSourceId,
+    //   versionValue,
+    //   versionData: processedOpenApplicationDisclosureCount.map((data) => {
+    //     return { SBU: data.SBU, 'Projects Opened': data.value };
+    //   }),
+    //   userId,
+    //   organizationId,
+    //   orgCode,
+    // });
 
     await reportRequestService.updateReportRequest(requestedReportId, { status: 'completed' });
   } catch (err) {

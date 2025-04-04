@@ -1887,13 +1887,11 @@ export async function processStaticData({
           },
         ]);
 
-        staticNewFilingData[dataSourceVersionValue] = data.map((data) => {
+        staticNewFilingData[dataSourceVersionValue] = data.reduce((acc, data) => {
           const rowData = data.rowData;
-          return {
-            SBU: rowData.SBU,
-            value: rowData['New Filings'],
-          };
-        });
+          acc[rowData.SBU] = rowData['New Filings']; // Set key-value pair in the accumulator
+          return acc;
+        }, {});
       } else if (dataSourceId === staticEstimatesDataSourceId) {
         const data = await customReportModel.DataSourceVersionValueStaticEstimates.aggregate([
           {
@@ -1903,13 +1901,11 @@ export async function processStaticData({
           },
         ]);
 
-        staticEstimatesData[dataSourceVersionValue] = data.map((data) => {
+        staticEstimatesData[dataSourceVersionValue] = data.reduce((acc, data) => {
           const rowData = data.rowData;
-          return {
-            SBU: rowData.SBU,
-            value: rowData['Estimates'],
-          };
-        });
+          acc[rowData.SBU] = rowData['Estimates']; // Set key-value pair in the accumulator
+          return acc;
+        }, {});
       } else if (dataSourceId === staticProjectOpenedDataSourceId) {
         const data = await customReportModel.DataSourceVersionValueStaticProjectOpened.aggregate([
           {
@@ -1919,82 +1915,51 @@ export async function processStaticData({
           },
         ]);
 
-        staticProjectOpenedData[dataSourceVersionValue] = data.map((data) => {
+        staticProjectOpenedData[dataSourceVersionValue] = data.reduce((acc, data) => {
           const rowData = data.rowData;
-          return {
-            SBU: rowData.SBU,
-            value: rowData['Projects Opened'],
-          };
-        });
+          acc[rowData.SBU] = rowData['Projects Opened']; // Set key-value pair in the accumulator
+          return acc;
+        }, {});
       }
     }
 
+    const allStaticNewFilingData: any[] = [];
     //process new filing
     for (let i = 1; i <= 4; i++) {
       const versionValue = `${Number(currentYear) - i}-12`;
 
-      if (staticNewFilingData[versionValue] && staticNewFilingData[versionValue].length > 0) {
-        const processedNewFiling = processData({
-          data: staticNewFilingData[versionValue],
-          cellMappings: {
-            'SBU T&I': `B${5 + i}`,
-            'SBU Metals': `C${5 + i}`,
-            'SBU Agri-nutrients': `D${5 + i}`,
-            'SBU Chemicals': `E${5 + i}`,
-            'SBU Polymers': `F${5 + i}`,
-            'SBU SHPP': `G${5 + i}`,
-            'SBU Strategy & Transformation': `H${5 + i}`,
-            'Scientific Design': `I${5 + i}`,
-            Total: `J${5 + i}`,
-          },
+      if (staticNewFilingData[versionValue] && Object.keys(staticNewFilingData[versionValue]).length > 0) {
+        allStaticNewFilingData.push({
+          SBU: `${Number(currentYear) - i} New Apps filed`,
+          ...staticNewFilingData[versionValue],
         });
-
-        finalStaticData = [...finalStaticData, ...processedNewFiling];
       }
     }
 
+    const allNewEstimates: any[] = [];
+
     //current year estimates
-    if (staticEstimatesData[`${currentYear}-12`]) {
-      const processedEstimatedData = processData({
-        data: staticEstimatesData[`${currentYear}-12`],
-        cellMappings: {
-          'SBU T&I': 'B5',
-          'SBU Metals': 'C5',
-          'SBU Agri-nutrients': 'D5',
-          'SBU Chemicals': 'E5',
-          'SBU Polymers': 'F5',
-          'SBU SHPP': 'G5',
-          'SBU Strategy & Transformation': 'H5',
-          'Scientific Design': 'I5',
-          Total: 'J5',
-        },
-      });
-      finalStaticData = [...finalStaticData, ...processedEstimatedData];
+    if (staticEstimatesData[`${currentYear}-12`] && Object.keys(staticEstimatesData[`${currentYear}-12`]).length > 0) {
+      allNewEstimates.push({ SBU: `${currentYear} New Apps Estimate`, ...staticEstimatesData[`${currentYear}-12`] });
     }
+
+    const allNewProject: any[] = [];
     //project opened
     for (let i = 1; i <= 4; i++) {
       const versionValue = `${Number(currentYear) - i}-12`;
 
-      if (staticProjectOpenedData[versionValue] && staticProjectOpenedData[versionValue].length > 0) {
-        const processedProjectOpenedData = processData({
-          data: staticProjectOpenedData[versionValue],
-          cellMappings: {
-            'SBU T&I': `B${12 + i}`,
-            'SBU Metals': `C${12 + i}`,
-            'SBU Agri-nutrients': `D${12 + i}`,
-            'SBU Chemicals': `E${12 + i}`,
-            'SBU Polymers': `F${12 + i}`,
-            'SBU SHPP': `G${12 + i}`,
-            'SBU Strategy & Transformation': `H${12 + i}`,
-            'Scientific Design': `I${12 + i}`,
-            Total: `J${12 + i}`,
-          },
+      if (staticProjectOpenedData[versionValue] && Object.keys(staticProjectOpenedData[versionValue]).length > 0) {
+        allNewProject.push({
+          SBU: `Projects Opened in ${Number(currentYear) - i}`,
+          ...staticProjectOpenedData[versionValue],
         });
-
-        finalStaticData = [...finalStaticData, ...processedProjectOpenedData];
       }
     }
-    return finalStaticData;
+    return {
+      allNewEstimates,
+      allStaticNewFilingData,
+      allNewProject,
+    };
   } catch (e) {
     console.log('Error in processStaticData function.', e);
     throw e;

@@ -129,11 +129,10 @@ export const generateCustomReportsFunction = async ({
         organizationId,
         orgCode,
         customReportModel,
+        headers: customReportDetails.headers,
       });
 
-      if (isRowData) {
-        return data;
-      }
+      return data;
     } else if (customReportDetails.reportName === 'supplementalip') {
       const versionMap = Object.fromEntries(
         dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])

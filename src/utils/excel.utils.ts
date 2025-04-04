@@ -350,13 +350,14 @@ export async function createUpdateExcelTable({
   startTableRow,
   startTableColumn,
   titleHeading,
-  titleHeadingColor,
+  titleHeaderBackgroundColor,
   headers,
   headerColor,
+  headerBackgroundColor,
   lastRowColor,
   gap,
   onlyHeader,
-  cellColor,
+  cellBackGroundColor,
   cellBold,
   isWhiteBackGround,
   cellFormats,
@@ -364,6 +365,10 @@ export async function createUpdateExcelTable({
   mergeEndColumn,
   titleCellBorder,
   titleCellAlignment,
+  tableRowBackGroundColor,
+  tableRowCellFormat,
+  tableRowAlignment,
+  isMergeCell,
 }: {
   data: Array<Record<string, any>>; // Array of JSON objects with varying keys
   filePath: string;
@@ -371,19 +376,27 @@ export async function createUpdateExcelTable({
   startTableRow?: number;
   startTableColumn?: string;
   titleHeading?: string;
-  titleHeadingColor?: string;
+  titleHeaderBackgroundColor?: string;
   headers?: string[];
   headerColor?: string;
+  headerBackgroundColor?: string;
   lastRowColor?: string;
   gap?: number;
   onlyHeader?: boolean;
-  cellColor?: string;
+  cellBackGroundColor?: string;
   cellBold?: boolean;
   isWhiteBackGround?: boolean;
   cellFormats?: Record<string, string>;
   startCellNumber?: number;
   mergeEndColumn?: number;
   titleCellBorder?: boolean;
+  tableRowBackGroundColor?: Record<number, string>;
+  tableRowAlignment?: Record<
+    number,
+    'left' | 'center' | 'right' | 'fill' | 'justify' | 'centerContinuous' | 'distributed' | undefined
+  >;
+  tableRowCellFormat?: Record<number, string>;
+  isMergeCell?: boolean;
   titleCellAlignment?:
     | 'left'
     | 'center'
@@ -437,9 +450,12 @@ export async function createUpdateExcelTable({
       startRow = startRow + gap;
     }
 
-    // If title heading is provided, insert it as a merged row
-    if (titleHeading) {
+    if (isMergeCell) {
+      console.log('Mergin cells..');
+      worksheet.mergeCells(startRow, startCellNumber ?? 1, startRow, mergeEndColumn ?? 5);
+    } else if (titleHeading) {
       console.log('Writing title heading...');
+      worksheet.mergeCells(startRow, startCellNumber ?? 1, startRow, mergeEndColumn ?? 5);
       const titleRow = worksheet.getRow(startRow);
       const titleCell = titleRow.getCell(startCellNumber ?? 1);
       titleCell.value = titleHeading;
@@ -448,7 +464,7 @@ export async function createUpdateExcelTable({
       titleCell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: titleHeadingColor ?? '4472C4' },
+        fgColor: { argb: titleHeaderBackgroundColor ?? '4472C4' },
       };
       if (titleCellBorder) {
         titleCell.border = {
@@ -460,7 +476,6 @@ export async function createUpdateExcelTable({
       }
 
       titleRow.height = 20;
-      worksheet.mergeCells(startRow, startCellNumber ?? 1, startRow, mergeEndColumn ?? 5);
     } else {
       if (data.length === 0) {
         console.error('No data provided to create the sheet.');
@@ -490,11 +505,11 @@ export async function createUpdateExcelTable({
 
       const headerRow = worksheet.getRow(startRow);
       headerRow.eachCell((cell, colIndex) => {
-        cell.font = { bold: true, color: { argb: '000000' } };
+        cell.font = { bold: true, color: { argb: headerColor ? headerColor : '000000' } };
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: headerColor ? headerColor : '4472C4' }, // Blue background
+          fgColor: { argb: headerBackgroundColor ? headerBackgroundColor : '4472C4' }, // Blue background
         };
         cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
         cell.border = {
@@ -511,8 +526,33 @@ export async function createUpdateExcelTable({
         for (let i = 0; i < totalTableRows; i++) {
           const rowNumber = startRow + 1 + i; // Data starts after header row
           const row = worksheet.getRow(rowNumber);
+
+          let newCellBackground = 'FFFFFF';
+          let cellHorizontalAlignment:
+            | 'left'
+            | 'center'
+            | 'right'
+            | 'fill'
+            | 'justify'
+            | 'centerContinuous'
+            | 'distributed'
+            | undefined = 'left';
+          if (tableRowAlignment && tableRowAlignment[rowNumber]) {
+            cellHorizontalAlignment = tableRowAlignment[rowNumber];
+          }
+          if (tableRowBackGroundColor && tableRowBackGroundColor[rowNumber]) {
+            newCellBackground = tableRowBackGroundColor[rowNumber];
+          }
+          if (cellBackGroundColor) {
+            newCellBackground = cellBackGroundColor;
+          }
+
+          let newCellFormat = '';
+          if (tableRowCellFormat && tableRowCellFormat[rowNumber]) {
+            newCellFormat = tableRowCellFormat[rowNumber];
+          }
           row.eachCell((cell, colIndex) => {
-            cell.alignment = { vertical: 'middle', horizontal: 'left' };
+            cell.alignment = { vertical: 'middle', horizontal: cellHorizontalAlignment };
             if (cellBold) {
               cell.font = { bold: true, color: { argb: '000000' } };
             }
@@ -520,13 +560,16 @@ export async function createUpdateExcelTable({
             const columnKey = allKeys[colIndex - (startCellNumber ? startCellNumber : 0)];
 
             if (cellFormats && columnKey in cellFormats) {
-              cell.numFmt = cellFormats[columnKey];
+              newCellFormat = cellFormats[columnKey];
+            }
+            if (newCellFormat) {
+              cell.numFmt = newCellFormat;
             }
 
             cell.fill = {
               type: 'pattern',
               pattern: 'solid',
-              fgColor: { argb: cellColor ? cellColor : 'FFFFFF' }, // whit background
+              fgColor: { argb: newCellBackground }, // whit background
             };
             cell.border = {
               top: { style: 'thin' },
