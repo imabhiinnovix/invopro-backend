@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { DateTime } from 'luxon';
 import { CustomReportModelAccessReturnType } from '../models/customReportModels';
 import * as dataSourceVersionServices from '../../database/services/dataSourceVersion.services';
+import { processReportHeaders } from '../../utils/common.report';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -105,16 +106,25 @@ export function processSTCData(data) {
   return finalResult;
 }
 
-export function getTotalPortfolioPercentage({ data }: { data: DataItem[] }) {
-  // Find the total value from the SBU named 'total'
-  const totalItem = data.find((item) => item?.SBU?.toLowerCase() === 'total');
-  const totalValue = totalItem ? Number(totalItem.value) : 0;
+export function getTotalPortfolioPercentage({ data }: { data: Record<string, any> }) {
+  const item = data[0]; // Assuming only one item in the array
+  const total = Number(item['Totals']) || 0;
 
-  return data.map((item) => ({
-    SBU: item.SBU,
-    value: totalValue > 0 ? Number(item.value) / totalValue : 0,
-    numFormat: 'percentage',
-  }));
+  const percentageData: Record<string, any> = {};
+
+  for (const key in item) {
+    if (key === 'SBU') {
+      percentageData[key] = item[key];
+    } else if (key === 'Totals') {
+      percentageData[key] = 1; // Total is 100% = 1 in percentage format
+    } else {
+      const rawValue = item[key];
+      const numericValue = Number(rawValue);
+      percentageData[key] = total > 0 && !isNaN(numericValue) ? numericValue / total : '';
+    }
+  }
+
+  return percentageData;
 }
 export async function getTotalPortfolio({
   totalAppsPendingData,
@@ -830,33 +840,52 @@ export async function getAppsFiledBasedOnStc({
     throw error;
   }
 }
+
 const calculateCombinedPercentage = (
-  newData: DataItem[],
-  activeData: DataItem[],
-  totalData: DataItem[]
-): DataItem[] => {
-  return totalData.map((total) => {
-    const newEntry = newData.find((item) => item.SBU === total.SBU)?.value || 0;
-    const activeEntry = activeData.find((item) => item.SBU === total.SBU)?.value || 0;
+  newData: Record<string, string | number>[],
+  activeData: Record<string, string | number>[],
+  totalData: Record<string, string | number>[]
+): Record<string, string | number> => {
+  const result: Record<string, string | number> = {};
 
-    const combined = (newEntry as number) + (activeEntry as number);
-    const combinedPercentage = total.value ? combined / (total.value as number) : 0;
+  // Assuming only one object per array
+  const newEntry = newData[0];
+  const activeEntry = activeData[0];
+  const totalEntry = totalData[0];
 
-    return {
-      SBU: total.SBU,
-      value: combinedPercentage,
-      numFormat: 'percentage',
-    };
+  const keys = Object.keys(totalEntry);
+
+  const percentageData: Record<string, string | number> = {};
+
+  keys.forEach((key) => {
+    const total = Number(totalEntry[key]) || 0;
+    const newVal = Number(newEntry[key]) || 0;
+    const activeVal = Number(activeEntry[key]) || 0;
+
+    const combined = newVal + activeVal;
+    const percentage = total ? combined / total : 0;
+
+    percentageData[key] = percentage; // optional rounding
   });
+
+  return percentageData;
 };
 
-export async function percentageOfCurrentYearInventionDisclosureConvertedToFilings(
-  portfolioDataSourceVersionId: string,
-  disclosureDataSourceVersionId: string,
-  currentYear: string,
-  customReportModel: CustomReportModelAccessReturnType,
-  isRowData?: boolean
-) {
+export async function percentageOfCurrentYearInventionDisclosureConvertedToFilings({
+  portfolioDataSourceVersionId,
+  disclosureDataSourceVersionId,
+  currentYear,
+  customReportModel,
+  isRowData,
+  headers,
+}: {
+  portfolioDataSourceVersionId: string;
+  disclosureDataSourceVersionId: string;
+  currentYear: string;
+  customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
+  headers: { reportHeader: string; attributeValues: string[] }[];
+}) {
   try {
     const newYearApplicationFiledRowData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -907,9 +936,36 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       isRowData,
     });
 
-    const processedNewYearApplicationFiled = processData({ data: newYearApplicationFiled });
-    const processedActiveDisclosureCount = processData({ data: activeDisclosureCount });
-    const processedTotalDisclosureCount = processData({ data: totalDisclosureCount });
+    const newYearApplicationFiledRecord: Record<string, any> = {};
+    for (let item of newYearApplicationFiled) {
+      newYearApplicationFiledRecord[item.SBU] = (newYearApplicationFiledRecord[item.SBU] || 0) + item.value;
+    }
+
+    const activeDisclosureCountRecord: Record<string, any> = {};
+    for (let item of activeDisclosureCount) {
+      activeDisclosureCountRecord[item.SBU] = (activeDisclosureCountRecord[item.SBU] || 0) + item.value;
+    }
+
+    const totalDisclosureCountRecord: Record<string, any> = {};
+    for (let item of totalDisclosureCount) {
+      totalDisclosureCountRecord[item.SBU] = (totalDisclosureCountRecord[item.SBU] || 0) + item.value;
+    }
+
+    const processedNewYearApplicationFiled = processReportHeaders({
+      data: [newYearApplicationFiledRecord],
+      headers: headers,
+      totalColumnName: 'Totals',
+    });
+    const processedActiveDisclosureCount = processReportHeaders({
+      data: [activeDisclosureCountRecord],
+      headers: headers,
+      totalColumnName: 'Totals',
+    });
+    const processedTotalDisclosureCount = processReportHeaders({
+      data: [totalDisclosureCountRecord],
+      headers: headers,
+      totalColumnName: 'Totals',
+    });
 
     const result = calculateCombinedPercentage(
       processedNewYearApplicationFiled,
@@ -917,10 +973,11 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       processedTotalDisclosureCount
     );
 
-    if (isRowData) {
-      return { newYearApplicationFiled, activeDisclosureCount, totalDisclosureCount };
-    }
-    return result;
+    return [{ SBU: `% of ${currentYear} Invention Disclosures converted to Filings`, ...result }];
+
+    // if (isRowData) {
+    //   return { newYearApplicationFiled, activeDisclosureCount, totalDisclosureCount };
+    // }
   } catch (error) {
     throw error;
   }
@@ -1809,26 +1866,15 @@ export async function getTotalCostSavings({
   totalAnnuitySavings,
   allProsecutionSaving,
 }: {
-  totalAnnuitySavings: any;
+  totalAnnuitySavings: Record<string, number | string>;
   allProsecutionSaving: any;
 }) {
   try {
-    const totalCostSavingsMap = {};
-
-    totalAnnuitySavings.forEach((entry) => {
-      totalCostSavingsMap[entry.SBU] = (totalCostSavingsMap[entry.SBU] || 0) + entry.value;
-    });
-
     allProsecutionSaving.forEach((entry) => {
-      totalCostSavingsMap[entry.SBU] = (totalCostSavingsMap[entry.SBU] || 0) + entry.value;
+      totalAnnuitySavings[entry.SBU] = (totalAnnuitySavings[entry.SBU] || 0) + entry.value;
     });
 
-    const totalCostSavings = Object.keys(totalCostSavingsMap).map((SBU) => ({
-      SBU,
-      value: Number(totalCostSavingsMap[SBU].toFixed(2)),
-    }));
-
-    return totalCostSavings;
+    return totalAnnuitySavings;
   } catch (e) {
     console.log('Error in getTotalCostSavings function', e);
     throw e;
@@ -1962,6 +2008,28 @@ export async function processStaticData({
     };
   } catch (e) {
     console.log('Error in processStaticData function.', e);
+    throw e;
+  }
+}
+
+export function getFormattedDataToProcessReportHeaders({
+  sbuColumnDetails,
+  data,
+}: {
+  sbuColumnDetails: string;
+  data: Record<string, any>[];
+}) {
+  try {
+    const formattedData: Record<string, any> = {
+      SBU: sbuColumnDetails,
+    };
+
+    for (let item of data) {
+      formattedData[item.SBU] = (formattedData[item.SBU] || 0) + item.value;
+    }
+    return formattedData;
+  } catch (e) {
+    console.log('Error in getFormattedDataToProcessReportHeaders.', e);
     throw e;
   }
 }
