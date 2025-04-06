@@ -150,6 +150,12 @@ export const generateMonthlyIpReport = async ({
       data: openApplicationDisclosureCount,
     });
 
+    const processedOpenApplicationDisclosureCount = processReportHeaders({
+      data: [partiallyProcessedOpenApplicationDisclosureCount],
+      headers: toBeProcessedReportHeaders,
+      totalColumnName: 'Totals',
+    });
+
     const totalActiveProjects = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,
@@ -163,6 +169,12 @@ export const generateMonthlyIpReport = async ({
     const partiallyProcessedTotalActiveProjects = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total Active Projects`,
       data: totalActiveProjects,
+    });
+
+    const processedTotalActiveProjects = processReportHeaders({
+      data: [partiallyProcessedTotalActiveProjects],
+      headers: toBeProcessedReportHeaders,
+      totalColumnName: 'Totals',
     });
 
     const currentYearUsIssued = await getCurrentYearNewApplicationFiled({
@@ -592,10 +604,10 @@ export const generateMonthlyIpReport = async ({
     // return allSTC;
     let allSTCArray = Array.from(allSTC);
 
-    if (allSTCArray.includes('Total')) {
-      allSTCArray = allSTCArray.filter((item) => item !== 'Total' && item !== 'Blank'); // Remove "total"
+    if (allSTCArray.includes('Totals')) {
+      allSTCArray = allSTCArray.filter((item) => item !== 'Totals' && item !== 'Blank'); // Remove "total"
       allSTCArray.push('Blank');
-      allSTCArray.push('Total'); // Add "total" at the end
+      allSTCArray.push('Totals'); // Add "total" at the end
     }
 
     allSTCArray.forEach((stc) => {
@@ -616,53 +628,44 @@ export const generateMonthlyIpReport = async ({
     });
 
     //second table
-    const newProjectOpened = processedOpenApplicationDisclosureCount.map((data) => {
-      return {
-        SBU: data.SBU,
-        [`New Projects opened in ${currentYear}`]: data.value,
-      };
-    });
-    const totalOpenProject = processedTotalActiveDisclosureCount.map((data) => {
-      return {
-        SBU: data.SBU,
-        [`Total Open Projects`]: data.value,
-      };
-    });
-
-    // const newApplicationFiledData = processedCurrentYearApplicationFiledData.map((data) => {
-    //   return {
-    //     SBU: data.SBU,
-    //     [`${currentYear} Filed`]: data.value,
-    //   };
-    // });
 
     const combinedData: any[] = [];
 
+    const processedCurrentYearApplicationFiledDataObject =
+      processedCurrentYearApplicationFiledData && processedCurrentYearApplicationFiledData.length === 2
+        ? processedCurrentYearApplicationFiledData[1]
+        : {};
+
+    const processedOpenApplicationDisclosureCountObject =
+      processedOpenApplicationDisclosureCount && processedOpenApplicationDisclosureCount.length > 0
+        ? processedOpenApplicationDisclosureCount[0]
+        : {};
+
+    const processedTotalActiveProjectsObject =
+      processedTotalActiveProjects && processedTotalActiveProjects.length > 0 ? processedTotalActiveProjects[0] : {};
+
     const allSBUs = new Set([
-      ...newProjectOpened.map((data) => data.SBU),
-      ...totalOpenProject.map((data) => data.SBU),
-      ...newApplicationFiledData.map((data) => data.SBU),
+      ...Object.keys(processedOpenApplicationDisclosureCountObject).filter((data) => !['SBU', 'Totals'].includes(data)),
+      ...Object.keys(processedCurrentYearApplicationFiledDataObject).filter(
+        (data) => !['SBU', 'Totals'].includes(data)
+      ),
+      ...Object.keys(processedTotalActiveProjectsObject).filter((data) => !['SBU', 'Totals'].includes(data)),
     ]);
 
     let allSBUsArray = Array.from(allSBUs);
-    if (allSBUsArray.includes('Total')) {
-      allSBUsArray = allSBUsArray.filter((item) => item !== 'Total'); // Remove "total",blank
-      allSBUsArray.push('Total'); // Add "total" at the end
-    }
+    allSBUsArray.push('Totals');
 
     allSBUsArray.forEach((sbu) => {
-      // Find matching data for each SBU
-
-      const newProject = newProjectOpened.find((item) => item.SBU === sbu);
-      const totalProject = totalOpenProject.find((item) => item.SBU === sbu);
-      const applicationFiled = newApplicationFiledData.find((data) => data.SBU === sbu);
-
       // Construct the final combined object for this SBU
       const result = {
         SBU: sbu,
-        [`New Projects opened in ${currentYear}`]: newProject ? newProject[`New Projects opened in ${currentYear}`] : 0,
-        [`Total Open Projects`]: totalProject ? totalProject[`Total Open Projects`] : 0,
-        [`${currentYear} Filed`]: applicationFiled ? applicationFiled[`${currentYear} Filed`] : 0,
+        [`New Projects opened in ${currentYear}`]: processedOpenApplicationDisclosureCountObject[sbu]
+          ? processedOpenApplicationDisclosureCountObject[sbu]
+          : 0,
+        [`Total Open Projects`]: processedTotalActiveProjectsObject[sbu] ? processedTotalActiveProjectsObject[sbu] : 0,
+        [`${currentYear} Filed`]: processedCurrentYearApplicationFiledDataObject[sbu]
+          ? processedCurrentYearApplicationFiledDataObject[sbu]
+          : 0,
       };
 
       // Add the result to the combinedData array
@@ -677,7 +680,6 @@ export const generateMonthlyIpReport = async ({
       startTableColumn: 'A',
       headerBackgroundColor: '9dc3e6',
       lastRowColor: '9dc3e6',
-      // headers: ['SBU', 'Count of Serial No'],
       isWhiteBackGround: false,
     });
 
@@ -689,16 +691,18 @@ export const generateMonthlyIpReport = async ({
       startTableColumn: 'A',
       headerBackgroundColor: '9dc3e6',
       lastRowColor: '9dc3e6',
-      // headers: ['SBU', 'Count of Serial No'],
       isWhiteBackGround: false,
     });
 
     await createUpdateCustomDataSourceVersionValueFunction({
       dataSourceId: staticNewFilingsDataSourceId,
       versionValue,
-      versionData: processedCurrentYearApplicationFiledData.map((data) => {
-        return { SBU: data.SBU, 'New Filings': data.value };
-      }),
+      versionData: Object.entries(processedCurrentYearApplicationFiledDataObject)
+        .filter(([key]) => key !== 'SBU' && key !== 'Totals')
+        .map(([key, value]) => ({
+          SBU: key,
+          'New Filings': value,
+        })),
       userId,
       organizationId,
       orgCode,
@@ -707,9 +711,12 @@ export const generateMonthlyIpReport = async ({
     await createUpdateCustomDataSourceVersionValueFunction({
       dataSourceId: staticProjectOpenedDataSourceId,
       versionValue,
-      versionData: processedOpenApplicationDisclosureCount.map((data) => {
-        return { SBU: data.SBU, 'Projects Opened': data.value };
-      }),
+      versionData: Object.entries(processedOpenApplicationDisclosureCountObject)
+        .filter(([key]) => key !== 'SBU' && key !== 'Totals')
+        .map(([key, value]) => ({
+          SBU: key,
+          'Projects Opened': value,
+        })),
       userId,
       organizationId,
       orgCode,

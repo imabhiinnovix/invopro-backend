@@ -102,7 +102,7 @@ export function processSTCData(data) {
   });
 
   const finalResult = Object.entries(result).map(([STC, value]) => ({ STC, value }));
-  finalResult.push({ STC: 'Total', value: total });
+  finalResult.push({ STC: 'Totals', value: total });
   return finalResult;
 }
 
