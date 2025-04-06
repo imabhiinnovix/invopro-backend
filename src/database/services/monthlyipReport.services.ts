@@ -1870,11 +1870,14 @@ export async function getTotalCostSavings({
   allProsecutionSaving: any;
 }) {
   try {
+    const totalCostSavings = { ...totalAnnuitySavings }; // clone to avoid mutation
+
     allProsecutionSaving.forEach((entry) => {
-      totalAnnuitySavings[entry.SBU] = (totalAnnuitySavings[entry.SBU] || 0) + entry.value;
+      const current = Number(totalCostSavings[entry.SBU]) || 0;
+      totalCostSavings[entry.SBU] = current + entry.value;
     });
 
-    return totalAnnuitySavings;
+    return totalCostSavings;
   } catch (e) {
     console.log('Error in getTotalCostSavings function', e);
     throw e;
