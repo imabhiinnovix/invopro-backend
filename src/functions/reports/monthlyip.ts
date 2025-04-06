@@ -558,7 +558,16 @@ export const generateMonthlyIpReport = async ({
         36: 'center',
         38: 'center',
       },
-      tableRowCellFormat: { 4: '0%' },
+      tableRowCellFormat: {
+        4: '0%',
+        35: '0%',
+        37: '"$" #,##0, "K"',
+        40: '"$" #,##0, "K"',
+        41: '"$" #,##0, "K"',
+        42: '"$" #,##0, "K"',
+        45: '"$" #,##0, "K"',
+        47: '"$" #,##0, "K"',
+      },
     });
 
     await createUpdateExcelTable({
