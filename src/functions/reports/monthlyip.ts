@@ -494,6 +494,7 @@ export const generateMonthlyIpReport = async ({
         { SBU: `Reductions & Cost Savings` },
         partiallyProcessedDropCountResult,
         partiallyProcessedAnnuitySavingsForCurrentYear,
+        partiallyProcessedAnnuitySavingsForNextYear,
         totalAnnuitySavingsMap,
         { SBU: '' },
         partiallyProcessedAllProsecutionDrop,
@@ -510,7 +511,6 @@ export const generateMonthlyIpReport = async ({
       ...processedFirstLargeData,
       ...processedTotalPortFolioData,
       processedTotalPortFolioPercentageData,
-      partiallyProcessedAnnuitySavingsForNextYear,
       ...processedSecondLargeData,
     ];
 
@@ -524,8 +524,40 @@ export const generateMonthlyIpReport = async ({
       headerBackgroundColor: '7b7b7b',
       headers: reportHeaders,
       isWhiteBackGround: false,
-      tableRowBackGroundColor: { 2: 'ffc000' },
-      tableRowAlignment: { 2: 'center' },
+      tableRowBackGroundColor: {
+        2: 'ffc000',
+        3: 'b5c6e8',
+        4: 'b5c6e8',
+        5: 'b5c6e8',
+        11: 'b5c6e8',
+        12: 'b5c6e8',
+        17: 'b5c6e8',
+        26: 'b5c6e8',
+        32: 'b5c6e8',
+        34: 'b5c6e8',
+        35: 'b5c6e8',
+        37: 'b5c6e8',
+        39: 'b5c6e8',
+        42: 'b5c6e8',
+        44: 'b5c6e8',
+        45: 'b5c6e8',
+        47: 'b5c6e8',
+        10: 'ffc000',
+        18: 'ffc000',
+        21: 'ffc000',
+        27: 'ffc000',
+        36: 'ffc000',
+        38: 'ffc000',
+      },
+      tableRowAlignment: {
+        2: 'center',
+        10: 'center',
+        18: 'center',
+        21: 'center',
+        27: 'center',
+        36: 'center',
+        38: 'center',
+      },
       tableRowCellFormat: { 4: '0%' },
     });
 
@@ -540,6 +572,71 @@ export const generateMonthlyIpReport = async ({
       isMergeCell: true,
     });
 
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 10,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 18,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 21,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 27,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 36,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 38,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
+    });
     //stc tab
     //first table
     const newProjectOpenedBasedOnStc = await getProjectBasedOnStcs({

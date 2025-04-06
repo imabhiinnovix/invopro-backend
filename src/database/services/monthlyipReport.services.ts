@@ -1979,6 +1979,10 @@ export async function processStaticData({
           SBU: `${Number(currentYear) - i} New Apps filed`,
           ...staticNewFilingData[versionValue],
         });
+      } else {
+        allStaticNewFilingData.push({
+          SBU: `${Number(currentYear) - i} New Apps filed`,
+        });
       }
     }
 
@@ -1987,6 +1991,8 @@ export async function processStaticData({
     //current year estimates
     if (staticEstimatesData[`${currentYear}-12`] && Object.keys(staticEstimatesData[`${currentYear}-12`]).length > 0) {
       allNewEstimates.push({ SBU: `${currentYear} New Apps Estimate`, ...staticEstimatesData[`${currentYear}-12`] });
+    } else {
+      allNewEstimates.push({ SBU: `${currentYear} New Apps Estimate` });
     }
 
     const allNewProject: any[] = [];
@@ -1998,6 +2004,10 @@ export async function processStaticData({
         allNewProject.push({
           SBU: `Projects Opened in ${Number(currentYear) - i}`,
           ...staticProjectOpenedData[versionValue],
+        });
+      } else {
+        allNewProject.push({
+          SBU: `Projects Opened in ${Number(currentYear) - i}`,
         });
       }
     }
