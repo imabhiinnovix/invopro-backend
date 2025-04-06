@@ -266,6 +266,7 @@ export const generateMonthlyIpReport = async ({
     const partiallyProcessedTotalPendingApplication = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total Apps pending`,
       data: totalPendingApplication,
+      defaultValue: { 'Scientific Design': 109 },
     });
 
     const usIssuedApplication = await getCurrentYearNewApplicationFiled({
@@ -331,6 +332,7 @@ export const generateMonthlyIpReport = async ({
     const partiallyProcessedTotalIssuedApplication = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total Issued`,
       data: totalIssuedApplication,
+      defaultValue: { 'Scientific Design': 263 },
     });
 
     const processedFirstLargeData = processReportHeaders({
@@ -363,15 +365,12 @@ export const generateMonthlyIpReport = async ({
       totalColumnName: 'Totals',
     });
 
-    const totalPortFolio = await getTotalPortfolio({
-      totalAppsPendingData: totalPendingApplication,
-      totalIssuedData: totalIssuedApplication,
+    const partiallyProcessedTotalPortFolio = await getTotalPortfolio({
+      partiallyProcessedTotalPendingApplication,
+      partiallyProcessedTotalIssuedApplication,
     });
 
-    const partiallyProcessedTotalPortFolio = getFormattedDataToProcessReportHeaders({
-      sbuColumnDetails: `Total Portfolio: Apps Pending+ Issued`,
-      data: totalPortFolio,
-    });
+    partiallyProcessedTotalPortFolio['SBU'] = `Total Portfolio: Apps Pending+ Issued`;
 
     const processedTotalPortFolioData = processReportHeaders({
       data: [partiallyProcessedTotalPortFolio],
@@ -501,6 +500,8 @@ export const generateMonthlyIpReport = async ({
         partiallyProcessedAllProsecutionSavings,
         { SBU: '' },
         totalCostSavings,
+        { SBU: '' },
+        { SBU: '' },
       ],
       headers: toBeProcessedReportHeaders,
       totalColumnName: 'Totals',
@@ -524,6 +525,7 @@ export const generateMonthlyIpReport = async ({
       headerBackgroundColor: '7b7b7b',
       headers: reportHeaders,
       isWhiteBackGround: false,
+      borderColor: { right: '7b7b7b', bottom: '7b7b7b' },
       tableRowBackGroundColor: {
         2: 'ffc000',
         3: 'b5c6e8',
@@ -548,6 +550,7 @@ export const generateMonthlyIpReport = async ({
         27: 'ffc000',
         36: 'ffc000',
         38: 'ffc000',
+        49: '7b7b7b',
       },
       tableRowAlignment: {
         2: 'center',
@@ -645,6 +648,40 @@ export const generateMonthlyIpReport = async ({
       startCellNumber: 1,
       mergeEndColumn: reportHeaders.length,
       isMergeCell: true,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 48,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 49,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length + 1,
+      isMergeCell: true,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 1,
+      columnBackGroundColor: '7b7b7b',
+      columnBackGroundColorIndex: reportHeaders.length + 1,
+      numRows: finalProcessedData.length,
+      columnWidth: 5,
     });
     //stc tab
     //first table

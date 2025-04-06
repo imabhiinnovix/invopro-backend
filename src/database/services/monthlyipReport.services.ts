@@ -127,20 +127,27 @@ export function getTotalPortfolioPercentage({ data }: { data: Record<string, any
   return percentageData;
 }
 export async function getTotalPortfolio({
-  totalAppsPendingData,
-  totalIssuedData,
+  partiallyProcessedTotalPendingApplication,
+  partiallyProcessedTotalIssuedApplication,
 }: {
-  totalAppsPendingData: DataItem[];
-  totalIssuedData: DataItem[];
+  partiallyProcessedTotalPendingApplication: Record<string, number | string>;
+  partiallyProcessedTotalIssuedApplication: Record<string, number | string>;
 }) {
-  const dataMap = new Map<string, number>();
+  const dataMap: Record<string, any> = {};
 
-  [...totalAppsPendingData, ...totalIssuedData].forEach(({ SBU, value }) => {
-    const numericValue = Number(value) || 0;
-    dataMap.set(SBU, (dataMap.get(SBU) || 0) + numericValue);
-  });
+  function processData(source: Record<string, number | string>) {
+    for (const key in source) {
+      if (key !== 'SBU') {
+        const numericValue = Number(source[key]) || 0;
+        dataMap[key] = (dataMap[key] || 0) + numericValue;
+      }
+    }
+  }
 
-  return Array.from(dataMap, ([SBU, value]) => ({ SBU, value }));
+  processData(partiallyProcessedTotalPendingApplication);
+  processData(partiallyProcessedTotalIssuedApplication);
+
+  return dataMap;
 }
 
 export function processData({
@@ -2024,22 +2031,32 @@ export async function processStaticData({
     throw e;
   }
 }
-
 export function getFormattedDataToProcessReportHeaders({
   sbuColumnDetails,
   data,
+  defaultValue,
 }: {
   sbuColumnDetails: string;
   data: Record<string, any>[];
+  defaultValue?: Record<string, number>;
 }) {
   try {
     const formattedData: Record<string, any> = {
       SBU: sbuColumnDetails,
     };
 
+    // Sum values from `data`
     for (let item of data) {
       formattedData[item.SBU] = (formattedData[item.SBU] || 0) + item.value;
     }
+
+    // Add default values (if any)
+    if (defaultValue && Object.keys(defaultValue).length > 0) {
+      for (const key in defaultValue) {
+        formattedData[key] = (formattedData[key] || 0) + defaultValue[key];
+      }
+    }
+
     return formattedData;
   } catch (e) {
     console.log('Error in getFormattedDataToProcessReportHeaders.', e);

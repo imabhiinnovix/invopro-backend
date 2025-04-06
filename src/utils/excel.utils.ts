@@ -369,6 +369,11 @@ export async function createUpdateExcelTable({
   tableRowCellFormat,
   tableRowAlignment,
   isMergeCell,
+  columnBackGroundColor,
+  columnBackGroundColorIndex,
+  columnWidth,
+  numRows,
+  borderColor,
 }: {
   data: Array<Record<string, any>>; // Array of JSON objects with varying keys
   filePath: string;
@@ -391,6 +396,11 @@ export async function createUpdateExcelTable({
   mergeEndColumn?: number;
   titleCellBorder?: boolean;
   tableRowBackGroundColor?: Record<number, string>;
+  columnBackGroundColor?: string;
+  columnBackGroundColorIndex?: number;
+  columnWidth?: number;
+  numRows?: number;
+
   tableRowAlignment?: Record<
     number,
     'left' | 'center' | 'right' | 'fill' | 'justify' | 'centerContinuous' | 'distributed' | undefined
@@ -406,6 +416,8 @@ export async function createUpdateExcelTable({
     | 'centerContinuous'
     | 'distributed'
     | undefined;
+
+  borderColor?: Record<string, string>;
 }): Promise<void> {
   try {
     const workbook = new ExcelJS.Workbook();
@@ -450,7 +462,17 @@ export async function createUpdateExcelTable({
       startRow = startRow + gap;
     }
 
-    if (isMergeCell) {
+    if (columnBackGroundColor && columnBackGroundColor.length > 0 && columnBackGroundColorIndex && numRows) {
+      worksheet.getColumn(columnBackGroundColorIndex).width = columnWidth ? columnWidth : 20;
+      for (let rowIndex = startRow; rowIndex <= numRows + 1; rowIndex++) {
+        const cell = worksheet.getRow(rowIndex).getCell(columnBackGroundColorIndex);
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: columnBackGroundColor },
+        };
+      }
+    } else if (isMergeCell) {
       console.log('Mergin cells..');
       worksheet.mergeCells(startRow, startCellNumber ?? 1, startRow, mergeEndColumn ?? 5);
     } else if (titleHeading) {
@@ -468,10 +490,10 @@ export async function createUpdateExcelTable({
       };
       if (titleCellBorder) {
         titleCell.border = {
-          top: { style: 'thick', color: { argb: '000000' } },
-          left: { style: 'thin', color: { argb: '000000' } },
-          bottom: { style: 'thin', color: { argb: '000000' } },
-          right: { style: 'thin', color: { argb: '000000' } },
+          top: { style: 'thin', color: { argb: borderColor && borderColor.top ? borderColor.top : '000000' } },
+          left: { style: 'thin', color: { argb: borderColor && borderColor.left ? borderColor.left : '000000' } },
+          bottom: { style: 'thin', color: { argb: borderColor && borderColor.bottom ? borderColor.bottom : '000000' } },
+          right: { style: 'thin', color: { argb: borderColor && borderColor.right ? borderColor.right : '000000' } },
         };
       }
 
