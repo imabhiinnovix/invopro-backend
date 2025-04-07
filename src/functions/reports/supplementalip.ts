@@ -93,7 +93,7 @@ export const generateSupplementalIpReport = async ({
     });
 
     //Supplement ip part-2
-    const accoladeMappingSheetData = await getAccoladeMappingSheet({
+    const accoladeMappingSheetData: any = await getAccoladeMappingSheet({
       portfolioDataSourceVersionId,
       disclosureDataSourceVersionId,
       shppAccoladeDataSourceVersionId,
@@ -102,6 +102,10 @@ export const generateSupplementalIpReport = async ({
       currentYear,
       isRowData,
     });
+    if (isRowData) {
+      // rawDataActiveFilling, rawDataNewFilling, rawDataOpenDisclosure, rawDataDraftDisclosure
+      return accoladeMappingSheetData.rawDataDraftDisclosure;
+    }
 
     const noOfActiveApplicationGroup: Record<string, number> = {};
 
