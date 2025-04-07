@@ -58,7 +58,7 @@ export const generateSupplementalIpReport = async ({
     const newFilePath = reportRequestPayload.filePath;
     const currentYear = reportRequestPayload.versionValue.split('-')[0];
 
-    const currentYearAgreementSigned = await getAgreementSigned({
+    const currentYearAgreementSigned: any = await getAgreementSigned({
       sabicContractsDataSourceVersionId,
       shppContractsDataSourceVersionId,
       ksaContractsDataSourceVersionId,
@@ -66,10 +66,11 @@ export const generateSupplementalIpReport = async ({
       agreementTypeMappingDataSourceVersionId,
       currentYear,
       customReportModel,
+      isRowData,
     });
 
     const proceessedFinalAgreement = processReportHeaders({
-      data: currentYearAgreementSigned.finalAgreementResult,
+      data: isRowData ? [] : currentYearAgreementSigned?.finalAgreementResult,
       headers: [
         { reportHeader: 'Final AgreementType', attributeValues: ['Final AgreementType'] },
         ...headers['finalAgreementTypes']['columns'],
@@ -78,7 +79,7 @@ export const generateSupplementalIpReport = async ({
     });
 
     const proceessedOtherAgreement = processReportHeaders({
-      data: currentYearAgreementSigned.otherAgreementResult,
+      data: isRowData ? [] : currentYearAgreementSigned?.otherAgreementResult,
       headers: [
         { reportHeader: 'AgreementType', attributeValues: ['AgreementType'] },
         ...headers['agreementTypes']['columns'],
