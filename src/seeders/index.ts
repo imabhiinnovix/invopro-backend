@@ -1,11 +1,12 @@
 import mongoose from 'mongoose';
 
 import config from '../config';
-import { seedUsers } from './user.seed';
-import { seedOrganizations } from './organization.seed';
-import { seedCustomReports } from './customReport.seed';
-import path from 'path';
+// import { seedUsers } from './user.seed';
+// import { seedOrganizations } from './organization.seed';
+// import { seedCustomReports } from './customReport.seed';
+// import path from 'path';
 import { seedChart } from './widget_Type_chart.seed';
+import { seedOperators } from './operators.seed';
 
 const payload = {
   superAdminUserId: new mongoose.Types.ObjectId('66b34cbbd40e24fca2e3e312'),
@@ -16,7 +17,9 @@ const payload = {
   adminWorkspaceId: new mongoose.Types.ObjectId('670fa947dd2e7e82ec55ac4e'),
   userWorkspaceId: new mongoose.Types.ObjectId('66c6f88773caaef93d40807a'),
   pieChartId: new mongoose.Types.ObjectId('67e5011c966d261de673d1f1'),
-  lineChartId: new mongoose.Types.ObjectId('67e68fd541db187651d5e6b8')
+  lineChartId: new mongoose.Types.ObjectId('67e68fd541db187651d5e6b8'),
+  areaChartId: new mongoose.Types.ObjectId('67f3a9f7a3668434210f2e18'),
+  numberChartId: new mongoose.Types.ObjectId('67f3a9f7a3668434210f2e1b'),
 };
 
 export async function seedDatabase() {
@@ -136,6 +139,10 @@ export async function seedDatabase() {
 
     console.info('\n====> Seeding Chart <====');
     await seedChart(payload);
+
+    console.info('\n====> Seeding Operators <====');
+    await seedOperators();
+
     console.log('\nDatabase seeded successfully!');
     process.exit();
   } catch (error) {

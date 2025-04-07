@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import config from '../../config';
 
 // Schema for individual operator
 const OperatorSchema = new mongoose.Schema({
@@ -28,7 +29,7 @@ const OperatorSchema = new mongoose.Schema({
 const operatorModel = new mongoose.Schema({
   fieldType: {
     type: String,
-    enum: ['number', 'string', 'date', 'result'], // Field types
+    enum: config.FIELD_TYPE_ENUM,
     required: true,
   },
   operators: {

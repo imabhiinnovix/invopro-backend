@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { validatorOperatorData } from './Operators';
+import { validatorOperatorData } from './operators';
 
 // Helper function to get operators for a specific field type
 export const getOperatorsForFieldType = (fieldType: string) => {
