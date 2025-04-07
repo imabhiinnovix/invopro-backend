@@ -889,6 +889,9 @@ export const generateSupplementalIpReport = async ({
         'RANPV OF PHASE 1-5 PROJECTS ($M)': '"$" #,##0,, "M"',
         'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '"$" #,##0,, "M"',
         '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '0%',
+        'NEW RANPV OF PHASE 1-5 PROJECTS ($M)': '"$" #,##0,, "M"',
+        'NEW RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '"$" #,##0,, "M"',
+        'NEW % OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '0%',
       },
       startCellNumber: 2,
     });
