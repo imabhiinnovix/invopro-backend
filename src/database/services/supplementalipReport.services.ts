@@ -12,6 +12,7 @@ export async function getAgreementSigned({
   agreementTypeMappingDataSourceVersionId,
   currentYear,
   customReportModel,
+  isRowData,
 }: {
   sabicContractsDataSourceVersionId: string;
   shppContractsDataSourceVersionId: string;
@@ -20,6 +21,7 @@ export async function getAgreementSigned({
   agreementTypeMappingDataSourceVersionId: string;
   currentYear: string;
   customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
 }) {
   try {
     const yearDateRange = {
@@ -54,8 +56,10 @@ export async function getAgreementSigned({
         $match: {
           dataSourceVersionId: new ObjectId(ksaContractsDataSourceVersionId),
           'rowData.StatusDate': yearDateRange,
-          'rowData.AgreementExecuted': { $regex: 'PROC|YES', $options: 'i' },
-          'rowData.ReferenceNumber': { $regex: 'PROC|REV', $options: 'i' },
+          $or: [
+            { 'rowData.AgreementExecuted': { $regex: 'PROC|YES', $options: 'i' } },
+            { 'rowData.ReferenceNumber': { $regex: 'PROC|REV', $options: 'i' } },
+          ],
         },
       },
     ]);
@@ -134,8 +138,9 @@ export async function getAgreementSigned({
         );
         if (matchingAgreement && data.AgreementType) {
           return { ...data, finalAgreementType: matchingAgreement['Final AgreementType'] };
+        } else {
+          return { ...data, finalAgreementType: 'Others' };
         }
-        return null;
       })
       .filter((item) => item !== null);
 
@@ -148,8 +153,9 @@ export async function getAgreementSigned({
         );
         if (matchingAgreement && data.AgreementType) {
           return { ...data, finalAgreementType: matchingAgreement['Final AgreementType'] };
+        } else {
+          return { ...data, finalAgreementType: 'Others' };
         }
-        return null;
       })
       .filter((item) => item !== null);
 
@@ -162,8 +168,9 @@ export async function getAgreementSigned({
         );
         if (matchingAgreement && data.AgreementDocumentType) {
           return { ...data, finalAgreementType: matchingAgreement['Final AgreementType'] };
+        } else {
+          return { ...data, finalAgreementType: 'Others' };
         }
-        return null;
       })
       .filter((item) => item !== null);
 
@@ -258,6 +265,10 @@ export async function getAgreementSigned({
     });
 
     otherAgreementResult.push(otherAgreementTotalBasedOnSbu);
+
+    if (isRowData) {
+      return allFinalAgreements;
+    }
     return { finalAgreementResult, otherAgreementResult };
   } catch (e) {
     throw e;
