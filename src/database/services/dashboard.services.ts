@@ -97,10 +97,10 @@ export const deleteDashboard = async (id: string) => {
 
 export const getDashboardChartData = async (payload: any) => {
   try {
-    const { dashboardId } = payload;
+    const { dashboardId, userId, organizationId } = payload;
 
     const dashboardWidgets = await DashboardWidgetService.getAllDashboardWidgets({
-      query: { dashboardId },
+      query: { dashboardId, createdBy: userId, organizationId },
       populate: ['widgetTypeId', 'dataSourceId'],
     });
 

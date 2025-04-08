@@ -200,11 +200,12 @@ export const deleteDashboard = async (req: Request, res: Response, next: NextFun
 export const getDashboardWidgetList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { dashboardId } = req.params;
-    const { orgCode } = req.user;
+    const { organizationId, userId } = req.user;
 
     const data: any = await dashboardService.getDashboardChartData({
+      userId: new mongoose.Types.ObjectId(userId),
       dashboardId: new mongoose.Types.ObjectId(dashboardId),
-      orgCode,
+      organizationId: new mongoose.Types.ObjectId(organizationId),
     });
 
     res.status(200).json({
