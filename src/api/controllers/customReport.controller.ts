@@ -196,6 +196,7 @@ export const generateCustomReportsFunction = async ({
       await reportRequestService.updateReportRequest(reportRequestId, { status: 'failed' });
     }
   } catch (e) {
+    console.log('Error in generateCustomReportsFunction.', e);
     await reportRequestService.updateReportRequest(reportRequestId, { status: 'failed' });
   }
 };
