@@ -7,6 +7,7 @@ import * as dashboardWidgetdService from '../../database/services/dashboardWidge
 import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
 import * as entityService from '../../database/services/entity.services';
 import * as dataSourceService from '../../database/services/dataSource.services';
+import * as widgetTypeService from '../../database/services/widgetType.service';
 
 import { buildAggregationPipeline } from '../../utils/aggregationPipeline';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
@@ -41,8 +42,12 @@ export const createDashboard = async (req: Request, res: Response, next: NextFun
 export const getDashboardById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { dashboardId } = req.params;
+    const { organizationId } = req.user;
 
-    const data = await dashboardService.getDashboardById(dashboardId);
+    const data = await dashboardService.getDashboard({
+      _id: dashboardId,
+      organizationId,
+    });
 
     res.status(200).json({ success: true, message: 'Data get successfully', data });
   } catch (err) {
@@ -52,8 +57,11 @@ export const getDashboardById = async (req: Request, res: Response, next: NextFu
 
 export const getDashboards = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { organizationId } = req.user;
+
     const data = await dashboardService.getAllDashboards({
       query: {
+        organizationId,
         isDeleted: false,
         isActive: true,
       },
@@ -211,8 +219,25 @@ export const getDashboardWidgetList = async (req: Request, res: Response, next: 
 
 export const getWidgetData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { dataSourceId, entityId, dimensions, groupBy, aggregation, conditions } = req.body;
+    const { dataSourceId, entityId, groupBy, conditions, widgetType } = req.body;
     const { orgCode } = req.user;
+
+    let aggregation = req.body.aggregation;
+    let dimensions = req.body.dimensions;
+
+    const widgetTypeData = await widgetTypeService.getWidgetType({ chartType: widgetType });
+
+    if (!widgetTypeData) {
+      throw new Error('Widget type not found');
+    }
+
+    if (widgetTypeData.chartType === 'number') {
+      aggregation = {
+        type: 'Count',
+        attributeName: 'SBU',
+      };
+      dimensions = ['SBU'];
+    }
 
     // 1. Fetch entity data for field type information
     const entity: any = await entityService.getEntity({
