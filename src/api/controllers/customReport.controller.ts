@@ -108,6 +108,7 @@ export const generateCustomReportsFunction = async ({
       const staticNewFilingsDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'newfilings');
 
       const currentStaticEstimatesDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'estimates');
+      const monthlyIpDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyip');
 
       const staticProjectOpenedDataSource = customReportDetails.dataSourceIds.find(
         (ds) => ds.code === 'projectsopened'
@@ -124,6 +125,7 @@ export const generateCustomReportsFunction = async ({
         staticNewFilingsDataSourceId: staticNewFilingsDataSource?.dataSourceId!,
         staticEstimatesDataSourceId: currentStaticEstimatesDataSource?.dataSourceId!,
         staticProjectOpenedDataSourceId: staticProjectOpenedDataSource?.dataSourceId!,
+        monthlyIpDataSource: monthlyIpDataSource?.dataSourceId!,
         isRowData,
         userId,
         organizationId,

@@ -46,6 +46,7 @@ export const generateMonthlyIpReport = async ({
   userId,
   orgCode,
   organizationId,
+  monthlyIpDataSource,
   headers,
 }: {
   reportRequestPayload: any;
@@ -65,6 +66,7 @@ export const generateMonthlyIpReport = async ({
   orgCode: string;
   organizationId: string;
   headers: ReportHeaders;
+  monthlyIpDataSource: string;
 }) => {
   try {
     const versionValue = reportRequestPayload.versionValue;
