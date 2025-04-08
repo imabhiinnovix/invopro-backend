@@ -219,10 +219,9 @@ export const getDashboardWidgetList = async (req: Request, res: Response, next: 
 
 export const getWidgetData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { dataSourceId, entityId, groupBy, conditions, widgetType } = req.body;
+    const { dataSourceId, entityId, aggregation, groupBy, conditions, widgetType } = req.body;
     const { orgCode } = req.user;
 
-    let aggregation = req.body.aggregation;
     let dimensions = req.body.dimensions;
 
     const widgetTypeData = await widgetTypeService.getWidgetType({ chartType: widgetType });
@@ -232,11 +231,7 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     }
 
     if (widgetTypeData.chartType === 'number') {
-      aggregation = {
-        type: 'Count',
-        attributeName: 'SBU',
-      };
-      dimensions = ['SBU'];
+      dimensions = [aggregation.attributeName];
     }
 
     // 1. Fetch entity data for field type information
