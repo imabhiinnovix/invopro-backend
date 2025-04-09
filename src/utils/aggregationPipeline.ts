@@ -428,7 +428,7 @@ export const buildAggregationPipeline = (widget: any) => {
   });
 
   // 2. Build grouping structure
-  const groupFields = [...widget.dimensions, ...widget.groupBy].reduce((acc, field) => {
+  const groupFields = [...(widget.dimensions || []), ...(widget.groupBy || [])].reduce((acc, field) => {
     if (field === widget.dimensions[0]) {
       acc['name'] = getFieldPath(`rowData.${field}`);
     } else {
