@@ -632,6 +632,7 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
         versionCode: dataSourceDetails.code,
       });
 
+      const nowUtc = DateTime.utc();
       const finalData: any[] = [];
       for (let i = 0; i < versionData.length; i++) {
         const newRow = {
@@ -639,6 +640,8 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
           entityId: dataSourceDetails.entityId._id,
           dataSourceVersionId: dataSourceVersion._id,
           rowData: versionData[i],
+          createdAt: nowUtc.plus({ seconds: i }),
+          updatedAt: nowUtc.plus({ seconds: i }),
         };
 
         finalData.push(newRow);
