@@ -653,7 +653,7 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
         isCurrent: true,
       });
 
-      return String(dataSourceVersion._id);
+      return { dataSourceVersionId: dataSourceVersion._id, versionCode: dataSourceDetails.code };
     } else {
       throw 'Data source not found.';
     }

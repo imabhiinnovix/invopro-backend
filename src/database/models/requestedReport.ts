@@ -3,6 +3,8 @@ import { Schema, model, Document, Types } from 'mongoose';
 interface IDataSourceVersion {
   name: string;
   dataSourceVersionId: string;
+  versionCode: string;
+  dataSourceId: string;
 }
 
 interface IReportRequest extends Document {
@@ -22,6 +24,8 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
   {
     name: { type: String, required: true },
     dataSourceVersionId: { type: String, required: true },
+    versionCode: { type: String, required: true },
+    dataSourceId: { type: String, required: true },
   },
   { _id: false }
 );

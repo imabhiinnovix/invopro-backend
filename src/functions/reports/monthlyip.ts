@@ -854,7 +854,7 @@ export const generateMonthlyIpReport = async ({
       return entry;
     });
 
-    const dataSourceVersionId = await createUpdateCustomDataSourceVersionValueFunction({
+    const dataSourceVersionDetailsMonthlyIp = await createUpdateCustomDataSourceVersionValueFunction({
       dataSourceId: monthlyIpDataSource,
       versionValue,
       versionData: saveData,
@@ -893,7 +893,14 @@ export const generateMonthlyIpReport = async ({
 
     await reportRequestService.updateReportRequest(requestedReportId, {
       status: 'completed',
-      dataSourceVersion: [{ name: 'global', dataSourceVersionId: dataSourceVersionId }],
+      dataSourceVersion: [
+        {
+          name: 'global',
+          dataSourceVersionId: dataSourceVersionDetailsMonthlyIp.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailsMonthlyIp.versionCode,
+          dataSourceId: monthlyIpDataSource,
+        },
+      ],
     });
   } catch (err) {
     console.log(err);

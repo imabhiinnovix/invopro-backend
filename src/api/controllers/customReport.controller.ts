@@ -12,6 +12,8 @@ import path from 'path';
 import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
 import { generateSupplementalIpReport } from '../../functions/reports/supplementalip';
 import { CustomReportModelAccess } from '../../database/models/customReportModels';
+import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
+import * as dataSourceVersionValueService from '../../database/services/defaultDataSourceVersionValue.services';
 
 export const generateCustomReportsFunction = async ({
   userId,
@@ -337,6 +339,8 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
 export const viewReport = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { reportRequestId } = req.params;
+    const { organizationId, orgCode } = req.user;
+
     // const { userId } = req.user;
 
     const reportDetails = await reportRequestService.findReportRequestById(reportRequestId);
@@ -348,29 +352,48 @@ export const viewReport = async (req: Request, res: Response, next: NextFunction
           message: `The report is currently in '${reportDetails?.status}' status and cannot be viewed.`,
         });
       }
-      const versionValue = reportDetails.versionValue;
+
       const customReportId = String(reportDetails.customReportId);
       const customReportDetails = await customReportServices.findCustomReportById(customReportId);
+      const dataSourceVersionIdArray = reportDetails.dataSourceVersion;
+      const reportName = customReportDetails?.reportName;
+      if (dataSourceVersionIdArray && dataSourceVersionIdArray.length > 0) {
+        for (let i = 0; i < dataSourceVersionIdArray.length; i++) {
+          const dataSourceVersion = dataSourceVersionIdArray[i];
+          const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+            orgCode,
+            versionCode: dataSourceVersion.versionCode,
+          });
+          if (reportName === 'monthlyip' && dataSourceVersion['name'] === 'global') {
+            const monthlyIpGlobalDataSourceVersionId = dataSourceVersion['dataSourceVersionId'];
+            const query = { dataSourceVersionId: monthlyIpGlobalDataSourceVersionId };
 
-      res.status(200).json({
-        success: true,
-        message: 'Report Details Fetched Successfully',
-        data: customReportDetails,
-      });
+            const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
+              schemaName,
+              query,
+              page: 1,
+              limit: Number.MAX_SAFE_INTEGER,
+            });
+
+            res.status(200).json({
+              success: true,
+              message: 'Report Details Fetched Successfully',
+              data: dataSourceVersionData,
+            });
+          }
+        }
+      } else {
+        return res.status(404).json({
+          success: false,
+          message: `Report data not found.`,
+        });
+      }
     } else {
       return res.status(400).json({
         success: false,
         message: `Report details not found.`,
       });
     }
-
-    // }
-    // res.download(reportDetails.filePath!, reportDetails.fileName!, (err) => {
-    //   if (err) {
-    //     console.error('Error downloading file:', err);
-    //     res.status(500).send('Error downloading file');
-    //   }
-    // });
   } catch (err) {
     console.log('Error in downloadReport', err);
     next(err);
