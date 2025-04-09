@@ -385,7 +385,8 @@ export const viewReport = async (req: Request, res: Response, next: NextFunction
               limit: Number.MAX_SAFE_INTEGER,
             });
 
-            const transformedVersionData = dataSourceVersionData.data.map((entry) => {
+            let totalRow = {};
+            let transformedVersionData: any = dataSourceVersionData.data.map((entry) => {
               const newRow = {};
               const rowData = entry.rowData;
 
@@ -393,10 +394,15 @@ export const viewReport = async (req: Request, res: Response, next: NextFunction
                 newRow[mappedKey] = rowData[originalKey] !== undefined ? rowData[originalKey] : null;
               }
 
+              if (rowData.SBU === 'Totals') {
+                totalRow = newRow;
+              }
               return {
                 ...newRow,
               };
             });
+
+            transformedVersionData = [...transformedVersionData.filter((data) => data?.SBU != 'Totals'), totalRow];
 
             const transformedSectionData = sectionsDetails.map((section) => {
               const transformedSectionName = mappings[section.sectionName] || section.sectionName;

@@ -20,6 +20,7 @@ interface ISubSection {
   verticalAlignment: string;
   type: string;
   spanColumns: boolean;
+  format: string;
 }
 
 interface ISection {
@@ -67,6 +68,7 @@ const SubSectionSchema = new Schema<ISubSection>({
   verticalAlignment: { type: String, required: true },
   type: { type: String, required: true },
   spanColumns: { type: Boolean, required: true },
+  format: { type: String },
 });
 
 const SectionSchema = new Schema<ISection>({
