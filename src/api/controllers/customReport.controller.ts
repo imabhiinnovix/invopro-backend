@@ -334,6 +334,49 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+export const viewReport = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { reportRequestId } = req.params;
+    // const { userId } = req.user;
+
+    const reportDetails = await reportRequestService.findReportRequestById(reportRequestId);
+
+    if (reportDetails) {
+      if (reportDetails.status !== 'completed') {
+        return res.status(400).json({
+          success: false,
+          message: `The report is currently in '${reportDetails?.status}' status and cannot be viewed.`,
+        });
+      }
+      const versionValue = reportDetails.versionValue;
+      const customReportId = String(reportDetails.customReportId);
+      const customReportDetails = await customReportServices.findCustomReportById(customReportId);
+
+      res.status(200).json({
+        success: true,
+        message: 'Report Details Fetched Successfully',
+        data: customReportDetails,
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: `Report details not found.`,
+      });
+    }
+
+    // }
+    // res.download(reportDetails.filePath!, reportDetails.fileName!, (err) => {
+    //   if (err) {
+    //     console.error('Error downloading file:', err);
+    //     res.status(500).send('Error downloading file');
+    //   }
+    // });
+  } catch (err) {
+    console.log('Error in downloadReport', err);
+    next(err);
+  }
+};
+
 export const getReportVersionValuesBasedOnReportIdAndVersionValue = async (
   req: Request,
   res: Response,

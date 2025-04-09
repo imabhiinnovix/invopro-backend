@@ -12,6 +12,26 @@ interface IColumn {
   attributeValues: string[];
 }
 
+interface ISubSection {
+  headerName: string;
+  headerBackGroundColor: string;
+  headerColor: string;
+  horizontalAlignment: string;
+  verticalAlignment: string;
+  type: string;
+  spanColumns: boolean;
+}
+
+interface ISection {
+  sectionName: string;
+  sectionBackGroundColor: string;
+  sectionColor: string;
+  sectionHorizontalAlignment: string;
+  sectionVerticalAlignment: string;
+  spanColumns: boolean;
+  subSections: ISubSection[];
+}
+
 interface IHeaderSection {
   section: string;
   attribute: string;
@@ -25,6 +45,7 @@ interface ICustomReport extends Document {
   organizationId: Types.ObjectId;
   sampleFilePath: string;
   headers: Record<string, IHeaderSection>;
+  sections: ISection[];
 }
 
 const ColumnSchema = new Schema<IColumn>({
@@ -36,6 +57,26 @@ const HeaderSectionSchema = new Schema<IHeaderSection>({
   section: { type: String, required: true },
   attribute: { type: String, required: true },
   columns: { type: [ColumnSchema], required: true },
+});
+
+const SubSectionSchema = new Schema<ISubSection>({
+  headerName: { type: String, required: true },
+  headerBackGroundColor: { type: String, required: true },
+  headerColor: { type: String, required: true },
+  horizontalAlignment: { type: String, required: true },
+  verticalAlignment: { type: String, required: true },
+  type: { type: String, required: true },
+  spanColumns: { type: Boolean, required: true },
+});
+
+const SectionSchema = new Schema<ISection>({
+  sectionName: { type: String, required: true },
+  sectionBackGroundColor: { type: String, required: true },
+  sectionColor: { type: String, required: true },
+  sectionHorizontalAlignment: { type: String, required: true },
+  sectionVerticalAlignment: { type: String, required: true },
+  spanColumns: { type: Boolean, required: true },
+  subSections: { type: [SubSectionSchema], required: true },
 });
 
 const CustomReportSchema = new Schema<ICustomReport>(
@@ -53,6 +94,7 @@ const CustomReportSchema = new Schema<ICustomReport>(
     ],
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
     headers: { type: Map, of: HeaderSectionSchema },
+    sections: { type: [SectionSchema] },
   },
   {
     timestamps: true,
