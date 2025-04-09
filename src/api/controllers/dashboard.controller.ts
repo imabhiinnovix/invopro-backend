@@ -361,7 +361,9 @@ export const deleteWidget = async (req: Request, res: Response, next: NextFuncti
   try {
     const { dashboardWidgetId } = req.params;
 
-    await dashboardWidgetdService.findByIdAndUpdate(dashboardWidgetId);
+    await dashboardWidgetdService.updateDashboardWidget(dashboardWidgetId, {
+      isDeleted: true,
+    });
 
     res.status(200).json({ success: true, message: 'Widget deleted successfully' });
   } catch (err) {
