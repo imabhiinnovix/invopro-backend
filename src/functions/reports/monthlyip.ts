@@ -35,7 +35,7 @@ function transformPatentData({ currentYear, isReverseMapping }: { currentYear: n
     'Percentage of Current Year Invention Disclosures converted to Filings': `% of ${currentYear} Invention Disclosures converted to Filings`,
     'Current Year New Apps Estimate': `${currentYear} New Apps Estimate`,
     'Previous Year New Apps Filed': `${currentYear - 1} New Apps filed`,
-    'Two Years Ago New Apps Filed ': `${currentYear - 2} New Apps filed`,
+    'Two Years Ago New Apps Filed': `${currentYear - 2} New Apps filed`,
     'Three Years Ago New Apps Filed': `${currentYear - 3} New Apps filed`,
     'Four Years Ago New Apps Filed': `${currentYear - 4} New Apps filed`,
     'Apps Being Drafted': `Apps Being Drafted`,
