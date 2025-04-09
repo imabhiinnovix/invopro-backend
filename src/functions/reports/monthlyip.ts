@@ -29,7 +29,7 @@ import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/cont
 import { processReportHeaders } from '../../utils/common.report';
 import { ReportHeaders } from '../../utils/common.type';
 
-function transformPatentData(data, currentYear) {
+function transformPatentData({ currentYear, isReverseMapping }: { currentYear: number; isReverseMapping?: boolean }) {
   const mapping = {
     'Current Year New Apps Filed': `${currentYear} New Apps Filed`,
     'Percentage of Current Year Invention Disclosures converted to Filings': `% of ${currentYear} Invention Disclosures converted to Filings`,
@@ -68,6 +68,11 @@ function transformPatentData(data, currentYear) {
     'Prosecution cost Savings': 'Prosecution cost Savings',
     'Total Cost Savings (Current Year-Next Year) Annuity Savings Plus Prosecution savings from Current reductions': `Total Cost Savings: (${currentYear}-${currentYear + 1}) Annuity Savings + Prosecution savings from ${currentYear} reductions`,
   };
+  if (isReverseMapping) {
+    const reverseMapping = Object.fromEntries(Object.entries(mapping).map(([key, value]) => [value, key]));
+    return reverseMapping;
+  }
+  return mapping;
 }
 
 export const generateMonthlyIpReport = async ({
@@ -116,6 +121,7 @@ export const generateMonthlyIpReport = async ({
     const currentMonth = splitedVersionValue[1];
     const newFilePath = reportRequestPayload.filePath;
     const sbuHeaders = headers['global']['columns'];
+
     const toBeProcessedReportHeaders = [
       { reportHeader: 'SBU', attributeValues: ['SBU'] },
       ...headers['global']['columns'],
@@ -878,6 +884,28 @@ export const generateMonthlyIpReport = async ({
       headerBackgroundColor: '9dc3e6',
       lastRowColor: '9dc3e6',
       isWhiteBackGround: false,
+    });
+
+    const reverseMapping = transformPatentData({ currentYear: Number(currentYear), isReverseMapping: true });
+
+    const sbusHeader = [...sbuHeaders.map((data) => data.reportHeader), 'Totals'];
+    const saveData = sbusHeader.map((sbu) => {
+      const entry = { SBU: sbu };
+      finalProcessedData.forEach((item) => {
+        if (item.SBU && reverseMapping[item.SBU]) {
+          entry[reverseMapping[item.SBU]] = item[sbu] ? item[sbu] : 0;
+        }
+      });
+      return entry;
+    });
+
+    await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: monthlyIpDataSource,
+      versionValue,
+      versionData: saveData,
+      userId,
+      organizationId,
+      orgCode,
     });
 
     await createUpdateCustomDataSourceVersionValueFunction({
