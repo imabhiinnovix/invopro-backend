@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { createOperator, getOperatorById, getOperators, updateOperator } from '../controllers/operator.controller';
+import { authenticateToken } from '../../middlewares/authenticate.middleware';
 
 const router = Router();
 
-router.post('/create', createOperator);
-router.post('/update/:operatorId', updateOperator);
-router.get('/get/:operatorId', getOperatorById);
-router.get('/list', getOperators);
+router.get('/get/:operatorId', authenticateToken, getOperatorById);
+router.get('/list', authenticateToken, getOperators);
+router.post('/update/:operatorId', authenticateToken, updateOperator);
+router.post('/create', authenticateToken, createOperator);
 
 export default router;

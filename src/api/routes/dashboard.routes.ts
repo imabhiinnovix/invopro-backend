@@ -4,6 +4,7 @@ import {
   createDashboard,
   createWidget,
   deleteDashboard,
+  deleteWidget,
   getDashboardById,
   getDashboards,
   getDashboardWidgetList,
@@ -27,5 +28,6 @@ router.post('/widget/getWidgetData', authenticateToken, getWidgetData);
 router.post('/widget/create', authenticateToken, createWidget);
 router.post('/widget/save', authenticateToken, saveDashboardWidgets);
 router.post('/widget/update/:dashboardWidgetId', authenticateToken, updateWidget);
+router.post('/widget/delete/:dashboardWidgetId', authenticateToken, deleteWidget);
 
 export default router;

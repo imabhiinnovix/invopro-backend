@@ -28,6 +28,7 @@ interface IDashboardWidget extends Document {
     fieldType: string;
   }[];
   isActive: boolean;
+  isDeleted: boolean;
 }
 
 const dashboardWidgetSchema = new Schema<IDashboardWidget>(
@@ -63,6 +64,7 @@ const dashboardWidgetSchema = new Schema<IDashboardWidget>(
       },
     ],
     isActive: { type: Schema.Types.Boolean, default: true, required: true },
+    isDeleted: { type: Schema.Types.Boolean, default: false, required: true },
   },
   {
     timestamps: true,

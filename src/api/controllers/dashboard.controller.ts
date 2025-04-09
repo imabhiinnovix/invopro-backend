@@ -356,3 +356,15 @@ export const saveDashboardWidgets = async (req: Request, res: Response, next: Ne
     next(err);
   }
 };
+
+export const deleteWidget = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dashboardWidgetId } = req.params;
+
+    await dashboardWidgetdService.findByIdAndUpdate(dashboardWidgetId);
+
+    res.status(200).json({ success: true, message: 'Widget deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
