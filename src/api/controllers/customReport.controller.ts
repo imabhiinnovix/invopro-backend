@@ -14,6 +14,9 @@ import { generateSupplementalIpReport } from '../../functions/reports/supplement
 import { CustomReportModelAccess } from '../../database/models/customReportModels';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
 import * as dataSourceVersionValueService from '../../database/services/defaultDataSourceVersionValue.services';
+import mongoose from 'mongoose';
+import { transformMonthlyIpData } from '../../utils/common.report';
+const ObjectId = mongoose.Types.ObjectId;
 
 export const generateCustomReportsFunction = async ({
   userId,
@@ -352,9 +355,10 @@ export const viewReport = async (req: Request, res: Response, next: NextFunction
           message: `The report is currently in '${reportDetails?.status}' status and cannot be viewed.`,
         });
       }
-
+      const versionValue = reportDetails.versionValue;
       const customReportId = String(reportDetails.customReportId);
       const customReportDetails = await customReportServices.findCustomReportById(customReportId);
+      const sectionsDetails = customReportDetails?.sections ? customReportDetails?.sections : [];
       const dataSourceVersionIdArray = reportDetails.dataSourceVersion;
       const reportName = customReportDetails?.reportName;
       if (dataSourceVersionIdArray && dataSourceVersionIdArray.length > 0) {
@@ -365,20 +369,56 @@ export const viewReport = async (req: Request, res: Response, next: NextFunction
             versionCode: dataSourceVersion.versionCode,
           });
           if (reportName === 'monthlyip' && dataSourceVersion['name'] === 'global') {
+            const currentYearVersionValue = versionValue.split('-')[0];
+            const mappings = transformMonthlyIpData({
+              currentYear: Number(currentYearVersionValue),
+              isReverseMapping: false,
+            });
             const monthlyIpGlobalDataSourceVersionId = dataSourceVersion['dataSourceVersionId'];
-            const query = { dataSourceVersionId: monthlyIpGlobalDataSourceVersionId };
+            const query = { dataSourceVersionId: new ObjectId(monthlyIpGlobalDataSourceVersionId) };
 
             const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
               schemaName,
               query,
               page: 1,
+              select: 'rowData',
               limit: Number.MAX_SAFE_INTEGER,
             });
 
+            const transformedVersionData = dataSourceVersionData.data.map((entry) => {
+              const newRow = {};
+              const rowData = entry.rowData;
+
+              for (const [originalKey, mappedKey] of Object.entries(mappings)) {
+                newRow[mappedKey] = rowData[originalKey] !== undefined ? rowData[originalKey] : null;
+              }
+
+              return {
+                ...newRow,
+              };
+            });
+
+            const transformedSectionData = sectionsDetails.map((section) => {
+              const transformedSectionName = mappings[section.sectionName] || section.sectionName;
+
+              const updatedSubSections = section.subSections.map((sub) => {
+                return {
+                  ...sub,
+                  headerName: mappings[sub.headerName] || sub.headerName,
+                };
+              });
+
+              return {
+                ...section,
+                sectionName: transformedSectionName,
+                subSections: updatedSubSections,
+              };
+            });
             res.status(200).json({
               success: true,
               message: 'Report Details Fetched Successfully',
-              data: dataSourceVersionData,
+              data: transformedVersionData,
+              sections: transformedSectionData,
             });
           }
         }
