@@ -20,6 +20,15 @@ const payload = {
   lineChartId: new mongoose.Types.ObjectId('67e68fd541db187651d5e6b8'),
   areaChartId: new mongoose.Types.ObjectId('67f3a9f7a3668434210f2e18'),
   numberChartId: new mongoose.Types.ObjectId('67f3a9f7a3668434210f2e1b'),
+  horizontalBarChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7ba6'),
+  verticalBarChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7ba9'),
+  stackedBarChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bac'),
+  bubbleChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7baf'),
+  doughnutChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bb2'),
+  multiSeriesBarChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bb5'),
+  polarAreaChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bb8'),
+  radarChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bbb'),
+  scatterChartId: new mongoose.Types.ObjectId('67f75cd8b28822189f7ae71c'),
 };
 
 export async function seedDatabase() {

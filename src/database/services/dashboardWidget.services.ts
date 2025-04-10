@@ -29,25 +29,22 @@ export const getDashboardWidget = async (query: any, populate: any) => {
   }
 };
 
-export const getAllDashboardWidgets = async ({
-  query,
-  select = '',
-  page,
-  limit,
-  sort = { createdAt: -1 },
-  populate,
-}: any) => {
+export const getAllDashboardWidgets = async ({ query, select = '', page, limit, sort, populate }: any) => {
   try {
-    let widgetsQuery = DashboardWidget.find(query)
-      .select(select)
-      .skip(page * limit)
-      .limit(limit)
-      .sort(sort);
+    let widgetsQuery = DashboardWidget.find(query).select(select);
+
+    if (page && limit) {
+      widgetsQuery = widgetsQuery.skip(page * limit).limit(limit);
+    }
 
     if (populate && Array.isArray(populate)) {
       populate.forEach((field) => {
         widgetsQuery = widgetsQuery.populate(field);
       });
+    }
+
+    if (sort) {
+      widgetsQuery = widgetsQuery.sort(sort);
     }
 
     const dashboardWidgets = await widgetsQuery.exec();

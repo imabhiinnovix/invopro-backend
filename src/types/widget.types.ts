@@ -51,6 +51,7 @@ export interface Widget {
   conditions?: Condition[];
   aggregation: Aggregation;
   entity: any;
+  widgetType: string;
 }
 
 // MongoDB specific types

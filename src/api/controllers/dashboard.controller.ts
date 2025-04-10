@@ -12,7 +12,7 @@ import * as widgetTypeService from '../../database/services/widgetType.service';
 import { buildAggregationPipeline } from '../../utils/aggregationPipeline';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
 import createDefaultDataSourceVersionModel from '../../database/models/defaultDataSourceVersionModel';
-import { DataSourceVersion, Widget } from '../../types/widget.types';
+import { DataSourceVersion } from '../../types/widget.types';
 
 export const createDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -262,7 +262,7 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     }
 
     // 3. Build widget object for aggregation
-    const widget: Widget = {
+    const widget: any = {
       dataSourceId: dataSourceId.toString(),
       dataSourceVersionId: dataSourceVersion._id.toString(),
       dimensions,
