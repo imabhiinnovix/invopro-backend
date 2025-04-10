@@ -458,33 +458,91 @@ export const buildAggregationPipeline = (widget: any) => {
   // 4. Build the pipeline
   const pipeline: any[] = [];
 
-  if (Object.keys(dateConversions).length > 0) {
-    pipeline.push({ $addFields: dateConversions });
-  }
-
-  pipeline.push(
-    { $match: matchConditions },
-    {
-      $group: {
-        _id: {
-          ...groupFields,
-        },
-        ...aggregationOperation,
-      },
-    },
-    {
-      $replaceRoot: {
-        newRoot: {
-          $mergeObjects: [
-            '$_id',
-            {
-              data: `$${Object.keys(aggregationOperation)[0]}`,
-            },
-          ],
-        },
-      },
+  if (widget.widgetType === 'number') {
+    // return [
+    //   {
+    //     $addFields: { name: 'Total' },
+    //   },
+    //   {
+    //     $group: {
+    //       _id: {
+    //         name: '$name',
+    //       },
+    //       data: { $sum: 1 },
+    //     },
+    //   },
+    //   {
+    //     $replaceRoot: {
+    //       newRoot: {
+    //         $mergeObjects: [
+    //           '$_id',
+    //           {
+    //             name: '$name',
+    //             data: '$data',
+    //           },
+    //         ],
+    //       },
+    //     },
+    //   },
+    // ];
+    if (Object.keys(dateConversions).length > 0) {
+      pipeline.push({ $addFields: dateConversions });
     }
-  );
+
+    pipeline.push(
+      { $match: matchConditions },
+      { $addFields: { name: 'Total' } },
+      {
+        $group: {
+          _id: {
+            name: '$name',
+          },
+          data: { $sum: 1 },
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: {
+            $mergeObjects: [
+              '$_id',
+              {
+                name: '$name',
+                data: '$data',
+              },
+            ],
+          },
+        },
+      }
+    );
+  } else {
+    if (Object.keys(dateConversions).length > 0) {
+      pipeline.push({ $addFields: dateConversions });
+    }
+
+    pipeline.push(
+      { $match: matchConditions },
+      {
+        $group: {
+          _id: {
+            ...groupFields,
+          },
+          ...aggregationOperation,
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: {
+            $mergeObjects: [
+              '$_id',
+              {
+                data: `$${Object.keys(aggregationOperation)[0]}`,
+              },
+            ],
+          },
+        },
+      }
+    );
+  }
 
   return pipeline;
 };
