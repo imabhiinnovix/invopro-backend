@@ -7,6 +7,7 @@ import config from '../config';
 // import path from 'path';
 import { seedChart } from './widget_Type_chart.seed';
 import { seedOperators } from './operators.seed';
+import { seedWidgetTheme } from './widgetTheme.seed';
 
 const payload = {
   superAdminUserId: new mongoose.Types.ObjectId('66b34cbbd40e24fca2e3e312'),
@@ -29,6 +30,7 @@ const payload = {
   polarAreaChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bb8'),
   radarChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bbb'),
   scatterChartId: new mongoose.Types.ObjectId('67f75cd8b28822189f7ae71c'),
+  widgetThemeId: new mongoose.Types.ObjectId('67f783d7d2001cac19c75961'),
 };
 
 export async function seedDatabase() {
@@ -151,6 +153,9 @@ export async function seedDatabase() {
 
     console.info('\n====> Seeding Operators <====');
     await seedOperators();
+
+    console.info('\n====> Seeding Widget Theme <====');
+    await seedWidgetTheme(payload);
 
     console.log('\nDatabase seeded successfully!');
     process.exit();

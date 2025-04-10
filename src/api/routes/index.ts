@@ -14,6 +14,7 @@ import dataImportErrorRoutes from './dataImportError.routes';
 import dashBoardRoutes from './dashboard.routes';
 import widgetTypeRoutes from './widgetType.routes';
 import operatorRoutes from './operator.routes';
+import widgetThemeRoutes from './widgetTheme.routes';
 
 const router = Router();
 
@@ -31,5 +32,6 @@ router.use('/dataImportError', dataImportErrorRoutes);
 router.use('/dashboard', dashBoardRoutes);
 router.use('/widgetType', widgetTypeRoutes);
 router.use('/operator', operatorRoutes);
+router.use('/widgetTheme', widgetThemeRoutes);
 
 export default router;

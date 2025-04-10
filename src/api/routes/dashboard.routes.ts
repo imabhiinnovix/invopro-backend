@@ -12,15 +12,17 @@ import {
   saveDashboardWidgets,
   updateDashboard,
   updateWidget,
+  selectDashboardTheme,
 } from '../controllers/dashboard.controller';
 
 const router = Router();
 
+router.get('/list', authenticateToken, getDashboards);
+router.get('/get/:dashboardId', authenticateToken, getDashboardById);
 router.post('/create', authenticateToken, createDashboard);
 router.post('/update/:dashboardId', authenticateToken, updateDashboard);
 router.post('/delete/:dashboardId', authenticateToken, deleteDashboard);
-router.get('/get/:dashboardId', authenticateToken, getDashboardById);
-router.get('/list', authenticateToken, getDashboards);
+router.post('/selectTheme/:dashboardId', authenticateToken, selectDashboardTheme);
 
 // Dashboard widget
 router.get('/widget/getWidgets/:dashboardId', authenticateToken, getDashboardWidgetList);

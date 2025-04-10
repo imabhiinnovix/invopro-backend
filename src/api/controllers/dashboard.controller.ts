@@ -8,6 +8,7 @@ import * as dataSourceVersionService from '../../database/services/dataSourceVer
 import * as entityService from '../../database/services/entity.services';
 import * as dataSourceService from '../../database/services/dataSource.services';
 import * as widgetTypeService from '../../database/services/widgetType.service';
+import * as widgetThemeService from '../../database/services/widgetTheme.service';
 
 import { buildAggregationPipeline } from '../../utils/aggregationPipeline';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
@@ -27,9 +28,17 @@ export const createDashboard = async (req: Request, res: Response, next: NextFun
 
     if (dashboardExist) throw new Error('Duplicate Dashboard found. Please remove or modify the entry.');
 
+    const widgetTheme = await widgetThemeService.findWidgetTheme({
+      isDefault: true,
+      organizationId,
+    });
+
+    if (!widgetTheme) throw new Error('Widget theme not fond');
+
     const data = await dashboardService.createDashboard({
       createdBy,
       organizationId,
+      widgetThemeId: widgetTheme?._id,
       ...req.body,
     });
 
@@ -368,6 +377,36 @@ export const deleteWidget = async (req: Request, res: Response, next: NextFuncti
     });
 
     res.status(200).json({ success: true, message: 'Widget deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const selectDashboardTheme = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dashboardId } = req.params;
+    const { widgetThemeId } = req.body;
+    const { organizationId } = req.user;
+
+    // Validate the themeId
+    const widgetTheme = await widgetThemeService.findWidgetTheme({
+      _id: widgetThemeId,
+      organizationId,
+    });
+
+    if (!widgetTheme) {
+      throw new Error('Invalid theme selected.');
+    }
+
+    // Update the widget with the selected theme
+    await dashboardService.updateDashboardById(dashboardId, {
+      widgetThemeId,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Widget theme selected successfully',
+    });
   } catch (err) {
     next(err);
   }
