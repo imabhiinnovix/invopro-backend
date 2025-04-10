@@ -270,6 +270,7 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       aggregation,
       entity, // Pass entity data for field type conversion
       conditions,
+      widgetType,
     };
 
     const aggregationPipeline = buildAggregationPipeline(widget);
