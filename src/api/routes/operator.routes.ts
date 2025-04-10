@@ -5,7 +5,7 @@ import { authenticateToken } from '../../middlewares/authenticate.middleware';
 const router = Router();
 
 router.get('/get/:operatorId', authenticateToken, getOperatorById);
-router.get('/list', authenticateToken, getOperators);
+router.post('/list', authenticateToken, getOperators);
 router.post('/update/:operatorId', authenticateToken, updateOperator);
 router.post('/create', authenticateToken, createOperator);
 
