@@ -90,7 +90,7 @@ export const updateDataSourceVersions = async ({ query, updateFields }: any) => 
   }
 };
 
-export const getDataSourceVersion = async ({ query, populate }: any) => {
+export const getDataSourceVersion = async ({ query, populate, sort }: any) => {
   try {
     // Perform the update operation
     let dataSourceVersionQuery = DataSourceVersion.findOne(query);
@@ -99,6 +99,10 @@ export const getDataSourceVersion = async ({ query, populate }: any) => {
       populate.forEach((field) => {
         dataSourceVersionQuery = dataSourceVersionQuery.populate(field);
       });
+    }
+
+    if (sort) {
+      dataSourceVersionQuery = dataSourceVersionQuery.sort(sort);
     }
 
     const dataSourceVersion = await dataSourceVersionQuery.exec();

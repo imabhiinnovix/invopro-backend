@@ -255,6 +255,7 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
         isCurrent: true,
         isActive: true,
       },
+      sort: { versionValue: -1 },
     })) as DataSourceVersion;
 
     if (!dataSourceVersion) {
