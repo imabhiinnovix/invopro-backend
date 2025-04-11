@@ -66,15 +66,11 @@ export const getDashboardById = async (req: Request, res: Response, next: NextFu
 
 export const getDashboards = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { organizationId } = req.user;
+    const { userId, organizationId } = req.user;
 
-    const data = await dashboardService.getAllDashboards({
-      query: {
-        organizationId,
-        isDeleted: false,
-        isActive: true,
-      },
-      populate: ['createdBy'],
+    const data = await dashboardService.getAllDashboardsAggregation({
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+      userId: new mongoose.Types.ObjectId(userId),
     });
 
     res.status(200).json({ success: true, message: 'Dashboard get successfully', ...data });
@@ -209,10 +205,9 @@ export const deleteDashboard = async (req: Request, res: Response, next: NextFun
 export const getDashboardWidgetList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { dashboardId } = req.params;
-    const { organizationId, userId } = req.user;
+    const { organizationId } = req.user;
 
     const data: any = await dashboardService.getDashboardChartData({
-      userId: new mongoose.Types.ObjectId(userId),
       dashboardId: new mongoose.Types.ObjectId(dashboardId),
       organizationId: new mongoose.Types.ObjectId(organizationId),
     });

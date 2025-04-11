@@ -97,14 +97,165 @@ export const deleteDashboard = async (id: string) => {
 
 export const getDashboardChartData = async (payload: any) => {
   try {
-    const { dashboardId, userId, organizationId } = payload;
+    const { dashboardId, organizationId } = payload;
 
     const dashboardWidgets = await DashboardWidgetService.getAllDashboardWidgets({
-      query: { dashboardId, createdBy: userId, organizationId },
+      query: { dashboardId, organizationId },
       populate: ['widgetTypeId', 'dataSourceId'],
     });
 
     return dashboardWidgets;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getAllDashboardsAggregation = async ({
+  organizationId,
+  userId,
+  page,
+  limit,
+  sort = { createdAt: -1 },
+}: any) => {
+  try {
+    const pipeline: any[] = [
+      // Match by org, active, not deleted
+      {
+        $match: {
+          organizationId,
+          isActive: true,
+          isDeleted: false,
+        },
+      },
+
+      // LEFT JOIN transfer dashboards
+      {
+        $lookup: {
+          from: 'transfer_dashboards',
+          let: { dashboardId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$dashboardId', '$$dashboardId'] },
+                    { $eq: ['$receiverUserId', userId] },
+                    { $eq: ['$organizationId', organizationId] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'transfers',
+        },
+      },
+
+      // Filter only those which are either:
+      // - Created by the user
+      // - Shareable
+      // - Transferred to the user
+      {
+        $match: {
+          $or: [{ createdBy: userId }, { isShareble: true }, { transfers: { $ne: [] } }],
+        },
+      },
+
+      // Add isEdit field
+      {
+        $addFields: {
+          isEdit: {
+            $cond: [{ $eq: ['$createdBy', userId] }, true, false],
+          },
+        },
+      },
+
+      // Populate createdBy
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'createdBy',
+        },
+      },
+      {
+        $unwind: {
+          path: '$createdBy',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // Optional sort
+      // { $sort: sort || { createdAt: -1 } },
+
+      {
+        $facet: {
+          data: [
+            { $sort: sort || { createdAt: -1 } },
+            ...(page && limit ? [{ $skip: page * limit }, { $limit: limit }] : []),
+          ],
+          totalCount: [{ $count: 'count' }],
+        },
+      },
+      {
+        $addFields: {
+          totalCount: {
+            $ifNull: [{ $arrayElemAt: ['$totalCount.count', 0] }, 0],
+          },
+        },
+      },
+
+      {
+        $project: {
+          createdBy: {
+            password: 0, // optional
+            // exclude password or any other PII
+          },
+
+          // Exclude transfer info from final output
+          transfers: 0,
+        },
+      },
+      {
+        $project: {
+          data: {
+            $map: {
+              input: '$data',
+              as: 'dashboard',
+              in: {
+                _id: '$$dashboard._id',
+                name: '$$dashboard.name',
+                description: '$$dashboard.description',
+                isShareble: '$$dashboard.isShareble',
+                isActive: '$$dashboard.isActive',
+                isEdit: '$$dashboard.isEdit',
+                organizationId: '$$dashboard.organizationId',
+                createdAt: '$$dashboard.createdAt',
+                updatedAt: '$$dashboard.updatedAt',
+
+                createdBy: {
+                  _id: '$$dashboard.createdBy._id',
+                  name: '$$dashboard.createdBy.name',
+                  email: '$$dashboard.createdBy.email',
+                },
+              },
+            },
+          },
+          totalCount: 1,
+        },
+      },
+    ];
+
+    // Optional pagination
+    // if (page && limit) {
+    //   pipeline.push({ $skip: page * limit }, { $limit: limit });
+    // }
+
+    const result = await Dashboard.aggregate(pipeline);
+    return {
+      data: result[0]?.data || [],
+      totalCount: result[0]?.totalCount || 0,
+    };
   } catch (err) {
     throw err;
   }

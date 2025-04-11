@@ -16,6 +16,7 @@ import widgetTypeRoutes from './widgetType.routes';
 import operatorRoutes from './operator.routes';
 import widgetThemeRoutes from './widgetTheme.routes';
 import widgetAppearanceRoutes from './WidgetAppearance';
+import transferDashboardRoutes from './transferDashboard.routes';
 
 const router = Router();
 
@@ -35,5 +36,6 @@ router.use('/widgetType', widgetTypeRoutes);
 router.use('/operator', operatorRoutes);
 router.use('/widgetTheme', widgetThemeRoutes);
 router.use('/widgetAppearances', widgetAppearanceRoutes);
+router.use('/transferDashboard', transferDashboardRoutes);
 
 export default router;
