@@ -111,3 +111,23 @@ export function transformMonthlyIpData({
   }
   return mapping;
 }
+
+export function transformMonthlySTCData({
+  currentYear,
+  isReverseMapping,
+}: {
+  currentYear: number;
+  isReverseMapping?: boolean;
+}) {
+  const mapping = {
+    STC: 'STC',
+    'New Projects opened in Current Year': `New Projects opened in ${currentYear}`,
+    'Total Open Projects': `Total Open Projects`,
+    'Current Year Filed': `${currentYear} Filed`,
+  };
+  if (isReverseMapping) {
+    const reverseMapping = Object.fromEntries(Object.entries(mapping).map(([key, value]) => [value, key]));
+    return reverseMapping;
+  }
+  return mapping;
+}

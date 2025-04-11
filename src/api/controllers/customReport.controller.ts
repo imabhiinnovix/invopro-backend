@@ -114,6 +114,7 @@ export const generateCustomReportsFunction = async ({
 
       const currentStaticEstimatesDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'estimates');
       const monthlyIpDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyip');
+      const monthlyipstcDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyipstc');
 
       const staticProjectOpenedDataSource = customReportDetails.dataSourceIds.find(
         (ds) => ds.code === 'projectsopened'
@@ -131,6 +132,7 @@ export const generateCustomReportsFunction = async ({
         staticEstimatesDataSourceId: currentStaticEstimatesDataSource?.dataSourceId!,
         staticProjectOpenedDataSourceId: staticProjectOpenedDataSource?.dataSourceId!,
         monthlyIpDataSource: monthlyIpDataSource?.dataSourceId!,
+        monthlyipstcDataSource: monthlyipstcDataSource?.dataSourceId!,
         isRowData,
         userId,
         organizationId,
@@ -282,7 +284,7 @@ export const listReportRequest = async (req: Request, res: Response, next: NextF
     if (paginate) {
       result = await reportRequestService.getReportRequestList({
         query,
-        select: ['versionValue', 'status', 'createdAt'],
+        select: ['versionValue', 'dataSourceVersion', 'status', 'createdAt'],
         page,
         limit,
         populate: [

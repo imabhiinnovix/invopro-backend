@@ -26,7 +26,7 @@ import {
 import { createExcelSheetFile, createUpdateExcelTable, writeDataToExcel } from '../../utils/excel.utils';
 import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
 import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/dataSourceVersion.controller';
-import { processReportHeaders, transformMonthlyIpData } from '../../utils/common.report';
+import { processReportHeaders, transformMonthlyIpData, transformMonthlySTCData } from '../../utils/common.report';
 import { ReportHeaders } from '../../utils/common.type';
 
 export const generateMonthlyIpReport = async ({
@@ -47,6 +47,7 @@ export const generateMonthlyIpReport = async ({
   orgCode,
   organizationId,
   monthlyIpDataSource,
+  monthlyipstcDataSource,
   headers,
 }: {
   reportRequestPayload: any;
@@ -67,6 +68,7 @@ export const generateMonthlyIpReport = async ({
   organizationId: string;
   headers: ReportHeaders;
   monthlyIpDataSource: string;
+  monthlyipstcDataSource: string;
 }) => {
   try {
     const versionValue = reportRequestPayload.versionValue;
@@ -438,7 +440,7 @@ export const generateMonthlyIpReport = async ({
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
       customReportModel,
-      isRowData,
+      isRowData: true,
     });
 
     const partiallyProcessedAnnuitySavingsForNextYear = getFormattedDataToProcessReportHeaders({
@@ -473,7 +475,7 @@ export const generateMonthlyIpReport = async ({
       priorityDrop: reductionData.priorityDropArray,
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
-      isRowData,
+      isRowData: true,
     });
 
     const partiallyProcessedAllProsecutionSavings = getFormattedDataToProcessReportHeaders({
@@ -841,6 +843,7 @@ export const generateMonthlyIpReport = async ({
     });
 
     const reverseMapping = transformMonthlyIpData({ currentYear: Number(currentYear), isReverseMapping: true });
+    const reverseStcMapping = transformMonthlySTCData({ currentYear: Number(currentYear), isReverseMapping: true });
 
     const sbusHeader = [...sbuHeaders.map((data) => data.reportHeader), 'Totals'];
     const saveData = sbusHeader.map((sbu) => {
@@ -854,10 +857,32 @@ export const generateMonthlyIpReport = async ({
       return entry;
     });
 
+    const stcHeaders = ['STC', `New Projects opened in ${currentYear}`, `Total Open Projects`, `${currentYear} Filed`];
+
+    const saveStcData: any[] = [];
+
+    for (let i = 0; i < combinedSTCData.length; i++) {
+      const stcData = combinedSTCData[i];
+      const entry = {};
+      for (let j = 0; j < stcHeaders.length; j++) {
+        entry[reverseStcMapping[stcHeaders[j]]] = stcData[stcHeaders[j]];
+      }
+      saveStcData.push(entry);
+    }
+
     const dataSourceVersionDetailsMonthlyIp = await createUpdateCustomDataSourceVersionValueFunction({
       dataSourceId: monthlyIpDataSource,
       versionValue,
       versionData: saveData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+
+    const dataSourceVersionDetailsMonthlyIpStc = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: monthlyipstcDataSource,
+      versionValue,
+      versionData: saveStcData,
       userId,
       organizationId,
       orgCode,
@@ -899,6 +924,12 @@ export const generateMonthlyIpReport = async ({
           dataSourceVersionId: dataSourceVersionDetailsMonthlyIp.dataSourceVersionId,
           versionCode: dataSourceVersionDetailsMonthlyIp.versionCode,
           dataSourceId: monthlyIpDataSource,
+        },
+        {
+          name: 'stc',
+          dataSourceVersionId: dataSourceVersionDetailsMonthlyIpStc.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailsMonthlyIpStc.versionCode,
+          dataSourceId: monthlyipstcDataSource,
         },
       ],
     });
