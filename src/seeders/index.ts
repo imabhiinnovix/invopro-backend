@@ -8,6 +8,7 @@ import config from '../config';
 import { seedChart } from './widget_Type_chart.seed';
 import { seedOperators } from './operators.seed';
 import { seedWidgetTheme } from './widgetTheme.seed';
+import { seedDashboardWidget } from './dashboardWidget.seed';
 
 const payload = {
   superAdminUserId: new mongoose.Types.ObjectId('66b34cbbd40e24fca2e3e312'),
@@ -156,6 +157,9 @@ export async function seedDatabase() {
 
     console.info('\n====> Seeding Widget Theme <====');
     await seedWidgetTheme(payload);
+
+    console.info('\n====> Seeding Dashboard Widget <====');
+    await seedDashboardWidget();
 
     console.log('\nDatabase seeded successfully!');
     process.exit();

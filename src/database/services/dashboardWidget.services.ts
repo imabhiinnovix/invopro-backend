@@ -11,7 +11,7 @@ export const createDashboardWidget = async (widgetData: any) => {
   }
 };
 
-export const getDashboardWidget = async (query: any, populate: any) => {
+export const getDashboardWidget = async (query: any, populate = []) => {
   try {
     let widgetsQuery = DashboardWidget.findOne(query);
 

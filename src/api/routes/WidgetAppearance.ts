@@ -1,0 +1,23 @@
+import { Router } from 'express';
+
+import {
+  getAllWidgetAppearance,
+  createWidgetAppearance,
+  updateWidgetAppearance,
+  deleteWidgetAppearance,
+  getWidgetAppearanceById,
+} from '../controllers/WidgetAppearance.controller';
+
+import { authenticateToken } from '../../middlewares/authenticate.middleware';
+// import { roleAuthorization } from '../../middlewares/role.middleware';
+// import { RoleId } from '../../enums/role.enum';
+
+const router = Router();
+
+router.get('/list', authenticateToken, getAllWidgetAppearance);
+router.get('/:widgetAppearanceid', authenticateToken, getWidgetAppearanceById);
+router.post('/create', authenticateToken, createWidgetAppearance);
+router.put('/update/:widgetAppearanceid', authenticateToken, updateWidgetAppearance);
+router.delete('/delete/:widgetAppearanceid', authenticateToken, deleteWidgetAppearance);
+
+export default router;
