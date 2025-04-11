@@ -15,7 +15,7 @@ import { CustomReportModelAccess } from '../../database/models/customReportModel
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
 import * as dataSourceVersionValueService from '../../database/services/defaultDataSourceVersionValue.services';
 import mongoose from 'mongoose';
-import { transformMonthlyIpData } from '../../utils/common.report';
+import { transformMonthlyIpData, transformMonthlySTCData } from '../../utils/common.report';
 const ObjectId = mongoose.Types.ObjectId;
 
 export const generateCustomReportsFunction = async ({
@@ -343,7 +343,7 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
 
 export const viewReport = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { reportRequestId } = req.params;
+    const { reportRequestId, dataSourceVersionId } = req.params;
     const { organizationId, orgCode } = req.user;
 
     // const { userId } = req.user;
@@ -360,25 +360,43 @@ export const viewReport = async (req: Request, res: Response, next: NextFunction
       const versionValue = reportDetails.versionValue;
       const customReportId = String(reportDetails.customReportId);
       const customReportDetails = await customReportServices.findCustomReportById(customReportId);
-      const sectionsDetails = customReportDetails?.sections ? customReportDetails?.sections : [];
+      const designDetails = customReportDetails?.design;
+      let sectionDetails: any[] = [];
+      let mappings: Record<string, any> = {};
       const dataSourceVersionIdArray = reportDetails.dataSourceVersion;
       const reportName = customReportDetails?.reportName;
       if (dataSourceVersionIdArray && dataSourceVersionIdArray.length > 0) {
+        let transformedSectionData: any[] = [];
+        let transformedVersionData: any[] = [];
         for (let i = 0; i < dataSourceVersionIdArray.length; i++) {
           const dataSourceVersion = dataSourceVersionIdArray[i];
+
           const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
             orgCode,
             versionCode: dataSourceVersion.versionCode,
           });
-          if (reportName === 'monthlyip' && dataSourceVersion['name'] === 'global') {
-            const currentYearVersionValue = versionValue.split('-')[0];
-            const mappings = transformMonthlyIpData({
-              currentYear: Number(currentYearVersionValue),
-              isReverseMapping: false,
-            });
-            const monthlyIpGlobalDataSourceVersionId = dataSourceVersion['dataSourceVersionId'];
-            const query = { dataSourceVersionId: new ObjectId(monthlyIpGlobalDataSourceVersionId) };
+          if (reportName === 'monthlyip') {
+            if (String(dataSourceVersion['dataSourceVersionId']) === String(dataSourceVersionId)) {
+              const currentYearVersionValue = versionValue.split('-')[0];
 
+              const pageName = dataSourceVersion['name'];
+              if (pageName === 'global') {
+                sectionDetails = designDetails?.['global'] ? designDetails?.['global'] : [];
+                console.log(sectionDetails, pageName);
+                mappings = transformMonthlyIpData({
+                  currentYear: Number(currentYearVersionValue),
+                  isReverseMapping: false,
+                });
+              }
+              if (pageName === 'stc') {
+                sectionDetails = designDetails?.['stc'] ? designDetails?.['stc'] : [];
+                mappings = transformMonthlySTCData({
+                  currentYear: Number(currentYearVersionValue),
+                  isReverseMapping: false,
+                });
+              }
+            }
+            const query = { dataSourceVersionId: new ObjectId(dataSourceVersionId) };
             const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
               schemaName,
               query,
@@ -387,18 +405,13 @@ export const viewReport = async (req: Request, res: Response, next: NextFunction
               limit: Number.MAX_SAFE_INTEGER,
             });
 
-            // let totalRow = {};
-            let transformedVersionData: any = dataSourceVersionData.data.map((entry) => {
+            transformedVersionData = dataSourceVersionData.data.map((entry) => {
               const newRow = {};
               const rowData = entry.rowData;
 
               for (const [originalKey, mappedKey] of Object.entries(mappings)) {
                 newRow[mappedKey] = rowData[originalKey] !== undefined ? rowData[originalKey] : null;
               }
-
-              // if (rowData.SBU === 'Totals') {
-              //   totalRow = newRow;
-              // }
               return {
                 ...newRow,
               };
@@ -406,7 +419,7 @@ export const viewReport = async (req: Request, res: Response, next: NextFunction
 
             // transformedVersionData = [...transformedVersionData.filter((data) => data?.SBU != 'Totals'), totalRow];
 
-            const transformedSectionData = sectionsDetails.map((section) => {
+            transformedSectionData = sectionDetails.map((section) => {
               const transformedSectionName = mappings[section.sectionName] || section.sectionName;
 
               const updatedSubSections = section.subSections.map((sub) => {
@@ -422,28 +435,29 @@ export const viewReport = async (req: Request, res: Response, next: NextFunction
                 subSections: updatedSubSections,
               };
             });
-            res.status(200).json({
-              success: true,
-              message: 'Report Details Fetched Successfully',
-              data: transformedVersionData,
-              sections: transformedSectionData,
-            });
           }
         }
+
+        res.status(200).json({
+          success: true,
+          message: 'Report Details Fetched Successfully',
+          data: transformedVersionData,
+          sections: transformedSectionData,
+        });
       } else {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           message: `Report data not found.`,
         });
       }
     } else {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: `Report details not found.`,
       });
     }
   } catch (err) {
-    console.log('Error in downloadReport', err);
+    console.log('Error in viewReprt', err);
     next(err);
   }
 };

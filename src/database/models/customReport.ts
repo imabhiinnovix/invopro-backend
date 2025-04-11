@@ -21,6 +21,7 @@ interface ISubSection {
   type: string;
   spanColumns: boolean;
   format: string;
+  view: string;
 }
 
 interface ISection {
@@ -31,6 +32,7 @@ interface ISection {
   sectionVerticalAlignment: string;
   spanColumns: boolean;
   subSections: ISubSection[];
+  view: string;
 }
 
 interface IHeaderSection {
@@ -46,7 +48,7 @@ interface ICustomReport extends Document {
   organizationId: Types.ObjectId;
   sampleFilePath: string;
   headers: Record<string, IHeaderSection>;
-  sections: ISection[];
+  design: Record<string, ISection[]>;
 }
 
 const ColumnSchema = new Schema<IColumn>({
@@ -79,6 +81,7 @@ const SectionSchema = new Schema<ISection>({
   sectionVerticalAlignment: { type: String, required: true },
   spanColumns: { type: Boolean, required: true },
   subSections: { type: [SubSectionSchema], required: true },
+  view: { type: String, required: true },
 });
 
 const CustomReportSchema = new Schema<ICustomReport>(
@@ -96,7 +99,7 @@ const CustomReportSchema = new Schema<ICustomReport>(
     ],
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
     headers: { type: Map, of: HeaderSectionSchema },
-    sections: { type: [SectionSchema] },
+    design: { type: Map, of: [SectionSchema] },
   },
   {
     timestamps: true,

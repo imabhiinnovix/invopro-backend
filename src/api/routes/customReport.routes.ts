@@ -27,7 +27,7 @@ router.post(
 );
 
 router.get('/download/:reportRequestId', authenticateToken, downloadReport);
-router.get('/view/:reportRequestId', authenticateToken, viewReport);
+router.get('/view/:reportRequestId/:dataSourceVersionId', authenticateToken, viewReport);
 router.get('/reportDetails/:reportRequestId', authenticateToken, getReportRequestDetails);
 
 export default router;
