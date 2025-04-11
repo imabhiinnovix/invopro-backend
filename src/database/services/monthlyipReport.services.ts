@@ -90,7 +90,7 @@ export function processSTCData(data) {
   let total = 0;
   data.forEach(({ value, STC }) => {
     STC.split(';').forEach((stc) => {
-      let normalizedSTC = stc.trim().toLowerCase();
+      let normalizedSTC = stc.trim()?.toLowerCase();
       let mappedSTC = mapping[normalizedSTC] || stc.trim();
 
       if (!result[mappedSTC]) {
@@ -1676,7 +1676,7 @@ export async function getAnnuitySavingsFromReductions({
 
     const sabicipMap = {};
     sabicipData.forEach((item) => {
-      const clientRef = item.rowData['Clients reference'];
+      const clientRef = item.rowData['Clients reference']?.toLowerCase().trim();
       if (clientRef) {
         sabicipMap[clientRef] = item.rowData.Total ? item.rowData.Total : 0;
       }
@@ -1704,7 +1704,7 @@ export async function getAnnuitySavingsFromReductions({
     const ctclinsabMap = {};
 
     ctclinsabData.forEach((item) => {
-      const fileNumber = item.rowData['File number'];
+      const fileNumber = item.rowData['File number']?.toLowerCase().trim();
       if (fileNumber) {
         ctclinsabMap[fileNumber] = item.rowData.Total ? item.rowData.Total : 0;
       }
@@ -1731,7 +1731,7 @@ export async function getAnnuitySavingsFromReductions({
 
     const annuitiesMap = {};
     annuitiesData.forEach((item) => {
-      const otherReferenceNo = item.rowData['Other Reference No'];
+      const otherReferenceNo = item.rowData['Other Reference No']?.toLowerCase().trim();
       if (otherReferenceNo) {
         annuitiesMap[otherReferenceNo] = item.rowData.Amount ? item.rowData.Amount : 0;
       }
@@ -1740,8 +1740,8 @@ export async function getAnnuitySavingsFromReductions({
     const rowDataSavings: any = [];
 
     combinedDrops.forEach((item) => {
-      const caseRef = item.Case_Reference1;
-      const procedureAgentRef = item['Procedure Agent Ref'];
+      const caseRef = item.Case_Reference1?.toLowerCase().trim();
+      const procedureAgentRef = item['Procedure Agent Ref']?.toLowerCase().trim();
       const sbu = item.SBU;
       const sabicTotal = sabicipMap[caseRef] || 0;
       const ctclinsabTotal = ctclinsabMap[procedureAgentRef] || 0;
@@ -1749,7 +1749,7 @@ export async function getAnnuitySavingsFromReductions({
       const total = sabicTotal + ctclinsabTotal + annuitiesTotal;
 
       if (isRowData) {
-        rowDataSavings.push({ Case_Reference1: caseRef, saving: total });
+        rowDataSavings.push({ Case_Reference1: caseRef, saving: total, procedureAgentRef });
       }
 
       if (sbu) {
