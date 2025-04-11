@@ -346,8 +346,6 @@ export const viewReport = async (req: Request, res: Response, next: NextFunction
     const { reportRequestId, dataSourceVersionId } = req.params;
     const { organizationId, orgCode } = req.user;
 
-    // const { userId } = req.user;
-
     const reportDetails = await reportRequestService.findReportRequestById(reportRequestId);
 
     if (reportDetails) {
@@ -382,7 +380,6 @@ export const viewReport = async (req: Request, res: Response, next: NextFunction
               const pageName = dataSourceVersion['name'];
               if (pageName === 'global') {
                 sectionDetails = designDetails?.['global'] ? designDetails?.['global'] : [];
-                console.log(sectionDetails, pageName);
                 mappings = transformMonthlyIpData({
                   currentYear: Number(currentYearVersionValue),
                   isReverseMapping: false,
@@ -395,46 +392,44 @@ export const viewReport = async (req: Request, res: Response, next: NextFunction
                   isReverseMapping: false,
                 });
               }
-            }
-            const query = { dataSourceVersionId: new ObjectId(dataSourceVersionId) };
-            const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
-              schemaName,
-              query,
-              page: 1,
-              select: 'rowData',
-              limit: Number.MAX_SAFE_INTEGER,
-            });
 
-            transformedVersionData = dataSourceVersionData.data.map((entry) => {
-              const newRow = {};
-              const rowData = entry.rowData;
+              const query = { dataSourceVersionId: new ObjectId(dataSourceVersionId) };
+              const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
+                schemaName,
+                query,
+                page: 1,
+                select: 'rowData',
+                limit: Number.MAX_SAFE_INTEGER,
+              });
 
-              for (const [originalKey, mappedKey] of Object.entries(mappings)) {
-                newRow[mappedKey] = rowData[originalKey] !== undefined ? rowData[originalKey] : null;
-              }
-              return {
-                ...newRow,
-              };
-            });
+              transformedVersionData = dataSourceVersionData.data.map((entry) => {
+                const newRow = {};
+                const rowData = entry.rowData;
 
-            // transformedVersionData = [...transformedVersionData.filter((data) => data?.SBU != 'Totals'), totalRow];
-
-            transformedSectionData = sectionDetails.map((section) => {
-              const transformedSectionName = mappings[section.sectionName] || section.sectionName;
-
-              const updatedSubSections = section.subSections.map((sub) => {
+                for (const [originalKey, mappedKey] of Object.entries(mappings)) {
+                  newRow[mappedKey] = rowData[originalKey] !== undefined ? rowData[originalKey] : null;
+                }
                 return {
-                  ...sub,
-                  headerName: mappings[sub.headerName] || sub.headerName,
+                  ...newRow,
                 };
               });
 
-              return {
-                ...section,
-                sectionName: transformedSectionName,
-                subSections: updatedSubSections,
-              };
-            });
+              transformedSectionData = sectionDetails.map((section) => {
+                const transformedSectionName = mappings[section.sectionName] || section.sectionName;
+
+                const updatedSubSections = section.subSections.map((sub) => {
+                  return {
+                    ...sub,
+                    headerName: mappings[sub.headerName] || sub.headerName,
+                  };
+                });
+                return {
+                  ...section,
+                  sectionName: transformedSectionName,
+                  subSections: updatedSubSections,
+                };
+              });
+            }
           }
         }
 
