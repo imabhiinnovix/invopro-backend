@@ -292,6 +292,10 @@ export const listReportRequest = async (req: Request, res: Response, next: NextF
             path: 'customReportId',
             select: 'reportName', // Only populate reportName
           },
+          {
+            path: 'createdBy',
+            select: 'firstName lastName',
+          },
         ],
       });
     } else {
