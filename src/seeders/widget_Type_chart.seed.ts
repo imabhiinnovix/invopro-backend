@@ -1,16 +1,210 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import WidgetType from '../database/models/widgetType';
 
 export async function seedChart(payload) {
+  const fieldConfig = {
+    line: [
+      {
+        fieldName: 'dimensions',
+        display: true,
+        required: true,
+        multiple: true,
+        label: 'Dimensions',
+        type: 'multiselect' as const,
+      },
+      {
+        fieldName: 'groupBy',
+        display: true,
+        required: true,
+        multiple: true,
+        label: 'Group By',
+        type: 'multiselect' as const,
+      },
+      {
+        fieldName: 'size',
+        display: false,
+        required: false,
+        multiple: false,
+        label: 'Size',
+        type: 'select' as const,
+      },
+      {
+        fieldName: 'aggregation',
+        display: true,
+        required: true,
+        multiple: false,
+        label: 'Aggregation',
+        type: 'select' as const,
+      },
+      {
+        fieldName: 'conditions',
+        display: true,
+        required: false,
+        multiple: true,
+        label: 'Conditions',
+        type: 'multiselect' as const,
+      },
+    ],
+    pie: [
+      {
+        fieldName: 'dimensions',
+        display: true,
+        required: true,
+        multiple: true,
+        label: 'Dimensions',
+        type: 'multiselect' as const,
+      },
+      {
+        fieldName: 'groupBy',
+        display: false,
+        required: false,
+        multiple: false,
+        label: 'Group By',
+        type: 'multiselect' as const,
+      },
+      {
+        fieldName: 'size',
+        display: false,
+        required: false,
+        multiple: false,
+        label: 'Size',
+        type: 'select' as const,
+      },
+      {
+        fieldName: 'aggregation',
+        display: true,
+        required: true,
+        multiple: false,
+        label: 'Aggregation',
+        type: 'select' as const,
+      },
+      {
+        fieldName: 'conditions',
+        display: true,
+        required: false,
+        multiple: true,
+        label: 'Conditions',
+        type: 'multiselect' as const,
+      },
+    ],
+    bubble: [
+      {
+        fieldName: 'dimensions',
+        display: true,
+        required: true,
+        multiple: true,
+        label: 'Dimensions',
+        type: 'multiselect',
+      },
+      {
+        fieldName: 'groupBy',
+        display: true,
+        required: true,
+        multiple: true,
+        label: 'Group By',
+        type: 'multiselect',
+      },
+      {
+        fieldName: 'size',
+        display: true,
+        required: false,
+        multiple: true,
+        label: 'Size',
+        type: 'select',
+      },
+      {
+        fieldName: 'aggregation',
+        display: true,
+        required: true,
+        multiple: false,
+        label: 'Aggregation',
+        type: 'select',
+      },
+      {
+        fieldName: 'conditions',
+        display: true,
+        required: false,
+        multiple: true,
+        label: 'Conditions',
+        type: 'multiselect',
+      },
+    ],
+    number: [
+      {
+        fieldName: 'dimensions',
+        display: false,
+        required: false,
+        multiple: false,
+        label: 'Dimensions',
+        type: 'multiselect' as const,
+      },
+      {
+        fieldName: 'groupBy',
+        display: false,
+        required: false,
+        multiple: false,
+        label: 'Group By',
+        type: 'multiselect' as const,
+      },
+      {
+        fieldName: 'size',
+        display: false,
+        required: false,
+        multiple: false,
+        label: 'Size',
+        type: 'select' as const,
+      },
+      {
+        fieldName: 'aggregation',
+        display: true,
+        required: true,
+        multiple: false,
+        label: 'Aggregation',
+        type: 'select' as const,
+      },
+      {
+        fieldName: 'conditions',
+        display: true,
+        required: false,
+        multiple: true,
+        label: 'Conditions',
+        type: 'multiselect' as const,
+      },
+    ],
+  };
+
   const chartData = [
-    { id: payload.pieChartId, name: 'Pie', description: 'test pie description', chartType: 'pie', code: 'pie-1' },
-    { id: payload.lineChartId, name: 'Line', description: 'test line description', chartType: 'line', code: 'line-1' },
-    { id: payload.areaChartId, name: 'Area', description: 'test area description', chartType: 'area', code: 'area-1' },
+    {
+      id: payload.pieChartId,
+      name: 'Pie',
+      description: 'test pie description',
+      chartType: 'pie',
+      code: 'pie-1',
+      fieldConfig: fieldConfig.pie,
+    },
+    {
+      id: payload.lineChartId,
+      name: 'Line',
+      description: 'test line description',
+      chartType: 'line',
+      code: 'line-1',
+      fieldConfig: fieldConfig.line,
+    },
+    {
+      id: payload.areaChartId,
+      name: 'Area',
+      description: 'test area description',
+      chartType: 'area',
+      code: 'area-1',
+      fieldConfig: fieldConfig.line,
+    },
     {
       id: payload.numberChartId,
       name: 'Number',
       description: 'test number description',
       chartType: 'number',
       code: 'number-1',
+      fieldConfig: fieldConfig.number,
     },
     {
       id: payload.horizontalBarChartId,
@@ -18,6 +212,7 @@ export async function seedChart(payload) {
       description: 'test horizontal bar description',
       chartType: 'horizontalBar',
       code: 'horizontalBar-1',
+      fieldConfig: fieldConfig.line,
     },
     {
       id: payload.verticalBarChartId,
@@ -25,6 +220,7 @@ export async function seedChart(payload) {
       description: 'test vertical bar description',
       chartType: 'verticalBar',
       code: 'verticalBar-1',
+      fieldConfig: fieldConfig.line,
     },
     {
       id: payload.stackedBarChartId,
@@ -32,6 +228,7 @@ export async function seedChart(payload) {
       description: 'test stacked bar description',
       chartType: 'stackedBar',
       code: 'stackedBar-1',
+      fieldConfig: fieldConfig.line,
     },
     {
       id: payload.bubbleChartId,
@@ -39,6 +236,7 @@ export async function seedChart(payload) {
       description: 'test bubble description',
       chartType: 'bubble',
       code: 'bubble-1',
+      fieldConfig: fieldConfig.bubble,
     },
     {
       id: payload.doughnutChartId,
@@ -46,13 +244,15 @@ export async function seedChart(payload) {
       description: 'test doughnut description',
       chartType: 'doughnut',
       code: 'doughnut-1',
+      fieldConfig: fieldConfig.pie,
     },
     {
-      id: payload.multiSeriesBarChartId,
+      id: payload.multiSeriesPieChartId,
       name: 'Multi Series Pie',
       description: 'test multi series bar description',
       chartType: 'multiSeriesBar',
       code: 'multiSeriesBar-1',
+      fieldConfig: fieldConfig.pie,
     },
     {
       id: payload.polarAreaChartId,
@@ -60,6 +260,7 @@ export async function seedChart(payload) {
       description: 'test polar area description',
       chartType: 'polarArea',
       code: 'polarArea-1',
+      fieldConfig: fieldConfig.line,
     },
     {
       id: payload.radarChartId,
@@ -67,6 +268,7 @@ export async function seedChart(payload) {
       description: 'test radar description',
       chartType: 'radar',
       code: 'radar-1',
+      fieldConfig: fieldConfig.line,
     },
     {
       id: payload.scatterChartId,
@@ -74,11 +276,12 @@ export async function seedChart(payload) {
       description: 'test scatter description',
       chartType: 'scatter',
       code: 'scatter-1',
+      fieldConfig: fieldConfig.bubble,
     },
   ];
 
   for (const chart of chartData) {
-    const existingChart = await WidgetType.findById(chart.id);
+    const existingChart: any = await WidgetType.findById(chart.id);
 
     if (!existingChart) {
       const newChart = new WidgetType({
@@ -90,6 +293,7 @@ export async function seedChart(payload) {
         isActive: true,
         createdAt: new Date('2024-08-07'),
         updatedAt: new Date('2024-08-07'),
+        fieldConfig: chart.fieldConfig,
       });
 
       await newChart.save();
@@ -100,9 +304,10 @@ export async function seedChart(payload) {
 
       if (existingChart.name !== updatedName) {
         existingChart.name = updatedName;
-        await existingChart.save();
-        console.info(`${updatedName} chart updated successfully.`);
       }
+      existingChart.fieldConfig = chart.fieldConfig;
+      await existingChart.save();
+      console.info(`${updatedName} chart updated successfully.`);
     }
   }
 }

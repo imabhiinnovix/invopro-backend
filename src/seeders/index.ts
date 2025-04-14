@@ -28,7 +28,7 @@ const payload = {
   stackedBarChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bac'),
   bubbleChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7baf'),
   doughnutChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bb2'),
-  multiSeriesBarChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bb5'),
+  multiSeriesPieChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bb5'),
   polarAreaChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bb8'),
   radarChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bbb'),
   scatterChartId: new mongoose.Types.ObjectId('67f75cd8b28822189f7ae71c'),

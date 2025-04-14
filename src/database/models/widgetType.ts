@@ -1,14 +1,43 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Schema, model, Document } from 'mongoose';
 import config from '../../config';
 
-interface IWidgetType extends Document {
+export type FieldType = 'string' | 'number' | 'boolean' | 'select' | 'multiselect' | 'date' | 'custom';
+
+export interface IFieldConfigItem {
+  fieldName: string;
+  display: boolean;
+  required?: boolean;
+  multiple?: boolean;
+  type?: FieldType;
+  label?: string;
+  defaultValue?: any;
+}
+
+export interface IWidgetType extends Document {
+  _id: string;
   name: string;
-  description: string;
+  description?: string;
   chartType: string;
-  type: string;
   code: string;
   isActive: boolean;
+  fieldConfig: IFieldConfigItem[];
+  createdAt: string; // ISO date string
+  updatedAt: string; // ISO date string
 }
+
+const FieldConfigItemSchema = new Schema<IFieldConfigItem>(
+  {
+    fieldName: { type: String, required: true },
+    display: { type: Boolean, default: true },
+    required: { type: Boolean, default: false },
+    multiple: { type: Boolean },
+    type: { type: String, default: 'string' },
+    label: { type: String },
+    defaultValue: { type: Schema.Types.Mixed, default: null },
+  },
+  { _id: false }
+);
 
 const WidgetTypeSchema = new Schema<IWidgetType>(
   {
@@ -21,6 +50,7 @@ const WidgetTypeSchema = new Schema<IWidgetType>(
     }, // Added more types
     code: { type: Schema.Types.String },
     isActive: { type: Boolean, default: true, required: true },
+    fieldConfig: [FieldConfigItemSchema],
   },
   {
     timestamps: true,
