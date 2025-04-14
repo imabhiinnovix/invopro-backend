@@ -16,6 +16,6 @@ router.post('/create', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN]
 router.post('/update/:widgetTypeId', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN]), updateWidgetType);
 router.post('/delete/:widgetTypeId', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN]), deleteWidgetType);
 router.get('/get/:widgetTypeId', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN]), getWidgetTypeById);
-router.get('/list', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN]), getWidgets);
+router.get('/list', authenticateToken, getWidgets);
 
 export default router;

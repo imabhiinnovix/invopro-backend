@@ -9,6 +9,7 @@ import { seedChart } from './widget_Type_chart.seed';
 import { seedOperators } from './operators.seed';
 import { seedWidgetTheme } from './widgetTheme.seed';
 import { seedDashboardWidget } from './dashboardWidget.seed';
+import { seedDashboard } from './dashboard.seed';
 
 const payload = {
   superAdminUserId: new mongoose.Types.ObjectId('66b34cbbd40e24fca2e3e312'),
@@ -148,6 +149,9 @@ export async function seedDatabase() {
     //   organizationId: payload.organizationId,
     //   sampleFilePath: '',
     // });
+
+    console.info('\n====> Seeding Dashboard <====');
+    await seedDashboard();
 
     console.info('\n====> Seeding Chart <====');
     await seedChart(payload);
