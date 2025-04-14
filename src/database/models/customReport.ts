@@ -22,6 +22,7 @@ interface ISubSection {
   spanColumns: boolean;
   format: string;
   view: string;
+  isRequired: boolean;
 }
 
 interface ISection {
@@ -71,6 +72,7 @@ const SubSectionSchema = new Schema<ISubSection>({
   type: { type: String, required: true },
   spanColumns: { type: Boolean, required: true },
   format: { type: String },
+  isRequired: { type: Boolean },
 });
 
 const SectionSchema = new Schema<ISection>({

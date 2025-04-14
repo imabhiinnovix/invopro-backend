@@ -6,6 +6,7 @@ import { authenticateToken } from '../../middlewares/authenticate.middleware';
 import {
   downloadReport,
   generateCustomReports,
+  getCustomReportDataBasedOnDataSourcedIdAndVersionValueRange,
   getReportRequestDetails,
   getReportVersionValuesBasedOnReportIdAndVersionValue,
   listCustomReports,
@@ -29,5 +30,6 @@ router.post(
 router.get('/download/:reportRequestId', authenticateToken, downloadReport);
 router.get('/view/:reportRequestId/:dataSourceVersionId', authenticateToken, viewReport);
 router.get('/reportDetails/:reportRequestId', authenticateToken, getReportRequestDetails);
+router.get('/reportData/:dataSourceId', authenticateToken, getCustomReportDataBasedOnDataSourcedIdAndVersionValueRange);
 
 export default router;

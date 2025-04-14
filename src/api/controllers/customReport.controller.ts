@@ -537,3 +537,70 @@ export const getReportRequestDetails = async (req: Request, res: Response, next:
     next(err);
   }
 };
+
+export const getCustomReportDataBasedOnDataSourcedIdAndVersionValueRange = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { dataSourceId } = req.params;
+    const { periodStart, periodEnd, versionCode } = req.query;
+
+    const query: any = {
+      dataSourceId: dataSourceId,
+      versionValue: {
+        $gte: periodStart,
+        $lte: periodEnd,
+      },
+      isCurrent: true,
+    };
+
+    const availableVersionValue = await dataSourceVersionService.getDataSourceVersionList({
+      query,
+      sort: { versionValue: 1 },
+    });
+
+    const dataSourceVesionIdArray: any[] = [];
+    const versionValueMap = {};
+    for (let i = 0; i < availableVersionValue.data.length; i++) {
+      const versionData = availableVersionValue.data[i];
+      const versionId = versionData._id;
+      const versionValue = versionData.versionValue;
+      dataSourceVesionIdArray.push(versionId);
+      versionValueMap[String(versionId)] = versionValue;
+    }
+
+    const dataQuery = { dataSourceVersionId: { $in: dataSourceVesionIdArray } };
+    const { orgCode } = req.user;
+    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: versionCode as string,
+    });
+
+    const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
+      schemaName,
+      query: dataQuery,
+      page: 1,
+      select: 'dataSourceVersionId rowData',
+      limit: Number.MAX_SAFE_INTEGER,
+    });
+
+    const finalDataSourceVersionData = dataSourceVersionData.data.map((data) => {
+      return {
+        ...data.rowData,
+        versionValue: versionValueMap[data.dataSourceVersionId],
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Report details retrieved successfully.',
+      data: finalDataSourceVersionData,
+      versionValueMap,
+    });
+  } catch (err) {
+    console.log('Error in getCustomReportChartData.', err);
+    next(err);
+  }
+};
