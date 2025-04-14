@@ -9,8 +9,6 @@ import {
 } from '../controllers/WidgetAppearance.controller';
 
 import { authenticateToken } from '../../middlewares/authenticate.middleware';
-// import { roleAuthorization } from '../../middlewares/role.middleware';
-// import { RoleId } from '../../enums/role.enum';
 
 const router = Router();
 

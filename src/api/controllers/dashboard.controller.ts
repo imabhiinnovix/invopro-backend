@@ -9,6 +9,7 @@ import * as entityService from '../../database/services/entity.services';
 import * as dataSourceService from '../../database/services/dataSource.services';
 import * as widgetTypeService from '../../database/services/widgetType.service';
 import * as widgetThemeService from '../../database/services/widgetTheme.service';
+import * as widgetAppearanceService from '../../database/services/widgetAppearance.service';
 
 import { buildAggregationPipeline } from '../../utils/aggregationPipeline';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
@@ -224,8 +225,8 @@ export const getDashboardWidgetList = async (req: Request, res: Response, next: 
 
 export const getWidgetData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { dataSourceId, entityId, aggregation, groupBy, conditions, widgetType } = req.body;
-    const { orgCode } = req.user;
+    const { dataSourceId, entityId, aggregation, groupBy, conditions, widgetType, widgetAppearanceId } = req.body;
+    const { orgCode, organizationId } = req.user;
 
     let dimensions = req.body.dimensions;
 
@@ -290,11 +291,17 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     // 5. Execute aggregation
     const dataResults = await DataSourceModel.aggregate(aggregationPipeline).exec();
 
+    let widgetAppearance: any = {};
+    if (widgetAppearanceId) {
+      widgetAppearance = await widgetAppearanceService.getWidgetAppearance({ _id: widgetAppearanceId, organizationId });
+    }
+
     // 6. Prepare response
     const response = {
       success: true,
       message: 'Chart data fetched successfully',
       data: dataResults,
+      widgetAppearance,
     };
 
     res.status(200).json(response);

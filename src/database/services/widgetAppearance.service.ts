@@ -65,16 +65,22 @@ export const deleteWidgetAppearance = async (id: string, organizationId: string)
   }
 };
 
-export const findWidgetAppearanceById = async (id: string, organizationId: string) => {
+export const findWidgetAppearanceById = async (id: string) => {
   try {
-    const widgetAppearance = await WidgetAppearance.findOne({
-      _id: id,
-      organizationId,
-      isDeleted: false,
-    });
+    const widgetAppearance = await WidgetAppearance.findById(id);
+
     if (!widgetAppearance) {
       throw new Error('Widget appearance not found');
     }
+    return widgetAppearance;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getWidgetAppearance = async (query) => {
+  try {
+    const widgetAppearance = await WidgetAppearance.findOne(query);
     return widgetAppearance;
   } catch (error) {
     throw error;

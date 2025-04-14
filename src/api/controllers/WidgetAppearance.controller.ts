@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
-import * as widgetAppearanceService from '../../database/services/WidgetAppearance.service';
+import * as widgetAppearanceService from '../../database/services/widgetAppearance.service';
 import * as dashboardWidgetdService from '../../database/services/dashboardWidget.services';
 
 export const getAllWidgetAppearance = async (req: Request, res: Response, next: NextFunction) => {
@@ -88,7 +88,12 @@ export const getWidgetAppearanceById = async (req: Request, res: Response, next:
   try {
     const { widgetAppearanceid } = req.params;
     const { organizationId } = req.user;
-    const widgetAppearance = await widgetAppearanceService.findWidgetAppearanceById(widgetAppearanceid, organizationId);
+
+    const widgetAppearance = await widgetAppearanceService.getWidgetAppearance({
+      _id: widgetAppearanceid,
+      organizationId,
+    });
+
     return res.status(200).json({
       success: true,
       message: 'Widget appearance fetched successfully',
