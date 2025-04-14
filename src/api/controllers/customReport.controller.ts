@@ -95,7 +95,7 @@ export const generateCustomReportsFunction = async ({
       reportRequestId = requestedReport._id;
     }
     const customReportModel = await CustomReportModelAccess({ orgCode });
-    if (customReportDetails.reportName === 'monthlyip') {
+    if (customReportDetails.reportName.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'monthlyip') {
       const versionMap = Object.fromEntries(
         dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
       );
@@ -142,7 +142,7 @@ export const generateCustomReportsFunction = async ({
       });
 
       return data;
-    } else if (customReportDetails.reportName === 'supplementalip') {
+    } else if (customReportDetails.reportName.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'supplementalip') {
       const versionMap = Object.fromEntries(
         dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
       );
@@ -377,7 +377,7 @@ export const viewReport = async (req: Request, res: Response, next: NextFunction
             orgCode,
             versionCode: dataSourceVersion.versionCode,
           });
-          if (reportName === 'monthlyip') {
+          if (reportName && reportName.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'monthlyip') {
             if (String(dataSourceVersion['dataSourceVersionId']) === String(dataSourceVersionId)) {
               const currentYearVersionValue = versionValue.split('-')[0];
 
