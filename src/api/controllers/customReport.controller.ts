@@ -113,7 +113,7 @@ export const generateCustomReportsFunction = async ({
       const staticNewFilingsDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'newfilings');
 
       const currentStaticEstimatesDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'estimates');
-      const monthlyIpDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyip');
+      const monthlyIpDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyipglobal');
       const monthlyipstcDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyipstc');
 
       const staticProjectOpenedDataSource = customReportDetails.dataSourceIds.find(
@@ -377,6 +377,7 @@ export const viewReport = async (req: Request, res: Response, next: NextFunction
             orgCode,
             versionCode: dataSourceVersion.versionCode,
           });
+
           if (reportName && reportName.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'monthlyip') {
             if (String(dataSourceVersion['dataSourceVersionId']) === String(dataSourceVersionId)) {
               const currentYearVersionValue = versionValue.split('-')[0];
