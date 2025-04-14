@@ -134,7 +134,7 @@ async function validateFileData({
             errorCode: '404',
             errorMessage: `Error: Row ${index + 1} - The attribute "${attrName}" is required but is missing.`,
           });
-        } else if (value !== undefined && value != null) {
+        } else if (value !== undefined && value != null && value) {
           const { isValid, convertedValue, attributeOptionValue } = await validateAndConvert({
             value,
             type: attr.type,

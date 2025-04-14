@@ -4,6 +4,17 @@ import createDefaultDataSourceVersionModel from '../models/defaultDataSourceVers
 import { CustomReportModelAccessReturnType } from '../models/customReportModels';
 const ObjectId = mongoose.Types.ObjectId;
 
+const ksaAgreementCounselMapping = {
+  matt: 'Lowe, Matthew Scott',
+  christian: 'Heausler, Christian N.',
+  jakub: 'Michna, Jakub',
+  babtainalbabtain: 'Albabtain, Mohammed Abdualaziz',
+  anam: 'Abdullah, Anam Saleem',
+  munish: 'Arora, Munish',
+  sriram: 'Renganathan, SriramBalaji',
+  nathan: 'Jensen, Nathan Orton',
+};
+
 export async function getAgreementSigned({
   sabicContractsDataSourceVersionId,
   shppContractsDataSourceVersionId,
@@ -12,6 +23,7 @@ export async function getAgreementSigned({
   agreementTypeMappingDataSourceVersionId,
   currentYear,
   customReportModel,
+  isRowData,
 }: {
   sabicContractsDataSourceVersionId: string;
   shppContractsDataSourceVersionId: string;
@@ -20,6 +32,7 @@ export async function getAgreementSigned({
   agreementTypeMappingDataSourceVersionId: string;
   currentYear: string;
   customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
 }) {
   try {
     const yearDateRange = {
@@ -54,8 +67,10 @@ export async function getAgreementSigned({
         $match: {
           dataSourceVersionId: new ObjectId(ksaContractsDataSourceVersionId),
           'rowData.StatusDate': yearDateRange,
-          'rowData.AgreementExecuted': { $regex: 'PROC|YES', $options: 'i' },
-          'rowData.ReferenceNumber': { $regex: 'PROC|REV', $options: 'i' },
+          $or: [
+            { 'rowData.AgreementExecuted': { $regex: 'PROC|YES', $options: 'i' } },
+            { 'rowData.ReferenceNumber': { $regex: 'PROC|REV', $options: 'i' } },
+          ],
         },
       },
     ]);
@@ -116,7 +131,9 @@ export async function getAgreementSigned({
         let matchingAttorney = rowDataAttorneyMappingContractDetails.find(
           (attorney) =>
             attorney?.Counsel?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() ===
-            data?.Attorneyies?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+            ksaAgreementCounselMapping[data?.Attorneyies?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()]
+              ?.replace(/[^a-zA-Z0-9]/g, '')
+              .toLowerCase()
         );
         if (matchingAttorney && data.Counsel) {
           return { ...data, SBU: matchingAttorney.SBU };
@@ -134,8 +151,9 @@ export async function getAgreementSigned({
         );
         if (matchingAgreement && data.AgreementType) {
           return { ...data, finalAgreementType: matchingAgreement['Final AgreementType'] };
+        } else {
+          return { ...data, finalAgreementType: 'Others' };
         }
-        return null;
       })
       .filter((item) => item !== null);
 
@@ -148,8 +166,9 @@ export async function getAgreementSigned({
         );
         if (matchingAgreement && data.AgreementType) {
           return { ...data, finalAgreementType: matchingAgreement['Final AgreementType'] };
+        } else {
+          return { ...data, finalAgreementType: 'Others' };
         }
-        return null;
       })
       .filter((item) => item !== null);
 
@@ -162,8 +181,9 @@ export async function getAgreementSigned({
         );
         if (matchingAgreement && data.AgreementDocumentType) {
           return { ...data, finalAgreementType: matchingAgreement['Final AgreementType'] };
+        } else {
+          return { ...data, finalAgreementType: 'Others' };
         }
-        return null;
       })
       .filter((item) => item !== null);
 
@@ -258,6 +278,10 @@ export async function getAgreementSigned({
     });
 
     otherAgreementResult.push(otherAgreementTotalBasedOnSbu);
+
+    if (isRowData) {
+      return allFinalAgreements;
+    }
     return { finalAgreementResult, otherAgreementResult };
   } catch (e) {
     throw e;
@@ -696,10 +720,15 @@ export async function getAccoladeMappingSheet({
     const combinedAccoladeStdData = [...shppAccoladeStdData, ...sabicAccoladeStdData];
     const allStdData: any[] = [];
 
+    const rawDataActiveFilling: any[] = [];
+    const rawDataNewFilling: any[] = [];
+    const rawDataOpenDisclosure: any[] = [];
+    const rawDataDraftDisclosure: any[] = [];
     const activeApplicationAccoladeStdData = activeApplicationRawData.map((row) => {
       const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
       if (matchingStd) {
         allStdData.push(matchingStd);
+        rawDataActiveFilling.push({ ...row.rowData, STD: matchingStd.STD });
       }
       return { accoladeStdData: matchingStd ? matchingStd : '', activeApplicationData: row.rowData };
     });
@@ -708,26 +737,32 @@ export async function getAccoladeMappingSheet({
       const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
       if (matchingStd) {
         allStdData.push(matchingStd);
+        rawDataNewFilling.push({ ...row.rowData, STD: matchingStd.STD });
       }
       return { accoladeStdData: matchingStd ? matchingStd : '', newFilingThisYearData: row.rowData };
     });
 
     const openDisclosureAccoladeStdData = openDisclosureRawData.map((row) => {
-      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
+      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.Accolade);
       if (matchingStd) {
         allStdData.push(matchingStd);
+        rawDataOpenDisclosure.push({ ...row.rowData, STD: matchingStd.STD });
       }
       return { accoladeStdData: matchingStd ? matchingStd : '', openDisclosureData: row.rowData };
     });
 
     const draftDisclosureAccoladeStdData = draftDisclosureRawData.map((row) => {
-      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
+      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.Accolade);
       if (matchingStd) {
         allStdData.push(matchingStd);
+        rawDataDraftDisclosure.push({ ...row.rowData, STD: matchingStd.STD });
       }
       return { accoladeStdData: matchingStd ? matchingStd : '', draftDisclosureData: row.rowData };
     });
 
+    if (isRowData) {
+      return { rawDataActiveFilling, rawDataNewFilling, rawDataOpenDisclosure, rawDataDraftDisclosure };
+    }
     return {
       activeApplicationAccoladeStdData,
       newFilingThisYearAccoladeStdData,
@@ -1034,13 +1069,23 @@ export function getNewCoverage({
     const allRANPVGroup: Record<string, number> = {};
     const activePatentFillingRANPVGroup: Record<string, number> = {};
 
+    const newAllRANPVGroup: Record<string, number> = {};
+    const newActivePatentFillingRANPVGroup: Record<string, number> = {};
+
     filteredProjects.forEach((project) => {
-      const { STD, RiskAdjustedNPV, noOfActiveApplications } = project;
+      const { STD, RiskAdjustedNPV, noOfActiveApplications, NPV } = project;
       if (!allRANPVGroup[STD]) {
         allRANPVGroup[STD] = 0;
       }
       if (!allRANPVGroup['Total']) {
         allRANPVGroup['Total'] = 0;
+      }
+
+      if (!newAllRANPVGroup[STD]) {
+        newAllRANPVGroup[STD] = 0;
+      }
+      if (!newAllRANPVGroup['Total']) {
+        newAllRANPVGroup['Total'] = 0;
       }
 
       if (noOfActiveApplications) {
@@ -1052,10 +1097,21 @@ export function getNewCoverage({
         }
         activePatentFillingRANPVGroup[STD] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
         activePatentFillingRANPVGroup['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+
+        if (!newActivePatentFillingRANPVGroup[STD]) {
+          newActivePatentFillingRANPVGroup[STD] = 0;
+        }
+        if (!newActivePatentFillingRANPVGroup['Total']) {
+          newActivePatentFillingRANPVGroup['Total'] = 0;
+        }
+        newActivePatentFillingRANPVGroup[STD] += NPV ? NPV : 0;
+        newActivePatentFillingRANPVGroup['Total'] += NPV ? NPV : 0;
       }
 
       allRANPVGroup[STD] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
       allRANPVGroup['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      newAllRANPVGroup[STD] += NPV ? NPV : 0;
+      newAllRANPVGroup['Total'] += NPV ? NPV : 0;
     });
 
     let newCoverage = Object.entries(allRANPVGroup).map(([STD, sum]: [string, number]) => ({
@@ -1063,9 +1119,10 @@ export function getNewCoverage({
       'RANPV OF PHASE 1-5 PROJECTS ($M)': sum,
       'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': activePatentFillingRANPVGroup[STD],
       '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': activePatentFillingRANPVGroup[STD] / sum,
-      'NEW RANPV OF PHASE 1-5 PROJECTS ($M)': '',
-      'NEW RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '',
-      'NEW % OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '',
+      'NEW RANPV OF PHASE 1-5 PROJECTS ($M)': newAllRANPVGroup[STD],
+      'NEW RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': newActivePatentFillingRANPVGroup[STD],
+      'NEW % OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS':
+        newActivePatentFillingRANPVGroup[STD] / newAllRANPVGroup[STD],
     }));
 
     newCoverage = [
