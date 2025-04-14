@@ -4,6 +4,17 @@ import createDefaultDataSourceVersionModel from '../models/defaultDataSourceVers
 import { CustomReportModelAccessReturnType } from '../models/customReportModels';
 const ObjectId = mongoose.Types.ObjectId;
 
+const ksaAgreementCounselMapping = {
+  matt: 'Lowe, Matthew Scott',
+  christian: 'Heausler, Christian N.',
+  jakub: 'Michna, Jakub',
+  babtainalbabtain: 'Albabtain, Mohammed Abdualaziz',
+  anam: 'Abdullah, Anam Saleem',
+  munish: 'Arora, Munish',
+  sriram: 'Renganathan, SriramBalaji',
+  nathan: 'Jensen, Nathan Orton',
+};
+
 export async function getAgreementSigned({
   sabicContractsDataSourceVersionId,
   shppContractsDataSourceVersionId,
@@ -120,7 +131,9 @@ export async function getAgreementSigned({
         let matchingAttorney = rowDataAttorneyMappingContractDetails.find(
           (attorney) =>
             attorney?.Counsel?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() ===
-            data?.Attorneyies?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+            ksaAgreementCounselMapping[data?.Attorneyies?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()]
+              ?.replace(/[^a-zA-Z0-9]/g, '')
+              .toLowerCase()
         );
         if (matchingAttorney && data.Counsel) {
           return { ...data, SBU: matchingAttorney.SBU };
