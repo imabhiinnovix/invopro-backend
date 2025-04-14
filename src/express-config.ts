@@ -1,6 +1,9 @@
 import express, { Express } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import { rateLimit } from 'express-rate-limit';
+import helmet from 'helmet';
+import compression from 'compression';
 
 import routes from './api/routes';
 import { errorHandler } from './middlewares/error.middleware';
@@ -37,8 +40,23 @@ const corsOptions: cors.CorsOptions = {
   credentials: true,
 };
 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+  standardHeaders: 'draft-8', // draft-6: `RateLimit-*` headers; draft-7 & draft-8: combined `RateLimit` header
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
+  // store: ... , // Redis, Memcached, etc. See below.
+});
+
 const configureExpress = async (app: Express) => {
   app.use(morgan('dev'));
+
+  app.use(helmet());
+  app.use(compression());
+
+  // Apply the rate limiting middleware to all requests.
+  app.use(limiter);
+
   app.use(cors(corsOptions));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
