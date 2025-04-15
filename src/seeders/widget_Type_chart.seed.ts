@@ -249,9 +249,9 @@ export async function seedChart(payload) {
     {
       id: payload.multiSeriesPieChartId,
       name: 'Multi Series Pie',
-      description: 'test multi series bar description',
-      chartType: 'multiSeriesBar',
-      code: 'multiSeriesBar-1',
+      description: 'test multi series pie description',
+      chartType: 'multiSeriesPie',
+      code: 'multiSeriesPie-1',
       fieldConfig: fieldConfig.pie,
     },
     {
@@ -301,11 +301,14 @@ export async function seedChart(payload) {
     } else {
       // Update the name to capitalize the first letter
       const updatedName = existingChart.name.charAt(0).toUpperCase() + existingChart.name.slice(1);
-
       if (existingChart.name !== updatedName) {
         existingChart.name = updatedName;
       }
+      existingChart.description = chart.description;
+      existingChart.chartType = chart.chartType;
+      existingChart.code = chart.code;
       existingChart.fieldConfig = chart.fieldConfig;
+
       await existingChart.save();
       console.info(`${updatedName} chart updated successfully.`);
     }

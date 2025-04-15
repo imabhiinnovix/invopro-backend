@@ -40,7 +40,7 @@ const ENV = {
     'stackedBar',
     'bubble',
     'doughnut',
-    'multiSeriesBar',
+    'multiSeriesPie',
     'polarArea',
     'radar',
     'scatter',
