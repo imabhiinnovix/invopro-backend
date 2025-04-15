@@ -1,8 +1,8 @@
 import express, { Express } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+
 import { rateLimit } from 'express-rate-limit';
-import helmet from 'helmet';
 import compression from 'compression';
 
 import routes from './api/routes';
@@ -46,13 +46,12 @@ const limiter = rateLimit({
   standardHeaders: 'draft-8', // draft-6: `RateLimit-*` headers; draft-7 & draft-8: combined `RateLimit` header
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
   // store: ... , // Redis, Memcached, etc. See below.
-  skip: () => process.env.NODE_ENV === 'local',
+  skip: () => process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'local',
 });
 
 const configureExpress = async (app: Express) => {
   app.use(morgan('dev'));
 
-  app.use(helmet());
   app.use(compression());
 
   // Apply the rate limiting middleware to all requests.

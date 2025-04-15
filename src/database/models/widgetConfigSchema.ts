@@ -103,7 +103,7 @@ export interface IFill {
 export const fontSchema = new Schema<IFont>(
   {
     size: { type: Number },
-    family: { type: String },
+    // family: { type: String },
     weight: { type: String },
   },
   { _id: false }
