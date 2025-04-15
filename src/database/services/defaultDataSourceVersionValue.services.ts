@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import createDefaultDataSourceVersionModel from '../models/defaultDataSourceVersionModel';
 
 export const createEmptyCollection = async (schemaName: string) => {

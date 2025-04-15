@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Entity from '../models/entity';
 
 export const createEntity = async (entityData: any) => {
@@ -45,6 +46,14 @@ export const getEntityList = async ({ query, select = '', page, limit, sort = { 
   }
 };
 
+export const getEntity = async (query: any) => {
+  try {
+    const entities = await Entity.findOne(query);
+    return entities;
+  } catch (err) {
+    throw err;
+  }
+};
 export const findEntityByNameAndOrganization = async (name: string, organizationId: string) => {
   try {
     const entityDetails = await Entity.findOne(

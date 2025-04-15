@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from 'express';
 import { promises as fsPromises } from 'fs';
 import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
@@ -455,6 +456,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                     console.log(
                       `Processing file ${fileDetailName} [${currentFileIndex} of ${totalFiles}] (${progressPercentage}% complete)`
                     );
+
                     const { originalname, path: filePath, size, mimetype } = file;
 
                     console.log('originalname', originalname);
@@ -532,9 +534,11 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                       console.error('Invalid file type. Please upload a file in XLSX or XLS format.');
                     }
                     const progressPercentage2 = ((currentFileIndex / totalFiles) * 100).toFixed(0);
+
                     console.log(
                       `Processed file ${fileDetailName} [${currentFileIndex} of ${totalFiles}] (${progressPercentage2}% complete)`
                     );
+
                     console.log('Sleeping for 3 seconds...');
                     await sleep(3000);
                   }
