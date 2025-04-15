@@ -3,7 +3,7 @@ import { Schema, model, Document, Types } from 'mongoose';
 
 interface IDashboardWidget extends Document {
   createdBy: Types.ObjectId;
-  widgetAppearanceId: Types.ObjectId;
+  // widgetAppearanceId: Types.ObjectId;
   dashboardId: Types.ObjectId;
   organizationId: Types.ObjectId;
   widgetTypeId: Types.ObjectId;
@@ -34,7 +34,7 @@ interface IDashboardWidget extends Document {
 
 const dashboardWidgetSchema = new Schema<IDashboardWidget>(
   {
-    widgetAppearanceId: { type: Schema.Types.ObjectId, ref: 'widget_appearance', required: false },
+    // widgetAppearanceId: { type: Schema.Types.ObjectId, ref: 'widget_appearance', required: false },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     dashboardId: { type: Schema.Types.ObjectId, ref: 'dashboard', required: true },
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
