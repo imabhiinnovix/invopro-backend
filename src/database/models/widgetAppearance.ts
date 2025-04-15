@@ -1,106 +1,68 @@
 // widget_theme_overrides.schema.ts (using Mongoose + TypeScript)
-import { Schema, model, Types } from 'mongoose';
+import { Schema, model, Types, Document } from 'mongoose';
+import {
+  titleSchema,
+  legendSchema,
+  tooltipSchema,
+  scalesSchema,
+  interactionSchema,
+  layoutSchema,
+  fillSchema,
+  ITitle,
+  ILegend,
+  ITooltip,
+  IScales,
+  IInteraction,
+  ILayout,
+  IFill,
+} from './widgetConfigSchema';
 
-const WidgetAppearanceSchema = new Schema(
+export interface IWidgetAppearance extends Document {
+  dashboardId: Types.ObjectId;
+  dashboardWidgetId: Types.ObjectId;
+  createdBy: Types.ObjectId;
+  organizationId: Types.ObjectId;
+  title?: ITitle;
+  subtitle?: ITitle;
+  legend?: ILegend;
+  tooltip?: ITooltip;
+  scales?: IScales;
+  interaction?: IInteraction;
+  layout?: ILayout;
+  fill?: IFill;
+  chartType?: string;
+  colors?: string[];
+  borderColor?: string[];
+  backgroundColor?: string[];
+  isActive: boolean;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const WidgetAppearanceSchema = new Schema<IWidgetAppearance>(
   {
-    dashboardId: { type: Types.ObjectId, ref: 'dashboards', required: true },
-    dashboardWidgetId: { type: Types.ObjectId, ref: 'dashboard_widgets', required: true },
-    createdBy: { type: Types.ObjectId, ref: 'users', required: true },
-    organizationId: { type: Types.ObjectId, ref: 'organizations', required: true },
-    // Optional override properties
-    title: {
-      display: Boolean,
-      color: String,
-      font: {
-        size: Number,
-        family: String,
-        weight: String,
-      },
-      align: String,
-      position: String,
-    },
+    dashboardId: { type: Schema.Types.ObjectId, ref: 'dashboards', required: true },
+    dashboardWidgetId: { type: Schema.Types.ObjectId, ref: 'dashboard_widgets', required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'users', required: true },
+    organizationId: { type: Schema.Types.ObjectId, ref: 'organizations', required: true },
 
-    subtitle: {
-      display: Boolean,
-      color: String,
-      font: {
-        size: Number,
-        family: String,
-      },
-      align: String,
-      position: String,
-    },
-
-    legend: {
-      display: Boolean,
-      position: String,
-      labels: {
-        color: String,
-        font: {
-          size: Number,
-          family: String,
-        },
-        usePointStyle: Boolean,
-        padding: Number,
-        boxWidth: Number,
-        boxHeight: Number,
-      },
-      maxHeight: Number,
-    },
-
-    tooltip: {
-      display: Boolean,
-      backgroundColor: String,
-      titleColor: String,
-      borderColor: String,
-      borderWidth: Number,
-      padding: Number,
-      usePointStyle: Boolean,
-      displayColors: Boolean,
-    },
-
-    scales: {
-      x: Schema.Types.Mixed,
-      y: Schema.Types.Mixed,
-    },
-
-    interaction: {
-      display: Boolean,
-      mode: String,
-      intersect: Boolean,
-    },
-
-    layout: {
-      display: Boolean,
-      padding: {
-        top: Number,
-        right: Number,
-        bottom: Number,
-        left: Number,
-      },
-    },
-
-    fill: {
-      enabled: { type: Boolean, default: false },
-      type: {
-        type: String,
-        enum: ['start', 'end', 'origin', 'disabled', 'Smooth'],
-        default: 'start',
-      },
-      color: { type: String },
-      opacity: { type: Number, default: 0.2 },
-    },
-
+    title: titleSchema,
+    subtitle: titleSchema,
+    legend: legendSchema,
+    tooltip: tooltipSchema,
+    scales: scalesSchema,
+    interaction: interactionSchema,
+    layout: layoutSchema,
+    fill: fillSchema,
+    chartType: String,
     colors: [String],
     borderColor: [String],
     backgroundColor: [String],
-    chartType: String,
-
-    // Status fields
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
-export default model('widget_appearance', WidgetAppearanceSchema);
+export default model<IWidgetAppearance>('widget_appearance', WidgetAppearanceSchema);

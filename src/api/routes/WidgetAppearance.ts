@@ -6,7 +6,7 @@ import {
   updateWidgetAppearance,
   deleteWidgetAppearance,
   getWidgetAppearanceById,
-} from '../controllers/WidgetAppearance.controller';
+} from '../controllers/widgetAppearance.controller';
 
 import { authenticateToken } from '../../middlewares/authenticate.middleware';
 

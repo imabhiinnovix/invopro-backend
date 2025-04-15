@@ -232,7 +232,7 @@ export const getAllDashboardsAggregation = async ({
                 organizationId: '$$dashboard.organizationId',
                 createdAt: '$$dashboard.createdAt',
                 updatedAt: '$$dashboard.updatedAt',
-
+                widgetThemeId: '$$dashboard.widgetThemeId',
                 createdBy: {
                   _id: '$$dashboard.createdBy._id',
                   name: '$$dashboard.createdBy.name',

@@ -3,7 +3,13 @@ import * as widgetThemeService from '../../database/services/widgetTheme.service
 
 export const createWidgetTheme = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const widgetTheme = await widgetThemeService.createWidgetTheme(req.body);
+    const { organizationId, userId } = req.user;
+    const widgetThemeData = {
+      ...req.body,
+      organizationId,
+      createdBy: userId,
+    };
+    const widgetTheme = await widgetThemeService.createWidgetTheme(widgetThemeData);
     return res.status(201).json({
       success: true,
       message: 'Widget theme created successfully',

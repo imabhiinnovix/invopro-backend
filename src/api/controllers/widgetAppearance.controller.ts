@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 
 import * as widgetAppearanceService from '../../database/services/widgetAppearance.service';
 import * as dashboardWidgetdService from '../../database/services/dashboardWidget.services';
+import { Types } from 'mongoose';
 
 export const getAllWidgetAppearance = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -39,7 +40,7 @@ export const createWidgetAppearance = async (req: Request, res: Response, next: 
       throw new Error('Widget not found');
     }
 
-    dashboardWidget.widgetAppearanceId = widgetAppearance._id;
+    dashboardWidget.widgetAppearanceId = widgetAppearance._id as Types.ObjectId;
     await dashboardWidget.save();
 
     return res.status(201).json({
