@@ -301,7 +301,7 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       success: true,
       message: 'Chart data fetched successfully',
       data: dataResults,
-      widgetAppearance,
+      // widgetAppearance,
     };
 
     res.status(200).json(response);
