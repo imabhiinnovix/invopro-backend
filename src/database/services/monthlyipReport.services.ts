@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { DateTime } from 'luxon';
 import { CustomReportModelAccessReturnType } from '../models/customReportModels';
 import * as dataSourceVersionServices from '../../database/services/dataSourceVersion.services';
+import { processReportHeaders } from '../../utils/common.report';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -89,7 +90,7 @@ export function processSTCData(data) {
   let total = 0;
   data.forEach(({ value, STC }) => {
     STC.split(';').forEach((stc) => {
-      let normalizedSTC = stc.trim().toLowerCase();
+      let normalizedSTC = stc.trim()?.toLowerCase();
       let mappedSTC = mapping[normalizedSTC] || stc.trim();
 
       if (!result[mappedSTC]) {
@@ -101,36 +102,52 @@ export function processSTCData(data) {
   });
 
   const finalResult = Object.entries(result).map(([STC, value]) => ({ STC, value }));
-  finalResult.push({ STC: 'Total', value: total });
+  finalResult.push({ STC: 'Totals', value: total });
   return finalResult;
 }
 
-export function getTotalPortfolioPercentage({ data }: { data: DataItem[] }) {
-  // Find the total value from the SBU named 'total'
-  const totalItem = data.find((item) => item?.SBU?.toLowerCase() === 'total');
-  const totalValue = totalItem ? Number(totalItem.value) : 0;
+export function getTotalPortfolioPercentage({ data }: { data: Record<string, any> }) {
+  const item = data[0]; // Assuming only one item in the array
+  const total = Number(item['Totals']) || 0;
 
-  return data.map((item) => ({
-    SBU: item.SBU,
-    value: totalValue > 0 ? Number(item.value) / totalValue : 0,
-    numFormat: 'percentage',
-  }));
+  const percentageData: Record<string, any> = {};
+
+  for (const key in item) {
+    if (key === 'SBU') {
+      percentageData[key] = item[key];
+    } else if (key === 'Totals') {
+      percentageData[key] = 1; // Total is 100% = 1 in percentage format
+    } else {
+      const rawValue = item[key];
+      const numericValue = Number(rawValue);
+      percentageData[key] = total > 0 && !isNaN(numericValue) ? numericValue / total : '';
+    }
+  }
+
+  return percentageData;
 }
 export async function getTotalPortfolio({
-  totalAppsPendingData,
-  totalIssuedData,
+  partiallyProcessedTotalPendingApplication,
+  partiallyProcessedTotalIssuedApplication,
 }: {
-  totalAppsPendingData: DataItem[];
-  totalIssuedData: DataItem[];
+  partiallyProcessedTotalPendingApplication: Record<string, number | string>;
+  partiallyProcessedTotalIssuedApplication: Record<string, number | string>;
 }) {
-  const dataMap = new Map<string, number>();
+  const dataMap: Record<string, any> = {};
 
-  [...totalAppsPendingData, ...totalIssuedData].forEach(({ SBU, value }) => {
-    const numericValue = Number(value) || 0;
-    dataMap.set(SBU, (dataMap.get(SBU) || 0) + numericValue);
-  });
+  function processData(source: Record<string, number | string>) {
+    for (const key in source) {
+      if (key !== 'SBU') {
+        const numericValue = Number(source[key]) || 0;
+        dataMap[key] = (dataMap[key] || 0) + numericValue;
+      }
+    }
+  }
 
-  return Array.from(dataMap, ([SBU, value]) => ({ SBU, value }));
+  processData(partiallyProcessedTotalPendingApplication);
+  processData(partiallyProcessedTotalIssuedApplication);
+
+  return dataMap;
 }
 
 export function processData({
@@ -490,6 +507,7 @@ export async function getProjectBasedOnStcs({
   isDrafted,
   isYearRequired,
   customReportModel,
+  isRowData,
 }: {
   disclosureDataSourceVersionId: string;
   currentYear: string;
@@ -497,6 +515,7 @@ export async function getProjectBasedOnStcs({
   isDrafted: boolean;
   isYearRequired: boolean;
   customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
 }) {
   try {
     const yearDateRange = {
@@ -536,34 +555,56 @@ export async function getProjectBasedOnStcs({
     if (isYearRequired) {
       matchCondition['rowData.DisclosureDate'] = yearDateRange;
     }
-    const activeDisclosure = await customReportModel.DataSourceVersionValueDisclosure.aggregate([
-      {
-        $match: matchCondition,
-      },
-      {
-        $group: {
-          _id: '$rowData.DisclosureNumber',
-          OriginalSTCs: { $first: '$rowData.OriginalSTCs' },
+    if (isRowData) {
+      const activeDisclosure = await customReportModel.DataSourceVersionValueDisclosure.aggregate([
+        {
+          $match: matchCondition,
         },
-      },
-
-      {
-        $group: {
-          _id: '$OriginalSTCs',
-          value: { $sum: 1 },
-        },
-      },
-      {
-        $project: {
-          STC: {
-            $ifNull: ['$_id', 'Blank'], // Replace null with "Blank"
+        {
+          $group: {
+            _id: '$rowData.DisclosureNumber',
+            OriginalSTCs: { $first: '$rowData.OriginalSTCs' },
           },
-          _id: 0,
-          value: 1,
         },
-      },
-    ]);
-    return activeDisclosure;
+        {
+          $project: {
+            _id: 0, // Exclude _id
+            DisclosureNumber: '$_id', // Rename _id to DisclosureNumber
+            OriginalSTCs: 1, // Keep OriginalSTCs
+          },
+        },
+      ]);
+      return activeDisclosure;
+    } else {
+      const activeDisclosure = await customReportModel.DataSourceVersionValueDisclosure.aggregate([
+        {
+          $match: matchCondition,
+        },
+        {
+          $group: {
+            _id: '$rowData.DisclosureNumber',
+            OriginalSTCs: { $first: '$rowData.OriginalSTCs' },
+          },
+        },
+
+        {
+          $group: {
+            _id: '$OriginalSTCs',
+            value: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            STC: {
+              $ifNull: ['$_id', 'Blank'], // Replace null with "Blank"
+            },
+            _id: 0,
+            value: 1,
+          },
+        },
+      ]);
+      return activeDisclosure;
+    }
   } catch (error) {
     throw error;
   }
@@ -586,6 +627,7 @@ export async function getAppsFiledBasedOnStc({
   isOtherIssuedApplication,
   isTotalIssuedApplication,
   customReportModel,
+  isRowData,
 }: {
   portfolioDataSourceVersionId: string;
   currentYear: string;
@@ -603,6 +645,7 @@ export async function getAppsFiledBasedOnStc({
   isOtherIssuedApplication?: boolean;
   isTotalIssuedApplication?: boolean;
   customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
 }) {
   try {
     const epCountry = [
@@ -746,67 +789,110 @@ export async function getAppsFiledBasedOnStc({
       matchCondition['rowData.In Force'] = 1;
     }
 
-    const newYearApplicationFiled = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
-      {
-        $match: matchCondition,
-      },
+    if (isRowData) {
+      const newYearApplicationFiled = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
+        {
+          $match: matchCondition,
+        },
 
-      // Group by rowData.Case_Reference1 and count distinct cases
-      {
-        $group: {
-          _id: '$rowData.Case_Reference1',
-          'Original STCs': { $first: '$rowData.Original STCs' },
-        },
-      },
-      // Count the distinct Case_Reference1 by SBU
-      {
-        $group: {
-          _id: '$Original STCs',
-          value: { $sum: 1 },
-        },
-      },
-      {
-        $project: {
-          STC: {
-            $ifNull: ['$_id', 'Blank'], // Replace null with "Blank"
+        // Group by rowData.Case_Reference1 and count distinct cases
+        {
+          $group: {
+            _id: '$rowData.Case_Reference1',
+            'Original STCs': { $first: '$rowData.Original STCs' },
           },
-          _id: 0,
-          value: 1,
         },
-      },
-    ]);
-    return newYearApplicationFiled;
+        {
+          $project: {
+            _id: 0, // Exclude _id
+            Case_Reference1: '$_id', // Rename _id to DisclosureNumber
+            'Original STCs': 1, // Keep OriginalSTCs
+          },
+        },
+      ]);
+      return newYearApplicationFiled;
+    } else {
+      const newYearApplicationFiled = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
+        {
+          $match: matchCondition,
+        },
+
+        // Group by rowData.Case_Reference1 and count distinct cases
+        {
+          $group: {
+            _id: '$rowData.Case_Reference1',
+            'Original STCs': { $first: '$rowData.Original STCs' },
+          },
+        },
+        // Count the distinct Case_Reference1 by SBU
+        {
+          $group: {
+            _id: '$Original STCs',
+            value: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            STC: {
+              $ifNull: ['$_id', 'Blank'], // Replace null with "Blank"
+            },
+            _id: 0,
+            value: 1,
+          },
+        },
+      ]);
+      return newYearApplicationFiled;
+    }
   } catch (error) {
     throw error;
   }
 }
+
 const calculateCombinedPercentage = (
-  newData: DataItem[],
-  activeData: DataItem[],
-  totalData: DataItem[]
-): DataItem[] => {
-  return totalData.map((total) => {
-    const newEntry = newData.find((item) => item.SBU === total.SBU)?.value || 0;
-    const activeEntry = activeData.find((item) => item.SBU === total.SBU)?.value || 0;
+  newData: Record<string, string | number>[],
+  activeData: Record<string, string | number>[],
+  totalData: Record<string, string | number>[]
+): Record<string, string | number> => {
+  const result: Record<string, string | number> = {};
 
-    const combined = (newEntry as number) + (activeEntry as number);
-    const combinedPercentage = total.value ? combined / (total.value as number) : 0;
+  // Assuming only one object per array
+  const newEntry = newData[0];
+  const activeEntry = activeData[0];
+  const totalEntry = totalData[0];
 
-    return {
-      SBU: total.SBU,
-      value: combinedPercentage,
-      numFormat: 'percentage',
-    };
+  const keys = Object.keys(totalEntry);
+
+  const percentageData: Record<string, string | number> = {};
+
+  keys.forEach((key) => {
+    const total = Number(totalEntry[key]) || 0;
+    const newVal = Number(newEntry[key]) || 0;
+    const activeVal = Number(activeEntry[key]) || 0;
+
+    const combined = newVal + activeVal;
+    const percentage = total ? combined / total : 0;
+
+    percentageData[key] = percentage; // optional rounding
   });
+
+  return percentageData;
 };
 
-export async function percentageOfCurrentYearInventionDisclosureConvertedToFilings(
-  portfolioDataSourceVersionId: string,
-  disclosureDataSourceVersionId: string,
-  currentYear: string,
-  customReportModel: CustomReportModelAccessReturnType,
-  isRowData?: boolean
-) {
+export async function percentageOfCurrentYearInventionDisclosureConvertedToFilings({
+  portfolioDataSourceVersionId,
+  disclosureDataSourceVersionId,
+  currentYear,
+  customReportModel,
+  isRowData,
+  headers,
+}: {
+  portfolioDataSourceVersionId: string;
+  disclosureDataSourceVersionId: string;
+  currentYear: string;
+  customReportModel: CustomReportModelAccessReturnType;
+  isRowData?: boolean;
+  headers: { reportHeader: string; attributeValues: string[] }[];
+}) {
   try {
     const newYearApplicationFiledRowData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -857,9 +943,36 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       isRowData,
     });
 
-    const processedNewYearApplicationFiled = processData({ data: newYearApplicationFiled });
-    const processedActiveDisclosureCount = processData({ data: activeDisclosureCount });
-    const processedTotalDisclosureCount = processData({ data: totalDisclosureCount });
+    const newYearApplicationFiledRecord: Record<string, any> = {};
+    for (let item of newYearApplicationFiled) {
+      newYearApplicationFiledRecord[item.SBU] = (newYearApplicationFiledRecord[item.SBU] || 0) + item.value;
+    }
+
+    const activeDisclosureCountRecord: Record<string, any> = {};
+    for (let item of activeDisclosureCount) {
+      activeDisclosureCountRecord[item.SBU] = (activeDisclosureCountRecord[item.SBU] || 0) + item.value;
+    }
+
+    const totalDisclosureCountRecord: Record<string, any> = {};
+    for (let item of totalDisclosureCount) {
+      totalDisclosureCountRecord[item.SBU] = (totalDisclosureCountRecord[item.SBU] || 0) + item.value;
+    }
+
+    const processedNewYearApplicationFiled = processReportHeaders({
+      data: [newYearApplicationFiledRecord],
+      headers: headers,
+      totalColumnName: 'Totals',
+    });
+    const processedActiveDisclosureCount = processReportHeaders({
+      data: [activeDisclosureCountRecord],
+      headers: headers,
+      totalColumnName: 'Totals',
+    });
+    const processedTotalDisclosureCount = processReportHeaders({
+      data: [totalDisclosureCountRecord],
+      headers: headers,
+      totalColumnName: 'Totals',
+    });
 
     const result = calculateCombinedPercentage(
       processedNewYearApplicationFiled,
@@ -867,10 +980,11 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       processedTotalDisclosureCount
     );
 
-    if (isRowData) {
-      return { newYearApplicationFiled, activeDisclosureCount, totalDisclosureCount };
-    }
-    return result;
+    return [{ SBU: `% of ${currentYear} Invention Disclosures converted to Filings`, ...result }];
+
+    // if (isRowData) {
+    //   return { newYearApplicationFiled, activeDisclosureCount, totalDisclosureCount };
+    // }
   } catch (error) {
     throw error;
   }
@@ -1562,7 +1676,7 @@ export async function getAnnuitySavingsFromReductions({
 
     const sabicipMap = {};
     sabicipData.forEach((item) => {
-      const clientRef = item.rowData['Clients reference'];
+      const clientRef = item.rowData['Clients reference']?.toLowerCase().trim();
       if (clientRef) {
         sabicipMap[clientRef] = item.rowData.Total ? item.rowData.Total : 0;
       }
@@ -1590,7 +1704,7 @@ export async function getAnnuitySavingsFromReductions({
     const ctclinsabMap = {};
 
     ctclinsabData.forEach((item) => {
-      const fileNumber = item.rowData['File number'];
+      const fileNumber = item.rowData['File number']?.toLowerCase().trim();
       if (fileNumber) {
         ctclinsabMap[fileNumber] = item.rowData.Total ? item.rowData.Total : 0;
       }
@@ -1617,7 +1731,7 @@ export async function getAnnuitySavingsFromReductions({
 
     const annuitiesMap = {};
     annuitiesData.forEach((item) => {
-      const otherReferenceNo = item.rowData['Other Reference No'];
+      const otherReferenceNo = item.rowData['Other Reference No']?.toLowerCase().trim();
       if (otherReferenceNo) {
         annuitiesMap[otherReferenceNo] = item.rowData.Amount ? item.rowData.Amount : 0;
       }
@@ -1626,8 +1740,8 @@ export async function getAnnuitySavingsFromReductions({
     const rowDataSavings: any = [];
 
     combinedDrops.forEach((item) => {
-      const caseRef = item.Case_Reference1;
-      const procedureAgentRef = item['Procedure Agent Ref'];
+      const caseRef = item.Case_Reference1?.toLowerCase().trim();
+      const procedureAgentRef = item['Procedure Agent Ref']?.toLowerCase().trim();
       const sbu = item.SBU;
       const sabicTotal = sabicipMap[caseRef] || 0;
       const ctclinsabTotal = ctclinsabMap[procedureAgentRef] || 0;
@@ -1635,7 +1749,7 @@ export async function getAnnuitySavingsFromReductions({
       const total = sabicTotal + ctclinsabTotal + annuitiesTotal;
 
       if (isRowData) {
-        rowDataSavings.push({ Case_Reference1: caseRef, saving: total });
+        rowDataSavings.push({ Case_Reference1: caseRef, saving: total, procedureAgentRef });
       }
 
       if (sbu) {
@@ -1759,24 +1873,16 @@ export async function getTotalCostSavings({
   totalAnnuitySavings,
   allProsecutionSaving,
 }: {
-  totalAnnuitySavings: any;
+  totalAnnuitySavings: Record<string, number | string>;
   allProsecutionSaving: any;
 }) {
   try {
-    const totalCostSavingsMap = {};
-
-    totalAnnuitySavings.forEach((entry) => {
-      totalCostSavingsMap[entry.SBU] = (totalCostSavingsMap[entry.SBU] || 0) + entry.value;
-    });
+    const totalCostSavings = { ...totalAnnuitySavings }; // clone to avoid mutation
 
     allProsecutionSaving.forEach((entry) => {
-      totalCostSavingsMap[entry.SBU] = (totalCostSavingsMap[entry.SBU] || 0) + entry.value;
+      const current = Number(totalCostSavings[entry.SBU]) || 0;
+      totalCostSavings[entry.SBU] = current + entry.value;
     });
-
-    const totalCostSavings = Object.keys(totalCostSavingsMap).map((SBU) => ({
-      SBU,
-      value: Number(totalCostSavingsMap[SBU].toFixed(2)),
-    }));
 
     return totalCostSavings;
   } catch (e) {
@@ -1837,13 +1943,11 @@ export async function processStaticData({
           },
         ]);
 
-        staticNewFilingData[dataSourceVersionValue] = data.map((data) => {
+        staticNewFilingData[dataSourceVersionValue] = data.reduce((acc, data) => {
           const rowData = data.rowData;
-          return {
-            SBU: rowData.SBU,
-            value: rowData['New Filings'],
-          };
-        });
+          acc[rowData.SBU] = rowData['New Filings']; // Set key-value pair in the accumulator
+          return acc;
+        }, {});
       } else if (dataSourceId === staticEstimatesDataSourceId) {
         const data = await customReportModel.DataSourceVersionValueStaticEstimates.aggregate([
           {
@@ -1853,13 +1957,11 @@ export async function processStaticData({
           },
         ]);
 
-        staticEstimatesData[dataSourceVersionValue] = data.map((data) => {
+        staticEstimatesData[dataSourceVersionValue] = data.reduce((acc, data) => {
           const rowData = data.rowData;
-          return {
-            SBU: rowData.SBU,
-            value: rowData['Estimates'],
-          };
-        });
+          acc[rowData.SBU] = rowData['Estimates']; // Set key-value pair in the accumulator
+          return acc;
+        }, {});
       } else if (dataSourceId === staticProjectOpenedDataSourceId) {
         const data = await customReportModel.DataSourceVersionValueStaticProjectOpened.aggregate([
           {
@@ -1869,84 +1971,95 @@ export async function processStaticData({
           },
         ]);
 
-        staticProjectOpenedData[dataSourceVersionValue] = data.map((data) => {
+        staticProjectOpenedData[dataSourceVersionValue] = data.reduce((acc, data) => {
           const rowData = data.rowData;
-          return {
-            SBU: rowData.SBU,
-            value: rowData['Projects Opened'],
-          };
-        });
+          acc[rowData.SBU] = rowData['Projects Opened']; // Set key-value pair in the accumulator
+          return acc;
+        }, {});
       }
     }
 
+    const allStaticNewFilingData: any[] = [];
     //process new filing
     for (let i = 1; i <= 4; i++) {
       const versionValue = `${Number(currentYear) - i}-12`;
 
-      if (staticNewFilingData[versionValue] && staticNewFilingData[versionValue].length > 0) {
-        const processedNewFiling = processData({
-          data: staticNewFilingData[versionValue],
-          cellMappings: {
-            'SBU T&I': `B${5 + i}`,
-            'SBU Metals': `C${5 + i}`,
-            'SBU Agri-nutrients': `D${5 + i}`,
-            'SBU Chemicals': `E${5 + i}`,
-            'SBU Polymers': `F${5 + i}`,
-            'SBU SHPP': `G${5 + i}`,
-            'SBU Strategy & Transformation': `H${5 + i}`,
-            'Scientific Design': `I${5 + i}`,
-            Total: `J${5 + i}`,
-          },
+      if (staticNewFilingData[versionValue] && Object.keys(staticNewFilingData[versionValue]).length > 0) {
+        allStaticNewFilingData.push({
+          SBU: `${Number(currentYear) - i} New Apps filed`,
+          ...staticNewFilingData[versionValue],
         });
-
-        finalStaticData = [...finalStaticData, ...processedNewFiling];
+      } else {
+        allStaticNewFilingData.push({
+          SBU: `${Number(currentYear) - i} New Apps filed`,
+        });
       }
     }
 
+    const allNewEstimates: any[] = [];
+
     //current year estimates
-    if (staticEstimatesData[`${currentYear}-12`]) {
-      const processedEstimatedData = processData({
-        data: staticEstimatesData[`${currentYear}-12`],
-        cellMappings: {
-          'SBU T&I': 'B5',
-          'SBU Metals': 'C5',
-          'SBU Agri-nutrients': 'D5',
-          'SBU Chemicals': 'E5',
-          'SBU Polymers': 'F5',
-          'SBU SHPP': 'G5',
-          'SBU Strategy & Transformation': 'H5',
-          'Scientific Design': 'I5',
-          Total: 'J5',
-        },
-      });
-      finalStaticData = [...finalStaticData, ...processedEstimatedData];
+    if (staticEstimatesData[`${currentYear}-12`] && Object.keys(staticEstimatesData[`${currentYear}-12`]).length > 0) {
+      allNewEstimates.push({ SBU: `${currentYear} New Apps Estimate`, ...staticEstimatesData[`${currentYear}-12`] });
+    } else {
+      allNewEstimates.push({ SBU: `${currentYear} New Apps Estimate` });
     }
+
+    const allNewProject: any[] = [];
     //project opened
     for (let i = 1; i <= 4; i++) {
       const versionValue = `${Number(currentYear) - i}-12`;
 
-      if (staticProjectOpenedData[versionValue] && staticProjectOpenedData[versionValue].length > 0) {
-        const processedProjectOpenedData = processData({
-          data: staticProjectOpenedData[versionValue],
-          cellMappings: {
-            'SBU T&I': `B${12 + i}`,
-            'SBU Metals': `C${12 + i}`,
-            'SBU Agri-nutrients': `D${12 + i}`,
-            'SBU Chemicals': `E${12 + i}`,
-            'SBU Polymers': `F${12 + i}`,
-            'SBU SHPP': `G${12 + i}`,
-            'SBU Strategy & Transformation': `H${12 + i}`,
-            'Scientific Design': `I${12 + i}`,
-            Total: `J${12 + i}`,
-          },
+      if (staticProjectOpenedData[versionValue] && Object.keys(staticProjectOpenedData[versionValue]).length > 0) {
+        allNewProject.push({
+          SBU: `Projects Opened in ${Number(currentYear) - i}`,
+          ...staticProjectOpenedData[versionValue],
         });
-
-        finalStaticData = [...finalStaticData, ...processedProjectOpenedData];
+      } else {
+        allNewProject.push({
+          SBU: `Projects Opened in ${Number(currentYear) - i}`,
+        });
       }
     }
-    return finalStaticData;
+    return {
+      allNewEstimates,
+      allStaticNewFilingData,
+      allNewProject,
+    };
   } catch (e) {
     console.log('Error in processStaticData function.', e);
+    throw e;
+  }
+}
+export function getFormattedDataToProcessReportHeaders({
+  sbuColumnDetails,
+  data,
+  defaultValue,
+}: {
+  sbuColumnDetails: string;
+  data: Record<string, any>[];
+  defaultValue?: Record<string, number>;
+}) {
+  try {
+    const formattedData: Record<string, any> = {
+      SBU: sbuColumnDetails,
+    };
+
+    // Sum values from `data`
+    for (let item of data) {
+      formattedData[item.SBU] = (formattedData[item.SBU] || 0) + item.value;
+    }
+
+    // Add default values (if any)
+    if (defaultValue && Object.keys(defaultValue).length > 0) {
+      for (const key in defaultValue) {
+        formattedData[key] = (formattedData[key] || 0) + defaultValue[key];
+      }
+    }
+
+    return formattedData;
+  } catch (e) {
+    console.log('Error in getFormattedDataToProcessReportHeaders.', e);
     throw e;
   }
 }

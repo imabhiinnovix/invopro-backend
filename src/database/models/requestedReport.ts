@@ -1,5 +1,12 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
+interface IDataSourceVersion {
+  name: string;
+  dataSourceVersionId: string;
+  versionCode: string;
+  dataSourceId: string;
+}
+
 interface IReportRequest extends Document {
   organizationId: Types.ObjectId;
   customReportId: Types.ObjectId;
@@ -10,7 +17,18 @@ interface IReportRequest extends Document {
   status: 'failed' | 'processing' | 'completed';
   fileName?: string;
   createdBy: Types.ObjectId;
+  dataSourceVersion: IDataSourceVersion[];
 }
+
+const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
+  {
+    name: { type: String, required: true },
+    dataSourceVersionId: { type: String, required: true },
+    versionCode: { type: String, required: true },
+    dataSourceId: { type: String, required: true },
+  },
+  { _id: false }
+);
 
 const reportRequestSchema = new Schema<IReportRequest>(
   {
@@ -27,6 +45,7 @@ const reportRequestSchema = new Schema<IReportRequest>(
     filePath: { type: String },
     fileType: { type: String },
     fileSize: { type: String },
+    dataSourceVersion: { type: [dataSourceVersionSchema], default: [] },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   {

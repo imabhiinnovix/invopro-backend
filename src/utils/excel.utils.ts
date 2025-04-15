@@ -247,7 +247,7 @@ export async function createExcelSheetFile(
 
   let worksheet = workbook.getWorksheet(sheetName);
   if (!worksheet) {
-    worksheet = workbook.addWorksheet(sheetName);
+    worksheet = workbook.addWorksheet(sheetName, { properties: { defaultColWidth: 20 } });
   }
 
   if (data.length === 0) {
@@ -286,7 +286,7 @@ export async function createExcelSheetFile(
 
   // Add a table to the worksheet
   const table = worksheet.addTable({
-    name: `DynamicTable${startRow}`, // Unique table name
+    name: `DynamicTable_${sheetName.toLowerCase().replace(/[^a-z]/g, '')}_${startRow}`, // Unique table name
     ref: tableRef,
     headerRow: true,
     totalsRow: false,
@@ -298,8 +298,6 @@ export async function createExcelSheetFile(
     rows,
   });
 
-  // Apply custom styles for the table headers and data rows
-  const columnWidths: number[] = [];
   const headerRow = worksheet.getRow(startRow);
   headerRow.eachCell((cell, colIndex) => {
     cell.font = { bold: true, color: { argb: 'FFFFFF' } };
@@ -315,8 +313,6 @@ export async function createExcelSheetFile(
       bottom: { style: 'thin' },
       right: { style: 'thin' },
     };
-    const cellValue = String(cell.value);
-    columnWidths[colIndex] = Math.max(columnWidths[colIndex] || 0, cellValue.length);
   });
 
   for (let i = startRow + 1; i < startRow + 1 + rows.length; i++) {
@@ -329,8 +325,6 @@ export async function createExcelSheetFile(
         bottom: { style: 'thin' },
         right: { style: 'thin' },
       };
-      const cellValue = String(cell.value);
-      columnWidths[colIndex] = Math.max(columnWidths[colIndex] || 0, cellValue.length);
     });
     if (i % 2 === 0) {
       row.eachCell((cell) => {
@@ -343,16 +337,302 @@ export async function createExcelSheetFile(
     }
   }
 
-  // Apply dynamic widths to the columns
-  worksheet.columns = columns.map((col, index) => ({
-    ...col,
-    width: columnWidths[index] + 5, // Add some padding
-  }));
-
   worksheet.getColumn(1).hidden = false;
   // Save the workbook to the file
   await workbook.xlsx.writeFile(filePath);
   console.log(`Excel sheet "${sheetName}" updated/created in file: ${filePath}`);
+}
+
+export async function createUpdateExcelTable({
+  data, // Array of JSON objects with varying keys
+  filePath,
+  sheetName,
+  startTableRow,
+  startTableColumn,
+  titleHeading,
+  titleHeaderBackgroundColor,
+  headers,
+  headerColor,
+  headerBackgroundColor,
+  lastRowColor,
+  gap,
+  onlyHeader,
+  cellBackGroundColor,
+  cellBold,
+  isWhiteBackGround,
+  cellFormats,
+  startCellNumber,
+  mergeEndColumn,
+  titleCellBorder,
+  titleCellAlignment,
+  tableRowBackGroundColor,
+  tableRowCellFormat,
+  tableRowAlignment,
+  isMergeCell,
+  columnBackGroundColor,
+  columnBackGroundColorIndex,
+  columnWidth,
+  numRows,
+  borderColor,
+}: {
+  data: Array<Record<string, any>>; // Array of JSON objects with varying keys
+  filePath: string;
+  sheetName: string;
+  startTableRow?: number;
+  startTableColumn?: string;
+  titleHeading?: string;
+  titleHeaderBackgroundColor?: string;
+  headers?: string[];
+  headerColor?: string;
+  headerBackgroundColor?: string;
+  lastRowColor?: string;
+  gap?: number;
+  onlyHeader?: boolean;
+  cellBackGroundColor?: string;
+  cellBold?: boolean;
+  isWhiteBackGround?: boolean;
+  cellFormats?: Record<string, string>;
+  startCellNumber?: number;
+  mergeEndColumn?: number;
+  titleCellBorder?: boolean;
+  tableRowBackGroundColor?: Record<number, string>;
+  columnBackGroundColor?: string;
+  columnBackGroundColorIndex?: number;
+  columnWidth?: number;
+  numRows?: number;
+
+  tableRowAlignment?: Record<
+    number,
+    'left' | 'center' | 'right' | 'fill' | 'justify' | 'centerContinuous' | 'distributed' | undefined
+  >;
+  tableRowCellFormat?: Record<number, string>;
+  isMergeCell?: boolean;
+  titleCellAlignment?:
+    | 'left'
+    | 'center'
+    | 'right'
+    | 'fill'
+    | 'justify'
+    | 'centerContinuous'
+    | 'distributed'
+    | undefined;
+
+  borderColor?: Record<string, string>;
+}): Promise<void> {
+  try {
+    const workbook = new ExcelJS.Workbook();
+
+    // Load the existing workbook or create a new one
+    try {
+      await workbook.xlsx.readFile(filePath);
+    } catch {
+      console.log('File does not exist. A new file will be created.');
+    }
+
+    let worksheet = workbook.getWorksheet(sheetName);
+    if (!worksheet) {
+      if (isWhiteBackGround) {
+        worksheet = workbook.addWorksheet(sheetName, {
+          properties: { defaultColWidth: 22 },
+          views: [{ showGridLines: false }],
+        });
+      } else {
+        worksheet = workbook.addWorksheet(sheetName, {
+          properties: { defaultColWidth: 22 },
+        });
+      }
+    }
+
+    // Get all unique keys across the data
+    let allKeys: string[] = [];
+    if (headers && headers.length > 0) {
+      allKeys = headers;
+    } else if (data && data.length > 0) {
+      allKeys = Array.from(new Set(data.flatMap((item) => Object.keys(item))));
+    }
+
+    // Calculate where to start adding the new table
+    let lastRow = worksheet.lastRow?.number || 0;
+    let startRow = lastRow + 1;
+    if (startTableRow) {
+      startRow = startTableRow;
+    }
+
+    if (gap) {
+      startRow = startRow + gap;
+    }
+
+    if (columnBackGroundColor && columnBackGroundColor.length > 0 && columnBackGroundColorIndex && numRows) {
+      worksheet.getColumn(columnBackGroundColorIndex).width = columnWidth ? columnWidth : 20;
+      for (let rowIndex = startRow; rowIndex <= numRows + 1; rowIndex++) {
+        const cell = worksheet.getRow(rowIndex).getCell(columnBackGroundColorIndex);
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: columnBackGroundColor },
+        };
+      }
+    } else if (isMergeCell) {
+      console.log('Mergin cells..');
+      worksheet.mergeCells(startRow, startCellNumber ?? 1, startRow, mergeEndColumn ?? 5);
+    } else if (titleHeading) {
+      console.log('Writing title heading...');
+      worksheet.mergeCells(startRow, startCellNumber ?? 1, startRow, mergeEndColumn ?? 5);
+      const titleRow = worksheet.getRow(startRow);
+      const titleCell = titleRow.getCell(startCellNumber ?? 1);
+      titleCell.value = titleHeading;
+      titleCell.font = { bold: cellBold ?? false, size: 14, color: { argb: '000000' } };
+      titleCell.alignment = { horizontal: titleCellAlignment ? titleCellAlignment : 'left', vertical: 'middle' };
+      titleCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: titleHeaderBackgroundColor ?? '4472C4' },
+      };
+      if (titleCellBorder) {
+        titleCell.border = {
+          top: { style: 'thin', color: { argb: borderColor && borderColor.top ? borderColor.top : '000000' } },
+          left: { style: 'thin', color: { argb: borderColor && borderColor.left ? borderColor.left : '000000' } },
+          bottom: { style: 'thin', color: { argb: borderColor && borderColor.bottom ? borderColor.bottom : '000000' } },
+          right: { style: 'thin', color: { argb: borderColor && borderColor.right ? borderColor.right : '000000' } },
+        };
+      }
+
+      titleRow.height = 20;
+    } else {
+      if (data.length === 0) {
+        console.error('No data provided to create the sheet.');
+        return;
+      }
+      // Dynamically generate columns and rows
+      const columns = allKeys.map((key) => ({ name: key, filterButton: false }));
+      const rows = data.map((item) => allKeys.map((key) => item[key] || ''));
+
+      // Define table reference (starting cell)
+
+      const tableRef = startTableColumn ? `${startTableColumn}${startRow}` : `A${startRow}`;
+
+      // Add a table to the worksheet
+      const table = worksheet.addTable({
+        name: `DynamicTable_${sheetName.toLowerCase().replace(/[^a-z]/g, '')}_${startRow}`, // Unique table name
+        ref: tableRef,
+        headerRow: true,
+        totalsRow: false,
+        style: {
+          theme: 'TableStyleMedium9', // Default table style
+          showRowStripes: true,
+        },
+        columns,
+        rows,
+      });
+
+      const headerRow = worksheet.getRow(startRow);
+      headerRow.eachCell((cell, colIndex) => {
+        cell.font = { bold: true, color: { argb: headerColor ? headerColor : '000000' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: headerBackgroundColor ? headerBackgroundColor : '4472C4' }, // Blue background
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+
+      // Apply border to all table rows (fixes missing borders issue)
+      if (!onlyHeader) {
+        const totalTableRows = data.length;
+        for (let i = 0; i < totalTableRows; i++) {
+          const rowNumber = startRow + 1 + i; // Data starts after header row
+          const row = worksheet.getRow(rowNumber);
+
+          let newCellBackground = 'FFFFFF';
+          let cellHorizontalAlignment:
+            | 'left'
+            | 'center'
+            | 'right'
+            | 'fill'
+            | 'justify'
+            | 'centerContinuous'
+            | 'distributed'
+            | undefined = 'left';
+          if (tableRowAlignment && tableRowAlignment[rowNumber]) {
+            cellHorizontalAlignment = tableRowAlignment[rowNumber];
+          }
+          if (tableRowBackGroundColor && tableRowBackGroundColor[rowNumber]) {
+            newCellBackground = tableRowBackGroundColor[rowNumber];
+          }
+          if (cellBackGroundColor) {
+            newCellBackground = cellBackGroundColor;
+          }
+
+          let newCellFormat = '';
+          if (tableRowCellFormat && tableRowCellFormat[rowNumber]) {
+            newCellFormat = tableRowCellFormat[rowNumber];
+          }
+          row.eachCell((cell, colIndex) => {
+            cell.alignment = { vertical: 'middle', horizontal: cellHorizontalAlignment };
+            if (cellBold) {
+              cell.font = { bold: true, color: { argb: '000000' } };
+            }
+
+            const columnKey = allKeys[colIndex - (startCellNumber ? startCellNumber : 0)];
+
+            if (cellFormats && columnKey in cellFormats) {
+              newCellFormat = cellFormats[columnKey];
+            }
+            if (newCellFormat) {
+              cell.numFmt = newCellFormat;
+            }
+
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: newCellBackground }, // whit background
+            };
+            cell.border = {
+              top: { style: 'thin' },
+              left: { style: 'thin' },
+              bottom: { style: 'thin' },
+              right: { style: 'thin' },
+            };
+          });
+        }
+      }
+
+      if (lastRowColor) {
+        const lastTableRowNumber = startRow + data.length; // Last row of the new table
+        const lastTableRow = worksheet.getRow(lastTableRowNumber);
+
+        lastTableRow.eachCell((cell) => {
+          cell.font = { bold: true, color: { argb: '000000' } };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: lastRowColor }, // User-defined color
+          };
+          cell.alignment = { vertical: 'middle', horizontal: 'left' };
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' },
+          };
+        });
+      }
+    }
+
+    worksheet.getColumn(1).hidden = false;
+
+    await workbook.xlsx.writeFile(filePath);
+    console.log(`Excel sheet "${sheetName}" updated/created in file: ${filePath}`);
+  } catch (e) {
+    console.log('Error in createUpdateExcelTable.', e);
+    throw e;
+  }
 }
 
 export function excelDateToJSDate(serial: number) {

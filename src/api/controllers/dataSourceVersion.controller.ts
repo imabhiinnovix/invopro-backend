@@ -135,7 +135,7 @@ async function validateFileData({
             errorCode: '404',
             errorMessage: `Error: Row ${index + 1} - The attribute "${attrName}" is required but is missing.`,
           });
-        } else if (value !== undefined && value != null) {
+        } else if (value !== undefined && value != null && value) {
           const { isValid, convertedValue, attributeOptionValue } = await validateAndConvert({
             value,
             type: attr.type,
@@ -453,6 +453,10 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                     const totalFiles = fileDetails.length;
                     const currentFileIndex = j + 1;
                     const progressPercentage = ((j / totalFiles) * 100).toFixed(0);
+                    console.log(
+                      `Processing file ${fileDetailName} [${currentFileIndex} of ${totalFiles}] (${progressPercentage}% complete)`
+                    );
+
                     const { originalname, path: filePath, size, mimetype } = file;
 
                     console.log('originalname', originalname);
@@ -530,6 +534,11 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                       console.error('Invalid file type. Please upload a file in XLSX or XLS format.');
                     }
                     const progressPercentage2 = ((currentFileIndex / totalFiles) * 100).toFixed(0);
+
+                    console.log(
+                      `Processed file ${fileDetailName} [${currentFileIndex} of ${totalFiles}] (${progressPercentage2}% complete)`
+                    );
+
                     console.log('Sleeping for 3 seconds...');
                     await sleep(3000);
                   }
@@ -627,6 +636,7 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
         versionCode: dataSourceDetails.code,
       });
 
+      const nowUtc = DateTime.utc();
       const finalData: any[] = [];
       for (let i = 0; i < versionData.length; i++) {
         const newRow = {
@@ -634,6 +644,8 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
           entityId: dataSourceDetails.entityId._id,
           dataSourceVersionId: dataSourceVersion._id,
           rowData: versionData[i],
+          createdAt: nowUtc.plus({ seconds: i }),
+          updatedAt: nowUtc.plus({ seconds: i }),
         };
 
         finalData.push(newRow);
@@ -647,6 +659,8 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
         status: 'completed',
         isCurrent: true,
       });
+
+      return { dataSourceVersionId: dataSourceVersion._id, versionCode: dataSourceDetails.code };
     } else {
       throw 'Data source not found.';
     }

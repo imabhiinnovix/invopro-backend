@@ -12,6 +12,11 @@ import path from 'path';
 import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
 import { generateSupplementalIpReport } from '../../functions/reports/supplementalip';
 import { CustomReportModelAccess } from '../../database/models/customReportModels';
+import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
+import * as dataSourceVersionValueService from '../../database/services/defaultDataSourceVersionValue.services';
+import mongoose from 'mongoose';
+import { transformMonthlyIpData, transformMonthlySTCData } from '../../utils/common.report';
+const ObjectId = mongoose.Types.ObjectId;
 
 export const generateCustomReportsFunction = async ({
   userId,
@@ -90,7 +95,7 @@ export const generateCustomReportsFunction = async ({
       reportRequestId = requestedReport._id;
     }
     const customReportModel = await CustomReportModelAccess({ orgCode });
-    if (customReportDetails.reportName === 'monthlyip') {
+    if (customReportDetails.reportName.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'monthlyip') {
       const versionMap = Object.fromEntries(
         dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
       );
@@ -108,6 +113,8 @@ export const generateCustomReportsFunction = async ({
       const staticNewFilingsDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'newfilings');
 
       const currentStaticEstimatesDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'estimates');
+      const monthlyIpDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyipglobal');
+      const monthlyipstcDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyipstc');
 
       const staticProjectOpenedDataSource = customReportDetails.dataSourceIds.find(
         (ds) => ds.code === 'projectsopened'
@@ -124,17 +131,18 @@ export const generateCustomReportsFunction = async ({
         staticNewFilingsDataSourceId: staticNewFilingsDataSource?.dataSourceId!,
         staticEstimatesDataSourceId: currentStaticEstimatesDataSource?.dataSourceId!,
         staticProjectOpenedDataSourceId: staticProjectOpenedDataSource?.dataSourceId!,
+        monthlyIpDataSource: monthlyIpDataSource?.dataSourceId!,
+        monthlyipstcDataSource: monthlyipstcDataSource?.dataSourceId!,
         isRowData,
         userId,
         organizationId,
         orgCode,
         customReportModel,
+        headers: customReportDetails.headers,
       });
 
-      if (isRowData) {
-        return data;
-      }
-    } else if (customReportDetails.reportName === 'supplementalip') {
+      return data;
+    } else if (customReportDetails.reportName.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'supplementalip') {
       const versionMap = Object.fromEntries(
         dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
       );
@@ -186,6 +194,7 @@ export const generateCustomReportsFunction = async ({
         ipAnalystDataSourceVersionId: versionMap[ipAnalystDashboardDataSource?.dataSourceId!],
         shppAccoladeDataSourceVersionId: versionMap[shppAccoladeDataSource?.dataSourceId!],
         sabicAccoladeDataSourceVersionId: versionMap[sabicAccoladeDataSource?.dataSourceId!],
+        headers: customReportDetails.headers,
         customReportModel,
       });
 
@@ -194,6 +203,7 @@ export const generateCustomReportsFunction = async ({
       await reportRequestService.updateReportRequest(reportRequestId, { status: 'failed' });
     }
   } catch (e) {
+    console.log('Error in generateCustomReportsFunction.', e);
     await reportRequestService.updateReportRequest(reportRequestId, { status: 'failed' });
   }
 };
@@ -274,13 +284,17 @@ export const listReportRequest = async (req: Request, res: Response, next: NextF
     if (paginate) {
       result = await reportRequestService.getReportRequestList({
         query,
-        select: ['versionValue', 'status', 'createdAt'],
+        select: ['versionValue', 'dataSourceVersion', 'status', 'createdAt'],
         page,
         limit,
         populate: [
           {
             path: 'customReportId',
             select: 'reportName', // Only populate reportName
+          },
+          {
+            path: 'createdBy',
+            select: 'firstName lastName',
           },
         ],
       });
@@ -327,6 +341,123 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
     });
   } catch (err) {
     console.log('Error in downloadReport', err);
+    next(err);
+  }
+};
+
+export const viewReport = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { reportRequestId, dataSourceVersionId } = req.params;
+    const { organizationId, orgCode } = req.user;
+
+    const reportDetails = await reportRequestService.findReportRequestById(reportRequestId);
+
+    if (reportDetails) {
+      if (reportDetails.status !== 'completed') {
+        return res.status(400).json({
+          success: false,
+          message: `The report is currently in '${reportDetails?.status}' status and cannot be viewed.`,
+        });
+      }
+      const versionValue = reportDetails.versionValue;
+      const customReportId = String(reportDetails.customReportId);
+      const customReportDetails = await customReportServices.findCustomReportById(customReportId);
+      const designDetails = customReportDetails?.design;
+      let sectionDetails: any[] = [];
+      let mappings: Record<string, any> = {};
+      const dataSourceVersionIdArray = reportDetails.dataSourceVersion;
+      const reportName = customReportDetails?.reportName;
+      if (dataSourceVersionIdArray && dataSourceVersionIdArray.length > 0) {
+        let transformedSectionData: any[] = [];
+        let transformedVersionData: any[] = [];
+        for (let i = 0; i < dataSourceVersionIdArray.length; i++) {
+          const dataSourceVersion = dataSourceVersionIdArray[i];
+
+          const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+            orgCode,
+            versionCode: dataSourceVersion.versionCode,
+          });
+
+          if (reportName && reportName.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'monthlyip') {
+            if (String(dataSourceVersion['dataSourceVersionId']) === String(dataSourceVersionId)) {
+              const currentYearVersionValue = versionValue.split('-')[0];
+
+              const pageName = dataSourceVersion['name'];
+              if (pageName === 'global') {
+                sectionDetails = designDetails?.['global'] ? designDetails?.['global'] : [];
+                mappings = transformMonthlyIpData({
+                  currentYear: Number(currentYearVersionValue),
+                  isReverseMapping: false,
+                });
+              }
+              if (pageName === 'stc') {
+                sectionDetails = designDetails?.['stc'] ? designDetails?.['stc'] : [];
+                mappings = transformMonthlySTCData({
+                  currentYear: Number(currentYearVersionValue),
+                  isReverseMapping: false,
+                });
+              }
+
+              const query = { dataSourceVersionId: new ObjectId(dataSourceVersionId) };
+              const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
+                schemaName,
+                query,
+                page: 1,
+                select: 'rowData',
+                limit: Number.MAX_SAFE_INTEGER,
+              });
+
+              transformedVersionData = dataSourceVersionData.data.map((entry) => {
+                const newRow = {};
+                const rowData = entry.rowData;
+
+                for (const [originalKey, mappedKey] of Object.entries(mappings)) {
+                  newRow[mappedKey] = rowData[originalKey] !== undefined ? rowData[originalKey] : null;
+                }
+                return {
+                  ...newRow,
+                };
+              });
+
+              transformedSectionData = sectionDetails.map((section) => {
+                const transformedSectionName = mappings[section.sectionName] || section.sectionName;
+
+                const updatedSubSections = section.subSections.map((sub) => {
+                  return {
+                    ...sub,
+                    headerName: mappings[sub.headerName] || sub.headerName,
+                  };
+                });
+                return {
+                  ...section,
+                  sectionName: transformedSectionName,
+                  subSections: updatedSubSections,
+                };
+              });
+            }
+          }
+        }
+
+        res.status(200).json({
+          success: true,
+          message: 'Report Details Fetched Successfully',
+          data: transformedVersionData,
+          sections: transformedSectionData,
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          message: `Report data not found.`,
+        });
+      }
+    } else {
+      res.status(400).json({
+        success: false,
+        message: `Report details not found.`,
+      });
+    }
+  } catch (err) {
+    console.log('Error in viewReprt', err);
     next(err);
   }
 };
@@ -404,6 +535,73 @@ export const getReportRequestDetails = async (req: Request, res: Response, next:
       reportDetails,
     });
   } catch (err) {
+    next(err);
+  }
+};
+
+export const getCustomReportDataBasedOnDataSourcedIdAndVersionValueRange = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { dataSourceId } = req.params;
+    const { periodStart, periodEnd, versionCode } = req.query;
+
+    const query: any = {
+      dataSourceId: dataSourceId,
+      versionValue: {
+        $gte: periodStart,
+        $lte: periodEnd,
+      },
+      isCurrent: true,
+    };
+
+    const availableVersionValue = await dataSourceVersionService.getDataSourceVersionList({
+      query,
+      sort: { versionValue: 1 },
+    });
+
+    const dataSourceVesionIdArray: any[] = [];
+    const versionValueMap = {};
+    for (let i = 0; i < availableVersionValue.data.length; i++) {
+      const versionData = availableVersionValue.data[i];
+      const versionId = versionData._id;
+      const versionValue = versionData.versionValue;
+      dataSourceVesionIdArray.push(versionId);
+      versionValueMap[String(versionId)] = versionValue;
+    }
+
+    const dataQuery = { dataSourceVersionId: { $in: dataSourceVesionIdArray } };
+    const { orgCode } = req.user;
+    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: versionCode as string,
+    });
+
+    const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
+      schemaName,
+      query: dataQuery,
+      page: 1,
+      select: 'dataSourceVersionId rowData',
+      limit: Number.MAX_SAFE_INTEGER,
+    });
+
+    const finalDataSourceVersionData = dataSourceVersionData.data.map((data) => {
+      return {
+        ...data.rowData,
+        versionValue: versionValueMap[data.dataSourceVersionId],
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Report details retrieved successfully.',
+      data: finalDataSourceVersionData,
+      versionValueMap,
+    });
+  } catch (err) {
+    console.log('Error in getCustomReportChartData.', err);
     next(err);
   }
 };

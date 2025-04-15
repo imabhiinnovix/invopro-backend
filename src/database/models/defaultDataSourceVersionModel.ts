@@ -18,9 +18,11 @@ const defaultDataSourceVersionSchema = new Schema<IDefaultDataSourceVersionValue
     dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'data_source_version' },
     rowData: { type: Schema.Types.Mixed }, // Accepts any type of object
     createdBy: { type: Schema.Types.ObjectId },
+    createdAt: { type: Date, default: new Date(Date.now()).toISOString() },
+    updatedAt: { type: Date, default: new Date(Date.now()).toISOString() },
   },
   {
-    timestamps: true, // Automatically manage createdAt and updatedAt timestamps
+    timestamps: false, // Automatically manage createdAt and updatedAt timestamps
   }
 );
 

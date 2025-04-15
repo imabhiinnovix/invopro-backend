@@ -30,7 +30,7 @@ export const getDataSourceVersionValue = async ({
   select = '',
   page,
   limit,
-  sort = { updatedAt: -1 },
+  sort = { updatedAt: 1 },
 }: any) => {
   try {
     const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);

@@ -11,6 +11,7 @@ import {
   getCurrentYearNewApplicationFiled,
   getCurrentYearRenewalDue,
   getDisclosureCount,
+  getFormattedDataToProcessReportHeaders,
   getNumberOfProsecutionReduction,
   getProjectBasedOnStcs,
   getReductions,
@@ -22,9 +23,11 @@ import {
   processStaticData,
   processSTCData,
 } from '../../database/services/monthlyipReport.services';
-import { createExcelSheetFile, writeDataToExcel } from '../../utils/excel.utils';
+import { createExcelSheetFile, createUpdateExcelTable, writeDataToExcel } from '../../utils/excel.utils';
 import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
 import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/dataSourceVersion.controller';
+import { processReportHeaders, transformMonthlyIpData, transformMonthlySTCData } from '../../utils/common.report';
+import { ReportHeaders } from '../../utils/common.type';
 
 export const generateMonthlyIpReport = async ({
   reportRequestPayload,
@@ -43,6 +46,9 @@ export const generateMonthlyIpReport = async ({
   userId,
   orgCode,
   organizationId,
+  monthlyIpDataSource,
+  monthlyipstcDataSource,
+  headers,
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
@@ -60,12 +66,24 @@ export const generateMonthlyIpReport = async ({
   userId: string;
   orgCode: string;
   organizationId: string;
+  headers: ReportHeaders;
+  monthlyIpDataSource: string;
+  monthlyipstcDataSource: string;
 }) => {
   try {
     const versionValue = reportRequestPayload.versionValue;
     const splitedVersionValue = versionValue.split('-');
     const currentYear = splitedVersionValue[0];
     const currentMonth = splitedVersionValue[1];
+    const newFilePath = reportRequestPayload.filePath;
+    const sbuHeaders = headers['global']['columns'];
+
+    const toBeProcessedReportHeaders = [
+      { reportHeader: 'SBU', attributeValues: ['SBU'] },
+      ...headers['global']['columns'],
+      { reportHeader: 'Totals', attributeValues: ['Totals'] },
+    ];
+    const reportHeaders = toBeProcessedReportHeaders.map((data) => data.reportHeader);
 
     const currentYearApplicationFiledData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -73,46 +91,40 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
       isRowData,
     });
-    const newFilePath = reportRequestPayload.filePath;
-
-    const processedCurrentYearApplicationFiledData = processData({
+    const partiallyProcessedCurrentYearApplicationFiledData = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `${currentYear} New Apps Filed`,
       data: currentYearApplicationFiledData,
-      cellMappings: {
-        'SBU T&I': 'B3',
-        'SBU Metals': 'C3',
-        'SBU Agri-nutrients': 'D3',
-        'SBU Chemicals': 'E3',
-        'SBU Polymers': 'F3',
-        'SBU SHPP': 'G3',
-        'SBU Strategy & Transformation': 'H3',
-        'Scientific Design': 'I3',
-        Total: 'J3',
-      },
     });
 
-    const percentageOfCurrentYearInventionDisclosureConvertedToFilingsData =
-      await percentageOfCurrentYearInventionDisclosureConvertedToFilings(
+    const processedCurrentYearApplicationFiledData = processReportHeaders({
+      data: [{ SBU: 'First Filings' }, partiallyProcessedCurrentYearApplicationFiledData],
+      headers: toBeProcessedReportHeaders,
+      totalColumnName: 'Totals',
+    });
+
+    const processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData =
+      await percentageOfCurrentYearInventionDisclosureConvertedToFilings({
         portfolioDataSourceVersionId,
         disclosureDataSourceVersionId,
         currentYear,
         customReportModel,
-        isRowData
-      );
+        isRowData,
+        headers: sbuHeaders,
+      });
 
-    const processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData = addCellMaping({
-      data: !isRowData ? (percentageOfCurrentYearInventionDisclosureConvertedToFilingsData as DataItem[]) : [],
-      cellMappings: {
-        'SBU T&I': 'B4',
-        'SBU Metals': 'C4',
-        'SBU Agri-nutrients': 'D4',
-        'SBU Chemicals': 'E4',
-        'SBU Polymers': 'F4',
-        'SBU SHPP': 'G4',
-        'SBU Strategy & Transformation': 'H4',
-        'Scientific Design': 'I4',
-        Total: 'J4',
-      },
+    const staticData = await processStaticData({
+      staticNewFilingsDataSourceId,
+      staticEstimatesDataSourceId,
+      staticProjectOpenedDataSourceId,
+      currentYear,
+      currentMonth,
+      customReportModel,
     });
+
+    let finalProcessedData = [
+      ...processedCurrentYearApplicationFiledData,
+      ...processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
+    ];
 
     const draftedApplicationDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
@@ -124,20 +136,11 @@ export const generateMonthlyIpReport = async ({
       isRowData,
     });
 
-    const processedDraftedApplicationDisclosureCount = processData({
+    const partiallyProcessedDraftedApplicationDisclosureCount = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `Apps Being Drafted`,
       data: draftedApplicationDisclosureCount,
-      cellMappings: {
-        'SBU T&I': 'B11',
-        'SBU Metals': 'C11',
-        'SBU Agri-nutrients': 'D11',
-        'SBU Chemicals': 'E11',
-        'SBU Polymers': 'F11',
-        'SBU SHPP': 'G11',
-        'SBU Strategy & Transformation': 'H11',
-        'Scientific Design': 'I11',
-        Total: 'J11',
-      },
     });
+
     const openApplicationDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,
@@ -146,19 +149,16 @@ export const generateMonthlyIpReport = async ({
       isYearRequired: true,
       customReportModel,
     });
-    const processedOpenApplicationDisclosureCount = processData({
+
+    const partiallyProcessedOpenApplicationDisclosureCount = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `Projects Opened in ${currentYear}`,
       data: openApplicationDisclosureCount,
-      cellMappings: {
-        'SBU T&I': 'B12',
-        'SBU Metals': 'C12',
-        'SBU Agri-nutrients': 'D12',
-        'SBU Chemicals': 'E12',
-        'SBU Polymers': 'F12',
-        'SBU SHPP': 'G12',
-        'SBU Strategy & Transformation': 'H12',
-        'Scientific Design': 'I12',
-        Total: 'J12',
-      },
+    });
+
+    const processedOpenApplicationDisclosureCount = processReportHeaders({
+      data: [partiallyProcessedOpenApplicationDisclosureCount],
+      headers: toBeProcessedReportHeaders,
+      totalColumnName: 'Totals',
     });
 
     const totalActiveProjects = await getDisclosureCount({
@@ -171,20 +171,17 @@ export const generateMonthlyIpReport = async ({
       isRowData,
     });
 
-    const processedTotalActiveDisclosureCount = processData({
+    const partiallyProcessedTotalActiveProjects = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `Total Active Projects`,
       data: totalActiveProjects,
-      cellMappings: {
-        'SBU T&I': 'B17',
-        'SBU Metals': 'C17',
-        'SBU Agri-nutrients': 'D17',
-        'SBU Chemicals': 'E17',
-        'SBU Polymers': 'F17',
-        'SBU SHPP': 'G17',
-        'SBU Strategy & Transformation': 'H17',
-        'Scientific Design': 'I17',
-        Total: 'J17',
-      },
     });
+
+    const processedTotalActiveProjects = processReportHeaders({
+      data: [partiallyProcessedTotalActiveProjects],
+      headers: toBeProcessedReportHeaders,
+      totalColumnName: 'Totals',
+    });
+
     const currentYearUsIssued = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -192,41 +189,25 @@ export const generateMonthlyIpReport = async ({
       isCurrentYearUSIssued: true,
       customReportModel,
     });
-    const processedCurrentYearUsIssued = processData({
+
+    const partiallyProcessedCurrentYearUsIssued = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `${currentYear} US Issued`,
       data: currentYearUsIssued,
-      cellMappings: {
-        'SBU T&I': 'B19',
-        'SBU Metals': 'C19',
-        'SBU Agri-nutrients': 'D19',
-        'SBU Chemicals': 'E19',
-        'SBU Polymers': 'F19',
-        'SBU SHPP': 'G19',
-        'SBU Strategy & Transformation': 'H19',
-        'Scientific Design': 'I19',
-        Total: 'J19',
-      },
     });
-    const currentYearINTIssued = await getCurrentYearNewApplicationFiled({
+
+    const currentYearIntlssued = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
       isPercentagePart: false,
       isCurrentYearINTIssued: true,
       customReportModel,
     });
-    const processedCurrentYearINTIssued = processData({
-      data: currentYearINTIssued,
-      cellMappings: {
-        'SBU T&I': 'B20',
-        'SBU Metals': 'C20',
-        'SBU Agri-nutrients': 'D20',
-        'SBU Chemicals': 'E20',
-        'SBU Polymers': 'F20',
-        'SBU SHPP': 'G20',
-        'SBU Strategy & Transformation': 'H20',
-        'Scientific Design': 'I20',
-        Total: 'J20',
-      },
+
+    const partiallyProcessedCurrentYearIntlssued = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `${currentYear} Intl Issued`,
+      data: currentYearIntlssued,
     });
+
     const usPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -234,20 +215,12 @@ export const generateMonthlyIpReport = async ({
       isUSPendingApplication: true,
       customReportModel,
     });
-    const processedUSPendingApplication = processData({
+
+    const partiallyProcessedUsPendingApplication = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `Total US Apps pending`,
       data: usPendingApplication,
-      cellMappings: {
-        'SBU T&I': 'B22',
-        'SBU Metals': 'C22',
-        'SBU Agri-nutrients': 'D22',
-        'SBU Chemicals': 'E22',
-        'SBU Polymers': 'F22',
-        'SBU SHPP': 'G22',
-        'SBU Strategy & Transformation': 'H22',
-        'Scientific Design': 'I22',
-        Total: 'J22',
-      },
     });
+
     const epPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -255,20 +228,12 @@ export const generateMonthlyIpReport = async ({
       isEPPendingApplication: true,
       customReportModel,
     });
-    const processedEPPendingApplication = processData({
+
+    const partiallyProcessedEpPendingApplication = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `Total EP Apps pending`,
       data: epPendingApplication,
-      cellMappings: {
-        'SBU T&I': 'B23',
-        'SBU Metals': 'C23',
-        'SBU Agri-nutrients': 'D23',
-        'SBU Chemicals': 'E23',
-        'SBU Polymers': 'F23',
-        'SBU SHPP': 'G23',
-        'SBU Strategy & Transformation': 'H23',
-        'Scientific Design': 'I23',
-        Total: 'J23',
-      },
     });
+
     const cnPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -276,20 +241,12 @@ export const generateMonthlyIpReport = async ({
       isCNPendingApplication: true,
       customReportModel,
     });
-    const processedCNPendingApplication = processData({
+
+    const partiallyProcessedCnPendingApplication = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `Total CN Apps pending`,
       data: cnPendingApplication,
-      cellMappings: {
-        'SBU T&I': 'B24',
-        'SBU Metals': 'C24',
-        'SBU Agri-nutrients': 'D24',
-        'SBU Chemicals': 'E24',
-        'SBU Polymers': 'F24',
-        'SBU SHPP': 'G24',
-        'SBU Strategy & Transformation': 'H24',
-        'Scientific Design': 'I24',
-        Total: 'J24',
-      },
     });
+
     const otherPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -297,20 +254,12 @@ export const generateMonthlyIpReport = async ({
       isOtherPendingApplication: true,
       customReportModel,
     });
-    const processedOtherPendingApplication = processData({
+
+    const partiallyProcessedotherPendingApplication = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `Other Country Apps pending`,
       data: otherPendingApplication,
-      cellMappings: {
-        'SBU T&I': 'B25',
-        'SBU Metals': 'C25',
-        'SBU Agri-nutrients': 'D25',
-        'SBU Chemicals': 'E25',
-        'SBU Polymers': 'F25',
-        'SBU SHPP': 'G25',
-        'SBU Strategy & Transformation': 'H25',
-        'Scientific Design': 'I25',
-        Total: 'J25',
-      },
     });
+
     const totalPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -318,19 +267,11 @@ export const generateMonthlyIpReport = async ({
       isTotalPendingApplication: true,
       customReportModel,
     });
-    const processedTotalPendingApplication = processData({
-      data: [...totalPendingApplication, { SBU: 'Scientific Design', value: 109 }],
-      cellMappings: {
-        'SBU T&I': 'B26',
-        'SBU Metals': 'C26',
-        'SBU Agri-nutrients': 'D26',
-        'SBU Chemicals': 'E26',
-        'SBU Polymers': 'F26',
-        'SBU SHPP': 'G26',
-        'SBU Strategy & Transformation': 'H26',
-        'Scientific Design': 'I26',
-        Total: 'J26',
-      },
+
+    const partiallyProcessedTotalPendingApplication = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `Total Apps pending`,
+      data: totalPendingApplication,
+      defaultValue: { 'Scientific Design': 109 },
     });
 
     const usIssuedApplication = await getCurrentYearNewApplicationFiled({
@@ -340,20 +281,12 @@ export const generateMonthlyIpReport = async ({
       isUSIssuedApplication: true,
       customReportModel,
     });
-    const processedUSIssuedApplication = processData({
+
+    const partiallyProcessedUsIssuedApplication = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `Total US Issued`,
       data: usIssuedApplication,
-      cellMappings: {
-        'SBU T&I': 'B28',
-        'SBU Metals': 'C28',
-        'SBU Agri-nutrients': 'D28',
-        'SBU Chemicals': 'E28',
-        'SBU Polymers': 'F28',
-        'SBU SHPP': 'G28',
-        'SBU Strategy & Transformation': 'H28',
-        'Scientific Design': 'I28',
-        Total: 'J28',
-      },
     });
+
     const epIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -361,20 +294,12 @@ export const generateMonthlyIpReport = async ({
       isEPIssuedApplication: true,
       customReportModel,
     });
-    const processedEPIssuedApplication = processData({
+
+    const partiallyProcessedEpIssuedApplication = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `Total EP Issued`,
       data: epIssuedApplication,
-      cellMappings: {
-        'SBU T&I': 'B29',
-        'SBU Metals': 'C29',
-        'SBU Agri-nutrients': 'D29',
-        'SBU Chemicals': 'E29',
-        'SBU Polymers': 'F29',
-        'SBU SHPP': 'G29',
-        'SBU Strategy & Transformation': 'H29',
-        'Scientific Design': 'I29',
-        Total: 'J29',
-      },
     });
+
     const cnIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -382,20 +307,12 @@ export const generateMonthlyIpReport = async ({
       isCNIssuedApplication: true,
       customReportModel,
     });
-    const processedCNIssuedApplication = processData({
+
+    const partiallyProcessedCnIssuedApplication = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `Total CN Issued`,
       data: cnIssuedApplication,
-      cellMappings: {
-        'SBU T&I': 'B30',
-        'SBU Metals': 'C30',
-        'SBU Agri-nutrients': 'D30',
-        'SBU Chemicals': 'E30',
-        'SBU Polymers': 'F30',
-        'SBU SHPP': 'G30',
-        'SBU Strategy & Transformation': 'H30',
-        'Scientific Design': 'I30',
-        Total: 'J30',
-      },
     });
+
     const otherIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -403,20 +320,12 @@ export const generateMonthlyIpReport = async ({
       isOtherIssuedApplication: true,
       customReportModel,
     });
-    const processedOtherIssuedApplication = processData({
+
+    const partiallyProcessedOtherIssuedApplication = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `Other Country Issued`,
       data: otherIssuedApplication,
-      cellMappings: {
-        'SBU T&I': 'B31',
-        'SBU Metals': 'C31',
-        'SBU Agri-nutrients': 'D31',
-        'SBU Chemicals': 'E31',
-        'SBU Polymers': 'F31',
-        'SBU SHPP': 'G31',
-        'SBU Strategy & Transformation': 'H31',
-        'Scientific Design': 'I31',
-        Total: 'J31',
-      },
     });
+
     const totalIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -424,56 +333,58 @@ export const generateMonthlyIpReport = async ({
       isTotalIssuedApplication: true,
       customReportModel,
     });
-    const processedTotalIssuedApplication = processData({
-      data: [...totalIssuedApplication, { SBU: 'Scientific Design', value: 263 }],
-      cellMappings: {
-        'SBU T&I': 'B32',
-        'SBU Metals': 'C32',
-        'SBU Agri-nutrients': 'D32',
-        'SBU Chemicals': 'E32',
-        'SBU Polymers': 'F32',
-        'SBU SHPP': 'G32',
-        'SBU Strategy & Transformation': 'H32',
-        'Scientific Design': 'I32',
-        Total: 'J32',
-      },
+
+    const partiallyProcessedTotalIssuedApplication = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `Total Issued`,
+      data: totalIssuedApplication,
+      defaultValue: { 'Scientific Design': 263 },
     });
 
-    const totalPortFolio = await getTotalPortfolio({
-      totalAppsPendingData: processedTotalPendingApplication,
-      totalIssuedData: processedTotalIssuedApplication,
+    const processedFirstLargeData = processReportHeaders({
+      data: [
+        ...staticData.allNewEstimates,
+        ...staticData.allStaticNewFilingData,
+        { SBU: 'Disclosures' },
+        partiallyProcessedDraftedApplicationDisclosureCount,
+        partiallyProcessedOpenApplicationDisclosureCount,
+        ...staticData.allNewProject,
+        partiallyProcessedTotalActiveProjects,
+        { SBU: `${currentYear} Issued` },
+        partiallyProcessedCurrentYearUsIssued,
+        partiallyProcessedCurrentYearIntlssued,
+        { SBU: `Pending Applications` },
+        partiallyProcessedUsPendingApplication,
+        partiallyProcessedEpPendingApplication,
+        partiallyProcessedCnPendingApplication,
+        partiallyProcessedotherPendingApplication,
+        partiallyProcessedTotalPendingApplication,
+        { SBU: 'Issued Patents' },
+        partiallyProcessedUsIssuedApplication,
+        partiallyProcessedEpIssuedApplication,
+        partiallyProcessedCnIssuedApplication,
+        partiallyProcessedOtherIssuedApplication,
+        partiallyProcessedTotalIssuedApplication,
+        { SBU: '' },
+      ],
+      headers: toBeProcessedReportHeaders,
+      totalColumnName: 'Totals',
     });
 
-    const processedTotalPortFolio = addCellMaping({
-      data: totalPortFolio,
-      cellMappings: {
-        'SBU T&I': 'B34',
-        'SBU Metals': 'C34',
-        'SBU Agri-nutrients': 'D34',
-        'SBU Chemicals': 'E34',
-        'SBU Polymers': 'F34',
-        'SBU SHPP': 'G34',
-        'SBU Strategy & Transformation': 'H34',
-        'Scientific Design': 'I34',
-        Total: 'J34',
-      },
+    const partiallyProcessedTotalPortFolio = await getTotalPortfolio({
+      partiallyProcessedTotalPendingApplication,
+      partiallyProcessedTotalIssuedApplication,
     });
 
-    const totalPortFolioPercentage = getTotalPortfolioPercentage({ data: processedTotalPortFolio });
-    const processedTotalPortFolioPercentage = addCellMaping({
-      data: totalPortFolioPercentage,
-      cellMappings: {
-        'SBU T&I': 'B35',
-        'SBU Metals': 'C35',
-        'SBU Agri-nutrients': 'D35',
-        'SBU Chemicals': 'E35',
-        'SBU Polymers': 'F35',
-        'SBU SHPP': 'G35',
-        'SBU Strategy & Transformation': 'H35',
-        'Scientific Design': 'I35',
-        Total: 'J35',
-      },
+    partiallyProcessedTotalPortFolio['SBU'] = `Total Portfolio: Apps Pending+ Issued`;
+
+    const processedTotalPortFolioData = processReportHeaders({
+      data: [partiallyProcessedTotalPortFolio],
+      headers: toBeProcessedReportHeaders,
+      totalColumnName: 'Totals',
     });
+
+    const totalPortFolioPercentage = getTotalPortfolioPercentage({ data: processedTotalPortFolioData });
+    const processedTotalPortFolioPercentageData = { ...totalPortFolioPercentage, SBU: '% of Total Portfolio' };
 
     const currentYearRenewalDue = await getCurrentYearRenewalDue({
       portfolioDataSourceVersionId,
@@ -485,19 +396,9 @@ export const generateMonthlyIpReport = async ({
       isRowData,
     });
 
-    const processedCurrentYearRenewalDue = processData({
+    const partiallyProcessedCurrentYearRenewalDue = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `${currentYear} Renewals Due`,
       data: currentYearRenewalDue,
-      cellMappings: {
-        'SBU T&I': 'B37',
-        'SBU Metals': 'C37',
-        'SBU Agri-nutrients': 'D37',
-        'SBU Chemicals': 'E37',
-        'SBU Polymers': 'F37',
-        'SBU SHPP': 'G37',
-        'SBU Strategy & Transformation': 'H37',
-        'Scientific Design': 'I37',
-        Total: 'J37',
-      },
     });
 
     let reductionData = await getReductions({
@@ -506,19 +407,9 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
     });
 
-    const processedReductionCount = processData({
+    const partiallyProcessedDropCountResult = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `Total No. of ${currentYear}** Reductions (Including reductions during prosecution)`,
       data: reductionData.dropCountResult,
-      cellMappings: {
-        'SBU T&I': 'B39',
-        'SBU Metals': 'C39',
-        'SBU Agri-nutrients': 'D39',
-        'SBU Chemicals': 'E39',
-        'SBU Polymers': 'F39',
-        'SBU SHPP': 'G39',
-        'SBU Strategy & Transformation': 'H39',
-        'Scientific Design': 'I39',
-        Total: 'J39',
-      },
     });
 
     const annuitySavingsForCurrentYear = await getAnnuitySavingsFromReductions({
@@ -534,19 +425,9 @@ export const generateMonthlyIpReport = async ({
       isRowData,
     });
 
-    const processedAnnuitySavingsForCurrentYear = processData({
-      data: !isRowData ? (annuitySavingsForCurrentYear as DataItem[]) : [],
-      cellMappings: {
-        'SBU T&I': 'B40',
-        'SBU Metals': 'C40',
-        'SBU Agri-nutrients': 'D40',
-        'SBU Chemicals': 'E40',
-        'SBU Polymers': 'F40',
-        'SBU SHPP': 'G40',
-        'SBU Strategy & Transformation': 'H40',
-        'Scientific Design': 'I40',
-        Total: 'J40',
-      },
+    const partiallyProcessedAnnuitySavingsForCurrentYear = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `${Number(currentYear)} Annuity Savings from ${currentYear} reductions`,
+      data: annuitySavingsForCurrentYear,
     });
 
     const annuitySavingsForNextYear = await getAnnuitySavingsFromReductions({
@@ -559,25 +440,17 @@ export const generateMonthlyIpReport = async ({
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
       customReportModel,
-      isRowData,
+      isRowData: true,
     });
 
-    const processedAnnuitySavingsForNextYear = processData({
-      data: !isRowData ? (annuitySavingsForNextYear as DataItem[]) : [],
-      cellMappings: {
-        'SBU T&I': 'B41',
-        'SBU Metals': 'C41',
-        'SBU Agri-nutrients': 'D41',
-        'SBU Chemicals': 'E41',
-        'SBU Polymers': 'F41',
-        'SBU SHPP': 'G41',
-        'SBU Strategy & Transformation': 'H41',
-        'Scientific Design': 'I41',
-        Total: 'J41',
-      },
+    const partiallyProcessedAnnuitySavingsForNextYear = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `${Number(currentYear) + 1} Annuity Savings from ${currentYear} reductions`,
+      data: annuitySavingsForNextYear,
     });
 
-    const totalAnnuitySavingsMap = {};
+    const totalAnnuitySavingsMap = {
+      SBU: `${currentYear}-${Number(currentYear) + 1} Annuity Savings from ${currentYear} reductions`,
+    };
 
     annuitySavingsForCurrentYear?.forEach((entry) => {
       totalAnnuitySavingsMap[entry.SBU] = (totalAnnuitySavingsMap[entry.SBU] || 0) + entry.value;
@@ -587,242 +460,234 @@ export const generateMonthlyIpReport = async ({
       totalAnnuitySavingsMap[entry.SBU] = (totalAnnuitySavingsMap[entry.SBU] || 0) + entry.value;
     });
 
-    const totalAnnuitySavings = Object.keys(totalAnnuitySavingsMap).map((SBU) => ({
-      SBU,
-      value: totalAnnuitySavingsMap[SBU],
-    }));
-
-    const processedTotalAnnuitySavings = processData({
-      data: totalAnnuitySavings,
-      cellMappings: {
-        'SBU T&I': 'B42',
-        'SBU Metals': 'C42',
-        'SBU Agri-nutrients': 'D42',
-        'SBU Chemicals': 'E42',
-        'SBU Polymers': 'F42',
-        'SBU SHPP': 'G42',
-        'SBU Strategy & Transformation': 'H42',
-        'Scientific Design': 'I42',
-        Total: 'J42',
-      },
-    });
-
     const allProsecutionDrop = await getNumberOfProsecutionReduction({
       priorityDrop: reductionData.priorityDropArray,
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
     });
 
-    const processedAllProsecutionDrop = processData({
+    const partiallyProcessedAllProsecutionDrop = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `No. of Prosecution reductions in ${currentYear}`,
       data: allProsecutionDrop,
-      cellMappings: {
-        'SBU T&I': 'B44',
-        'SBU Metals': 'C44',
-        'SBU Agri-nutrients': 'D44',
-        'SBU Chemicals': 'E44',
-        'SBU Polymers': 'F44',
-        'SBU SHPP': 'G44',
-        'SBU Strategy & Transformation': 'H44',
-        'Scientific Design': 'I44',
-        Total: 'J44',
-      },
     });
 
     const allProsecutionSavings = await getAllProsecutionSavings({
       priorityDrop: reductionData.priorityDropArray,
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
-      isRowData,
+      isRowData: true,
     });
 
-    const processedAllProsecutionSavings = processData({
+    const partiallyProcessedAllProsecutionSavings = getFormattedDataToProcessReportHeaders({
+      sbuColumnDetails: `Prosecution cost Savings`,
       data: allProsecutionSavings,
-      cellMappings: {
-        'SBU T&I': 'B45',
-        'SBU Metals': 'C45',
-        'SBU Agri-nutrients': 'D45',
-        'SBU Chemicals': 'E45',
-        'SBU Polymers': 'F45',
-        'SBU SHPP': 'G45',
-        'SBU Strategy & Transformation': 'H45',
-        'Scientific Design': 'I45',
-        Total: 'J45',
-      },
     });
 
     const totalCostSavings = await getTotalCostSavings({
-      totalAnnuitySavings,
+      totalAnnuitySavings: totalAnnuitySavingsMap,
       allProsecutionSaving: allProsecutionSavings,
     });
 
-    const processedTotalCostSavings = processData({
-      data: totalCostSavings,
-      cellMappings: {
-        'SBU T&I': 'B47',
-        'SBU Metals': 'C47',
-        'SBU Agri-nutrients': 'D47',
-        'SBU Chemicals': 'E47',
-        'SBU Polymers': 'F47',
-        'SBU SHPP': 'G47',
-        'SBU Strategy & Transformation': 'H47',
-        'Scientific Design': 'I47',
-        Total: 'J47',
+    totalCostSavings['SBU'] =
+      `Total Cost Savings: (${currentYear}-${Number(currentYear) + 1}) Annuity Savings + Prosecution savings from ${currentYear} reductions`;
+
+    const processedSecondLargeData = processReportHeaders({
+      data: [
+        { SBU: `${currentYear} Renewals Due` },
+        partiallyProcessedCurrentYearRenewalDue,
+        { SBU: `Reductions & Cost Savings` },
+        partiallyProcessedDropCountResult,
+        partiallyProcessedAnnuitySavingsForCurrentYear,
+        partiallyProcessedAnnuitySavingsForNextYear,
+        totalAnnuitySavingsMap,
+        { SBU: '' },
+        partiallyProcessedAllProsecutionDrop,
+        partiallyProcessedAllProsecutionSavings,
+        { SBU: '' },
+        totalCostSavings,
+        { SBU: '' },
+        { SBU: '' },
+      ],
+      headers: toBeProcessedReportHeaders,
+      totalColumnName: 'Totals',
+    });
+
+    finalProcessedData = [
+      ...finalProcessedData,
+      ...processedFirstLargeData,
+      ...processedTotalPortFolioData,
+      processedTotalPortFolioPercentageData,
+      ...processedSecondLargeData,
+    ];
+
+    await createUpdateExcelTable({
+      data: finalProcessedData,
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableColumn: 'A',
+      headerColor: 'ffffff',
+      headerBackgroundColor: '7b7b7b',
+      headers: reportHeaders,
+      isWhiteBackGround: false,
+      borderColor: { right: '7b7b7b', bottom: '7b7b7b' },
+      tableRowBackGroundColor: {
+        2: 'ffc000',
+        3: 'b5c6e8',
+        4: 'b5c6e8',
+        5: 'b5c6e8',
+        11: 'b5c6e8',
+        12: 'b5c6e8',
+        17: 'b5c6e8',
+        26: 'b5c6e8',
+        32: 'b5c6e8',
+        34: 'b5c6e8',
+        35: 'b5c6e8',
+        37: 'b5c6e8',
+        39: 'b5c6e8',
+        42: 'b5c6e8',
+        44: 'b5c6e8',
+        45: 'b5c6e8',
+        47: 'b5c6e8',
+        10: 'ffc000',
+        18: 'ffc000',
+        21: 'ffc000',
+        27: 'ffc000',
+        36: 'ffc000',
+        38: 'ffc000',
+        49: '7b7b7b',
+      },
+      tableRowAlignment: {
+        2: 'center',
+        10: 'center',
+        18: 'center',
+        21: 'center',
+        27: 'center',
+        36: 'center',
+        38: 'center',
+      },
+      tableRowCellFormat: {
+        4: '0%',
+        35: '0%',
+        37: '"$" #,##0, "K"',
+        40: '"$" #,##0, "K"',
+        41: '"$" #,##0, "K"',
+        42: '"$" #,##0, "K"',
+        45: '"$" #,##0, "K"',
+        47: '"$" #,##0, "K"',
       },
     });
 
-    const staticData = await processStaticData({
-      staticNewFilingsDataSourceId,
-      staticEstimatesDataSourceId,
-      staticProjectOpenedDataSourceId,
-      currentYear,
-      currentMonth,
-      customReportModel,
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 2,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
     });
 
-    if (isRowData) {
-      return { draftedApplicationDisclosureCount, currentYearRenewalDue };
-    }
-    await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
-    await fsPromises.copyFile(sampleFilePath, newFilePath);
-    await writeDataToExcel(
-      [
-        ...processedCurrentYearApplicationFiledData,
-        ...processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
-        ...processedDraftedApplicationDisclosureCount,
-        ...processedDraftedApplicationDisclosureCount,
-        ...processedOpenApplicationDisclosureCount,
-        ...processedCurrentYearUsIssued,
-        ...processedCurrentYearINTIssued,
-        ...processedUSPendingApplication,
-        ...processedEPPendingApplication,
-        ...processedCNPendingApplication,
-        ...processedOtherPendingApplication,
-        ...processedTotalPendingApplication,
-        ...processedUSIssuedApplication,
-        ...processedEPIssuedApplication,
-        ...processedCNIssuedApplication,
-        ...processedOtherIssuedApplication,
-        ...processedTotalIssuedApplication,
-        ...processedTotalActiveDisclosureCount,
-        ...processedTotalPortFolio,
-        ...processedTotalPortFolioPercentage,
-        ...processedCurrentYearRenewalDue,
-        ...processedReductionCount,
-        ...processedAnnuitySavingsForCurrentYear,
-        ...processedAnnuitySavingsForNextYear,
-        ...processedTotalAnnuitySavings,
-        ...processedAllProsecutionDrop,
-        ...processedAllProsecutionSavings,
-        ...processedTotalCostSavings,
-        ...staticData,
-        { cellName: 'A3', value: `${currentYear} New Apps Filed`, SBU: '' },
-        { cellName: 'A4', value: `% of ${currentYear} Invention Disclosures converted to Filings`, SBU: '' },
-        { cellName: 'A5', value: `${currentYear} New Apps Estimate`, SBU: '' },
-        { cellName: 'A6', value: `${Number(currentYear) - 1} New Apps filed`, SBU: '' },
-        {
-          cellName: 'A7',
-          value: `${Number(currentYear) - 2} New Apps filed`,
-          SBU: '',
-        },
-        {
-          cellName: 'A8',
-          value: `${Number(currentYear) - 3} New Apps filed`,
-          SBU: '',
-        },
-        {
-          cellName: 'A9',
-          value: `${Number(currentYear) - 4} New Apps filed`,
-          SBU: '',
-        },
-        {
-          cellName: 'A12',
-          value: `Projects Opened in ${currentYear}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A13',
-          value: `Projects Opened in ${Number(currentYear) - 1}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A14',
-          value: `Projects Opened in ${Number(currentYear) - 2}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A15',
-          value: `Projects Opened in ${Number(currentYear) - 3}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A16',
-          value: `Projects Opened in ${Number(currentYear) - 4}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A18',
-          value: `${currentYear} Issued`,
-          SBU: '',
-        },
-        {
-          cellName: 'A19',
-          value: `${currentYear} US Issued`,
-          SBU: '',
-        },
-        {
-          cellName: 'A20',
-          value: `${currentYear} Intl Issued`,
-          SBU: '',
-        },
-        {
-          cellName: 'A36',
-          value: `${currentYear} Renewals Due`,
-          SBU: '',
-        },
-        {
-          cellName: 'A37',
-          value: `${currentYear} Renewals Due`,
-          SBU: '',
-        },
-        {
-          cellName: 'A39',
-          value: `Total No. of ${currentYear}** Reductions (Including reductions during prosecution)`,
-          SBU: '',
-        },
-        {
-          cellName: 'A40',
-          value: `${currentYear} Annuity Savings from ${currentYear} reductions`,
-          SBU: '',
-        },
-        {
-          cellName: 'A41',
-          value: `${Number(currentYear) + 1} Annuity Savings from ${currentYear} reductions`,
-          SBU: '',
-        },
-        {
-          cellName: 'A42',
-          value: `${currentYear}-${Number(currentYear) + 1} Annuity Savings from ${currentYear} reductions`,
-          SBU: '',
-        },
-        {
-          cellName: 'A44',
-          value: `No. of Prosecution reductions in ${currentYear}`,
-          SBU: '',
-        },
-        {
-          cellName: 'A45',
-          value: `Prosecution cost Savings`,
-          SBU: '',
-        },
-        {
-          cellName: 'A47',
-          value: `Total Cost Savings: (${currentYear}-${Number(currentYear) + 1}) Annuity Savings + Prosecution savings from ${currentYear} reductions`,
-          SBU: '',
-        },
-      ],
-      newFilePath
-    );
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 10,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
+    });
 
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 18,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 21,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 27,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 36,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 38,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 48,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length,
+      isMergeCell: true,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 49,
+      startCellNumber: 1,
+      mergeEndColumn: reportHeaders.length + 1,
+      isMergeCell: true,
+    });
+
+    await createUpdateExcelTable({
+      data: [],
+      filePath: newFilePath,
+      sheetName: 'Global',
+      gap: 0,
+      startTableRow: 1,
+      columnBackGroundColor: '7b7b7b',
+      columnBackGroundColorIndex: reportHeaders.length + 1,
+      numRows: finalProcessedData.length,
+      columnWidth: 5,
+    });
     //stc tab
     //first table
     const newProjectOpenedBasedOnStc = await getProjectBasedOnStcs({
@@ -832,9 +697,8 @@ export const generateMonthlyIpReport = async ({
       isDrafted: false,
       isYearRequired: true,
       customReportModel,
+      isRowData,
     });
-
-    const processedNewProjectOpenedBasedOnStc = processSTCData(newProjectOpenedBasedOnStc);
 
     const totalOpenProjectsBasedOnStc = await getProjectBasedOnStcs({
       disclosureDataSourceVersionId,
@@ -843,16 +707,18 @@ export const generateMonthlyIpReport = async ({
       isDrafted: false,
       isYearRequired: false,
       customReportModel,
+      isRowData,
     });
-
-    const processedTotalOpenProjectsBasedOnStc = processSTCData(totalOpenProjectsBasedOnStc);
 
     const newAppsFiledBasedOnStc = await getAppsFiledBasedOnStc({
       portfolioDataSourceVersionId,
       currentYear,
       customReportModel,
+      isRowData,
     });
 
+    const processedNewProjectOpenedBasedOnStc = processSTCData(newProjectOpenedBasedOnStc);
+    const processedTotalOpenProjectsBasedOnStc = processSTCData(totalOpenProjectsBasedOnStc);
     const processedNewAppsFiledBasedOnStc = processSTCData(newAppsFiledBasedOnStc);
 
     const newProjectOpenedBasedOnStcFinal = processedNewProjectOpenedBasedOnStc.map((data) => {
@@ -886,10 +752,10 @@ export const generateMonthlyIpReport = async ({
     // return allSTC;
     let allSTCArray = Array.from(allSTC);
 
-    if (allSTCArray.includes('Total')) {
-      allSTCArray = allSTCArray.filter((item) => item !== 'Total' && item !== 'Blank'); // Remove "total"
+    if (allSTCArray.includes('Totals')) {
+      allSTCArray = allSTCArray.filter((item) => item !== 'Totals' && item !== 'Blank'); // Remove "total"
       allSTCArray.push('Blank');
-      allSTCArray.push('Total'); // Add "total" at the end
+      allSTCArray.push('Totals'); // Add "total" at the end
     }
 
     allSTCArray.forEach((stc) => {
@@ -909,68 +775,128 @@ export const generateMonthlyIpReport = async ({
       combinedSTCData.push(result);
     });
 
-    await createExcelSheetFile(combinedSTCData, newFilePath, 'STC');
     //second table
-    const newProjectOpened = processedOpenApplicationDisclosureCount.map((data) => {
-      return {
-        SBU: data.SBU,
-        [`New Projects opened in ${currentYear}`]: data.value,
-      };
-    });
-    const totalOpenProject = processedTotalActiveDisclosureCount.map((data) => {
-      return {
-        SBU: data.SBU,
-        [`Total Open Projects`]: data.value,
-      };
-    });
-
-    const newApplicationFiledData = processedCurrentYearApplicationFiledData.map((data) => {
-      return {
-        SBU: data.SBU,
-        [`${currentYear} Filed`]: data.value,
-      };
-    });
 
     const combinedData: any[] = [];
 
+    const processedCurrentYearApplicationFiledDataObject =
+      processedCurrentYearApplicationFiledData && processedCurrentYearApplicationFiledData.length === 2
+        ? processedCurrentYearApplicationFiledData[1]
+        : {};
+
+    const processedOpenApplicationDisclosureCountObject =
+      processedOpenApplicationDisclosureCount && processedOpenApplicationDisclosureCount.length > 0
+        ? processedOpenApplicationDisclosureCount[0]
+        : {};
+
+    const processedTotalActiveProjectsObject =
+      processedTotalActiveProjects && processedTotalActiveProjects.length > 0 ? processedTotalActiveProjects[0] : {};
+
     const allSBUs = new Set([
-      ...newProjectOpened.map((data) => data.SBU),
-      ...totalOpenProject.map((data) => data.SBU),
-      ...newApplicationFiledData.map((data) => data.SBU),
+      ...Object.keys(processedOpenApplicationDisclosureCountObject).filter((data) => !['SBU', 'Totals'].includes(data)),
+      ...Object.keys(processedCurrentYearApplicationFiledDataObject).filter(
+        (data) => !['SBU', 'Totals'].includes(data)
+      ),
+      ...Object.keys(processedTotalActiveProjectsObject).filter((data) => !['SBU', 'Totals'].includes(data)),
     ]);
 
     let allSBUsArray = Array.from(allSBUs);
-    if (allSBUsArray.includes('Total')) {
-      allSBUsArray = allSBUsArray.filter((item) => item !== 'Total'); // Remove "total",blank
-      allSBUsArray.push('Total'); // Add "total" at the end
-    }
+    allSBUsArray.push('Totals');
 
     allSBUsArray.forEach((sbu) => {
-      // Find matching data for each SBU
-
-      const newProject = newProjectOpened.find((item) => item.SBU === sbu);
-      const totalProject = totalOpenProject.find((item) => item.SBU === sbu);
-      const applicationFiled = newApplicationFiledData.find((data) => data.SBU === sbu);
-
       // Construct the final combined object for this SBU
       const result = {
         SBU: sbu,
-        [`New Projects opened in ${currentYear}`]: newProject ? newProject[`New Projects opened in ${currentYear}`] : 0,
-        [`Total Open Projects`]: totalProject ? totalProject[`Total Open Projects`] : 0,
-        [`${currentYear} Filed`]: applicationFiled ? applicationFiled[`${currentYear} Filed`] : 0,
+        [`New Projects opened in ${currentYear}`]: processedOpenApplicationDisclosureCountObject[sbu]
+          ? processedOpenApplicationDisclosureCountObject[sbu]
+          : 0,
+        [`Total Open Projects`]: processedTotalActiveProjectsObject[sbu] ? processedTotalActiveProjectsObject[sbu] : 0,
+        [`${currentYear} Filed`]: processedCurrentYearApplicationFiledDataObject[sbu]
+          ? processedCurrentYearApplicationFiledDataObject[sbu]
+          : 0,
       };
 
       // Add the result to the combinedData array
       combinedData.push(result);
     });
-    await createExcelSheetFile(combinedData, newFilePath, 'STC');
+
+    await createUpdateExcelTable({
+      data: combinedSTCData,
+      filePath: newFilePath,
+      sheetName: 'STC',
+      gap: 0,
+      startTableColumn: 'A',
+      headerBackgroundColor: '9dc3e6',
+      lastRowColor: '9dc3e6',
+      isWhiteBackGround: false,
+    });
+
+    await createUpdateExcelTable({
+      data: combinedData,
+      filePath: newFilePath,
+      sheetName: 'STC',
+      gap: 2,
+      startTableColumn: 'A',
+      headerBackgroundColor: '9dc3e6',
+      lastRowColor: '9dc3e6',
+      isWhiteBackGround: false,
+    });
+
+    const reverseMapping = transformMonthlyIpData({ currentYear: Number(currentYear), isReverseMapping: true });
+    const reverseStcMapping = transformMonthlySTCData({ currentYear: Number(currentYear), isReverseMapping: true });
+
+    const sbusHeader = [...sbuHeaders.map((data) => data.reportHeader), 'Totals'];
+    const saveData = sbusHeader.map((sbu) => {
+      const entry = {};
+      finalProcessedData.forEach((item) => {
+        if (item.SBU && reverseMapping[item.SBU]) {
+          entry[reverseMapping[item.SBU]] = item[sbu] ? item[sbu] : 0;
+        }
+      });
+      entry['SBU'] = sbu;
+      return entry;
+    });
+
+    const stcHeaders = ['STC', `New Projects opened in ${currentYear}`, `Total Open Projects`, `${currentYear} Filed`];
+
+    const saveStcData: any[] = [];
+
+    for (let i = 0; i < combinedSTCData.length; i++) {
+      const stcData = combinedSTCData[i];
+      const entry = {};
+      for (let j = 0; j < stcHeaders.length; j++) {
+        entry[reverseStcMapping[stcHeaders[j]]] = stcData[stcHeaders[j]];
+      }
+      saveStcData.push(entry);
+    }
+
+    const dataSourceVersionDetailsMonthlyIp = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: monthlyIpDataSource,
+      versionValue,
+      versionData: saveData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+
+    const dataSourceVersionDetailsMonthlyIpStc = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: monthlyipstcDataSource,
+      versionValue,
+      versionData: saveStcData,
+      userId,
+      organizationId,
+      orgCode,
+    });
 
     await createUpdateCustomDataSourceVersionValueFunction({
       dataSourceId: staticNewFilingsDataSourceId,
       versionValue,
-      versionData: processedCurrentYearApplicationFiledData.map((data) => {
-        return { SBU: data.SBU, 'New Filings': data.value };
-      }),
+      versionData: Object.entries(processedCurrentYearApplicationFiledDataObject)
+        .filter(([key]) => key !== 'SBU' && key !== 'Totals')
+        .map(([key, value]) => ({
+          SBU: key,
+          'New Filings': value,
+        })),
       userId,
       organizationId,
       orgCode,
@@ -979,15 +905,34 @@ export const generateMonthlyIpReport = async ({
     await createUpdateCustomDataSourceVersionValueFunction({
       dataSourceId: staticProjectOpenedDataSourceId,
       versionValue,
-      versionData: processedOpenApplicationDisclosureCount.map((data) => {
-        return { SBU: data.SBU, 'Projects Opened': data.value };
-      }),
+      versionData: Object.entries(processedOpenApplicationDisclosureCountObject)
+        .filter(([key]) => key !== 'SBU' && key !== 'Totals')
+        .map(([key, value]) => ({
+          SBU: key,
+          'Projects Opened': value,
+        })),
       userId,
       organizationId,
       orgCode,
     });
 
-    await reportRequestService.updateReportRequest(requestedReportId, { status: 'completed' });
+    await reportRequestService.updateReportRequest(requestedReportId, {
+      status: 'completed',
+      dataSourceVersion: [
+        {
+          name: 'global',
+          dataSourceVersionId: dataSourceVersionDetailsMonthlyIp.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailsMonthlyIp.versionCode,
+          dataSourceId: monthlyIpDataSource,
+        },
+        {
+          name: 'stc',
+          dataSourceVersionId: dataSourceVersionDetailsMonthlyIpStc.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailsMonthlyIpStc.versionCode,
+          dataSourceId: monthlyipstcDataSource,
+        },
+      ],
+    });
   } catch (err) {
     console.log(err);
     await reportRequestService.updateReportRequest(requestedReportId, { status: 'failed' });
