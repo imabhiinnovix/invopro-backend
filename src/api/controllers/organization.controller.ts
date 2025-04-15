@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from 'express';
 import * as organizationService from '../../database/services/organization.service';
+import * as widgetThemeService from '../../database/services/widgetTheme.service';
 
 export const createOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -16,6 +17,20 @@ export const createOrganization = async (req: Request, res: Response, next: Next
       code,
       licenseExpiresAt: new Date(licenseExpiresAt),
     });
+
+    // create org by default theme
+    let widgetTheme: any = await widgetThemeService.findWidgetTheme({
+      isDefault: true,
+    });
+
+    widgetTheme = await widgetTheme?.toJSON();
+
+    await widgetThemeService.createWidgetTheme({
+      ...widgetTheme,
+      _id: undefined,
+      organizationId: organization?._id,
+    });
+
     res.status(201).json({
       success: true,
       message: 'Organization created successfully',

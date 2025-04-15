@@ -29,6 +29,23 @@ const ENV = {
   OTP_TIME_LIMIT: parseInt(process.env.OTP_TIME_LIMIT as string, 10) || 15,
   OTP_LIMIT: parseInt(process.env.OTP_LIMIT as string, 10) || 5,
   OTP_EXPIRATION_TIME: parseInt(process.env.OTP_EXPIRATION_TIME as string, 10) || 5,
+
+  CHART_TYPE_ENUM: [
+    'line',
+    'pie',
+    'area',
+    'number',
+    'horizontalBar',
+    'verticalBar',
+    'stackedBar',
+    'bubble',
+    'doughnut',
+    'multiSeriesPie',
+    'polarArea',
+    'radar',
+    'scatter',
+  ],
+  FIELD_TYPE_ENUM: ['number', 'text', 'date', 'boolean', 'richtext', 'url', 'option', 'multioption', 'user'],
 };
 
 export default ENV;

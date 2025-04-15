@@ -11,6 +11,12 @@ import dataSourceRoutes from './dataSource.routes';
 import customReports from './customReport.routes';
 import dataSourceVersion from './dataSourceVersion.routes';
 import dataImportErrorRoutes from './dataImportError.routes';
+import dashBoardRoutes from './dashboard.routes';
+import widgetTypeRoutes from './widgetType.routes';
+import operatorRoutes from './operator.routes';
+import widgetThemeRoutes from './widgetTheme.routes';
+// import widgetAppearanceRoutes from './WidgetAppearance';
+import transferDashboardRoutes from './transferDashboard.routes';
 
 const router = Router();
 
@@ -25,5 +31,11 @@ router.use('/files', fileRoutes);
 router.use('/customReports', customReports);
 router.use('/dataSourceVersion', dataSourceVersion);
 router.use('/dataImportError', dataImportErrorRoutes);
+router.use('/dashboard', dashBoardRoutes);
+router.use('/widgetType', widgetTypeRoutes);
+router.use('/operator', operatorRoutes);
+router.use('/widgetTheme', widgetThemeRoutes);
+// router.use('/widgetAppearances', widgetAppearanceRoutes);
+router.use('/transferDashboard', transferDashboardRoutes);
 
 export default router;

@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Schema, model, Document, Types } from 'mongoose';
+import config from '../../config';
 
 // Define the Attribute interface
 export interface IAttribute {
@@ -31,7 +33,7 @@ const attributeSchema = new Schema<IAttribute>(
     type: {
       type: String,
       required: true,
-      enum: ['number', 'text', 'date', 'boolean', 'richtext', 'url', 'option', 'multioption', 'user'],
+      enum: config.FIELD_TYPE_ENUM,
     },
     required: {
       type: Boolean,
