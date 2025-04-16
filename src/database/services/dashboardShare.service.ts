@@ -40,13 +40,14 @@ export const deleteDashboardShare = async (query: any) => {
   }
 };
 
-export const getUnsharedUsers = async ({ dashboardId, userId }: { dashboardId: string; userId: string }) => {
+export const getUnsharedUsers = async ({ dashboardId, userId, organizationId }: any) => {
   try {
     const pipeline = [
       // Step 1: Get the dashboard
       {
         $match: {
           _id: new mongoose.Types.ObjectId(dashboardId),
+          organizationId: new mongoose.Types.ObjectId(organizationId),
           isDeleted: false,
           isActive: true,
         },
@@ -61,6 +62,7 @@ export const getUnsharedUsers = async ({ dashboardId, userId }: { dashboardId: s
               $match: {
                 $expr: { $eq: ['$organizationId', '$$orgId'] },
                 _id: { $ne: new mongoose.Types.ObjectId(userId) },
+                organizationId: new mongoose.Types.ObjectId(organizationId),
               },
             },
             {

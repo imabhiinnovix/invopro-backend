@@ -84,9 +84,9 @@ export const createShare = async (req: Request, res: Response, next: NextFunctio
 export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { dashboardId } = req.params;
-    const { userId } = req.user;
+    const { userId, organizationId } = req.user;
 
-    const unsharedUsers = await dashboardShareService.getUnsharedUsers({ dashboardId, userId });
+    const unsharedUsers = await dashboardShareService.getUnsharedUsers({ dashboardId, userId, organizationId });
 
     if (!unsharedUsers.length) {
       return res.status(404).json({ message: 'Dashboard not found' });

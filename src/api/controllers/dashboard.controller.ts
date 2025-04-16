@@ -190,7 +190,7 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
       ...(aggregation && { aggregation }),
       ...(dimensions && { dimensions }),
       ...(groupBy && { groupBy }),
-      ...(conditions.length > 0 && { conditions }),
+      ...(conditions && { conditions }),
       ...(position && { position }),
       ...(widgetTypeId && { widgetTypeId }),
       ...(entityId && { entityId }),
