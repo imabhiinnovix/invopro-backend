@@ -283,6 +283,8 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       throw new Error('No active data source version found');
     }
 
+    console.log('dataSourceVersion ===>', dataSourceVersion);
+
     // 3. Build widget object for aggregation
     const widget: any = {
       dataSourceId: dataSourceId.toString(),
