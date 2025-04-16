@@ -1,33 +1,42 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import TransferDashboard from '../models/transferDashboard';
+import DashboardShare from '../models/dashboardShare';
 import Dashboard from '../models/dashboard';
 import mongoose from 'mongoose';
 
-export const getTransferDashboard = async (query: any) => {
+export const getDashboardShare = async (query: any) => {
   try {
-    const data = await TransferDashboard.findOne(query);
+    const data = await DashboardShare.findOne(query);
     return data;
   } catch (err) {
     throw err;
   }
 };
 
-export const getAllTransferDashboard = async (query: any) => {
+export const getAllDashboardShares = async (query: any) => {
   try {
-    const data = await TransferDashboard.find(query);
+    const data = await DashboardShare.find(query);
     return data;
   } catch (error) {
     throw error;
   }
 };
 
-export const createTransferDashboard = async (data: any) => {
+export const createDashboardShare = async (data: any) => {
   try {
-    const transferDashboard = new TransferDashboard(data);
-    await transferDashboard.save();
-    return transferDashboard;
+    const dashboardShare = new DashboardShare(data);
+    await dashboardShare.save();
+    return dashboardShare;
   } catch (err) {
     throw err;
+  }
+};
+
+export const deleteDashboardShare = async (query: any) => {
+  try {
+    const data = await DashboardShare.findOneAndDelete(query);
+    return data;
+  } catch (error) {
+    throw error;
   }
 };
 
@@ -66,7 +75,7 @@ export const getUnsharedUsers = async ({ dashboardId, userId }: { dashboardId: s
       // Step 3: Lookup users who already have access
       {
         $lookup: {
-          from: 'transfer_dashboards',
+          from: 'dashboard_shares',
           let: { dashboardId: '$_id' },
           pipeline: [
             {
@@ -93,7 +102,7 @@ export const getUnsharedUsers = async ({ dashboardId, userId }: { dashboardId: s
                       $map: {
                         input: '$sharedUsers',
                         as: 'shared',
-                        in: '$$shared.receiverUserId',
+                        in: '$$shared.sharedWithId',
                       },
                     },
                   ],

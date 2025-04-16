@@ -3,9 +3,9 @@ import { Request, Response, NextFunction } from 'express';
 
 import * as userService from '../../database/services/user.service';
 import * as dashboardService from '../../database/services/dashboard.services';
-import * as transferDashboardService from '../../database/services/transferDashboard.service';
+import * as dashboardShareService from '../../database/services/dashboardShare.service';
 
-export const create = async (req: Request, res: Response, next: NextFunction) => {
+export const createShare = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { receiverEmails, dashboardId, isShareble } = req.body;
     const { userId, organizationId } = req.user;
@@ -44,9 +44,9 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
           continue;
         }
 
-        const alreadyExist = await transferDashboardService.getTransferDashboard({
-          senderUserId: userId,
-          receiverUserId: receiverUserData._id,
+        const alreadyExist = await dashboardShareService.getDashboardShare({
+          sharedById: userId,
+          sharedWithId: receiverUserData._id,
           dashboardId,
         });
 
@@ -55,9 +55,9 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
           continue;
         }
 
-        const data = await transferDashboardService.createTransferDashboard({
-          senderUserId: userId,
-          receiverUserId: receiverUserData._id,
+        const data = await dashboardShareService.createDashboardShare({
+          sharedById: userId,
+          sharedWithId: receiverUserData._id,
           dashboardId,
           organizationId,
         });
@@ -86,7 +86,7 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction) 
     const { dashboardId } = req.params;
     const { userId } = req.user;
 
-    const unsharedUsers = await transferDashboardService.getUnsharedUsers({ dashboardId, userId });
+    const unsharedUsers = await dashboardShareService.getUnsharedUsers({ dashboardId, userId });
 
     if (!unsharedUsers.length) {
       return res.status(404).json({ message: 'Dashboard not found' });
@@ -96,6 +96,38 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction) 
       success: true,
       message: 'Users fetched successfully',
       data: unsharedUsers,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteShare = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dashboardShareId } = req.params;
+    const { userId } = req.user;
+
+    const dashboardShareData = await dashboardShareService.getDashboardShare({ _id: dashboardShareId });
+    if (!dashboardShareData) {
+      throw new Error('Dashboard share not found');
+    }
+
+    if (dashboardShareData.sharedById.toString() !== userId.toString()) {
+      throw new Error("You can't delete dashboard share");
+    }
+
+    const deletedShare = await dashboardShareService.deleteDashboardShare({
+      _id: dashboardShareId,
+      sharedById: userId,
+    });
+
+    if (!deletedShare) {
+      return res.status(404).json({ message: 'Share not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Dashboard share deleted successfully',
     });
   } catch (error) {
     next(error);
