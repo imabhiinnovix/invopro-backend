@@ -382,7 +382,7 @@ export const viewReport = async (req: Request, res: Response, next: NextFunction
             if (String(dataSourceVersion['dataSourceVersionId']) === String(dataSourceVersionId)) {
               const currentYearVersionValue = versionValue.split('-')[0];
 
-              const pageName = dataSourceVersion['name'];
+              const pageName = dataSourceVersion['code'];
               if (pageName === 'global') {
                 sectionDetails = designDetails?.['global'] ? designDetails?.['global'] : [];
                 mappings = transformMonthlyIpData({

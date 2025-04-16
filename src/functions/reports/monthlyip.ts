@@ -920,13 +920,15 @@ export const generateMonthlyIpReport = async ({
       status: 'completed',
       dataSourceVersion: [
         {
-          name: 'global',
+          name: 'Global',
+          code: 'global',
           dataSourceVersionId: dataSourceVersionDetailsMonthlyIp.dataSourceVersionId,
           versionCode: dataSourceVersionDetailsMonthlyIp.versionCode,
           dataSourceId: monthlyIpDataSource,
         },
         {
-          name: 'stc',
+          name: 'STC',
+          code: 'stc',
           dataSourceVersionId: dataSourceVersionDetailsMonthlyIpStc.dataSourceVersionId,
           versionCode: dataSourceVersionDetailsMonthlyIpStc.versionCode,
           dataSourceId: monthlyipstcDataSource,

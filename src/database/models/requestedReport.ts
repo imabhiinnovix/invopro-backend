@@ -5,6 +5,7 @@ interface IDataSourceVersion {
   dataSourceVersionId: string;
   versionCode: string;
   dataSourceId: string;
+  code: string;
 }
 
 interface IReportRequest extends Document {
@@ -23,6 +24,7 @@ interface IReportRequest extends Document {
 const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
   {
     name: { type: String, required: true },
+    code: { type: String, required: true },
     dataSourceVersionId: { type: String, required: true },
     versionCode: { type: String, required: true },
     dataSourceId: { type: String, required: true },
