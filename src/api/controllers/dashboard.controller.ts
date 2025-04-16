@@ -297,6 +297,8 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
 
     const aggregationPipeline = buildAggregationPipeline(widget);
 
+    console.log('\nFinal Aggregation Pipeline:', JSON.stringify(aggregationPipeline, null, 2));
+
     // 4. Get schema name and create model
     const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
       orgCode,
