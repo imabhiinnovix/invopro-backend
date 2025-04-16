@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 
+// import { Types } from 'mongoose';
+// import * as dashboardWidgetdService from '../../database/services/dashboardWidget.services';
 import * as widgetAppearanceService from '../../database/services/widgetAppearance.service';
-import * as dashboardWidgetdService from '../../database/services/dashboardWidget.services';
-import { Types } from 'mongoose';
 
 export const getAllWidgetAppearance = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -31,17 +31,17 @@ export const createWidgetAppearance = async (req: Request, res: Response, next: 
     };
     const widgetAppearance = await widgetAppearanceService.createWidgetAppearance(widgetAppearanceData);
 
-    const dashboardWidget = await dashboardWidgetdService.getDashboardWidget({
-      _id: dashboardWidgetId,
-      organizationId,
-    });
+    // const dashboardWidget = await dashboardWidgetdService.getDashboardWidget({
+    //   _id: dashboardWidgetId,
+    //   organizationId,
+    // });
 
-    if (!dashboardWidget) {
-      throw new Error('Widget not found');
-    }
+    // if (!dashboardWidget) {
+    //   throw new Error('Widget not found');
+    // }
 
-    dashboardWidget.widgetAppearanceId = widgetAppearance._id as Types.ObjectId;
-    await dashboardWidget.save();
+    // dashboardWidget.widgetAppearanceId = widgetAppearance._id as Types.ObjectId;
+    // await dashboardWidget.save();
 
     return res.status(201).json({
       success: true,
