@@ -169,7 +169,19 @@ export const createWidget = async (req: Request, res: Response, next: NextFuncti
 
 export const updateWidget = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, dimensions, groupBy, conditions, aggregation, dataSourceId, position } = req.body;
+    const {
+      name,
+      dimensions,
+      entityId,
+      widgetTypeId,
+      groupBy,
+      conditions,
+      aggregation,
+      dataSourceId,
+      position,
+      isActive,
+      isDeleted,
+    } = req.body;
     const { dashboardWidgetId } = req.params;
 
     await dashboardWidgetdService.updateDashboardWidget(dashboardWidgetId, {
@@ -180,6 +192,10 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
       ...(groupBy && { groupBy }),
       ...(conditions.length > 0 && { conditions }),
       ...(position && { position }),
+      ...(widgetTypeId && { widgetTypeId }),
+      ...(entityId && { entityId }),
+      ...(typeof isActive !== 'undefined' && { isActive }),
+      ...(typeof isDeleted !== 'undefined' && { isDeleted }),
     });
 
     res.status(200).json({

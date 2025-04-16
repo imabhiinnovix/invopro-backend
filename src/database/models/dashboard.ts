@@ -9,6 +9,9 @@ interface IDashboard extends Document {
   isDeleted: boolean;
   isActive: boolean;
   isShareble: boolean;
+  settings: {
+    columnsGrid: number;
+  };
 }
 
 const dashboardSchema = new Schema<IDashboard>(
@@ -21,6 +24,12 @@ const dashboardSchema = new Schema<IDashboard>(
     isDeleted: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true, required: true },
     isShareble: { type: Boolean, default: false, required: true },
+    settings: {
+      type: Schema.Types.Mixed,
+      default: {
+        columnsGrid: 2,
+      },
+    },
   },
   {
     timestamps: true,

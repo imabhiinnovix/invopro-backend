@@ -7,7 +7,7 @@ import * as transferDashboardService from '../../database/services/transferDashb
 
 export const create = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { receiverEmail, dashboardId } = req.body;
+    const { receiverEmail, dashboardId, isShared } = req.body;
     const { userId, organizationId } = req.user;
 
     const receiverUserData = await userService.findUserByEmail(receiverEmail);
@@ -32,7 +32,7 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
       throw new Error("You cant't share dashboard");
     }
 
-    if (dashboardData.isShareble) {
+    if (dashboardData.isShareble && isShared === false) {
       throw new Error('Dashboard is already shareable!');
     }
 
