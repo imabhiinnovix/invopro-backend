@@ -512,6 +512,11 @@ export const buildAggregationPipeline = (widget: any) => {
             ],
           },
         },
+      },
+      {
+        $match: {
+          name: { $ne: null },
+        },
       }
     );
   } else {
@@ -539,6 +544,11 @@ export const buildAggregationPipeline = (widget: any) => {
               },
             ],
           },
+        },
+      },
+      {
+        $match: {
+          name: { $ne: null },
         },
       }
     );
