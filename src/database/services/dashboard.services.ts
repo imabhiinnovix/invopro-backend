@@ -128,10 +128,9 @@ export const getAllDashboardsAggregation = async ({
         },
       },
 
-      // LEFT JOIN transfer dashboards
       {
         $lookup: {
-          from: 'transfer_dashboards',
+          from: 'dashboard_shares',
           let: { dashboardId: '$_id' },
           pipeline: [
             {
@@ -139,7 +138,7 @@ export const getAllDashboardsAggregation = async ({
                 $expr: {
                   $and: [
                     { $eq: ['$dashboardId', '$$dashboardId'] },
-                    { $eq: ['$receiverUserId', userId] },
+                    { $eq: ['$sharedWithId', userId] },
                     { $eq: ['$organizationId', organizationId] },
                   ],
                 },
@@ -184,9 +183,6 @@ export const getAllDashboardsAggregation = async ({
           preserveNullAndEmptyArrays: true,
         },
       },
-
-      // Optional sort
-      // { $sort: sort || { createdAt: -1 } },
 
       {
         $facet: {

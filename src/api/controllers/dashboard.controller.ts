@@ -169,7 +169,19 @@ export const createWidget = async (req: Request, res: Response, next: NextFuncti
 
 export const updateWidget = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, dimensions, groupBy, conditions, aggregation, dataSourceId, position } = req.body;
+    const {
+      name,
+      dimensions,
+      entityId,
+      widgetTypeId,
+      groupBy,
+      conditions,
+      aggregation,
+      dataSourceId,
+      position,
+      isActive,
+      isDeleted,
+    } = req.body;
     const { dashboardWidgetId } = req.params;
 
     await dashboardWidgetdService.updateDashboardWidget(dashboardWidgetId, {
@@ -178,8 +190,12 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
       ...(aggregation && { aggregation }),
       ...(dimensions && { dimensions }),
       ...(groupBy && { groupBy }),
-      ...(conditions.length > 0 && { conditions }),
+      ...(conditions && { conditions }),
       ...(position && { position }),
+      ...(widgetTypeId && { widgetTypeId }),
+      ...(entityId && { entityId }),
+      ...(typeof isActive !== 'undefined' && { isActive }),
+      ...(typeof isDeleted !== 'undefined' && { isDeleted }),
     });
 
     res.status(200).json({
@@ -267,6 +283,8 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       throw new Error('No active data source version found');
     }
 
+    console.log('dataSourceVersion ===>', dataSourceVersion);
+
     // 3. Build widget object for aggregation
     const widget: any = {
       dataSourceId: dataSourceId.toString(),
@@ -280,6 +298,8 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     };
 
     const aggregationPipeline = buildAggregationPipeline(widget);
+
+    console.log('\nFinal Aggregation Pipeline:', JSON.stringify(aggregationPipeline, null, 2));
 
     // 4. Get schema name and create model
     const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
