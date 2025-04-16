@@ -31,7 +31,7 @@ export const createTransferDashboard = async (data: any) => {
   }
 };
 
-export const getUnsharedUsers = async (dashboardId: string) => {
+export const getUnsharedUsers = async ({ dashboardId, userId }: { dashboardId: string; userId: string }) => {
   try {
     const pipeline = [
       // Step 1: Get the dashboard
@@ -51,6 +51,7 @@ export const getUnsharedUsers = async (dashboardId: string) => {
             {
               $match: {
                 $expr: { $eq: ['$organizationId', '$$orgId'] },
+                _id: { $ne: new mongoose.Types.ObjectId(userId) },
               },
             },
             {

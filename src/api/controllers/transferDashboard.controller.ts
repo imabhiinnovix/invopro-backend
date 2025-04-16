@@ -7,12 +7,8 @@ import * as transferDashboardService from '../../database/services/transferDashb
 
 export const create = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { receiverEmails, dashboardId, isShared } = req.body;
+    const { receiverEmails, dashboardId, isShareble } = req.body;
     const { userId, organizationId } = req.user;
-
-    if (!Array.isArray(receiverEmails) || receiverEmails.length === 0) {
-      throw new Error('Please provide at least one receiver email');
-    }
 
     const dashboardData = await dashboardService.getDashboard({ _id: dashboardId, isDeleted: false, isActive: true });
     if (!dashboardData) {
@@ -23,8 +19,8 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
       throw new Error("You can't share dashboard");
     }
 
-    if (dashboardData.isShareble && isShared === false) {
-      throw new Error('Dashboard is already shareable!');
+    if (isShareble !== undefined) {
+      await dashboardService.updateDashboard(dashboardId, { isShareble });
     }
 
     const results: any = [];
@@ -78,11 +74,7 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
 
     res.status(201).json({
       success: true,
-      message: 'Dashboard sharing completed',
-      data: {
-        successful: results,
-        failed: errors,
-      },
+      message: 'Dashboard shared successfully',
     });
   } catch (error) {
     next(error);
@@ -92,8 +84,9 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
 export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { dashboardId } = req.params;
+    const { userId } = req.user;
 
-    const unsharedUsers = await transferDashboardService.getUnsharedUsers(dashboardId);
+    const unsharedUsers = await transferDashboardService.getUnsharedUsers({ dashboardId, userId });
 
     if (!unsharedUsers.length) {
       return res.status(404).json({ message: 'Dashboard not found' });
