@@ -7,20 +7,11 @@ import * as transferDashboardService from '../../database/services/transferDashb
 
 export const create = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { receiverEmail, dashboardId, isShared } = req.body;
+    const { receiverEmails, dashboardId, isShared } = req.body;
     const { userId, organizationId } = req.user;
 
-    const receiverUserData = await userService.findUserByEmail(receiverEmail);
-    if (!receiverUserData) {
-      throw new Error('Receiver user not found');
-    }
-
-    if (receiverUserData._id.toString() == userId.toString()) {
-      throw new Error("You can't share dashboard with yourself!");
-    }
-
-    if (receiverUserData.organizationId._id.toString() !== organizationId.toString()) {
-      throw new Error("You can't share dashboard to outside of your organization.");
+    if (!Array.isArray(receiverEmails) || receiverEmails.length === 0) {
+      throw new Error('Please provide at least one receiver email');
     }
 
     const dashboardData = await dashboardService.getDashboard({ _id: dashboardId, isDeleted: false, isActive: true });
@@ -29,34 +20,89 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
     }
 
     if (dashboardData.createdBy._id.toString() !== userId.toString()) {
-      throw new Error("You cant't share dashboard");
+      throw new Error("You can't share dashboard");
     }
 
     if (dashboardData.isShareble && isShared === false) {
       throw new Error('Dashboard is already shareable!');
     }
 
-    const alreadyExist = await transferDashboardService.getTransferDashboard({
-      senderUserId: userId,
-      receiverUserId: receiverUserData._id,
-      dashboardId,
-    });
+    const results: any = [];
+    const errors = [];
 
-    if (alreadyExist) {
-      throw new Error('Dashboard is already shared with this user.');
+    for (const receiverEmail of receiverEmails) {
+      try {
+        const receiverUserData = await userService.findUserByEmail(receiverEmail);
+        if (!receiverUserData) {
+          errors.push(`User not found for email: ${receiverEmail}` as never);
+          continue;
+        }
+
+        if (receiverUserData._id.toString() === userId.toString()) {
+          errors.push(`Cannot share dashboard with yourself: ${receiverEmail}` as never);
+          continue;
+        }
+
+        if (receiverUserData.organizationId._id.toString() !== organizationId.toString()) {
+          errors.push(`Cannot share dashboard outside organization: ${receiverEmail}` as never);
+          continue;
+        }
+
+        const alreadyExist = await transferDashboardService.getTransferDashboard({
+          senderUserId: userId,
+          receiverUserId: receiverUserData._id,
+          dashboardId,
+        });
+
+        if (alreadyExist) {
+          errors.push(`Dashboard already shared with user: ${receiverEmail}` as never);
+          continue;
+        }
+
+        const data = await transferDashboardService.createTransferDashboard({
+          senderUserId: userId,
+          receiverUserId: receiverUserData._id,
+          dashboardId,
+          organizationId,
+        });
+
+        results.push({
+          email: receiverEmail,
+          success: true,
+          data,
+        });
+      } catch (error: any) {
+        errors.push(`Error processing ${receiverEmail}: ${error.message}` as never);
+      }
     }
-
-    const data = await transferDashboardService.createTransferDashboard({
-      senderUserId: userId,
-      receiverUserId: receiverUserData._id,
-      dashboardId,
-      organizationId,
-    });
 
     res.status(201).json({
       success: true,
-      message: 'Dashboard shared successfully.',
-      data,
+      message: 'Dashboard sharing completed',
+      data: {
+        successful: results,
+        failed: errors,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dashboardId } = req.params;
+
+    const unsharedUsers = await transferDashboardService.getUnsharedUsers(dashboardId);
+
+    if (!unsharedUsers.length) {
+      return res.status(404).json({ message: 'Dashboard not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Users fetched successfully',
+      data: unsharedUsers,
     });
   } catch (error) {
     next(error);
