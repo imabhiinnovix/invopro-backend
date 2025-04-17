@@ -501,11 +501,27 @@ function categorizeStdProjectsAndRemoveRowDataExtraKey(projects) {
       std = 'AGRI-NUTRIENTS';
     } else if (sbu.includes('hadeed') || tandI.includes('hadeed')) {
       std = 'METAL';
+    } else if (sbu.includes('petrochemicals')) {
+      if (
+        tandI.includes('chemicals') ||
+        tandI.includes('functionalchemicals') ||
+        bu.includes('chemicals') ||
+        bu.includes('functionalchemicals') ||
+        bu.includes('ksa')
+      ) {
+        std = 'PETCHEM-CHEMICALS';
+      } else if (
+        tandI.includes('polymers') ||
+        tandI.includes('functionalforms') ||
+        sbu.includes('functionalforms') ||
+        (bu && bu !== '' && !['tbd', 'technologyventuring', ''].includes(sbu))
+      ) {
+        std = 'PETCHEM-POLYMERS';
+      }
     } else if (
       tandI.includes('chemicals') ||
       tandI.includes('petrochemicals') ||
       tandI.includes('functionalchemicals') ||
-      sbu.includes('petrochemicals') ||
       bu.includes('chemicals') ||
       bu.includes('functionalchemicals') ||
       bu.includes('ksa')
@@ -515,7 +531,6 @@ function categorizeStdProjectsAndRemoveRowDataExtraKey(projects) {
       tandI.includes('polymers') ||
       tandI.includes('functionalforms') ||
       sbu.includes('functionalforms') ||
-      sbu.includes('petrochemicals') ||
       (bu && bu !== '' && !['tbd', 'technologyventuring', ''].includes(sbu))
     ) {
       std = 'PETCHEM-POLYMERS';
