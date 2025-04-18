@@ -100,7 +100,7 @@ export const getDashboardChartData = async (payload: any) => {
     const { dashboardId, organizationId } = payload;
 
     const dashboardWidgets = await DashboardWidgetService.getAllDashboardWidgets({
-      query: { dashboardId, organizationId },
+      query: { dashboardId, organizationId, isDeleted: false },
       populate: ['widgetTypeId', 'dataSourceId'],
     });
 

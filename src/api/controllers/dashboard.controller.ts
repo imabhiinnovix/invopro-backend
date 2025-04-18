@@ -9,7 +9,7 @@ import * as entityService from '../../database/services/entity.services';
 import * as dataSourceService from '../../database/services/dataSource.services';
 import * as widgetTypeService from '../../database/services/widgetType.service';
 import * as widgetThemeService from '../../database/services/widgetTheme.service';
-import * as widgetAppearanceService from '../../database/services/widgetAppearance.service';
+// import * as widgetAppearanceService from '../../database/services/widgetAppearance.service';
 
 import { buildAggregationPipeline } from '../../utils/aggregationPipeline';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
@@ -241,10 +241,10 @@ export const getDashboardWidgetList = async (req: Request, res: Response, next: 
 
 export const getWidgetData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { dataSourceId, entityId, aggregation, groupBy, conditions, widgetType, widgetAppearanceId } = req.body;
-    const { orgCode, organizationId } = req.user;
+    const { dataSourceId, dimensions, entityId, aggregation, groupBy, conditions, widgetType } = req.body;
+    const { orgCode } = req.user;
 
-    let dimensions = req.body.dimensions;
+    // let dimensions = req.body.dimensions;
 
     const widgetTypeData = await widgetTypeService.getWidgetType({ chartType: widgetType });
 
@@ -252,9 +252,9 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       throw new Error('Widget type not found');
     }
 
-    if (widgetTypeData.chartType === 'number') {
-      dimensions = [aggregation.attributeName];
-    }
+    // if (widgetTypeData.chartType === 'number') {
+    //   dimensions = [aggregation.attributeName];
+    // }
 
     // 1. Fetch entity data for field type information
     const entity: any = await entityService.getEntity({
@@ -283,8 +283,6 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       throw new Error('No active data source version found');
     }
 
-    console.log('dataSourceVersion ===>', dataSourceVersion);
-
     // 3. Build widget object for aggregation
     const widget: any = {
       dataSourceId: dataSourceId.toString(),
@@ -311,10 +309,11 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     // 5. Execute aggregation
     const dataResults = await DataSourceModel.aggregate(aggregationPipeline).exec();
 
-    let widgetAppearance: any = {};
-    if (widgetAppearanceId) {
-      widgetAppearance = await widgetAppearanceService.getWidgetAppearance({ _id: widgetAppearanceId, organizationId });
-    }
+    // get the widget Appearance
+    // let widgetAppearance: any = {};
+    // if (widgetAppearanceId) {
+    //   widgetAppearance = await widgetAppearanceService.getWidgetAppearance({ _id: widgetAppearanceId, organizationId });
+    // }
 
     // 6. Prepare response
     const response = {
