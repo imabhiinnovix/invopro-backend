@@ -5,6 +5,7 @@ import {
   checkDataSourceVersionNameAvailableOrNot,
   createUpdateCustomDataSourceVersionValue,
   getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue,
+  getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue,
   listDataSourceVersion,
 } from '../controllers/dataSourceVersion.controller';
 
@@ -21,5 +22,10 @@ router.get(
 router.post('/create', authenticateToken, createUpdateCustomDataSourceVersionValue);
 
 router.get('/versionData', authenticateToken, getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue);
+router.get(
+  '/listVersionData/:customReportId',
+  authenticateToken,
+  getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue
+);
 
 export default router;

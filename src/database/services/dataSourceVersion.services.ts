@@ -113,24 +113,70 @@ export const getDataSourceVersion = async ({ query, populate, sort }: any) => {
   }
 };
 
-// export const getDataSourceVersionBasedOnDataSourceIdAndVersionValueAndIsCurrent = async ({
-//   dataSourceId,
-//   versionValue,
-//   isCurrent,
-// }: {
-//   dataSourceId: string;
-//   versionValue: string;
-//   isCurrent: boolean;
-// }) => {
-//   try {
-//     const dataSourceVersionDetails = await DataSourceVersion.findOne({
-//       dataSourceId,
-//       versionValue,
-//       isCurrent,
-//     });
+const buildFieldProjection = (fields: string[]) => {
+  const projection: any = {};
+  fields.forEach((field) => {
+    projection[field] = `$${field}`;
+  });
+  return projection;
+};
 
-//     return dataSourceVersionDetails;
-//   } catch (err) {
-//     throw err;
-//   }
-// };
+export const getDataSourceVersionGroupedList = async ({
+  match = {},
+  groupBy,
+  page = 1,
+  limit = 10,
+  sort = { createdAt: -1 },
+  selectFields = [],
+}: {
+  match?: any;
+  groupBy: string;
+  page?: number;
+  limit?: number;
+  sort?: any;
+  selectFields?: string[];
+}) => {
+  try {
+    const matchStage = { $match: match };
+
+    const sortStage = { $sort: sort }; // Must sort before grouping if you want $first to work properly
+
+    const groupStage = {
+      $group: {
+        _id: `$${groupBy}`,
+        document: { $first: '$$ROOT' }, // grab the first full document per group
+      },
+    };
+
+    const replaceRootStage = { $replaceRoot: { newRoot: '$document' } }; // flatten out _id and expose full doc
+
+    // Optional projection
+    const projectStage = selectFields.length
+      ? {
+          $project: selectFields.reduce(
+            (acc, field) => {
+              acc[field] = 1;
+              return acc;
+            },
+            { _id: 0 } as Record<string, number>
+          ),
+        }
+      : { $project: { _id: 0 } };
+
+    // Build pipeline
+    const pipeline: any[] = [matchStage, sortStage, groupStage, replaceRootStage];
+    if (projectStage) pipeline.push(projectStage);
+    if (page && limit) pipeline.push({ $skip: (page - 1) * limit }, { $limit: limit });
+
+    const result = await DataSourceVersion.aggregate(pipeline).exec();
+
+    // Count pipeline (no projection needed here)
+    const countPipeline = [matchStage, sortStage, groupStage, { $count: 'total' }];
+    const countResult = await DataSourceVersion.aggregate(countPipeline).exec();
+    const totalCount = countResult[0]?.total || 0;
+
+    return { data: result, totalCount };
+  } catch (err) {
+    throw err;
+  }
+};

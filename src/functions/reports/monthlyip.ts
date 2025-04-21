@@ -72,6 +72,7 @@ export const generateMonthlyIpReport = async ({
 }) => {
   try {
     const versionValue = reportRequestPayload.versionValue;
+    const customReportId = reportRequestPayload.customReportId;
     const splitedVersionValue = versionValue.split('-');
     const currentYear = splitedVersionValue[0];
     const currentMonth = splitedVersionValue[1];
@@ -872,6 +873,8 @@ export const generateMonthlyIpReport = async ({
 
     const dataSourceVersionDetailsMonthlyIp = await createUpdateCustomDataSourceVersionValueFunction({
       dataSourceId: monthlyIpDataSource,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
       versionValue,
       versionData: saveData,
       userId,
@@ -881,6 +884,8 @@ export const generateMonthlyIpReport = async ({
 
     const dataSourceVersionDetailsMonthlyIpStc = await createUpdateCustomDataSourceVersionValueFunction({
       dataSourceId: monthlyipstcDataSource,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
       versionValue,
       versionData: saveStcData,
       userId,
@@ -898,6 +903,8 @@ export const generateMonthlyIpReport = async ({
           'New Filings': value,
         })),
       userId,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
       organizationId,
       orgCode,
     });
@@ -913,6 +920,8 @@ export const generateMonthlyIpReport = async ({
         })),
       userId,
       organizationId,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
       orgCode,
     });
 
