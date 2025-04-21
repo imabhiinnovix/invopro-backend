@@ -252,10 +252,6 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       throw new Error('Widget type not found');
     }
 
-    // if (widgetTypeData.chartType === 'number') {
-    //   dimensions = [aggregation.attributeName];
-    // }
-
     // 1. Fetch entity data for field type information
     const entity: any = await entityService.getEntity({
       _id: entityId,
