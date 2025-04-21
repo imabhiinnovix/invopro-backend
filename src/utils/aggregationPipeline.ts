@@ -2,145 +2,13 @@
 
 import { Types } from 'mongoose';
 import { isValidOperatorForFieldType, doesOperatorRequireValue } from './fieldOperators';
-
-// Helper functions to handle operators based on field type
-const handleNumberOperators = (condition: any, convertedValue: any, fieldPath: string, matchConditions: any) => {
-  const fieldName = `rowData.${condition.field}`;
-
-  switch (condition.operator) {
-    case 'eq':
-      matchConditions[fieldName] = convertedValue;
-      break;
-    case 'lt':
-    case 'lte':
-    case 'gt':
-    case 'gte':
-    case 'ne':
-      matchConditions[fieldName] = { [`$${condition.operator}`]: convertedValue };
-      break;
-    case 'blank':
-      matchConditions[fieldName] = null;
-      break;
-    case 'notblank':
-      matchConditions[fieldName] = { $ne: null };
-      break;
-    default:
-      console.warn(`Unsupported number operator: ${condition.operator}`);
-      break;
-  }
-};
-
-const handleStringOperators = (condition: any, convertedValue: any, fieldPath: string, matchConditions: any) => {
-  const fieldName = `rowData.${condition.field}`;
-
-  switch (condition.operator) {
-    case 'eq':
-      matchConditions[fieldName] = convertedValue;
-      break;
-    case 'ne':
-      matchConditions[fieldName] = { $ne: convertedValue };
-      break;
-    case 'contains':
-      matchConditions[fieldName] = { $regex: convertedValue, $options: 'i' };
-      break;
-    case 'notcontains':
-      matchConditions[fieldName] = { $not: { $regex: convertedValue, $options: 'i' } };
-      break;
-    case 'startswith':
-      matchConditions[fieldName] = { $regex: `^${convertedValue}`, $options: 'i' };
-      break;
-    case 'endswith':
-      matchConditions[fieldName] = { $regex: `${convertedValue}$`, $options: 'i' };
-      break;
-    case 'blank':
-      matchConditions[fieldName] = null;
-      break;
-    case 'notblank':
-      matchConditions[fieldName] = { $ne: null };
-      break;
-    default:
-      console.warn(`Unsupported string operator: ${condition.operator}`);
-      break;
-  }
-};
-
-const handleDateOperators = (condition: any, convertedValue: any, fieldPath: string, matchConditions: any) => {
-  const fieldName = `rowData.${condition.field}`;
-
-  switch (condition.operator) {
-    case 'before':
-      matchConditions[fieldName] = { $lt: convertedValue };
-      break;
-    case 'after':
-      matchConditions[fieldName] = { $gt: convertedValue };
-      break;
-    case 'on':
-    case 'noton': {
-      const startOfDay = new Date(convertedValue);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-      const endOfDay = new Date(convertedValue);
-      endOfDay.setUTCHours(23, 59, 59, 999);
-      matchConditions[fieldName] =
-        condition.operator === 'on'
-          ? { $gte: startOfDay, $lt: endOfDay }
-          : { $not: { $gte: startOfDay, $lt: endOfDay } };
-      break;
-    }
-    case 'blank':
-      matchConditions[fieldName] = null;
-      break;
-    case 'notblank':
-      matchConditions[fieldName] = { $ne: null };
-      break;
-    default:
-      console.warn(`Unsupported date operator: ${condition.operator}`);
-      break;
-  }
-};
-
-const handleBooleanOperators = (condition: any, convertedValue: any, fieldPath: string, matchConditions: any) => {
-  const fieldName = `rowData.${condition.field}`;
-
-  switch (condition.operator) {
-    case 'eq':
-      matchConditions[fieldName] = convertedValue;
-      break;
-    case 'ne':
-      matchConditions[fieldName] = { $ne: convertedValue };
-      break;
-    case 'blank':
-      matchConditions[fieldName] = null;
-      break;
-    case 'notblank':
-      matchConditions[fieldName] = { $ne: null };
-      break;
-    default:
-      console.warn(`Unsupported boolean operator: ${condition.operator}`);
-      break;
-  }
-};
-
-const handleDefaultOperators = (condition: any, convertedValue: any, fieldPath: string, matchConditions: any) => {
-  const fieldName = `rowData.${condition.field}`;
-
-  switch (condition.operator) {
-    case 'eq':
-      matchConditions[fieldName] = convertedValue;
-      break;
-    case 'ne':
-      matchConditions[fieldName] = { $ne: convertedValue };
-      break;
-    case 'blank':
-      matchConditions[fieldName] = null;
-      break;
-    case 'notblank':
-      matchConditions[fieldName] = { $ne: null };
-      break;
-    default:
-      console.warn(`Unsupported operator: ${condition.operator}`);
-      break;
-  }
-};
+import {
+  handleNumberOperators,
+  handleStringOperators,
+  handleDateOperators,
+  handleBooleanOperators,
+  handleDefaultOperators,
+} from './fieldOperatorHandlers';
 
 export const buildAggregationPipeline = (widget: any) => {
   // 1. Handle date conversions for 'between' conditions
@@ -248,6 +116,7 @@ export const buildAggregationPipeline = (widget: any) => {
             break;
           case 'after':
             matchConditions[convertedField] = { $gt: convertedValue };
+
             break;
           case 'on':
           case 'noton': {
