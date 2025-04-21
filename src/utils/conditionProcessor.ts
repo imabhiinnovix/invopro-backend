@@ -226,16 +226,26 @@ export const processFieldConditions = (
                   conditionObj[fieldName] = { $ne: null };
                   break;
                 default:
-                  console.warn(`Unsupported operator: ${condition.operator}`);
+                  console.warn(`Unsupported operator  123: ${condition.operator}`);
                   return null;
               }
-              return conditionObj;
+              return Object.keys(conditionObj).length > 0 ? conditionObj : null;
             })
             .filter(Boolean);
 
           if (orConditions.length > 0) {
-            matchConditions.$or = matchConditions.$or || [];
+            // Only create/modify $or array if we have valid conditions
+            if (!matchConditions.$or) {
+              matchConditions.$or = [];
+            }
             matchConditions.$or.push(...orConditions);
+
+            // Filter out any empty objects that might have slipped through
+            if (matchConditions.$or.length > 0) {
+              matchConditions.$or = matchConditions.$or.filter(
+                (condition) => condition && Object.keys(condition).length > 0
+              );
+            }
           }
         }
       } else {
@@ -246,12 +256,13 @@ export const processFieldConditions = (
               fieldType === 'number'
                 ? Number(condition.value)
                 : fieldType === 'date'
-                  ? new Date(condition.value)
+                  ? new Date(condition.value).toISOString()
                   : fieldType === 'boolean'
                     ? condition.value === 'true'
                     : condition.value;
 
             const conditionObj: Record<string, any> = {};
+
             switch (condition.operator) {
               case 'eq':
                 conditionObj[fieldName] = convertedValue;
@@ -288,17 +299,35 @@ export const processFieldConditions = (
               case 'notblank':
                 conditionObj[fieldName] = { $ne: null };
                 break;
+              case 'before':
+                console.log('before convertedValue fieldName', convertedValue);
+                conditionObj[fieldName] = { $lt: convertedValue };
+                break;
+              case 'after':
+                console.log('after convertedValue fieldName', convertedValue);
+                conditionObj[fieldName] = { $gt: convertedValue };
+                break;
               default:
                 console.warn(`Unsupported operator: ${condition.operator}`);
                 return null;
             }
-            return conditionObj;
+            return Object.keys(conditionObj).length > 0 ? conditionObj : null;
           })
           .filter(Boolean);
 
         if (orConditions.length > 0) {
-          matchConditions.$or = matchConditions.$or || [];
+          // Only create/modify $or array if we have valid conditions
+          if (!matchConditions.$or) {
+            matchConditions.$or = [];
+          }
           matchConditions.$or.push(...orConditions);
+
+          // Filter out any empty objects that might have slipped through
+          if (matchConditions.$or.length > 0) {
+            matchConditions.$or = matchConditions.$or.filter(
+              (condition) => condition && Object.keys(condition).length > 0
+            );
+          }
         }
       }
     }
