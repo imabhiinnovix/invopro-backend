@@ -823,13 +823,14 @@ export const getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValu
         _id: '$reportRequestId', // Keep the reportRequestId as _id
         versionValue: 1,
         'customReportId.reportName': 1,
+        'customReportId._id': 1,
         'createdBy.firstName': 1,
         'createdBy.lastName': 1,
         'dataSourceVersion.name': 1,
         'dataSourceVersion.code': 1,
-        'reportRequest.dataSourceVersion': 1,
         'dataSourceVersion.versionCode': 1,
         'dataSourceVersion.dataSourceId': 1,
+        'dataSourceVersion.dataSourceVersionId': 1,
         createdAt: 1,
       },
     });
