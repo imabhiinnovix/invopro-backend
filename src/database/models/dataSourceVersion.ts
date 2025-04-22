@@ -29,7 +29,7 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
     versionValue: { type: String, required: true },
     versionName: { type: String },
     customReportId: { type: Schema.Types.ObjectId, ref: 'custom_reports' },
-    reportRequestId: { type: Schema.Types.ObjectId, ref: 'report_request' },
+    reportRequestId: { type: Schema.Types.ObjectId, ref: 'report_requests' },
     status: {
       type: String,
       enum: ['failed', 'processing', 'completed'], // Restricting the values of status

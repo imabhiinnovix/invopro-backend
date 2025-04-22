@@ -788,12 +788,50 @@ export const getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValu
         customReportId: new ObjectId(customReportId),
         reportRequestId: { $exists: true, $ne: '' },
         organizationId: new ObjectId(organizationId),
+        isCurrent: true,
       },
       groupBy: 'reportRequestId',
-      page: page,
-      limit: limit,
+      page,
+      limit,
       sort: { versionValue: 1 },
-      selectFields: ['reportRequestId', 'versionValue'],
+
+      populate: [
+        {
+          from: 'custom_reports',
+          localField: 'customReportId',
+          foreignField: '_id',
+          as: 'customReportId',
+          isSingle: true,
+        },
+        {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'createdBy',
+          isSingle: true,
+        },
+        {
+          from: 'report_requests',
+          localField: 'reportRequestId',
+          foreignField: '_id',
+          as: 'reportRequest', // No need for extra nesting here
+          isSingle: false, // Assuming dataSourceVersion is an array
+        },
+      ],
+
+      selectFields: {
+        _id: '$reportRequestId', // Keep the reportRequestId as _id
+        versionValue: 1,
+        'customReportId.reportName': 1,
+        'createdBy.firstName': 1,
+        'createdBy.lastName': 1,
+        'dataSourceVersion.name': 1,
+        'dataSourceVersion.code': 1,
+        'reportRequest.dataSourceVersion': 1,
+        'dataSourceVersion.versionCode': 1,
+        'dataSourceVersion.dataSourceId': 1,
+        createdAt: 1,
+      },
     });
 
     return res.status(200).json({
