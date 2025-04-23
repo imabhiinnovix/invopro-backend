@@ -93,7 +93,7 @@ export const generateSupplementalIpReport = async ({
     });
 
     //Supplement ip part-2
-    const accoladeMappingSheetData: any = await getAccoladeMappingSheet({
+    const accoladeMappingSheetData = await getAccoladeMappingSheet({
       portfolioDataSourceVersionId,
       disclosureDataSourceVersionId,
       shppAccoladeDataSourceVersionId,
@@ -102,29 +102,24 @@ export const generateSupplementalIpReport = async ({
       currentYear,
       isRowData,
     });
-    if (isRowData) {
-      // rawDataActiveFilling, rawDataNewFilling, rawDataOpenDisclosure, rawDataDraftDisclosure
-      return accoladeMappingSheetData.rawDataDraftDisclosure;
-    }
+    // if (isRowData) {
+    //   // rawDataActiveFilling, rawDataNewFilling, rawDataOpenDisclosure, rawDataDraftDisclosure
+    //   return accoladeMappingSheetData.rawDataDraftDisclosure;
+    // }
 
     const noOfActiveApplicationGroup: Record<string, number> = {};
 
-    accoladeMappingSheetData.activeApplicationAccoladeStdData.forEach((entry) => {
-      const accoladeID = entry.activeApplicationData.AccoladeID;
+    accoladeMappingSheetData.activeApplicationRawData.forEach((entry) => {
+      const accoladeID = entry.rowData.AccoladeID;
       if (accoladeID) {
         noOfActiveApplicationGroup[accoladeID] = (noOfActiveApplicationGroup[accoladeID] || 0) + 1;
       }
     });
 
-    // const noOfActiveApplicationCount = Object.entries(noOfActiveApplicationGroup).map(([AccoladeID, Count]) => ({
-    //   AccoladeID,
-    //   Count,
-    // }));
-
     const noOfnewFilingThisYearGroup: Record<string, number> = {};
 
-    accoladeMappingSheetData.newFilingThisYearAccoladeStdData.forEach((entry) => {
-      const accoladeID = entry.newFilingThisYearData.AccoladeID;
+    accoladeMappingSheetData.newFilingThisYearRawData.forEach((entry) => {
+      const accoladeID = entry.rowData.AccoladeID;
       if (accoladeID) {
         noOfnewFilingThisYearGroup[accoladeID] = (noOfnewFilingThisYearGroup[accoladeID] || 0) + 1;
       }
@@ -132,8 +127,8 @@ export const generateSupplementalIpReport = async ({
 
     const openDisclosureMap: Record<string, { count: number; cases: string[] }> = {};
 
-    accoladeMappingSheetData.openDisclosureAccoladeStdData.forEach((entry) => {
-      const { Accolade, DisclosureNumber } = entry.openDisclosureData;
+    accoladeMappingSheetData.openDisclosureRawData.forEach((entry) => {
+      const { Accolade, DisclosureNumber } = entry.rowData;
 
       if (Accolade) {
         if (!openDisclosureMap[Accolade]) {
@@ -146,17 +141,10 @@ export const generateSupplementalIpReport = async ({
       }
     });
 
-    // Transform the map into an array
-    // const noOfopenDisclosureCount = Object.entries(openDisclosureMap).map(([Accolade, { count, cases }]) => ({
-    //   Accolade,
-    //   Count: count,
-    //   DisclosureNumbers: cases.join(', '),
-    // }));
-
     const draftDisclosureMap: Record<string, { count: number; cases: string[] }> = {};
 
-    accoladeMappingSheetData.draftDisclosureAccoladeStdData.forEach((entry) => {
-      const { Accolade, DisclosureNumber } = entry.draftDisclosureData;
+    accoladeMappingSheetData.draftDisclosureRawData.forEach((entry) => {
+      const { Accolade, DisclosureNumber } = entry.rowData;
 
       if (Accolade) {
         if (!draftDisclosureMap[Accolade]) {
@@ -169,17 +157,10 @@ export const generateSupplementalIpReport = async ({
       }
     });
 
-    // Transform the map into an array
-    // const noOfDraftDisclosureCount = Object.entries(draftDisclosureMap).map(([Accolade, { count, cases }]) => ({
-    //   Accolade,
-    //   Count: count,
-    //   DisclosureNumbers: cases.join(', '),
-    // }));
-
     const checkExistingProjectId = {};
     const allAccoladeMappingSheet: any[] = [];
-    for (let i = 0; i < accoladeMappingSheetData.allStdData.length; i++) {
-      const stdData = accoladeMappingSheetData.allStdData[i];
+    for (let i = 0; i < accoladeMappingSheetData.combinedAccoladeStdData.length; i++) {
+      const stdData = accoladeMappingSheetData.combinedAccoladeStdData[i];
       const projectId = stdData.ProjectID;
       if (!checkExistingProjectId[projectId]) {
         allAccoladeMappingSheet.push({
