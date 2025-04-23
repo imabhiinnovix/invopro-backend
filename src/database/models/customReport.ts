@@ -15,7 +15,7 @@ interface IColumn {
 interface ISubSection {
   headerName: string;
   headerBackGroundColor: string;
-  headerColor: string;
+  headerTextColor: string;
   horizontalAlignment: string;
   verticalAlignment: string;
   type: string;
@@ -27,8 +27,10 @@ interface ISubSection {
 
 interface ISection {
   sectionName: string;
+  comments: string[];
+  mergeCell: number;
   sectionBackGroundColor: string;
-  sectionColor: string;
+  sectionTextColor: string;
   sectionHorizontalAlignment: string;
   sectionVerticalAlignment: string;
   spanColumns: boolean;
@@ -49,7 +51,16 @@ interface ICustomReport extends Document {
   organizationId: Types.ObjectId;
   sampleFilePath: string;
   headers: Record<string, IHeaderSection>;
+  reportSettings: IReportSetting[];
   design: Record<string, ISection[]>;
+}
+
+interface IReportSetting {
+  sheetName: string;
+  code: string;
+  isWhiteBackGround: boolean;
+  startTableColumn: string;
+  startRowNumber: number;
 }
 
 const ColumnSchema = new Schema<IColumn>({
@@ -66,7 +77,7 @@ const HeaderSectionSchema = new Schema<IHeaderSection>({
 const SubSectionSchema = new Schema<ISubSection>({
   headerName: { type: String, required: true },
   headerBackGroundColor: { type: String, required: true },
-  headerColor: { type: String, required: true },
+  headerTextColor: { type: String, required: true },
   horizontalAlignment: { type: String, required: true },
   verticalAlignment: { type: String, required: true },
   type: { type: String, required: true },
@@ -76,14 +87,24 @@ const SubSectionSchema = new Schema<ISubSection>({
 });
 
 const SectionSchema = new Schema<ISection>({
-  sectionName: { type: String, required: true },
-  sectionBackGroundColor: { type: String, required: true },
-  sectionColor: { type: String, required: true },
-  sectionHorizontalAlignment: { type: String, required: true },
-  sectionVerticalAlignment: { type: String, required: true },
-  spanColumns: { type: Boolean, required: true },
-  subSections: { type: [SubSectionSchema], required: true },
+  sectionName: { type: String },
+  sectionBackGroundColor: { type: String },
+  sectionTextColor: { type: String },
+  comments: { type: [String] },
+  mergeCell: { type: Number },
+  sectionHorizontalAlignment: { type: String },
+  sectionVerticalAlignment: { type: String },
+  spanColumns: { type: Boolean },
+  subSections: { type: [SubSectionSchema] },
   view: { type: String, required: true },
+});
+
+const ReportSettingSchema = new Schema<IReportSetting>({
+  sheetName: { type: String, required: true },
+  code: { type: String, required: true },
+  isWhiteBackGround: { type: Boolean, required: true },
+  startTableColumn: { type: String, required: true },
+  startRowNumber: { type: Number, required: true },
 });
 
 const CustomReportSchema = new Schema<ICustomReport>(
@@ -101,6 +122,7 @@ const CustomReportSchema = new Schema<ICustomReport>(
     ],
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
     headers: { type: Map, of: HeaderSectionSchema },
+    reportSettings: { type: [ReportSettingSchema], required: true },
     design: { type: Map, of: [SectionSchema] },
   },
   {

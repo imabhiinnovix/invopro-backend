@@ -318,27 +318,112 @@ export const listReportRequest = async (req: Request, res: Response, next: NextF
 export const downloadReport = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { reportRequestId } = req.params;
-    // const { userId } = req.user;
+    const { userId, orgCode } = req.user;
 
-    const reportDetails = await reportRequestService.findReportRequestById(reportRequestId);
-    // if (reportDetails?.createdBy != userId) {
-    //   return res.status(401).json({
+    const reportDetails: any = await reportRequestService.findReportRequestById(reportRequestId, [
+      { path: 'customReportId', select: 'reportName reportSettings design' },
+    ]);
+
+    const reportData = {};
+    const designData = {};
+    const reportSettings = reportDetails?.customReportId?.reportSettings;
+    const designSettings = reportDetails?.customReportId?.design;
+    const dataSourceVersions = reportDetails?.dataSourceVersion;
+    const versionValue = reportDetails?.versionValue || '';
+    const currentYearVersionValue = versionValue.split('-')[0];
+    const reportName = reportDetails.customReportId.reportName;
+    if (dataSourceVersions && dataSourceVersions.length > 0) {
+      let mappings: Record<string, any> = {};
+      let designDetails: any[] = [];
+      for (let i = 0; i < dataSourceVersions.length; i++) {
+        const dataSourceVersion = dataSourceVersions[i];
+        const sheetCode = dataSourceVersion.code;
+        const versionCode = dataSourceVersion.versionCode;
+        const dataSourceVersionId = dataSourceVersion.dataSourceVersionId;
+        const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+          orgCode: orgCode,
+          versionCode: versionCode,
+        });
+        const query = { dataSourceVersionId: dataSourceVersionId };
+
+        const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
+          schemaName,
+          query,
+          page: 1,
+          select: 'rowData',
+          limit: Number.MAX_SAFE_INTEGER,
+        });
+
+        if (reportName && reportName.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'monthlyip') {
+          designDetails = designSettings.get(sheetCode);
+          if (sheetCode === 'global') {
+            mappings = transformMonthlyIpData({
+              currentYear: Number(currentYearVersionValue),
+              isReverseMapping: false,
+            });
+          }
+          if (sheetCode === 'stc') {
+            mappings = transformMonthlySTCData({
+              currentYear: Number(currentYearVersionValue),
+              isReverseMapping: false,
+            });
+          }
+          const transformedVersionData = dataSourceVersionData.data.map((entry) => {
+            const newRow = {};
+            const rowData = entry.rowData;
+
+            for (const [originalKey, mappedKey] of Object.entries(mappings)) {
+              newRow[mappedKey] = rowData[originalKey] !== undefined ? rowData[originalKey] : null;
+            }
+            return {
+              ...newRow,
+            };
+          });
+
+          const transformedDesignData = designDetails?.map((section) => {
+            const transformedSectionName = mappings[section.sectionName] || section.sectionName;
+
+            const updatedSubSections = section.subSections.map((sub) => {
+              return {
+                ...sub,
+                headerName: mappings[sub.headerName] || sub.headerName,
+              };
+            });
+            return {
+              ...section,
+              sectionName: transformedSectionName,
+              subSections: updatedSubSections,
+            };
+          });
+
+          reportData[sheetCode] = transformedVersionData;
+          designData[sheetCode] = transformedDesignData;
+        }
+      }
+    } else {
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Report Request List Fetched Successfully',
+      reportName,
+      currentYearVersionValue,
+      reportData,
+      designData,
+      reportSettings,
+    });
+    // if (reportDetails?.status !== 'completed') {
+    //   return res.status(400).json({
     //     success: false,
-    //     message: 'You do not have permission to download this report.',
+    //     message: `The report is currently in '${reportDetails?.status}' status and cannot be downloaded.`,
     //   });
     // }
-    if (reportDetails?.status !== 'completed') {
-      return res.status(400).json({
-        success: false,
-        message: `The report is currently in '${reportDetails?.status}' status and cannot be downloaded.`,
-      });
-    }
-    res.download(reportDetails.filePath!, reportDetails.fileName!, (err) => {
-      if (err) {
-        console.error('Error downloading file:', err);
-        res.status(500).send('Error downloading file');
-      }
-    });
+    // res.download(reportDetails.filePath!, reportDetails.fileName!, (err) => {
+    //   if (err) {
+    //     console.error('Error downloading file:', err);
+    //     res.status(500).send('Error downloading file');
+    //   }
+    // });
   } catch (err) {
     console.log('Error in downloadReport', err);
     next(err);

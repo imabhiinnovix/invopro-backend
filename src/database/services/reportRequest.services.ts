@@ -53,10 +53,22 @@ export const getReportRequestList = async ({
   }
 };
 
-export const findReportRequestById = async (id: string) => {
-  try {
-    const requestDetails = await ReportRequestModel.findById(id);
+interface PopulateOption {
+  path: string;
+  select?: string;
+  populate?: PopulateOption; // for nested population
+}
 
+export const findReportRequestById = async (id: string, populate: PopulateOption[] = []) => {
+  try {
+    let query = ReportRequestModel.findById(id);
+
+    // Apply all populate options dynamically
+    populate.forEach((pop) => {
+      query = query.populate(pop);
+    });
+
+    const requestDetails = await query;
     return requestDetails;
   } catch (err) {
     throw err;

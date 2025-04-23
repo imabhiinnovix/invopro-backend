@@ -2,9 +2,9 @@ import { Schema, model, Document, Types } from 'mongoose';
 
 interface IDataSourceVersion {
   name: string;
-  dataSourceVersionId: string;
+  dataSourceVersionId: Types.ObjectId;
   versionCode: string;
-  dataSourceId: string;
+  dataSourceId: Types.ObjectId;
   code: string;
 }
 
@@ -25,9 +25,9 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
   {
     name: { type: String, required: true },
     code: { type: String, required: true },
-    dataSourceVersionId: { type: String, required: true },
+    dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'data_source_version' },
     versionCode: { type: String, required: true },
-    dataSourceId: { type: String, required: true },
+    dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_sources' },
   },
   { _id: false }
 );
