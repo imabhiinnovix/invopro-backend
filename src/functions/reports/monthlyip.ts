@@ -26,7 +26,12 @@ import {
 import { createExcelSheetFile, createUpdateExcelTable, writeDataToExcel } from '../../utils/excel.utils';
 import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
 import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/dataSourceVersion.controller';
-import { processReportHeaders, transformMonthlyIpData, transformMonthlySTCData } from '../../utils/common.report';
+import {
+  processReportHeaders,
+  transformMonthlyIpData,
+  transformMonthlySTCData,
+  transformMonthlySTCSBUData,
+} from '../../utils/common.report';
 import { ReportHeaders } from '../../utils/common.type';
 
 export const generateMonthlyIpReport = async ({
@@ -48,6 +53,7 @@ export const generateMonthlyIpReport = async ({
   organizationId,
   monthlyIpDataSource,
   monthlyipstcDataSource,
+  monthlyipstcsbuDataSource,
   headers,
 }: {
   reportRequestPayload: any;
@@ -69,6 +75,7 @@ export const generateMonthlyIpReport = async ({
   headers: ReportHeaders;
   monthlyIpDataSource: string;
   monthlyipstcDataSource: string;
+  monthlyipstcsbuDataSource: string;
 }) => {
   try {
     const versionValue = reportRequestPayload.versionValue;
@@ -845,6 +852,10 @@ export const generateMonthlyIpReport = async ({
 
     const reverseMapping = transformMonthlyIpData({ currentYear: Number(currentYear), isReverseMapping: true });
     const reverseStcMapping = transformMonthlySTCData({ currentYear: Number(currentYear), isReverseMapping: true });
+    const reverseStcSbuMapping = transformMonthlySTCSBUData({
+      currentYear: Number(currentYear),
+      isReverseMapping: true,
+    });
 
     const sbusHeader = [...sbuHeaders.map((data) => data.reportHeader), 'Totals'];
     const saveData = sbusHeader.map((sbu) => {
@@ -871,6 +882,24 @@ export const generateMonthlyIpReport = async ({
       saveStcData.push(entry);
     }
 
+    const stcSBUHeaders = [
+      'SBU',
+      `New Projects opened in ${currentYear}`,
+      `Total Open Projects`,
+      `${currentYear} Filed`,
+    ];
+
+    const saveStcSbuData: any[] = [];
+
+    for (let i = 0; i < combinedData.length; i++) {
+      const stcSBUData = combinedData[i];
+      const entry = {};
+      for (let j = 0; j < stcSBUHeaders.length; j++) {
+        entry[reverseStcSbuMapping[stcSBUHeaders[j]]] = stcSBUData[stcSBUHeaders[j]];
+      }
+      saveStcSbuData.push(entry);
+    }
+
     const dataSourceVersionDetailsMonthlyIp = await createUpdateCustomDataSourceVersionValueFunction({
       dataSourceId: monthlyIpDataSource,
       customReportId: customReportId,
@@ -888,6 +917,17 @@ export const generateMonthlyIpReport = async ({
       reportRequestId: requestedReportId,
       versionValue,
       versionData: saveStcData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+
+    const dataSourceVersionDetailsMonthlyIpStcSBU = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: monthlyipstcsbuDataSource,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: saveStcSbuData,
       userId,
       organizationId,
       orgCode,
@@ -941,6 +981,13 @@ export const generateMonthlyIpReport = async ({
           dataSourceVersionId: dataSourceVersionDetailsMonthlyIpStc.dataSourceVersionId,
           versionCode: dataSourceVersionDetailsMonthlyIpStc.versionCode,
           dataSourceId: monthlyipstcDataSource,
+        },
+        {
+          name: 'STC',
+          code: 'stc',
+          dataSourceVersionId: dataSourceVersionDetailsMonthlyIpStcSBU.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailsMonthlyIpStcSBU.versionCode,
+          dataSourceId: monthlyipstcsbuDataSource,
         },
       ],
     });

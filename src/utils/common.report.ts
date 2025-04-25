@@ -131,3 +131,23 @@ export function transformMonthlySTCData({
   }
   return mapping;
 }
+
+export function transformMonthlySTCSBUData({
+  currentYear,
+  isReverseMapping,
+}: {
+  currentYear: number;
+  isReverseMapping?: boolean;
+}) {
+  const mapping = {
+    SBU: 'SBU',
+    'New Projects opened in Current Year': `New Projects opened in ${currentYear}`,
+    'Total Open Projects': `Total Open Projects`,
+    'Current Year Filed': `${currentYear} Filed`,
+  };
+  if (isReverseMapping) {
+    const reverseMapping = Object.fromEntries(Object.entries(mapping).map(([key, value]) => [value, key]));
+    return reverseMapping;
+  }
+  return mapping;
+}
