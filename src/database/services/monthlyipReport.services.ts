@@ -894,6 +894,7 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
   headers: { reportHeader: string; attributeValues: string[] }[];
 }) {
   try {
+    // Use is row data true to generate the report
     const newYearApplicationFiledRowData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -1415,7 +1416,7 @@ export async function getReductions({
           ],
           $and: [
             {
-              $or: [
+              $and: [
                 { 'rowData.Publication Date': { $eq: null } },
                 { 'rowData.Grant Date': { $eq: null } },
                 { 'rowData.Grant No': { $eq: null } },

@@ -441,7 +441,7 @@ export const generateMonthlyIpReport = async ({
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
       customReportModel,
-      isRowData: true,
+      isRowData,
     });
 
     const partiallyProcessedAnnuitySavingsForNextYear = getFormattedDataToProcessReportHeaders({
@@ -476,7 +476,7 @@ export const generateMonthlyIpReport = async ({
       priorityDrop: reductionData.priorityDropArray,
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
-      isRowData: true,
+      isRowData,
     });
 
     const partiallyProcessedAllProsecutionSavings = getFormattedDataToProcessReportHeaders({
