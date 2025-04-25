@@ -16,6 +16,7 @@ import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.ut
 import * as dataSourceVersionValueService from '../../database/services/defaultDataSourceVersionValue.services';
 import mongoose from 'mongoose';
 import { transformMonthlyIpData, transformMonthlySTCData } from '../../utils/common.report';
+import { generateExcelReport } from '../../utils/excel.utils';
 const ObjectId = mongoose.Types.ObjectId;
 
 export const generateCustomReportsFunction = async ({
@@ -355,7 +356,7 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
         });
 
         if (reportName && reportName.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'monthlyip') {
-          designDetails = designSettings.get(sheetCode);
+          designDetails = JSON.parse(JSON.stringify(designSettings.get(sheetCode)));
           if (sheetCode === 'global') {
             mappings = transformMonthlyIpData({
               currentYear: Number(currentYearVersionValue),
@@ -396,21 +397,24 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
             };
           });
 
-          reportData[sheetCode] = transformedVersionData;
+          reportData[sheetCode] = [transformedVersionData];
           designData[sheetCode] = transformedDesignData;
         }
       }
     } else {
     }
 
+    let x = await generateExcelReport({ reportName, reportData, designData: designData, reportSettings });
+
     res.status(200).json({
       success: true,
       message: 'Report Request List Fetched Successfully',
-      reportName,
-      currentYearVersionValue,
-      reportData,
-      designData,
-      reportSettings,
+      x,
+      // reportName,
+      // currentYearVersionValue,
+      // reportData,
+      // designData,
+      // reportSettings,
     });
     // if (reportDetails?.status !== 'completed') {
     //   return res.status(400).json({

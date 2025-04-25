@@ -660,3 +660,347 @@ export function excelDateToJSDate(serial: number) {
     seconds
   ).toISOString();
 }
+
+interface ReportSettings {
+  sheetName: string;
+  code: string;
+  isWhiteBackGround: boolean;
+  startTableColumn: string;
+  startRowNumber: number;
+}
+
+interface SubSection {
+  headerName: string;
+  headerBackGroundColor: string;
+  headerTextColor: string;
+  horizontalAlignment:
+    | 'left'
+    | 'center'
+    | 'right'
+    | 'fill'
+    | 'justify'
+    | 'centerContinuous'
+    | 'distributed'
+    | undefined;
+  verticalAlignment: 'middle' | 'top' | 'bottom' | 'distributed' | 'justify' | undefined;
+  type: string;
+  cellFormat: string;
+  spanColumns: boolean;
+}
+
+interface Section {
+  sectionName?: string;
+  sectionBackGroundColor?: string;
+  sectionTextColor?: string;
+  sectionHorizontalAlignment?:
+    | 'left'
+    | 'center'
+    | 'right'
+    | 'fill'
+    | 'justify'
+    | 'centerContinuous'
+    | 'distributed'
+    | undefined;
+  sectionVerticalAlignment?: 'middle' | 'top' | 'bottom' | 'distributed' | 'justify' | undefined;
+  mergeCell?: number;
+  comments?: string[];
+  view: 'row' | 'column';
+  spanColumns?: boolean;
+  subSections: SubSection[];
+}
+
+export async function generateExcelReport({
+  reportName,
+  reportData,
+  designData,
+  reportSettings,
+}: {
+  reportName: string;
+  reportData: Record<string, any[][]>;
+  designData: Record<string, Section[]>;
+  reportSettings: ReportSettings[];
+}) {
+  const workbook = new ExcelJS.Workbook();
+
+  for (const setting of reportSettings) {
+    const { sheetName, code, startTableColumn, startRowNumber } = setting;
+    const worksheet = workbook.addWorksheet(sheetName);
+    const sections = designData[code] || [];
+    const reportDataBasedOnSheetCode = reportData[code] || [];
+
+    let rowPointer = startRowNumber;
+
+    let processingDataTableIndex = 0;
+    let dataToBeProcessed: any = reportDataBasedOnSheetCode[processingDataTableIndex] || [];
+    let headerLabelKey = '';
+
+    const table: any[] = [];
+    let tableObj: any = { headers: [], rows: [] };
+
+    for (let i = 0; i < sections.length; i++) {
+      const section = sections[i];
+      const subSections = section.subSections || [];
+      const sectionView = section.view;
+      if (section.sectionName || subSections.length > 0) {
+        if (section.sectionName && headerLabelKey) {
+          tableObj.rows.push([section.sectionName]);
+        }
+        for (let j = 0; j < subSections.length; j++) {
+          const subSection = subSections[j];
+          const headerName = subSection.headerName;
+          if (sectionView === 'row') {
+            if (!headerLabelKey) {
+              headerLabelKey = headerName;
+              const uniqueHeaders = new Set();
+              uniqueHeaders.add(headerLabelKey);
+              tableObj.headers.push({ name: headerLabelKey, filterButton: false });
+
+              dataToBeProcessed.forEach((obj) => {
+                const value = obj[headerLabelKey];
+                if (!uniqueHeaders.has(value)) {
+                  uniqueHeaders.add(value);
+                  tableObj.headers.push({ name: value, filterButton: false });
+                }
+              });
+            } else {
+              const rowData = [headerName];
+              for (let k = 0; k < tableObj.headers.length; k++) {
+                const tableHeader = tableObj.headers[k].name;
+                const checkAvailableData = dataToBeProcessed.find((item) => {
+                  return item[headerLabelKey] === tableHeader;
+                });
+                console.log(checkAvailableData, headerName);
+                if (checkAvailableData) {
+                  rowData.push(checkAvailableData[headerName]);
+                } else {
+                  rowData.push('');
+                }
+              }
+              tableObj.rows.push(rowData);
+            }
+          } else {
+            tableObj.headers.push(headerName);
+          }
+        }
+      } else {
+        if (tableObj.headers.length > 0) {
+          table.push(tableObj);
+          processingDataTableIndex++;
+          dataToBeProcessed = reportDataBasedOnSheetCode[processingDataTableIndex] || [];
+          headerLabelKey = '';
+          tableObj = { headers: [], rows: [] };
+        }
+      }
+    }
+
+    if (tableObj.headers.length > 0) {
+      table.push(tableObj);
+    }
+
+    return table;
+    // for (const [index, section] of sections.entries()) {
+    //   if (headers.length === 0) {
+    //     if (section.view === 'row') {
+    //       if (
+    //         !Array.isArray(dataRows) ||
+    //         typeof processingDataTableIndex !== 'number' ||
+    //         processingDataTableIndex < 0 ||
+    //         processingDataTableIndex >= dataRows.length
+    //       ) {
+    //         throw new Error(`Invalid processingDataTableIndex: ${processingDataTableIndex}`);
+    //       }
+
+    //       dataToBeProcessed = dataRows[processingDataTableIndex];
+
+    //       if (!Array.isArray(dataToBeProcessed) || dataToBeProcessed.length === 0) {
+    //         throw new Error(`No data found at index ${processingDataTableIndex} in reportData.`);
+    //       }
+
+    //       const sampleData = dataToBeProcessed[0];
+    //       headerLabelKey = Object.keys(sampleData)[0];
+
+    //       if (!headerLabelKey) {
+    //         throw new Error('No keys found in sample data.');
+    //       }
+
+    // const uniqueHeaders = new Set();
+    // uniqueHeaders.add(headerLabelKey);
+    // headers = [{ name: headerLabelKey, filterButton: false }];
+    // const headerKeys: string[] = [];
+
+    // dataToBeProcessed.forEach((obj) => {
+    //   const value = obj[headerLabelKey];
+    //   if (!uniqueHeaders.has(value)) {
+    //     uniqueHeaders.add(value);
+    //     headers.push({ name: value, filterButton: false });
+    //     headerKeys.push(value);
+    //   }
+    // });
+
+    //       const allDataKeys = Array.from(
+    //         new Set(dataToBeProcessed.flatMap((item) => Object.keys(item).filter((key) => key !== headerLabelKey)))
+    //       );
+    //       allDataKeys.forEach((key) => {
+    //         processedDataMap[key] = [
+    //           key,
+    //           ...headerKeys.map((header) => {
+    //             const foundData = dataToBeProcessed.find((item) => item[headerLabelKey] === header);
+    //             return foundData ? foundData[key] : '';
+    //           }),
+    //         ];
+    //       });
+    //     }
+    //   }
+    //   if (section.comments && section.comments.length > 0) {
+    //     for (const comment of section.comments) {
+    //       const cell = worksheet.getCell(`${startTableColumn}${rowPointer}`);
+    //       cell.value = comment;
+    //       if (section.sectionBackGroundColor) {
+    //         cell.fill = {
+    //           type: 'pattern',
+    //           pattern: 'solid',
+    //           fgColor: { argb: section.sectionBackGroundColor },
+    //         };
+    //       }
+    //       if (section.mergeCell) {
+    //         const endCol = colToLetter(colToNumber(startTableColumn) + section.mergeCell - 1);
+    //         worksheet.mergeCells(`${startTableColumn}${rowPointer}:${endCol}${rowPointer}`);
+    //       }
+    //       rowPointer++;
+    //     }
+
+    //     rowPointer = rowPointer + 2;
+    //   } else if (section.sectionName || section.subSections.length > 0) {
+    //     if (section.view === 'row') {
+    //       if (section.sectionName) {
+    //         const mergeEnd = colToLetter(colToNumber(startTableColumn) + headers.length - 1);
+    //         const cell = worksheet.getCell(`${startTableColumn}${rowPointer}`);
+    //         cell.value = section.sectionName;
+    //         cell.alignment = {
+    //           horizontal: section.sectionHorizontalAlignment || 'center',
+    //           vertical: section.sectionVerticalAlignment || 'middle',
+    //         };
+    //         if (section.sectionBackGroundColor) {
+    //           cell.fill = {
+    //             type: 'pattern',
+    //             pattern: 'solid',
+    //             fgColor: { argb: section.sectionBackGroundColor },
+    //           };
+    //         }
+    //         if (section.spanColumns) {
+    //           worksheet.mergeCells(`${startTableColumn}${rowPointer}:${mergeEnd}${rowPointer}`);
+    //         }
+    //         rowPointer++;
+    //       }
+
+    //       for (let i = 0; i < section.subSections.length; i++) {
+    //         const subSectionData = section.subSections[i];
+    //         const headerName = subSectionData.headerName;
+    //         if (headerName != headerLabelKey) {
+    //           const tableRef = startTableColumn ? `${startTableColumn}${rowPointer}` : `A${rowPointer}`;
+    //           // Add a table to the worksheet
+    //           worksheet.addTable({
+    //             name: `DynamicTable_${reportName.toLowerCase().replace(/[^a-z]/g, '')}_${code.toLowerCase().replace(/[^a-z]/g, '')}_${rowPointer}`, // Unique table name
+    //             ref: tableRef,
+    //             headerRow: true,
+    //             totalsRow: false,
+    //             style: {
+    //               theme: 'TableStyleMedium9', // Default table style
+    //               showRowStripes: true,
+    //             },
+    //             columns: headers,
+    //             rows: [processedDataMap[headerName]],
+    //           });
+    //           rowPointer++;
+    //         }
+
+    //         //   const colLetter = colToLetter(colToNumber(startTableColumn) + i);
+    //         //   const cell = worksheet.getCell(`${colLetter}${rowPointer}`);
+    //         //   const sub = section.subSections[i];
+    //         //   cell.value = sub.headerName;
+    //         //   cell.fill = {
+    //         //     type: 'pattern',
+    //         //     pattern: 'solid',
+    //         //     fgColor: { argb: sub.headerBackGroundColor },
+    //         //   };
+    //         //   cell.font = {
+    //         //     bold: true,
+    //         //     color: { argb: sub.headerTextColor },
+    //         //   };
+    //         //   cell.alignment = {
+    //         //     horizontal: sub.horizontalAlignment || 'center',
+    //         //     vertical: sub.verticalAlignment || 'middle',
+    //         //   };
+    //         // }
+    //         // rowPointer++;
+
+    //         // for (const row of dataRows) {
+    //         //   const values = section.subSections.map((s) => row[s.headerName] ?? '');
+    //         //   const rowExcel = worksheet.getRow(rowPointer);
+    //         //   values.forEach((val, idx) => {
+    //         //     rowExcel.getCell(colToLetter(colToNumber(startTableColumn) + idx)).value = val;
+    //         //   });
+    //         //   rowPointer++;
+    //       }
+    //     } else if (section.view === 'column') {
+    //       for (let i = 0; i < section.subSections.length; i++) {
+    //         const sub = section.subSections[i];
+    //         const colLetter = colToLetter(colToNumber(startTableColumn) + i);
+
+    //         worksheet.getCell(`${colLetter}${rowPointer}`).value = sub.headerName;
+    //         worksheet.getCell(`${colLetter}${rowPointer}`).fill = {
+    //           type: 'pattern',
+    //           pattern: 'solid',
+    //           fgColor: { argb: sub.headerBackGroundColor },
+    //         };
+    //         worksheet.getCell(`${colLetter}${rowPointer}`).font = {
+    //           bold: true,
+    //           color: { argb: sub.headerTextColor },
+    //         };
+    //         worksheet.getCell(`${colLetter}${rowPointer}`).alignment = {
+    //           horizontal: sub.horizontalAlignment as ExcelJS.Alignment['horizontal'],
+    //           vertical: sub.verticalAlignment as ExcelJS.Alignment['vertical'],
+    //         };
+    //       }
+    //       rowPointer++;
+
+    //       for (const row of dataRows) {
+    //         const rowExcel = worksheet.getRow(rowPointer);
+    //         section.subSections.forEach((s, idx) => {
+    //           rowExcel.getCell(colToLetter(colToNumber(startTableColumn) + idx)).value = row[s.headerName] ?? '';
+    //         });
+    //         rowPointer++;
+    //       }
+    //     }
+    //   } else {
+    //     rowPointer += 2;
+    //     headers = [];
+    //     headerLabelKey = '';
+    //     processedDataMap = {};
+    //     processingDataTableIndex++;
+    //   }
+    // }
+  }
+
+  await workbook.xlsx.writeFile(`${reportName}.xlsx`);
+  console.log(`${reportName}.xlsx generated successfully.`);
+}
+
+export function colToLetter(col: number | string): string {
+  if (typeof col === 'string') return col;
+  let letter = '';
+  while (col > 0) {
+    const mod = (col - 1) % 26;
+    letter = String.fromCharCode(65 + mod) + letter;
+    col = Math.floor((col - mod) / 26);
+  }
+  return letter;
+}
+
+export function colToNumber(col: string): number {
+  let num = 0;
+  for (let i = 0; i < col.length; i++) {
+    num = num * 26 + (col.charCodeAt(i) - 64);
+  }
+  return num;
+}
