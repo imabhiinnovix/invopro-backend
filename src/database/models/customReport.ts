@@ -14,6 +14,7 @@ interface IColumn {
 
 interface ISubSection {
   headerName: string;
+  fontBold: boolean;
   headerBackGroundColor: string;
   headerTextColor: string;
   horizontalAlignment: string;
@@ -21,12 +22,12 @@ interface ISubSection {
   type: string;
   spanColumns: boolean;
   format: string;
-  view: string;
   isRequired: boolean;
 }
 
 interface ISection {
   sectionName: string;
+  fontBold: boolean;
   comments: string[];
   mergeCell: number;
   sectionBackGroundColor: string;
@@ -76,6 +77,7 @@ const HeaderSectionSchema = new Schema<IHeaderSection>({
 
 const SubSectionSchema = new Schema<ISubSection>({
   headerName: { type: String, required: true },
+  fontBold: { type: Boolean },
   headerBackGroundColor: { type: String, required: true },
   headerTextColor: { type: String, required: true },
   horizontalAlignment: { type: String, required: true },
@@ -88,6 +90,7 @@ const SubSectionSchema = new Schema<ISubSection>({
 
 const SectionSchema = new Schema<ISection>({
   sectionName: { type: String },
+  fontBold: { type: Boolean },
   sectionBackGroundColor: { type: String },
   sectionTextColor: { type: String },
   comments: { type: [String] },

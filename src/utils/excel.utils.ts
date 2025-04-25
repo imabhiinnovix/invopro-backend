@@ -671,6 +671,7 @@ interface ReportSettings {
 
 interface SubSection {
   headerName: string;
+  fontBold: boolean;
   headerBackGroundColor: string;
   headerTextColor: string;
   horizontalAlignment:
@@ -686,10 +687,13 @@ interface SubSection {
   type: string;
   cellFormat: string;
   spanColumns: boolean;
+  lastCellBackGroundColor: string;
 }
 
 interface Section {
   sectionName?: string;
+  cellFormat: string;
+  fontBold: boolean;
   sectionBackGroundColor?: string;
   sectionTextColor?: string;
   sectionHorizontalAlignment?:
@@ -724,19 +728,21 @@ export async function generateExcelReport({
 
   for (const setting of reportSettings) {
     const { sheetName, code, startTableColumn, startRowNumber } = setting;
-    const worksheet = workbook.addWorksheet(sheetName);
+    const worksheet = workbook.addWorksheet(sheetName, {
+      properties: { defaultColWidth: 22 },
+    });
     const sections = designData[code] || [];
     const reportDataBasedOnSheetCode = reportData[code] || [];
 
     let rowPointer = startRowNumber;
-
+    const tableData: any[] = [];
     let processingDataTableIndex = 0;
     let dataToBeProcessed: any = reportDataBasedOnSheetCode[processingDataTableIndex] || [];
     let headerLabelKey = '';
 
-    const table: any[] = [];
     let tableObj: any = { headers: [], rows: [] };
 
+    //for data prepration for table
     for (let i = 0; i < sections.length; i++) {
       const section = sections[i];
       const subSections = section.subSections || [];
@@ -764,12 +770,12 @@ export async function generateExcelReport({
               });
             } else {
               const rowData = [headerName];
-              for (let k = 0; k < tableObj.headers.length; k++) {
+              for (let k = 1; k < tableObj.headers.length; k++) {
                 const tableHeader = tableObj.headers[k].name;
                 const checkAvailableData = dataToBeProcessed.find((item) => {
                   return item[headerLabelKey] === tableHeader;
                 });
-                console.log(checkAvailableData, headerName);
+
                 if (checkAvailableData) {
                   rowData.push(checkAvailableData[headerName]);
                 } else {
@@ -779,12 +785,16 @@ export async function generateExcelReport({
               tableObj.rows.push(rowData);
             }
           } else {
-            tableObj.headers.push(headerName);
+            tableObj.headers.push({ name: headerName, filterButton: false });
           }
         }
       } else {
         if (tableObj.headers.length > 0) {
-          table.push(tableObj);
+          if (tableObj.rows.length === 0) {
+            const newData = dataToBeProcessed.map((item) => tableObj.headers.map((key) => item[key.name]));
+            tableObj.rows = newData;
+          }
+          tableData.push(tableObj);
           processingDataTableIndex++;
           dataToBeProcessed = reportDataBasedOnSheetCode[processingDataTableIndex] || [];
           headerLabelKey = '';
@@ -794,192 +804,177 @@ export async function generateExcelReport({
     }
 
     if (tableObj.headers.length > 0) {
-      table.push(tableObj);
+      if (tableObj.rows.length === 0) {
+        const newData = dataToBeProcessed.map((item) => tableObj.headers.map((key) => item[key.name]));
+        tableObj.rows = newData;
+      }
+      tableData.push(tableObj);
+      processingDataTableIndex = 0;
+      dataToBeProcessed = reportDataBasedOnSheetCode[processingDataTableIndex] || [];
     }
 
-    return table;
-    // for (const [index, section] of sections.entries()) {
-    //   if (headers.length === 0) {
-    //     if (section.view === 'row') {
-    //       if (
-    //         !Array.isArray(dataRows) ||
-    //         typeof processingDataTableIndex !== 'number' ||
-    //         processingDataTableIndex < 0 ||
-    //         processingDataTableIndex >= dataRows.length
-    //       ) {
-    //         throw new Error(`Invalid processingDataTableIndex: ${processingDataTableIndex}`);
-    //       }
+    //for table desing
+    let processingTableIndex = 0;
+    let processingTableHeaders = [];
+    let processingTableRows = [];
+    let headerRowIndex = 0;
+    let lastRowIndex = 0;
+    for (let i = 0; i < sections.length; i++) {
+      const section = sections[i];
+      const subSections = section.subSections || [];
+      const sectionView = section.view;
+      const sectionComments = section.comments || [];
+      if (sectionComments.length > 0) {
+        for (const comment of sectionComments) {
+          const cell = worksheet.getCell(`${startTableColumn}${rowPointer}`);
+          cell.value = comment;
+          if (section.sectionBackGroundColor) {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: section.sectionBackGroundColor },
+            };
+          }
+          if (section.mergeCell) {
+            const endCol = colToLetter(colToNumber(startTableColumn) + section.mergeCell - 1);
+            worksheet.mergeCells(`${startTableColumn}${rowPointer}:${endCol}${rowPointer}`);
+          }
+          rowPointer++;
+        }
+        rowPointer = rowPointer + 2;
+      } else if (section.sectionName || subSections.length > 0) {
+        if (section.sectionName) {
+          const mergeEnd = colToLetter(colToNumber(startTableColumn) + processingTableHeaders.length - 1);
+          const cell = worksheet.getCell(`${startTableColumn}${rowPointer}`);
+          cell.font = {
+            bold: section.fontBold,
+            color: { argb: section.sectionTextColor ? section.sectionTextColor : '000000' },
+          };
+          cell.alignment = {
+            horizontal: section.sectionHorizontalAlignment || 'center',
+            vertical: section.sectionVerticalAlignment || 'middle',
+          };
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' },
+          };
+          if (section.sectionBackGroundColor) {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: section.sectionBackGroundColor },
+            };
+          }
+          if (section.spanColumns) {
+            worksheet.mergeCells(`${startTableColumn}${rowPointer}:${mergeEnd}${rowPointer}`);
+          }
+          rowPointer++;
+        }
 
-    //       dataToBeProcessed = dataRows[processingDataTableIndex];
+        for (let j = 0; j < subSections.length; j++) {
+          const subSection = subSections[j];
+          const headerName = subSection.headerName;
+          if (sectionView === 'row') {
+            const row = worksheet.getRow(rowPointer);
+            row.eachCell((cell, colIndex) => {
+              cell.font = {
+                bold: subSection.fontBold,
+                color: { argb: subSection.headerTextColor ? subSection.headerTextColor : '000000' },
+              };
+              cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: subSection.headerBackGroundColor ? subSection.headerBackGroundColor : '4472C4' }, // Blue background
+              };
+              cell.alignment = {
+                vertical: subSection.verticalAlignment,
+                horizontal: subSection.horizontalAlignment,
+                wrapText: true,
+              };
+              cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' },
+              };
+              if (subSection.cellFormat) {
+                cell.numFmt = subSection.cellFormat;
+              }
+            });
+          } else {
+            const headerRow = worksheet.getRow(headerRowIndex);
+            headerRow.eachCell((cell, colIndex) => {
+              if (cell.value === headerName) {
+                cell.font = {
+                  bold: subSection.fontBold,
+                  color: { argb: subSection.headerTextColor ? subSection.headerTextColor : '000000' },
+                };
+                cell.fill = {
+                  type: 'pattern',
+                  pattern: 'solid',
+                  fgColor: { argb: subSection.headerBackGroundColor ? subSection.headerBackGroundColor : '4472C4' }, // Blue background
+                };
+                cell.alignment = {
+                  vertical: subSection.verticalAlignment,
+                  horizontal: subSection.horizontalAlignment,
+                  wrapText: true,
+                };
 
-    //       if (!Array.isArray(dataToBeProcessed) || dataToBeProcessed.length === 0) {
-    //         throw new Error(`No data found at index ${processingDataTableIndex} in reportData.`);
-    //       }
+                const column = worksheet.getColumn(colIndex);
+                column.width = 22;
+                column.eachCell((cell, colIndex) => {
+                  cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' },
+                  };
+                });
 
-    //       const sampleData = dataToBeProcessed[0];
-    //       headerLabelKey = Object.keys(sampleData)[0];
+                if (subSection.cellFormat) {
+                  column.numFmt = subSection.cellFormat;
+                }
+                if (subSection.lastCellBackGroundColor) {
+                  const lastRow = worksheet.getRow(lastRowIndex);
+                  const lastCell = lastRow.getCell(colIndex);
+                  lastCell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: subSection.lastCellBackGroundColor },
+                  };
+                }
+              }
+            });
+          }
+          rowPointer++;
+        }
+      } else {
+        const individualTable = tableData[processingTableIndex];
+        processingTableHeaders = individualTable.headers;
+        processingTableRows = individualTable.rows;
+        headerRowIndex = rowPointer;
+        lastRowIndex = processingTableRows.length + headerRowIndex;
+        const tableRef = startTableColumn ? `${startTableColumn}${rowPointer}` : `A${rowPointer}`;
 
-    //       if (!headerLabelKey) {
-    //         throw new Error('No keys found in sample data.');
-    //       }
+        // Add a table to the worksheet
+        worksheet.addTable({
+          name: `DynamicTable_${code.toLowerCase().replace(/[^a-z]/g, '')}_${processingTableIndex}_${rowPointer}`, // Unique table name
+          ref: tableRef,
+          headerRow: true,
+          totalsRow: false,
+          style: {
+            theme: 'TableStyleMedium9', // Default table style
+            showRowStripes: true,
+          },
+          columns: processingTableHeaders,
+          rows: processingTableRows,
+        });
 
-    // const uniqueHeaders = new Set();
-    // uniqueHeaders.add(headerLabelKey);
-    // headers = [{ name: headerLabelKey, filterButton: false }];
-    // const headerKeys: string[] = [];
-
-    // dataToBeProcessed.forEach((obj) => {
-    //   const value = obj[headerLabelKey];
-    //   if (!uniqueHeaders.has(value)) {
-    //     uniqueHeaders.add(value);
-    //     headers.push({ name: value, filterButton: false });
-    //     headerKeys.push(value);
-    //   }
-    // });
-
-    //       const allDataKeys = Array.from(
-    //         new Set(dataToBeProcessed.flatMap((item) => Object.keys(item).filter((key) => key !== headerLabelKey)))
-    //       );
-    //       allDataKeys.forEach((key) => {
-    //         processedDataMap[key] = [
-    //           key,
-    //           ...headerKeys.map((header) => {
-    //             const foundData = dataToBeProcessed.find((item) => item[headerLabelKey] === header);
-    //             return foundData ? foundData[key] : '';
-    //           }),
-    //         ];
-    //       });
-    //     }
-    //   }
-    //   if (section.comments && section.comments.length > 0) {
-    //     for (const comment of section.comments) {
-    //       const cell = worksheet.getCell(`${startTableColumn}${rowPointer}`);
-    //       cell.value = comment;
-    //       if (section.sectionBackGroundColor) {
-    //         cell.fill = {
-    //           type: 'pattern',
-    //           pattern: 'solid',
-    //           fgColor: { argb: section.sectionBackGroundColor },
-    //         };
-    //       }
-    //       if (section.mergeCell) {
-    //         const endCol = colToLetter(colToNumber(startTableColumn) + section.mergeCell - 1);
-    //         worksheet.mergeCells(`${startTableColumn}${rowPointer}:${endCol}${rowPointer}`);
-    //       }
-    //       rowPointer++;
-    //     }
-
-    //     rowPointer = rowPointer + 2;
-    //   } else if (section.sectionName || section.subSections.length > 0) {
-    //     if (section.view === 'row') {
-    //       if (section.sectionName) {
-    //         const mergeEnd = colToLetter(colToNumber(startTableColumn) + headers.length - 1);
-    //         const cell = worksheet.getCell(`${startTableColumn}${rowPointer}`);
-    //         cell.value = section.sectionName;
-    //         cell.alignment = {
-    //           horizontal: section.sectionHorizontalAlignment || 'center',
-    //           vertical: section.sectionVerticalAlignment || 'middle',
-    //         };
-    //         if (section.sectionBackGroundColor) {
-    //           cell.fill = {
-    //             type: 'pattern',
-    //             pattern: 'solid',
-    //             fgColor: { argb: section.sectionBackGroundColor },
-    //           };
-    //         }
-    //         if (section.spanColumns) {
-    //           worksheet.mergeCells(`${startTableColumn}${rowPointer}:${mergeEnd}${rowPointer}`);
-    //         }
-    //         rowPointer++;
-    //       }
-
-    //       for (let i = 0; i < section.subSections.length; i++) {
-    //         const subSectionData = section.subSections[i];
-    //         const headerName = subSectionData.headerName;
-    //         if (headerName != headerLabelKey) {
-    //           const tableRef = startTableColumn ? `${startTableColumn}${rowPointer}` : `A${rowPointer}`;
-    //           // Add a table to the worksheet
-    //           worksheet.addTable({
-    //             name: `DynamicTable_${reportName.toLowerCase().replace(/[^a-z]/g, '')}_${code.toLowerCase().replace(/[^a-z]/g, '')}_${rowPointer}`, // Unique table name
-    //             ref: tableRef,
-    //             headerRow: true,
-    //             totalsRow: false,
-    //             style: {
-    //               theme: 'TableStyleMedium9', // Default table style
-    //               showRowStripes: true,
-    //             },
-    //             columns: headers,
-    //             rows: [processedDataMap[headerName]],
-    //           });
-    //           rowPointer++;
-    //         }
-
-    //         //   const colLetter = colToLetter(colToNumber(startTableColumn) + i);
-    //         //   const cell = worksheet.getCell(`${colLetter}${rowPointer}`);
-    //         //   const sub = section.subSections[i];
-    //         //   cell.value = sub.headerName;
-    //         //   cell.fill = {
-    //         //     type: 'pattern',
-    //         //     pattern: 'solid',
-    //         //     fgColor: { argb: sub.headerBackGroundColor },
-    //         //   };
-    //         //   cell.font = {
-    //         //     bold: true,
-    //         //     color: { argb: sub.headerTextColor },
-    //         //   };
-    //         //   cell.alignment = {
-    //         //     horizontal: sub.horizontalAlignment || 'center',
-    //         //     vertical: sub.verticalAlignment || 'middle',
-    //         //   };
-    //         // }
-    //         // rowPointer++;
-
-    //         // for (const row of dataRows) {
-    //         //   const values = section.subSections.map((s) => row[s.headerName] ?? '');
-    //         //   const rowExcel = worksheet.getRow(rowPointer);
-    //         //   values.forEach((val, idx) => {
-    //         //     rowExcel.getCell(colToLetter(colToNumber(startTableColumn) + idx)).value = val;
-    //         //   });
-    //         //   rowPointer++;
-    //       }
-    //     } else if (section.view === 'column') {
-    //       for (let i = 0; i < section.subSections.length; i++) {
-    //         const sub = section.subSections[i];
-    //         const colLetter = colToLetter(colToNumber(startTableColumn) + i);
-
-    //         worksheet.getCell(`${colLetter}${rowPointer}`).value = sub.headerName;
-    //         worksheet.getCell(`${colLetter}${rowPointer}`).fill = {
-    //           type: 'pattern',
-    //           pattern: 'solid',
-    //           fgColor: { argb: sub.headerBackGroundColor },
-    //         };
-    //         worksheet.getCell(`${colLetter}${rowPointer}`).font = {
-    //           bold: true,
-    //           color: { argb: sub.headerTextColor },
-    //         };
-    //         worksheet.getCell(`${colLetter}${rowPointer}`).alignment = {
-    //           horizontal: sub.horizontalAlignment as ExcelJS.Alignment['horizontal'],
-    //           vertical: sub.verticalAlignment as ExcelJS.Alignment['vertical'],
-    //         };
-    //       }
-    //       rowPointer++;
-
-    //       for (const row of dataRows) {
-    //         const rowExcel = worksheet.getRow(rowPointer);
-    //         section.subSections.forEach((s, idx) => {
-    //           rowExcel.getCell(colToLetter(colToNumber(startTableColumn) + idx)).value = row[s.headerName] ?? '';
-    //         });
-    //         rowPointer++;
-    //       }
-    //     }
-    //   } else {
-    //     rowPointer += 2;
-    //     headers = [];
-    //     headerLabelKey = '';
-    //     processedDataMap = {};
-    //     processingDataTableIndex++;
-    //   }
-    // }
+        processingTableIndex++;
+      }
+    }
   }
 
   await workbook.xlsx.writeFile(`${reportName}.xlsx`);
