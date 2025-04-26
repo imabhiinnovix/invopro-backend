@@ -9,7 +9,6 @@ interface IDataSourceVersion {
   dataSourceVersionId: Types.ObjectId;
   versionCode: string;
   dataSourceId: Types.ObjectId;
-  code: string;
 }
 
 interface IReportRequest extends Document {
