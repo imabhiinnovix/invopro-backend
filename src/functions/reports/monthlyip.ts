@@ -1,10 +1,5 @@
-import { promises as fsPromises } from 'fs';
-import path from 'path';
-
 import * as reportRequestService from '../../database/services/reportRequest.services';
 import {
-  addCellMaping,
-  DataItem,
   getAllProsecutionSavings,
   getAnnuitySavingsFromReductions,
   getAppsFiledBasedOnStc,
@@ -19,11 +14,10 @@ import {
   getTotalPortfolio,
   getTotalPortfolioPercentage,
   percentageOfCurrentYearInventionDisclosureConvertedToFilings,
-  processData,
   processStaticData,
   processSTCData,
 } from '../../database/services/monthlyipReport.services';
-import { createExcelSheetFile, createUpdateExcelTable, writeDataToExcel } from '../../utils/excel.utils';
+
 import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
 import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/dataSourceVersion.controller';
 import {
@@ -37,7 +31,6 @@ import { ReportHeaders } from '../../utils/common.type';
 export const generateMonthlyIpReport = async ({
   reportRequestPayload,
   requestedReportId,
-  sampleFilePath,
   disclosureDataSourceVersionId,
   portfolioDataSourceVersionId,
   sabicipDataSourceVersionId,
@@ -58,7 +51,6 @@ export const generateMonthlyIpReport = async ({
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
-  sampleFilePath: string;
   disclosureDataSourceVersionId: string;
   portfolioDataSourceVersionId: string;
   sabicipDataSourceVersionId: string;
@@ -83,7 +75,6 @@ export const generateMonthlyIpReport = async ({
     const splitedVersionValue = versionValue.split('-');
     const currentYear = splitedVersionValue[0];
     const currentMonth = splitedVersionValue[1];
-    const newFilePath = reportRequestPayload.filePath;
     const sbuHeaders = headers['global']['columns'];
 
     const toBeProcessedReportHeaders = [
@@ -91,7 +82,6 @@ export const generateMonthlyIpReport = async ({
       ...headers['global']['columns'],
       { reportHeader: 'Totals', attributeValues: ['Totals'] },
     ];
-    const reportHeaders = toBeProcessedReportHeaders.map((data) => data.reportHeader);
 
     const currentYearApplicationFiledData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -528,174 +518,6 @@ export const generateMonthlyIpReport = async ({
       ...processedSecondLargeData,
     ];
 
-    await createUpdateExcelTable({
-      data: finalProcessedData,
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableColumn: 'A',
-      headerColor: 'ffffff',
-      headerBackgroundColor: '7b7b7b',
-      headers: reportHeaders,
-      isWhiteBackGround: false,
-      borderColor: { right: '7b7b7b', bottom: '7b7b7b' },
-      tableRowBackGroundColor: {
-        2: 'ffc000',
-        3: 'b5c6e8',
-        4: 'b5c6e8',
-        5: 'b5c6e8',
-        11: 'b5c6e8',
-        12: 'b5c6e8',
-        17: 'b5c6e8',
-        26: 'b5c6e8',
-        32: 'b5c6e8',
-        34: 'b5c6e8',
-        35: 'b5c6e8',
-        37: 'b5c6e8',
-        39: 'b5c6e8',
-        42: 'b5c6e8',
-        44: 'b5c6e8',
-        45: 'b5c6e8',
-        47: 'b5c6e8',
-        10: 'ffc000',
-        18: 'ffc000',
-        21: 'ffc000',
-        27: 'ffc000',
-        36: 'ffc000',
-        38: 'ffc000',
-        49: '7b7b7b',
-      },
-      tableRowAlignment: {
-        2: 'center',
-        10: 'center',
-        18: 'center',
-        21: 'center',
-        27: 'center',
-        36: 'center',
-        38: 'center',
-      },
-      tableRowCellFormat: {
-        4: '0%',
-        35: '0%',
-        37: '"$" #,##0, "K"',
-        40: '"$" #,##0, "K"',
-        41: '"$" #,##0, "K"',
-        42: '"$" #,##0, "K"',
-        45: '"$" #,##0, "K"',
-        47: '"$" #,##0, "K"',
-      },
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 2,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 10,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 18,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 21,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 27,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 36,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 38,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 48,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 49,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length + 1,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 1,
-      columnBackGroundColor: '7b7b7b',
-      columnBackGroundColorIndex: reportHeaders.length + 1,
-      numRows: finalProcessedData.length,
-      columnWidth: 5,
-    });
     //stc tab
     //first table
     const newProjectOpenedBasedOnStc = await getProjectBasedOnStcs({
@@ -826,28 +648,6 @@ export const generateMonthlyIpReport = async ({
 
       // Add the result to the combinedData array
       combinedData.push(result);
-    });
-
-    await createUpdateExcelTable({
-      data: combinedSTCData,
-      filePath: newFilePath,
-      sheetName: 'STC',
-      gap: 0,
-      startTableColumn: 'A',
-      headerBackgroundColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      isWhiteBackGround: false,
-    });
-
-    await createUpdateExcelTable({
-      data: combinedData,
-      filePath: newFilePath,
-      sheetName: 'STC',
-      gap: 2,
-      startTableColumn: 'A',
-      headerBackgroundColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      isWhiteBackGround: false,
     });
 
     const reverseMapping = transformMonthlyIpData({ currentYear: Number(currentYear), isReverseMapping: true });

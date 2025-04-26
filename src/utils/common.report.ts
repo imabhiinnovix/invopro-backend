@@ -1,3 +1,8 @@
+import { getSchemaNameBasedOnVersionCodeAndOrgCode } from './common.utils';
+import { generateExcelReport } from './excel.utils';
+import * as dataSourceVersionValueService from '../database/services/defaultDataSourceVersionValue.services';
+import * as reportRequestService from '../database/services/reportRequest.services';
+
 export function processReportHeaders({
   data,
   headers,
@@ -226,4 +231,128 @@ export const transformFunctionsMap: Record<string, (params: MappingParams) => Re
   },
 };
 
-export function generateCustomReport();
+export async function generateCustomReportBasedOnReportRequestId({
+  reportRequestId,
+  orgCode,
+}: {
+  reportRequestId: string;
+  orgCode: string;
+}) {
+  try {
+    const reportDetails: any = await reportRequestService.findReportRequestById(reportRequestId, [
+      { path: 'customReportId', select: 'reportName reportSettings design' },
+    ]);
+
+    const reportData = {};
+    const designData = {};
+    const reportSettings = reportDetails?.customReportId?.reportSettings;
+    const designSettings = reportDetails?.customReportId?.design;
+    const dataSourceVersions = reportDetails?.dataSourceVersion;
+    const versionValue = reportDetails?.versionValue || '';
+    const currentYearVersionValue = versionValue.split('-')[0];
+    const reportName = reportDetails.customReportId.reportName;
+    const fileName = reportDetails.fileName;
+    const filePath = reportDetails.filePath;
+
+    if (reportDetails?.status !== 'completed') {
+      throw new Error(`The report is currently in '${reportDetails?.status}' status and cannot be downloaded.`);
+    }
+
+    if (dataSourceVersions && dataSourceVersions.length > 0) {
+      let mappings: Record<string, any> = {};
+      let designDetails: any[] = [];
+      for (let i = 0; i < dataSourceVersions.length; i++) {
+        const dataSourceVersion = dataSourceVersions[i];
+        const sheetCode = dataSourceVersion.sheetCode;
+        const designCode = dataSourceVersion.designCode;
+        const versionCode = dataSourceVersion.versionCode;
+        const dataSourceVersionId = dataSourceVersion.dataSourceVersionId;
+        const mappingFuctionName = dataSourceVersion.mappingFuctionName;
+        const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+          orgCode: orgCode,
+          versionCode: versionCode,
+        });
+        const query = { dataSourceVersionId: dataSourceVersionId };
+
+        const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
+          schemaName,
+          query,
+          page: 1,
+          select: 'rowData',
+          limit: Number.MAX_SAFE_INTEGER,
+        });
+
+        designDetails = JSON.parse(JSON.stringify(designSettings.get(sheetCode)));
+
+        const mappingFunc = transformFunctionsMap[mappingFuctionName];
+
+        if (mappingFunc) {
+          mappings = mappingFunc({ currentYear: currentYearVersionValue, isReverseMapping: false }) || {};
+        }
+        const transformedVersionData = dataSourceVersionData.data.map((entry) => {
+          const newRow = {};
+          const rowData = entry.rowData;
+
+          if (Object.keys(mappings).length === 0) {
+            // No mappings provided, keep original keys
+            Object.entries(rowData).forEach(([key, value]) => {
+              newRow[key] = value !== undefined ? value : null;
+            });
+          } else {
+            // Apply mappings
+            for (const [originalKey, mappedKey] of Object.entries(mappings)) {
+              newRow[mappedKey] = rowData[originalKey] !== undefined ? rowData[originalKey] : null;
+            }
+          }
+
+          return { ...newRow };
+        });
+
+        const isMappingEmpty = Object.keys(mappings).length === 0;
+
+        const transformedDesignData = designDetails[designCode]?.map((section) => {
+          const transformedSectionName = isMappingEmpty
+            ? section.sectionName
+            : mappings[section.sectionName] || section.sectionName;
+
+          const updatedSubSections = section.subSections.map((sub) => ({
+            ...sub,
+            headerName: isMappingEmpty ? sub.headerName : mappings[sub.headerName] || sub.headerName,
+          }));
+
+          return {
+            ...section,
+            sectionName: transformedSectionName,
+            subSections: updatedSubSections,
+          };
+        });
+
+        if (reportData[sheetCode]) {
+          reportData[sheetCode].push(transformedVersionData);
+        } else {
+          reportData[sheetCode] = [transformedVersionData];
+        }
+        if (designData[sheetCode]) {
+          designData[sheetCode] = [...designData[sheetCode], ...transformedDesignData];
+        } else {
+          designData[sheetCode] = transformedDesignData;
+        }
+      }
+    } else {
+      throw new Error(`Data not found.`);
+    }
+
+    await generateExcelReport({
+      reportName,
+      reportData,
+      designData: designData,
+      reportSettings,
+      filePath: filePath,
+    });
+
+    return { filePath, fileName };
+  } catch (e) {
+    console.log('Errror in generateCustomReportBasedOnReportRequestId', e);
+    throw e;
+  }
+}

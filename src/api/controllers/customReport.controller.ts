@@ -15,8 +15,8 @@ import { CustomReportModelAccess } from '../../database/models/customReportModel
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
 import * as dataSourceVersionValueService from '../../database/services/defaultDataSourceVersionValue.services';
 import mongoose from 'mongoose';
-import { transformFunctionsMap, transformMonthlyIpData, transformMonthlySTCData } from '../../utils/common.report';
-import { generateExcelReport } from '../../utils/excel.utils';
+import { generateCustomReportBasedOnReportRequestId } from '../../utils/common.report';
+
 const ObjectId = mongoose.Types.ObjectId;
 
 export const generateCustomReportsFunction = async ({
@@ -123,7 +123,6 @@ export const generateCustomReportsFunction = async ({
       const data = await generateMonthlyIpReport({
         reportRequestPayload,
         requestedReportId: reportRequestId as string,
-        sampleFilePath: customReportDetails.sampleFilePath!,
         disclosureDataSourceVersionId: versionMap[disclosureDataSource?.dataSourceId!],
         portfolioDataSourceVersionId: versionMap[portfolioDataSource?.dataSourceId!],
         sabicipDataSourceVersionId: versionMap[sabicipDataSource?.dataSourceId!],
@@ -322,141 +321,14 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
     const { reportRequestId } = req.params;
     const { orgCode } = req.user;
 
-    const reportDetails: any = await reportRequestService.findReportRequestById(reportRequestId, [
-      { path: 'customReportId', select: 'reportName reportSettings design' },
-    ]);
+    const generatedReportData = await generateCustomReportBasedOnReportRequestId({ reportRequestId, orgCode });
 
-    const reportData = {};
-    const designData = {};
-    const reportSettings = reportDetails?.customReportId?.reportSettings;
-    const designSettings = reportDetails?.customReportId?.design;
-    const dataSourceVersions = reportDetails?.dataSourceVersion;
-    const versionValue = reportDetails?.versionValue || '';
-    const currentYearVersionValue = versionValue.split('-')[0];
-    const reportName = reportDetails.customReportId.reportName;
-    const fileName = reportDetails.fileName;
-    const filePath = reportDetails.filePath;
-
-    if (reportDetails?.status !== 'completed') {
-      return res.status(400).json({
-        success: false,
-        message: `The report is currently in '${reportDetails?.status}' status and cannot be downloaded.`,
-      });
-    }
-
-    if (dataSourceVersions && dataSourceVersions.length > 0) {
-      let mappings: Record<string, any> = {};
-      let designDetails: any[] = [];
-      for (let i = 0; i < dataSourceVersions.length; i++) {
-        const dataSourceVersion = dataSourceVersions[i];
-        const sheetCode = dataSourceVersion.sheetCode;
-        const designCode = dataSourceVersion.designCode;
-        const versionCode = dataSourceVersion.versionCode;
-        const dataSourceVersionId = dataSourceVersion.dataSourceVersionId;
-        const mappingFuctionName = dataSourceVersion.mappingFuctionName;
-        const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
-          orgCode: orgCode,
-          versionCode: versionCode,
-        });
-        const query = { dataSourceVersionId: dataSourceVersionId };
-
-        const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
-          schemaName,
-          query,
-          page: 1,
-          select: 'rowData',
-          limit: Number.MAX_SAFE_INTEGER,
-        });
-
-        designDetails = JSON.parse(JSON.stringify(designSettings.get(sheetCode)));
-
-        const mappingFunc = transformFunctionsMap[mappingFuctionName];
-
-        if (mappingFunc) {
-          mappings = mappingFunc({ currentYear: currentYearVersionValue, isReverseMapping: false }) || {};
-        }
-        const transformedVersionData = dataSourceVersionData.data.map((entry) => {
-          const newRow = {};
-          const rowData = entry.rowData;
-
-          if (Object.keys(mappings).length === 0) {
-            // No mappings provided, keep original keys
-            Object.entries(rowData).forEach(([key, value]) => {
-              newRow[key] = value !== undefined ? value : null;
-            });
-          } else {
-            // Apply mappings
-            for (const [originalKey, mappedKey] of Object.entries(mappings)) {
-              newRow[mappedKey] = rowData[originalKey] !== undefined ? rowData[originalKey] : null;
-            }
-          }
-
-          return { ...newRow };
-        });
-
-        const isMappingEmpty = Object.keys(mappings).length === 0;
-
-        const transformedDesignData = designDetails[designCode]?.map((section) => {
-          const transformedSectionName = isMappingEmpty
-            ? section.sectionName
-            : mappings[section.sectionName] || section.sectionName;
-
-          const updatedSubSections = section.subSections.map((sub) => ({
-            ...sub,
-            headerName: isMappingEmpty ? sub.headerName : mappings[sub.headerName] || sub.headerName,
-          }));
-
-          return {
-            ...section,
-            sectionName: transformedSectionName,
-            subSections: updatedSubSections,
-          };
-        });
-
-        if (reportData[sheetCode]) {
-          reportData[sheetCode].push(transformedVersionData);
-        } else {
-          reportData[sheetCode] = [transformedVersionData];
-        }
-        if (designData[sheetCode]) {
-          designData[sheetCode] = [...designData[sheetCode], ...transformedDesignData];
-        } else {
-          designData[sheetCode] = transformedDesignData;
-        }
+    res.download(generatedReportData.filePath!, generatedReportData.fileName!, (err) => {
+      if (err) {
+        console.error('Error downloading file:', err);
+        res.status(500).send('Error downloading file');
       }
-    } else {
-    }
-
-    let x = await generateExcelReport({
-      reportName,
-      reportData,
-      designData: designData,
-      reportSettings,
-      fileName: fileName,
-      filePath: filePath,
     });
-
-    res.status(200).json({
-      success: true,
-      message: 'Report Request List Fetched Successfully',
-      reportName,
-      reportData,
-      designData: designData,
-      reportSettings,
-
-      // reportName,
-      // currentYearVersionValue,
-      // reportData,
-      // designData,
-      // reportSettings,
-    });
-
-    // res.download(reportDetails.filePath!, reportDetails.fileName!, (err) => {
-    //   if (err) {
-    //     console.error('Error downloading file:', err);
-    //     res.status(500).send('Error downloading file');
-    //   }
-    // });
   } catch (err) {
     console.log('Error in downloadReport', err);
     next(err);

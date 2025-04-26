@@ -718,14 +718,12 @@ export async function generateExcelReport({
   reportData,
   designData,
   reportSettings,
-  fileName,
   filePath,
 }: {
   reportName: string;
   reportData: Record<string, any[][]>;
   designData: Record<string, Section[]>;
   reportSettings: ReportSettings[];
-  fileName: string;
   filePath: string;
 }) {
   const workbook = new ExcelJS.Workbook();
@@ -982,7 +980,7 @@ export async function generateExcelReport({
     }
   }
 
-  await workbook.xlsx.writeFile(`${reportName}.xlsx`);
+  await workbook.xlsx.writeFile(filePath);
   console.log(`${reportName}.xlsx generated successfully.`);
 }
 
