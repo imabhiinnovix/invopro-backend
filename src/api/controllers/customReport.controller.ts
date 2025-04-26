@@ -15,7 +15,7 @@ import { CustomReportModelAccess } from '../../database/models/customReportModel
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
 import * as dataSourceVersionValueService from '../../database/services/defaultDataSourceVersionValue.services';
 import mongoose from 'mongoose';
-import { generateCustomReportBasedOnReportRequestId } from '../../utils/common.report';
+import { generateCustomReportBasedOnReportRequestId, transformFunctionsMap } from '../../utils/common.report';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -335,110 +335,71 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
   }
 };
 
-export const viewReport = async (req: Request, res: Response, next: NextFunction) => {
-  // try {
-  //   const { reportRequestId, dataSourceVersionId } = req.params;
-  //   const { organizationId, orgCode } = req.user;
-  //   const reportDetails = await reportRequestService.findReportRequestById(reportRequestId);
-  //   if (reportDetails) {
-  //     if (reportDetails.status !== 'completed') {
-  //       return res.status(400).json({
-  //         success: false,
-  //         message: `The report is currently in '${reportDetails?.status}' status and cannot be viewed.`,
-  //       });
-  //     }
-  //     const versionValue = reportDetails.versionValue;
-  //     const customReportId = String(reportDetails.customReportId);
-  //     const customReportDetails = await customReportServices.findCustomReportById(customReportId);
-  //     const designDetails = customReportDetails?.design;
-  //     let sectionDetails: any[] = [];
-  //     let mappings: Record<string, any> = {};
-  //     const dataSourceVersionIdArray = reportDetails.dataSourceVersion;
-  //     const reportName = customReportDetails?.reportName;
-  //     if (dataSourceVersionIdArray && dataSourceVersionIdArray.length > 0) {
-  //       let transformedSectionData: any[] = [];
-  //       let transformedVersionData: any[] = [];
-  //       for (let i = 0; i < dataSourceVersionIdArray.length; i++) {
-  //         const dataSourceVersion = dataSourceVersionIdArray[i];
-  //         const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
-  //           orgCode,
-  //           versionCode: dataSourceVersion.versionCode,
-  //         });
-  //         if (reportName && reportName.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'monthlyip') {
-  //           if (String(dataSourceVersion['dataSourceVersionId']) === String(dataSourceVersionId)) {
-  //             const currentYearVersionValue = versionValue.split('-')[0];
-  //             const pageName = dataSourceVersion['code'];
-  //             if (pageName === 'global') {
-  //               sectionDetails = designDetails?.['global'] ? designDetails?.['global'] : [];
-  //               mappings = transformMonthlyIpData({
-  //                 currentYear: Number(currentYearVersionValue),
-  //                 isReverseMapping: false,
-  //               });
-  //             }
-  //             if (pageName === 'stc') {
-  //               sectionDetails = designDetails?.['stc'] ? designDetails?.['stc'] : [];
-  //               mappings = transformMonthlySTCData({
-  //                 currentYear: Number(currentYearVersionValue),
-  //                 isReverseMapping: false,
-  //               });
-  //             }
-  //             const query = { dataSourceVersionId: new ObjectId(dataSourceVersionId) };
-  //             const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
-  //               schemaName,
-  //               query,
-  //               page: 1,
-  //               select: 'rowData',
-  //               limit: Number.MAX_SAFE_INTEGER,
-  //             });
-  //             transformedVersionData = dataSourceVersionData.data.map((entry) => {
-  //               const newRow = {};
-  //               const rowData = entry.rowData;
-  //               for (const [originalKey, mappedKey] of Object.entries(mappings)) {
-  //                 newRow[mappedKey] = rowData[originalKey] !== undefined ? rowData[originalKey] : null;
-  //               }
-  //               return {
-  //                 ...newRow,
-  //               };
-  //             });
-  //             transformedSectionData = sectionDetails.map((section) => {
-  //               const transformedSectionName = mappings[section.sectionName] || section.sectionName;
-  //               const updatedSubSections = section.subSections.map((sub) => {
-  //                 return {
-  //                   ...sub,
-  //                   headerName: mappings[sub.headerName] || sub.headerName,
-  //                 };
-  //               });
-  //               return {
-  //                 ...section,
-  //                 sectionName: transformedSectionName,
-  //                 subSections: updatedSubSections,
-  //               };
-  //             });
-  //           }
-  //         }
-  //       }
-  //       res.status(200).json({
-  //         success: true,
-  //         message: 'Report Details Fetched Successfully',
-  //         data: transformedVersionData,
-  //         sections: transformedSectionData,
-  //       });
-  //     } else {
-  //       res.status(404).json({
-  //         success: false,
-  //         message: `Report data not found.`,
-  //       });
-  //     }
-  //   } else {
-  //     res.status(400).json({
-  //       success: false,
-  //       message: `Report details not found.`,
-  //     });
-  //   }
-  // } catch (err) {
-  //   console.log('Error in viewReprt', err);
-  //   next(err);
-  // }
+export const getReportDataBasedOnDataSourceVersionId = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dataSourceVersionId } = req.params;
+    const { versionCode, mappingFuctionName, versionValue } = req.query as {
+      versionCode: string;
+      mappingFuctionName: string;
+      versionValue: string;
+    };
+    const { orgCode } = req.user;
+
+    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: versionCode,
+    });
+
+    const query = { dataSourceVersionId: new ObjectId(dataSourceVersionId) };
+    const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
+      schemaName,
+      query,
+      page: 1,
+      select: 'rowData',
+      limit: Number.MAX_SAFE_INTEGER,
+    });
+
+    if (dataSourceVersionData.data && dataSourceVersionData.data.length > 0) {
+      let mappings: Record<string, string> = {};
+      const mappingFunc = transformFunctionsMap[mappingFuctionName];
+
+      if (mappingFunc) {
+        mappings = mappingFunc({ currentYear: Number(versionValue), isReverseMapping: false }) || {};
+      }
+      const transformedVersionData = dataSourceVersionData.data.map((entry) => {
+        const newRow = {};
+        const rowData = entry.rowData;
+
+        if (Object.keys(mappings).length === 0) {
+          // No mappings provided, keep original keys
+          Object.entries(rowData).forEach(([key, value]) => {
+            newRow[key] = value !== undefined ? value : null;
+          });
+        } else {
+          // Apply mappings
+          for (const [originalKey, mappedKey] of Object.entries(mappings)) {
+            newRow[mappedKey] = rowData[originalKey] !== undefined ? rowData[originalKey] : null;
+          }
+        }
+
+        return { ...newRow };
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Report Data Fetched Successfully',
+        data: transformedVersionData,
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: `Report data not found.`,
+      });
+    }
+  } catch (err) {
+    console.log('Error in getReportDataBasedOnDataSourceVersionId', err);
+    next(err);
+  }
 };
 
 export const getReportVersionValuesBasedOnReportIdAndVersionValue = async (
@@ -504,6 +465,60 @@ export const getReportVersionValuesBasedOnReportIdAndVersionValue = async (
   }
 };
 
+export const getCustomReportDesignDetailsBasedOnReportId = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { customReportId } = req.params;
+    const { mappingFuctionName, versionValue, sheetCode, designCode } = req.query as {
+      sheetCode: string;
+      designCode: string;
+      mappingFuctionName: string;
+      versionValue: string;
+    };
+    const customReportData = await customReportServices.findCustomReportById(customReportId);
+    const designDetails = customReportData?.design?.[sheetCode]?.[designCode];
+
+    if (designDetails && designDetails.length > 0) {
+      const mappingFunc = transformFunctionsMap[mappingFuctionName];
+      let mappings = {};
+      if (mappingFunc) {
+        mappings = mappingFunc({ currentYear: Number(versionValue), isReverseMapping: false }) || {};
+      }
+
+      const isMappingEmpty = Object.keys(mappings).length === 0;
+      const transformedDesignData = designDetails?.map((section) => {
+        const transformedSectionName = isMappingEmpty
+          ? section.sectionName
+          : mappings[section.sectionName] || section.sectionName;
+
+        const updatedSubSections = section.subSections.map((sub) => ({
+          ...sub,
+          headerName: isMappingEmpty ? sub.headerName : mappings[sub.headerName] || sub.headerName,
+        }));
+
+        return {
+          ...section,
+          sectionName: transformedSectionName,
+          subSections: updatedSubSections,
+        };
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Design data fetched successfully',
+        data: transformedDesignData,
+        designDetails,
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: `Design data not found.`,
+      });
+    }
+  } catch (e) {
+    console.log('Error in getCustomReportDesignDetailsBasedOnReportId', e);
+    next(e);
+  }
+};
 export const getReportRequestDetails = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { reportRequestId } = req.params;

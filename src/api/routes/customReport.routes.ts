@@ -11,7 +11,8 @@ import {
   getReportVersionValuesBasedOnReportIdAndVersionValue,
   listCustomReports,
   listReportRequest,
-  viewReport,
+  getReportDataBasedOnDataSourceVersionId,
+  getCustomReportDesignDetailsBasedOnReportId,
 } from '../controllers/customReport.controller';
 
 const router = Router();
@@ -28,7 +29,13 @@ router.post(
 );
 
 router.get('/download/:reportRequestId', authenticateToken, downloadReport);
-router.get('/view/:reportRequestId/:dataSourceVersionId', authenticateToken, viewReport);
+router.get(
+  '/reportDataOnDataSourceVersionId/:dataSourceVersionId',
+  authenticateToken,
+  getReportDataBasedOnDataSourceVersionId
+);
+
+router.get('/customReportDesignData/:customReportId', authenticateToken, getCustomReportDesignDetailsBasedOnReportId);
 router.get('/reportDetails/:reportRequestId', authenticateToken, getReportRequestDetails);
 router.get('/reportData/:dataSourceId', authenticateToken, getCustomReportDataBasedOnDataSourcedIdAndVersionValueRange);
 
