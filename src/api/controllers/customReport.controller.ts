@@ -116,7 +116,7 @@ export const generateCustomReportsFunction = async ({
       const currentStaticEstimatesDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'estimates');
       const monthlyIpDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyipglobal');
       const monthlyipstcDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyipstc');
-
+      const monthlyipstcsbuDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyipstcsbu');
       const staticProjectOpenedDataSource = customReportDetails.dataSourceIds.find(
         (ds) => ds.code === 'projectsopened'
       );
@@ -134,6 +134,7 @@ export const generateCustomReportsFunction = async ({
         staticProjectOpenedDataSourceId: staticProjectOpenedDataSource?.dataSourceId!,
         monthlyIpDataSource: monthlyIpDataSource?.dataSourceId!,
         monthlyipstcDataSource: monthlyipstcDataSource?.dataSourceId!,
+        monthlyipstcsbuDataSource: monthlyipstcsbuDataSource?.dataSourceId!,
         isRowData,
         userId,
         organizationId,

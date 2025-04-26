@@ -1,8 +1,12 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
 interface IDataSourceVersion {
-  name: string;
-  dataSourceVersionId: Types.ObjectId;
+  sheetName: string;
+  sheetCode: string;
+  tabName: string;
+  mappingFuctionName: string;
+  designCode: string;
+  dataSourceVersionId: string;
   versionCode: string;
   dataSourceId: Types.ObjectId;
   code: string;
@@ -23,9 +27,12 @@ interface IReportRequest extends Document {
 
 const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
   {
-    name: { type: String, required: true },
-    code: { type: String, required: true },
-    dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'data_source_version' },
+    sheetName: { type: String, required: true },
+    sheetCode: { type: String, required: true },
+    tabName: { type: String, required: true },
+    mappingFuctionName: { type: String, required: true },
+    designCode: { type: String, required: true },
+    dataSourceVersionId: { type: String, required: true },
     versionCode: { type: String, required: true },
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_sources' },
   },

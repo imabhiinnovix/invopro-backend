@@ -733,57 +733,16 @@ export async function getAccoladeMappingSheet({
     const shppAccoladeStdData = categorizeStdProjectsAndRemoveRowDataExtraKey(shppAccoladeRawData);
     const sabicAccoladeStdData = categorizeStdProjectsAndRemoveRowDataExtraKey(sabicAccoladeRawData);
     const combinedAccoladeStdData = [...shppAccoladeStdData, ...sabicAccoladeStdData];
-    const allStdData: any[] = [];
 
-    const rawDataActiveFilling: any[] = [];
-    const rawDataNewFilling: any[] = [];
-    const rawDataOpenDisclosure: any[] = [];
-    const rawDataDraftDisclosure: any[] = [];
-    const activeApplicationAccoladeStdData = activeApplicationRawData.map((row) => {
-      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
-      if (matchingStd) {
-        allStdData.push(matchingStd);
-        rawDataActiveFilling.push({ ...row.rowData, STD: matchingStd.STD });
-      }
-      return { accoladeStdData: matchingStd ? matchingStd : '', activeApplicationData: row.rowData };
-    });
-
-    const newFilingThisYearAccoladeStdData = newFilingThisYearRawData.map((row) => {
-      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
-      if (matchingStd) {
-        allStdData.push(matchingStd);
-        rawDataNewFilling.push({ ...row.rowData, STD: matchingStd.STD });
-      }
-      return { accoladeStdData: matchingStd ? matchingStd : '', newFilingThisYearData: row.rowData };
-    });
-
-    const openDisclosureAccoladeStdData = openDisclosureRawData.map((row) => {
-      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.Accolade);
-      if (matchingStd) {
-        allStdData.push(matchingStd);
-        rawDataOpenDisclosure.push({ ...row.rowData, STD: matchingStd.STD });
-      }
-      return { accoladeStdData: matchingStd ? matchingStd : '', openDisclosureData: row.rowData };
-    });
-
-    const draftDisclosureAccoladeStdData = draftDisclosureRawData.map((row) => {
-      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.Accolade);
-      if (matchingStd) {
-        allStdData.push(matchingStd);
-        rawDataDraftDisclosure.push({ ...row.rowData, STD: matchingStd.STD });
-      }
-      return { accoladeStdData: matchingStd ? matchingStd : '', draftDisclosureData: row.rowData };
-    });
-
-    if (isRowData) {
-      return { rawDataActiveFilling, rawDataNewFilling, rawDataOpenDisclosure, rawDataDraftDisclosure };
-    }
+    // if (isRowData) {
+    //   return { rawDataActiveFilling, rawDataNewFilling, rawDataOpenDisclosure, rawDataDraftDisclosure };
+    // }
     return {
-      activeApplicationAccoladeStdData,
-      newFilingThisYearAccoladeStdData,
-      openDisclosureAccoladeStdData,
-      draftDisclosureAccoladeStdData,
-      allStdData,
+      combinedAccoladeStdData,
+      activeApplicationRawData,
+      newFilingThisYearRawData,
+      openDisclosureRawData,
+      draftDisclosureRawData,
     };
   } catch (e) {
     console.log('Error in getAccoladeMappingSheet', e);

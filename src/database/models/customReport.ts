@@ -53,7 +53,7 @@ interface ICustomReport extends Document {
   sampleFilePath: string;
   headers: Record<string, IHeaderSection>;
   reportSettings: IReportSetting[];
-  design: Record<string, ISection[]>;
+  design: Record<string, Record<string, ISection[]>>;
 }
 
 interface IReportSetting {
@@ -126,7 +126,13 @@ const CustomReportSchema = new Schema<ICustomReport>(
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
     headers: { type: Map, of: HeaderSectionSchema },
     reportSettings: { type: [ReportSettingSchema], required: true },
-    design: { type: Map, of: [SectionSchema] },
+    design: {
+      type: Map,
+      of: {
+        type: Map,
+        of: [SectionSchema],
+      },
+    },
   },
   {
     timestamps: true,
