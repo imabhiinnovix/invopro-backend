@@ -58,7 +58,7 @@ interface ICustomReport extends Document {
 
 interface IReportSetting {
   sheetName: string;
-  code: string;
+  sheetCode: string;
   isWhiteBackGround: boolean;
   startTableColumn: string;
   startRowNumber: number;
@@ -104,7 +104,7 @@ const SectionSchema = new Schema<ISection>({
 
 const ReportSettingSchema = new Schema<IReportSetting>({
   sheetName: { type: String, required: true },
-  code: { type: String, required: true },
+  sheetCode: { type: String, required: true },
   isWhiteBackGround: { type: Boolean, required: true },
   startTableColumn: { type: String, required: true },
   startRowNumber: { type: Number, required: true },

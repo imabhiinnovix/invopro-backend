@@ -903,7 +903,9 @@ export async function generateExcelReport({
                 cell.numFmt = subSection.cellFormat;
               }
             });
+            rowPointer++;
           } else {
+            rowPointer = lastRowIndex + 2;
             const headerRow = worksheet.getRow(headerRowIndex);
             headerRow.eachCell((cell, colIndex) => {
               if (cell.value === headerName) {
@@ -948,7 +950,6 @@ export async function generateExcelReport({
               }
             });
           }
-          rowPointer++;
         }
       } else {
         const individualTable = tableData[processingTableIndex];

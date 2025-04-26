@@ -15,7 +15,7 @@ import { CustomReportModelAccess } from '../../database/models/customReportModel
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
 import * as dataSourceVersionValueService from '../../database/services/defaultDataSourceVersionValue.services';
 import mongoose from 'mongoose';
-import { transformMonthlyIpData, transformMonthlySTCData } from '../../utils/common.report';
+import { transformFunctionsMap, transformMonthlyIpData, transformMonthlySTCData } from '../../utils/common.report';
 import { generateExcelReport } from '../../utils/excel.utils';
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -333,6 +333,7 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
     const versionValue = reportDetails?.versionValue || '';
     const currentYearVersionValue = versionValue.split('-')[0];
     const reportName = reportDetails.customReportId.reportName;
+    const mappingFuctionName = reportDetails.mappingFuctionName;
     if (dataSourceVersions && dataSourceVersions.length > 0) {
       let mappings: Record<string, any> = {};
       let designDetails: any[] = [];
@@ -355,61 +356,52 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
           limit: Number.MAX_SAFE_INTEGER,
         });
 
-        if (reportName && reportName.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'monthlyip') {
-          designDetails = JSON.parse(JSON.stringify(designSettings.get(sheetCode)));
-          if (sheetCode === 'global') {
-            mappings = transformMonthlyIpData({
-              currentYear: Number(currentYearVersionValue),
-              isReverseMapping: false,
-            });
-          }
-          if (sheetCode === 'stc') {
-            mappings = transformMonthlySTCData({
-              currentYear: Number(currentYearVersionValue),
-              isReverseMapping: false,
-            });
-          }
-          const transformedVersionData = dataSourceVersionData.data.map((entry) => {
-            const newRow = {};
-            const rowData = entry.rowData;
+        designDetails = JSON.parse(JSON.stringify(designSettings.get(sheetCode)));
+        const mappingFunc = transformFunctionsMap[funcNameFromDB];
+        const transformedVersionData = dataSourceVersionData.data.map((entry) => {
+          const newRow = {};
+          const rowData = entry.rowData;
 
-            for (const [originalKey, mappedKey] of Object.entries(mappings)) {
-              newRow[mappedKey] = rowData[originalKey] !== undefined ? rowData[originalKey] : null;
-            }
+          for (const [originalKey, mappedKey] of Object.entries(mappings)) {
+            newRow[mappedKey] = rowData[originalKey] !== undefined ? rowData[originalKey] : null;
+          }
+          return {
+            ...newRow,
+          };
+        });
+
+        const transformedDesignData = designDetails?.map((section) => {
+          const transformedSectionName = mappings[section.sectionName] || section.sectionName;
+
+          const updatedSubSections = section.subSections.map((sub) => {
             return {
-              ...newRow,
+              ...sub,
+              headerName: mappings[sub.headerName] || sub.headerName,
             };
           });
+          return {
+            ...section,
+            sectionName: transformedSectionName,
+            subSections: updatedSubSections,
+          };
+        });
 
-          const transformedDesignData = designDetails?.map((section) => {
-            const transformedSectionName = mappings[section.sectionName] || section.sectionName;
-
-            const updatedSubSections = section.subSections.map((sub) => {
-              return {
-                ...sub,
-                headerName: mappings[sub.headerName] || sub.headerName,
-              };
-            });
-            return {
-              ...section,
-              sectionName: transformedSectionName,
-              subSections: updatedSubSections,
-            };
-          });
-
+        if (reportData[sheetCode]) {
+          reportData[sheetCode].push(transformedVersionData);
+        } else {
           reportData[sheetCode] = [transformedVersionData];
-          designData[sheetCode] = transformedDesignData;
         }
+        designData[sheetCode] = transformedDesignData;
       }
     } else {
     }
 
-    let x = await generateExcelReport({ reportName, reportData, designData: designData, reportSettings });
+    // let x = await generateExcelReport({ reportName, reportData, designData: designData, reportSettings });
 
     res.status(200).json({
       success: true,
       message: 'Report Request List Fetched Successfully',
-      x,
+      reportData,
       // reportName,
       // currentYearVersionValue,
       // reportData,
