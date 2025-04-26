@@ -49,7 +49,7 @@ interface ICustomReport extends Document {
   organizationId: Types.ObjectId;
   sampleFilePath: string;
   headers: Record<string, IHeaderSection>;
-  design: Record<string, ISection[]>;
+  design: Record<string, Record<string, ISection[]>>;
 }
 
 const ColumnSchema = new Schema<IColumn>({
@@ -101,7 +101,13 @@ const CustomReportSchema = new Schema<ICustomReport>(
     ],
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
     headers: { type: Map, of: HeaderSectionSchema },
-    design: { type: Map, of: [SectionSchema] },
+    design: {
+      type: Map,
+      of: {
+        type: Map,
+        of: [SectionSchema],
+      },
+    },
   },
   {
     timestamps: true,
