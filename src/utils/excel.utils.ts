@@ -663,7 +663,7 @@ export function excelDateToJSDate(serial: number) {
 
 interface ReportSettings {
   sheetName: string;
-  code: string;
+  sheetCode: string;
   isWhiteBackGround: boolean;
   startTableColumn: string;
   startRowNumber: number;
@@ -718,21 +718,25 @@ export async function generateExcelReport({
   reportData,
   designData,
   reportSettings,
+  fileName,
+  filePath,
 }: {
   reportName: string;
   reportData: Record<string, any[][]>;
   designData: Record<string, Section[]>;
   reportSettings: ReportSettings[];
+  fileName: string;
+  filePath: string;
 }) {
   const workbook = new ExcelJS.Workbook();
 
   for (const setting of reportSettings) {
-    const { sheetName, code, startTableColumn, startRowNumber } = setting;
+    const { sheetName, sheetCode, startTableColumn, startRowNumber } = setting;
     const worksheet = workbook.addWorksheet(sheetName, {
       properties: { defaultColWidth: 22 },
     });
-    const sections = designData[code] || [];
-    const reportDataBasedOnSheetCode = reportData[code] || [];
+    const sections = designData[sheetCode] || [];
+    const reportDataBasedOnSheetCode = reportData[sheetCode] || [];
 
     let rowPointer = startRowNumber;
     const tableData: any[] = [];
@@ -961,7 +965,7 @@ export async function generateExcelReport({
 
         // Add a table to the worksheet
         worksheet.addTable({
-          name: `DynamicTable_${code.toLowerCase().replace(/[^a-z]/g, '')}_${processingTableIndex}_${rowPointer}`, // Unique table name
+          name: `DynamicTable_${sheetCode.toLowerCase().replace(/[^a-z]/g, '')}_${processingTableIndex}_${rowPointer}`, // Unique table name
           ref: tableRef,
           headerRow: true,
           totalsRow: false,

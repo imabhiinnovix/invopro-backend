@@ -6,7 +6,7 @@ interface IDataSourceVersion {
   tabName: string;
   mappingFuctionName: string;
   designCode: string;
-  dataSourceVersionId: string;
+  dataSourceVersionId: Types.ObjectId;
   versionCode: string;
   dataSourceId: Types.ObjectId;
   code: string;
@@ -32,7 +32,7 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
     tabName: { type: String, required: true },
     mappingFuctionName: { type: String, required: true },
     designCode: { type: String, required: true },
-    dataSourceVersionId: { type: String, required: true },
+    dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'data_source_version' },
     versionCode: { type: String, required: true },
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_sources' },
   },

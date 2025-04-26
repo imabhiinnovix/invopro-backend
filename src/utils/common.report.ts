@@ -217,7 +217,7 @@ export const transformFunctionsMap: Record<string, (params: MappingParams) => Re
   },
   transformMonthlySTCSBUData: ({ currentYear, isReverseMapping }) => {
     const mapping = {
-      STC: 'SBU',
+      SBU: 'SBU',
       'New Projects opened in Current Year': `New Projects opened in ${currentYear}`,
       'Total Open Projects': `Total Open Projects`,
       'Current Year Filed': `${currentYear} Filed`,
@@ -225,3 +225,5 @@ export const transformFunctionsMap: Record<string, (params: MappingParams) => Re
     return isReverseMapping ? Object.fromEntries(Object.entries(mapping).map(([k, v]) => [v, k])) : mapping;
   },
 };
+
+export function generateCustomReport();
