@@ -357,7 +357,7 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
         });
 
         designDetails = JSON.parse(JSON.stringify(designSettings.get(sheetCode)));
-        const mappingFunc = transformFunctionsMap[mappingFuctionName];
+        const mappingFunc = transformFunctionsMap[mappingFuctionName] || {};
         const transformedVersionData = dataSourceVersionData.data.map((entry) => {
           const newRow = {};
           const rowData = entry.rowData;
