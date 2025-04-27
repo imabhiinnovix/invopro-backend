@@ -12,6 +12,7 @@ import * as reportRequestService from '../../database/services/reportRequest.ser
 import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
 import { ReportHeaders } from '../../utils/common.type';
 import { processReportHeaders } from '../../utils/common.report';
+import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/dataSourceVersion.controller';
 
 export const generateSupplementalIpReport = async ({
   reportRequestPayload,
@@ -30,9 +31,24 @@ export const generateSupplementalIpReport = async ({
   ipAnalystDataSourceVersionId,
   shppAccoladeDataSourceVersionId,
   sabicAccoladeDataSourceVersionId,
+  // newly added supplementalIp fields
+  supplementalIpAgreementsFinalAgreementTypeDataSourceId,
+  supplementalIpAgreementsOthersDataSourceId,
+  supplementalIpBangaloreIpGroupCurrentStatusDataSourceId,
+  supplementalIpBangaloreIpGroupSbuDataSourceId,
+  supplementalIpBangaloreIpGroupWorkScopeDataSourceId,
+  supplementalIpBangaloreIpGroupWorkProductDataSourceId,
+  supplementalIpAccoladeMappingSheetDataSourceId,
+  supplementalIpPatentValueCoverageActiveDataSourceId,
+  patentValueCoverageNewDataSourceId,
+  supplementalIpStrategicReportingClassDataSourceId,
+  supplementalIpNewCoverageDataSourceId,
   customReportModel,
   isRowData,
   headers,
+  userId,
+  orgCode,
+  organizationId,
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
@@ -50,13 +66,30 @@ export const generateSupplementalIpReport = async ({
   ipAnalystDataSourceVersionId: string;
   shppAccoladeDataSourceVersionId: string;
   sabicAccoladeDataSourceVersionId: string;
+  // newly added supplementalIp types
+  supplementalIpAgreementsFinalAgreementTypeDataSourceId: string;
+  supplementalIpAgreementsOthersDataSourceId: string;
+  supplementalIpBangaloreIpGroupCurrentStatusDataSourceId: string;
+  supplementalIpBangaloreIpGroupSbuDataSourceId: string;
+  supplementalIpBangaloreIpGroupWorkScopeDataSourceId: string;
+  supplementalIpBangaloreIpGroupWorkProductDataSourceId: string;
+  supplementalIpAccoladeMappingSheetDataSourceId: string;
+  supplementalIpPatentValueCoverageActiveDataSourceId: string;
+  patentValueCoverageNewDataSourceId: string;
+  supplementalIpStrategicReportingClassDataSourceId: string;
+  supplementalIpNewCoverageDataSourceId: string;
   customReportModel: CustomReportModelAccessReturnType;
   isRowData?: boolean;
   headers: ReportHeaders;
+  userId: string;
+  orgCode: string;
+  organizationId: string;
 }) => {
   try {
     const newFilePath = reportRequestPayload.filePath;
     const currentYear = reportRequestPayload.versionValue.split('-')[0];
+    const customReportId = reportRequestPayload.customReportId;
+    const versionValue = reportRequestPayload.versionValue;
 
     const currentYearAgreementSigned: any = await getAgreementSigned({
       sabicContractsDataSourceVersionId,
@@ -78,6 +111,17 @@ export const generateSupplementalIpReport = async ({
       ],
     });
 
+    const dataSourceVersionDetailsFinalAgreement = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: supplementalIpAgreementsFinalAgreementTypeDataSourceId,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: proceessedFinalAgreement,
+      userId,
+      organizationId,
+      orgCode,
+    });
+
     const proceessedOtherAgreement = processReportHeaders({
       data: isRowData ? [] : currentYearAgreementSigned?.otherAgreementResult,
       headers: [
@@ -87,10 +131,68 @@ export const generateSupplementalIpReport = async ({
       ],
     });
 
+    const dataSourceVersionDetailsAgreementOthers = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: supplementalIpAgreementsOthersDataSourceId,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: proceessedOtherAgreement,
+      userId,
+      organizationId,
+      orgCode,
+    });
+
     const currentYearIpAnalysis = await getIpAnalysis({
       ipAnalystDataSourceVersionId,
       customReportModel,
     });
+
+    const dataSourceVersionDetailspBangaloreIpGroupCurrentStatus =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: supplementalIpBangaloreIpGroupCurrentStatusDataSourceId,
+        customReportId: customReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: currentYearIpAnalysis.countData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const dataSourceVersionDetailspBangaloreIpGroupSbuData = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: supplementalIpBangaloreIpGroupSbuDataSourceId,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: currentYearIpAnalysis.firstBarGraphChartData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+
+    const dataSourceVersionDetailspBangaloreIpGroupWorkScopeData =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: supplementalIpBangaloreIpGroupWorkScopeDataSourceId,
+        customReportId: customReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: currentYearIpAnalysis.secondBarGraphChartData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const dataSourceVersionDetailspBangaloreIpGroupWorkProductData =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: supplementalIpBangaloreIpGroupWorkProductDataSourceId,
+        customReportId: customReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: currentYearIpAnalysis.thirdBarGraphChartData,
+        userId,
+        organizationId,
+        orgCode,
+      });
 
     //Supplement ip part-2
     const accoladeMappingSheetData = await getAccoladeMappingSheet({
@@ -187,63 +289,63 @@ export const generateSupplementalIpReport = async ({
         attributeValues: ['BU'],
       },
       {
-        reportHeader: 'Tech Group',
+        reportHeader: 'TechGroup',
         attributeValues: ['TechGroup'],
       },
       {
-        reportHeader: 'Product Line',
+        reportHeader: 'ProductLine',
         attributeValues: ['ProductLine'],
       },
       {
-        reportHeader: 'Project ID',
+        reportHeader: 'ProjectID',
         attributeValues: ['ProjectID'],
       },
       {
-        reportHeader: 'STD. SBU',
+        reportHeader: 'STDSBU',
         attributeValues: ['STD'],
       },
       {
-        reportHeader: 'Strategic Reporting Class',
+        reportHeader: 'StrategicReportingClass',
         attributeValues: ['StrategicReportingClass'],
       },
       {
-        reportHeader: 'Sustainability Impact Classification',
+        reportHeader: 'SustainabilityImpactClassification',
         attributeValues: ['SustainabilityImpactClassification'],
       },
       {
-        reportHeader: 'Sustainability Score',
+        reportHeader: 'SustainabilityScore',
         attributeValues: ['SUSTotalSCORE'],
       },
       {
-        reportHeader: 'No. of Active Applications',
+        reportHeader: 'NoofActiveApplications',
         attributeValues: ['noOfActiveApplications'],
       },
       {
-        reportHeader: 'No. of New Applications',
+        reportHeader: 'NoofNewApplications',
         attributeValues: ['noOfNewApplications'],
       },
       {
-        reportHeader: 'No. of Active Disclosures',
+        reportHeader: 'NoofActiveDisclosures',
         attributeValues: ['noOfActiveDisclosures'],
       },
       {
-        reportHeader: 'List of Active Disclosures',
+        reportHeader: 'ListofActiveDisclosures',
         attributeValues: ['listOfActiveDisclosures'],
       },
       {
-        reportHeader: 'No. of RTD Disclosures',
+        reportHeader: 'NoofRTDDisclosures',
         attributeValues: ['noOfRTDDisclosures'],
       },
       {
-        reportHeader: 'List of RTD Disclosures',
+        reportHeader: 'ListofRTDDisclosures',
         attributeValues: ['List of RTD Disclosures'],
       },
       {
-        reportHeader: 'Project Name',
+        reportHeader: 'ProjectName',
         attributeValues: ['ProjectName'],
       },
       {
-        reportHeader: 'Risk-Adjusted NPV',
+        reportHeader: 'RiskAdjustedNPV',
         attributeValues: ['RiskAdjustedNPV'],
       },
       {
@@ -251,39 +353,39 @@ export const generateSupplementalIpReport = async ({
         attributeValues: ['NPV'],
       },
       {
-        reportHeader: 'Project Current Stage Name',
+        reportHeader: 'ProjectCurrentStageName',
         attributeValues: ['ProjectCurrentStageName'],
       },
       {
-        reportHeader: 'Project Last Gate Decision',
+        reportHeader: 'ProjectLastGateDecision',
         attributeValues: ['ProjectLastGateDecision'],
       },
       {
-        reportHeader: 'Project Closed',
+        reportHeader: 'ProjectClosed',
         attributeValues: ['ProjectClosed'],
       },
       {
-        reportHeader: 'Project Stage Relative Position',
+        reportHeader: 'ProjectStageRelativePosition',
         attributeValues: ['ProjectStageRelativePosition'],
       },
       {
-        reportHeader: 'Top Project',
+        reportHeader: 'TopProject',
         attributeValues: ['TopProject'],
       },
       {
-        reportHeader: 'Project Leader Name',
+        reportHeader: 'ProjectLeaderName',
         attributeValues: ['ProjectLeaderName'],
       },
       {
-        reportHeader: 'Project Type',
+        reportHeader: 'ProjectType',
         attributeValues: ['ProjectType'],
       },
       {
-        reportHeader: 'T&I',
+        reportHeader: 'TI',
         attributeValues: ['TI'],
       },
       {
-        reportHeader: 'IP Legal Counsil Member Assigned',
+        reportHeader: 'IPLegalCounsilMemberAssigned',
         attributeValues: ['IPLegalCounsilMemberAssigned'],
       },
       {
@@ -297,19 +399,188 @@ export const generateSupplementalIpReport = async ({
       headers: accoladeMappingSheetHeaders,
     });
 
+    const dataSourceVersionDetailsAccoladeMappingSheetData = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: supplementalIpAccoladeMappingSheetDataSourceId,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: proceessedMappingSheetData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+
     const activePatentValueCoverage = getActivePatentValueCoverage({
       allAccoladeMappingSheetData: allAccoladeMappingSheet,
     });
 
+    const dataSourceVersionDetailsPatentValueCoverageActiveData =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: supplementalIpPatentValueCoverageActiveDataSourceId,
+        customReportId: customReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: activePatentValueCoverage,
+        userId,
+        organizationId,
+        orgCode,
+      });
     const newPatentValueCoverage = getNewPatentValueCoverage({
       allAccoladeMappingSheetData: allAccoladeMappingSheet,
     });
 
+    const dataSourceVersionDetailsPatentValueCoverageNewData = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: patentValueCoverageNewDataSourceId,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: newPatentValueCoverage,
+      userId,
+      organizationId,
+      orgCode,
+    });
     const strategicReportingClassData = getStrategicReportingClass({
       allAccoladeMappingSheetData: allAccoladeMappingSheet,
     });
 
+    const dataSourceVersionDetailsStrategicReportingClassData = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: supplementalIpStrategicReportingClassDataSourceId,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: strategicReportingClassData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+
     const newCoverageData = getNewCoverage({ allAccoladeMappingSheetData: allAccoladeMappingSheet });
+    const dataSourceVersionDetailspNewCoverageData = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: supplementalIpNewCoverageDataSourceId,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: newCoverageData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+
+    await reportRequestService.updateReportRequest(requestedReportId, {
+      status: 'completed',
+      dataSourceVersion: [
+        {
+          sheetName: 'Agreements',
+          sheetCode: 'agreements',
+          tabName: 'Agreements:Final',
+          mappingFuctionName: '',
+          designCode: 'final',
+          dataSourceVersionId: dataSourceVersionDetailsFinalAgreement.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailsFinalAgreement.versionCode,
+          dataSourceId: supplementalIpAgreementsFinalAgreementTypeDataSourceId,
+        },
+        {
+          sheetName: 'Agreements',
+          sheetCode: 'agreements',
+          tabName: 'Agreements:Other',
+          mappingFuctionName: '',
+          designCode: 'other',
+          dataSourceVersionId: dataSourceVersionDetailsAgreementOthers.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailsAgreementOthers.versionCode,
+          dataSourceId: supplementalIpAgreementsOthersDataSourceId,
+        },
+        {
+          sheetName: 'BANGALORE IP GROUP',
+          sheetCode: 'bangaloreipgroup',
+          tabName: 'BANGALORE IP GROUP:Status',
+          mappingFuctionName: '',
+          designCode: 'status',
+          dataSourceVersionId: dataSourceVersionDetailspBangaloreIpGroupCurrentStatus.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailspBangaloreIpGroupCurrentStatus.versionCode,
+          dataSourceId: supplementalIpBangaloreIpGroupCurrentStatusDataSourceId,
+        },
+        {
+          sheetName: 'BANGALORE IP GROUP',
+          sheetCode: 'bangaloreipgroup',
+          tabName: 'BANGALORE IP GROUP:SBU',
+          mappingFuctionName: '',
+          designCode: 'sbu',
+          dataSourceVersionId: dataSourceVersionDetailspBangaloreIpGroupSbuData.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailspBangaloreIpGroupSbuData.versionCode,
+          dataSourceId: supplementalIpBangaloreIpGroupSbuDataSourceId,
+        },
+        {
+          sheetName: 'BANGALORE IP GROUP',
+          sheetCode: 'bangaloreipgroup',
+          tabName: 'BANGALORE IP GROUP:Workscope',
+          mappingFuctionName: '',
+          designCode: 'workscope',
+          dataSourceVersionId: dataSourceVersionDetailspBangaloreIpGroupWorkScopeData.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailspBangaloreIpGroupWorkScopeData.versionCode,
+          dataSourceId: supplementalIpBangaloreIpGroupWorkScopeDataSourceId,
+        },
+        {
+          sheetName: 'BANGALORE IP GROUP',
+          sheetCode: 'bangaloreipgroup',
+          tabName: 'BANGALORE IP GROUP:Work Product',
+          mappingFuctionName: '',
+          designCode: 'workproduct',
+          dataSourceVersionId: dataSourceVersionDetailspBangaloreIpGroupWorkProductData.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailspBangaloreIpGroupWorkProductData.versionCode,
+          dataSourceId: supplementalIpBangaloreIpGroupWorkProductDataSourceId,
+        },
+        {
+          sheetName: 'Accolade Mapping Sheet',
+          sheetCode: 'accolademappingsheet',
+          tabName: 'Accolade Mapping Sheet',
+          mappingFuctionName: 'transformSupplementalIpAccoladeMappingSheet',
+          designCode: 'accolademappingsheet',
+          dataSourceVersionId: dataSourceVersionDetailsAccoladeMappingSheetData.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailsAccoladeMappingSheetData.versionCode,
+          dataSourceId: supplementalIpAccoladeMappingSheetDataSourceId,
+        },
+        {
+          sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
+          sheetCode: 'patentvaluecoverageactive',
+          tabName: 'PATENT VALUE COVERAGE-ACTIVE',
+          mappingFuctionName: 'transformSupplementalIpPatentValueCoverageActive',
+          designCode: 'patentvaluecoverageactive',
+          dataSourceVersionId: dataSourceVersionDetailsPatentValueCoverageActiveData.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailsPatentValueCoverageActiveData.versionCode,
+          dataSourceId: supplementalIpPatentValueCoverageActiveDataSourceId,
+        },
+        {
+          sheetName: 'PATENT VALUE COVERAGE-NEW',
+          sheetCode: 'patentvaluecoveragenew',
+          tabName: 'PATENT VALUE COVERAGE-NEW',
+          mappingFuctionName: 'transformSupplementalIPatentValueCoverageNew',
+          designCode: 'patentvaluecoveragenew',
+          dataSourceVersionId: dataSourceVersionDetailsPatentValueCoverageNewData.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailsPatentValueCoverageNewData.versionCode,
+          dataSourceId: supplementalIpNewCoverageDataSourceId,
+        },
+        {
+          sheetName: 'Strategic Reporting Class',
+          sheetCode: 'strategicreportingclass',
+          tabName: 'Strategic Reporting Class',
+          mappingFuctionName: 'transformSupplementalIpStrategicReportingClass',
+          designCode: 'strategicreportingclass',
+          dataSourceVersionId: dataSourceVersionDetailsStrategicReportingClassData.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailsStrategicReportingClassData.versionCode,
+          dataSourceId: supplementalIpStrategicReportingClassDataSourceId,
+        },
+        {
+          sheetName: 'New Coverage',
+          sheetCode: 'newcoverage',
+          tabName: 'New Coverage',
+          mappingFuctionName: 'transformSupplementalIpNewCoverage',
+          designCode: 'newcoverage',
+          dataSourceVersionId: dataSourceVersionDetailspNewCoverageData.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailspNewCoverageData.versionCode,
+          dataSourceId: supplementalIpNewCoverageDataSourceId,
+        },
+      ],
+    });
 
     await createUpdateExcelTable({
       data: proceessedFinalAgreement,

@@ -178,6 +178,55 @@ export const generateCustomReportsFunction = async ({
 
       const sabicAccoladeDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'sabicaccolade');
 
+      const supplementalIpAgreementsFinalAgreementType = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'supplementalipagreementsfinalagreementtype'
+      );
+
+      const supplementalIpAgreementsOthers = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'supplementalipagreementsothers'
+      );
+
+      const supplementalIpBangaloreIpGroupCurrentStatus = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'supplementalipbangaloreipgroupcurrentstatus'
+      );
+
+      const supplementalIpBangaloreIpGroupSbu = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'supplementalipbangaloreipgroupsbu'
+      );
+
+      const supplementalIpBangaloreIpGroupWorkScope = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'supplementalipbangaloreipgroupworkscope'
+      );
+
+      const supplementalIpBangaloreIpGroupWorkProduct = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'supplementalipbangaloreipgroupworkproduct'
+      );
+
+      const supplementalIpAccoladeMappingSheet = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'supplementalipaccolademappingsheet'
+      );
+
+      const supplementalIpPatentValueCoverageActive = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'supplementalippatentvaluecoverageactive'
+      );
+
+      const patentValueCoverageNew = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'patentvaluecoveragenew'
+      );
+
+      const supplementalIpStrategicReportingClass = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'supplementalipstrategicreportingclass'
+      );
+
+      const supplementalIpNewCoverage = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'supplementalipnewcoverage'
+      );
+
+      console.log(
+        'supplementalIpAgreementsFinalAgreementTypeDataSourceVersionId',
+        supplementalIpAgreementsFinalAgreementType,
+        versionMap
+      );
       const data = await generateSupplementalIpReport({
         reportRequestPayload,
         requestedReportId: reportRequestId,
@@ -195,8 +244,25 @@ export const generateCustomReportsFunction = async ({
         ipAnalystDataSourceVersionId: versionMap[ipAnalystDashboardDataSource?.dataSourceId!],
         shppAccoladeDataSourceVersionId: versionMap[shppAccoladeDataSource?.dataSourceId!],
         sabicAccoladeDataSourceVersionId: versionMap[sabicAccoladeDataSource?.dataSourceId!],
+        // Adding your new supplementalIp fields
+        supplementalIpAgreementsFinalAgreementTypeDataSourceId:
+          supplementalIpAgreementsFinalAgreementType?.dataSourceId!,
+        supplementalIpAgreementsOthersDataSourceId: supplementalIpAgreementsOthers?.dataSourceId!,
+        supplementalIpBangaloreIpGroupCurrentStatusDataSourceId:
+          supplementalIpBangaloreIpGroupCurrentStatus?.dataSourceId!,
+        supplementalIpBangaloreIpGroupSbuDataSourceId: supplementalIpBangaloreIpGroupSbu?.dataSourceId!,
+        supplementalIpBangaloreIpGroupWorkScopeDataSourceId: supplementalIpBangaloreIpGroupWorkScope?.dataSourceId!,
+        supplementalIpBangaloreIpGroupWorkProductDataSourceId: supplementalIpBangaloreIpGroupWorkProduct?.dataSourceId!,
+        supplementalIpAccoladeMappingSheetDataSourceId: supplementalIpAccoladeMappingSheet?.dataSourceId!,
+        supplementalIpPatentValueCoverageActiveDataSourceId: supplementalIpPatentValueCoverageActive?.dataSourceId!,
+        patentValueCoverageNewDataSourceId: patentValueCoverageNew?.dataSourceId!,
+        supplementalIpStrategicReportingClassDataSourceId: supplementalIpStrategicReportingClass?.dataSourceId!,
+        supplementalIpNewCoverageDataSourceId: supplementalIpNewCoverage?.dataSourceId!,
         headers: customReportDetails.headers,
         customReportModel,
+        userId,
+        organizationId,
+        orgCode,
       });
 
       return data;

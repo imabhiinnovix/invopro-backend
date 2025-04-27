@@ -831,15 +831,15 @@ export function getActivePatentValueCoverage({
 
     let patentValueCoverageActive = Object.entries(allRANPVGroup).map(([STD, sum]: [string, number]) => ({
       SBU: STD,
-      'RANPV OF PHASE 1-5 PROJECTS ($M)': sum,
-      'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': activePatentFillingRANPVGroup[STD],
-      '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': activePatentFillingRANPVGroup[STD] / sum,
-      'No Disclosure for filing': noDisclosuresForFilingRANPVGroup[STD],
-      '% OF RANPVE COVERED-No Disclosure for filing': noDisclosuresForFilingRANPVGroup[STD] / sum,
-      'Disclosure for Filing': noOfActiveDisclosuresRANPVGroup[STD],
-      '% OF RANPVE COVERED-Disclosure available for filing': noOfActiveDisclosuresRANPVGroup[STD] / sum,
-      'Patent application filing in progress(Rated to Draft)': noOfRTDDisclosuresRANPVGroup[STD],
-      '% COVERED-Patent application filing in progress': noOfRTDDisclosuresRANPVGroup[STD] / sum,
+      RANPVOFPHASE15PROJECTSM: sum,
+      RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: activePatentFillingRANPVGroup[STD],
+      OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: activePatentFillingRANPVGroup[STD] / sum,
+      NoDisclosureforfiling: noDisclosuresForFilingRANPVGroup[STD],
+      OFRANPVECOVEREDNoDisclosureforfiling: noDisclosuresForFilingRANPVGroup[STD] / sum,
+      DisclosureforFiling: noOfActiveDisclosuresRANPVGroup[STD],
+      OFRANPVECOVEREDDisclosureavailableforfiling: noOfActiveDisclosuresRANPVGroup[STD] / sum,
+      PatentapplicationfilinginprogressRatedtoDraft: noOfRTDDisclosuresRANPVGroup[STD],
+      COVEREDPatentapplicationfilinginprogress: noOfRTDDisclosuresRANPVGroup[STD] / sum,
     }));
 
     patentValueCoverageActive = [
@@ -923,13 +923,13 @@ export function getNewPatentValueCoverage({
 
     let patentValueCoverageNew = Object.entries(totalRANPV).map(([STD, sum]: [string, number]) => ({
       SBU: STD,
-      'TOTAL FIRST FILINGS': noOfTotalFirstFilling[STD],
-      'FILINGS HAVING AT LEAST ONE ACCOLADE NUMBER /TSR': '',
-      'FILINGS HAVING NO ACCOLADE NUMBER /TSR': '',
-      'NO. OF ACCOLADE PROJECTS COVERED': noOfAccoladeProjectsCovered[STD],
-      'RANPV OF PHASE 3-5 PROJECTS ($M)': sum,
-      'RANPV OF PHASE 3-5 PROJECTS COVERED BY NEW PATENT FILINGS ($M)': newFillingRANPV[STD],
-      '% OF TOTAL RANPV COVERED BY NEW PATENT FILINGS': newFillingRANPV[STD] / sum,
+      TOTALFIRSTFILINGS: noOfTotalFirstFilling[STD],
+      FILINGSHAVINGATLEASTONEACCOLADENUMBERorTSR: '', // No data provided
+      FILINGSHAVINGNOACCOLADENUMBERorTSR: '', // No data provided
+      NOOFACCOLADEPROJECTSCOVERED: noOfAccoladeProjectsCovered[STD],
+      RANPVOFPHASE15PROJECTSM: sum, // ⚡ Notice here you had PHASE 3-5, but your doc says PHASE 1-5
+      RANPVOFPHASE15PROJECTSCOVEREDBYNEWPATENTFILINGSM: newFillingRANPV[STD],
+      OFTOTALRANPVCOVEREDBYNEWPATENTFILINGS: newFillingRANPV[STD] / sum,
     }));
 
     patentValueCoverageNew = [
@@ -1003,12 +1003,11 @@ export function getStrategicReportingClass({
 
     let strategicReportingClass = Object.entries(totalRANPV).map(
       ([StrategicReportingClass, sum]: [string, number]) => ({
-        'Strategic Reporting Class': StrategicReportingClass,
-        'RANPV OF PHASE 1-5 PROJECTS ($M)': sum,
-        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)':
-          activeFillingRANPV[StrategicReportingClass],
-        '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': activeFillingRANPV[StrategicReportingClass] / sum,
-        '# OF ACCOLADE PROJECTS': countAccoladeNumber[StrategicReportingClass],
+        StrategicReportingClass: StrategicReportingClass,
+        RANPVOFPHASE15PROJECTSM: sum,
+        RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: activeFillingRANPV[StrategicReportingClass],
+        OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: activeFillingRANPV[StrategicReportingClass] / sum,
+        OFACCOLADEPROJECTS: countAccoladeNumber[StrategicReportingClass],
       })
     );
 
@@ -1090,13 +1089,12 @@ export function getNewCoverage({
 
     let newCoverage = Object.entries(allRANPVGroup).map(([STD, sum]: [string, number]) => ({
       SBU: STD,
-      'RANPV OF PHASE 1-5 PROJECTS ($M)': sum,
-      'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': activePatentFillingRANPVGroup[STD],
-      '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': activePatentFillingRANPVGroup[STD] / sum,
-      'NEW RANPV OF PHASE 1-5 PROJECTS ($M)': newAllRANPVGroup[STD],
-      'NEW RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': newActivePatentFillingRANPVGroup[STD],
-      'NEW % OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS':
-        newActivePatentFillingRANPVGroup[STD] / newAllRANPVGroup[STD],
+      RANPVOFPHASE15PROJECTSM: sum,
+      RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: activePatentFillingRANPVGroup[STD],
+      OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: activePatentFillingRANPVGroup[STD] / sum,
+      NEWRANPVOFPHASE15PROJECTSM: newAllRANPVGroup[STD],
+      NEWRANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: newActivePatentFillingRANPVGroup[STD],
+      NEWOFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: newActivePatentFillingRANPVGroup[STD] / newAllRANPVGroup[STD],
     }));
 
     newCoverage = [

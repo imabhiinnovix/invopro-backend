@@ -229,6 +229,100 @@ export const transformFunctionsMap: Record<string, (params: MappingParams) => Re
     };
     return isReverseMapping ? Object.fromEntries(Object.entries(mapping).map(([k, v]) => [v, k])) : mapping;
   },
+
+  transformSupplementalIpAccoladeMappingSheet: ({ currentYear, isReverseMapping }) => {
+    const mapping = {
+      SBU: 'SBU',
+      BU: 'BU',
+      TechGroup: 'Tech Group',
+      ProductLine: 'Product Line',
+      ProjectID: 'Project ID',
+      STDSBU: 'STD. SBU',
+      StrategicReportingClass: 'Strategic Reporting Class',
+      SustainabilityImpactClassification: 'Sustainability Impact Classification',
+      SustainabilityScore: 'Sustainability Score',
+      NoofActiveApplications: 'No. of Active Applications',
+      NoofNewApplications: 'No. of New Applications',
+      NoofActiveDisclosures: 'No. of Active Disclosures',
+      ListofActiveDisclosures: 'List of Active Disclosures',
+      NoofRTDDisclosures: 'No. of RTD Disclosures',
+      ListofRTDDisclosures: 'List of RTD Disclosures',
+      ProjectName: 'Project Name',
+      RiskAdjustedNPV: 'Risk-Adjusted NPV',
+      NPV: 'NPV',
+      ProjectCurrentStageName: 'Project Current Stage Name',
+      ProjectLastGateDecision: 'Project Last Gate Decision',
+      ProjectClosed: 'Project Closed',
+      ProjectStageRelativePosition: 'Project Stage Relative Position',
+      TopProject: 'Top Project',
+      ProjectLeaderName: 'Project Leader Name',
+      ProjectType: 'Project Type',
+      TI: 'T&I',
+      IPLegalCounsilMemberAssigned: 'IP Legal Counsil Member Assigned',
+      SVR: 'SVR',
+    };
+
+    return isReverseMapping ? Object.fromEntries(Object.entries(mapping).map(([k, v]) => [v, k])) : mapping;
+  },
+
+  transformSupplementalIpPatentValueCoverageActive: ({ currentYear, isReverseMapping }) => {
+    const mapping = {
+      SBU: 'SBU',
+      RANPVOFPHASE15PROJECTSM: 'RANPV OF PHASE 1-5 PROJECTS ($M)',
+      RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM:
+        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
+      OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
+      NoDisclosureforfiling: 'No Disclosure for filing',
+      OFRANPVECOVEREDNoDisclosureforfiling: '% OF RANPVE COVERED-No Disclosure for filing',
+      DisclosureforFiling: 'Disclosure for Filing',
+      OFRANPVECOVEREDDisclosureavailableforfiling: '% OF RANPVE COVERED-Disclosure available for filing',
+      PatentapplicationfilinginprogressRatedtoDraft: 'Patent application filing in progress(Rated to Draft)',
+      COVEREDPatentapplicationfilinginprogress: '% COVERED-Patent application filing in progress',
+    };
+    return isReverseMapping ? Object.fromEntries(Object.entries(mapping).map(([k, v]) => [v, k])) : mapping;
+  },
+
+  transformSupplementalIPatentValueCoverageNew: ({ currentYear, isReverseMapping }) => {
+    const mapping = {
+      SBU: 'SBU',
+      TOTALFIRSTFILINGS: 'TOTAL FIRST FILINGS',
+      FILINGSHAVINGATLEASTONEACCOLADENUMBERorTSR: 'FILINGS HAVING AT LEAST ONE ACCOLADE NUMBER /TSR',
+      FILINGSHAVINGNOACCOLADENUMBERorTSR: 'FILINGS HAVING NO ACCOLADE NUMBER /TSR',
+      NOOFACCOLADEPROJECTSCOVERED: 'NO. OF ACCOLADE PROJECTS COVERED',
+      RANPVOFPHASE15PROJECTSM: 'RANPV OF PHASE 1-5 PROJECTS ($M)',
+      RANPVOFPHASE15PROJECTSCOVEREDBYNEWPATENTFILINGSM:
+        'RANPV OF PHASE 1-5 PROJECTS COVERED BY NEW PATENT FILINGS ($M)',
+      OFTOTALRANPVCOVEREDBYNEWPATENTFILINGS: '% OF TOTAL RANPV COVERED BY NEW PATENT FILINGS',
+    };
+    return isReverseMapping ? Object.fromEntries(Object.entries(mapping).map(([k, v]) => [v, k])) : mapping;
+  },
+
+  transformSupplementalIpStrategicReportingClass: ({ currentYear, isReverseMapping }) => {
+    const mapping = {
+      StrategicReportingClass: 'Strategic Reporting Class',
+      RANPVOFPHASE15PROJECTSM: 'RANPV OF PHASE 1-5 PROJECTS ($M)',
+      RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM:
+        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
+      OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
+      OFACCOLADEPROJECTS: '# OF ACCOLADE PROJECTS',
+    };
+    return isReverseMapping ? Object.fromEntries(Object.entries(mapping).map(([k, v]) => [v, k])) : mapping;
+  },
+
+  transformSupplementalIpNewCoverage: ({ currentYear, isReverseMapping }) => {
+    const mapping = {
+      SBU: 'SBU',
+      RANPVOFPHASE15PROJECTSM: 'RANPV OF PHASE 1-5 PROJECTS ($M)',
+      RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM:
+        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
+      OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
+      NEWRANPVOFPHASE15PROJECTSM: 'NEW RANPV OF PHASE 1-5 PROJECTS ($M)',
+      NEWRANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM:
+        'NEW RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
+      NEWOFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: 'NEW % OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
+    };
+    return isReverseMapping ? Object.fromEntries(Object.entries(mapping).map(([k, v]) => [v, k])) : mapping;
+  },
 };
 
 export async function generateCustomReportBasedOnReportRequestId({
