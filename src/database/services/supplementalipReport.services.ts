@@ -829,18 +829,22 @@ export function getActivePatentValueCoverage({
       allRANPVGroup['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
     });
 
-    let patentValueCoverageActive = Object.entries(allRANPVGroup).map(([STD, sum]: [string, number]) => ({
-      SBU: STD,
-      RANPVOFPHASE15PROJECTSM: sum,
-      RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: activePatentFillingRANPVGroup[STD],
-      OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: activePatentFillingRANPVGroup[STD] / sum,
-      NoDisclosureforfiling: noDisclosuresForFilingRANPVGroup[STD],
-      OFRANPVECOVEREDNoDisclosureforfiling: noDisclosuresForFilingRANPVGroup[STD] / sum,
-      DisclosureforFiling: noOfActiveDisclosuresRANPVGroup[STD],
-      OFRANPVECOVEREDDisclosureavailableforfiling: noOfActiveDisclosuresRANPVGroup[STD] / sum,
-      PatentapplicationfilinginprogressRatedtoDraft: noOfRTDDisclosuresRANPVGroup[STD],
-      COVEREDPatentapplicationfilinginprogress: noOfRTDDisclosuresRANPVGroup[STD] / sum,
-    }));
+    let patentValueCoverageActive = Object.entries(allRANPVGroup).map(([STD, sum]: [string, number]) => {
+      const safeSum = sum || 1; // Avoid division by 0 (you can also customize this if you want 0 instead of 1)
+
+      return {
+        SBU: STD,
+        RANPVOFPHASE15PROJECTSM: sum,
+        RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: activePatentFillingRANPVGroup[STD] || 0,
+        OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: (activePatentFillingRANPVGroup[STD] || 0) / safeSum,
+        NoDisclosureforfiling: noDisclosuresForFilingRANPVGroup[STD] || 0,
+        OFRANPVECOVEREDNoDisclosureforfiling: (noDisclosuresForFilingRANPVGroup[STD] || 0) / safeSum,
+        DisclosureforFiling: noOfActiveDisclosuresRANPVGroup[STD] || 0,
+        OFRANPVECOVEREDDisclosureavailableforfiling: (noOfActiveDisclosuresRANPVGroup[STD] || 0) / safeSum,
+        PatentapplicationfilinginprogressRatedtoDraft: noOfRTDDisclosuresRANPVGroup[STD] || 0,
+        COVEREDPatentapplicationfilinginprogress: (noOfRTDDisclosuresRANPVGroup[STD] || 0) / safeSum,
+      };
+    });
 
     patentValueCoverageActive = [
       ...patentValueCoverageActive.filter((item) => item.SBU !== 'Total'), // Keep all except "Total"
@@ -921,16 +925,18 @@ export function getNewPatentValueCoverage({
       totalRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
     });
 
-    let patentValueCoverageNew = Object.entries(totalRANPV).map(([STD, sum]: [string, number]) => ({
-      SBU: STD,
-      TOTALFIRSTFILINGS: noOfTotalFirstFilling[STD],
-      FILINGSHAVINGATLEASTONEACCOLADENUMBERorTSR: '', // No data provided
-      FILINGSHAVINGNOACCOLADENUMBERorTSR: '', // No data provided
-      NOOFACCOLADEPROJECTSCOVERED: noOfAccoladeProjectsCovered[STD],
-      RANPVOFPHASE15PROJECTSM: sum, // ⚡ Notice here you had PHASE 3-5, but your doc says PHASE 1-5
-      RANPVOFPHASE15PROJECTSCOVEREDBYNEWPATENTFILINGSM: newFillingRANPV[STD],
-      OFTOTALRANPVCOVEREDBYNEWPATENTFILINGS: newFillingRANPV[STD] / sum,
-    }));
+    let patentValueCoverageNew = Object.entries(totalRANPV).map(([STD, sum]: [string, number]) => {
+      return {
+        SBU: STD,
+        TOTALFIRSTFILINGS: noOfTotalFirstFilling[STD] || 0,
+        FILINGSHAVINGATLEASTONEACCOLADENUMBERorTSR: '', // still no data provided
+        FILINGSHAVINGNOACCOLADENUMBERorTSR: '', // still no data provided
+        NOOFACCOLADEPROJECTSCOVERED: noOfAccoladeProjectsCovered[STD] || 0,
+        RANPVOFPHASE15PROJECTSM: sum,
+        RANPVOFPHASE15PROJECTSCOVEREDBYNEWPATENTFILINGSM: newFillingRANPV[STD] || 0,
+        OFTOTALRANPVCOVEREDBYNEWPATENTFILINGS: sum ? (newFillingRANPV[STD] || 0) / sum : 0,
+      };
+    });
 
     patentValueCoverageNew = [
       ...patentValueCoverageNew.filter((item) => item.SBU !== 'Total'), // Keep all except "Total"
@@ -1001,19 +1007,21 @@ export function getStrategicReportingClass({
       totalRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
     });
 
-    let strategicReportingClass = Object.entries(totalRANPV).map(
-      ([StrategicReportingClass, sum]: [string, number]) => ({
+    let strategicReportingClass = Object.entries(totalRANPV).map(([StrategicReportingClass, sum]: [string, number]) => {
+      const safeSum = sum && sum !== 0 ? sum : 1; // avoid divide by zero safely
+
+      return {
         StrategicReportingClass: StrategicReportingClass,
         RANPVOFPHASE15PROJECTSM: sum,
-        RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: activeFillingRANPV[StrategicReportingClass],
-        OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: activeFillingRANPV[StrategicReportingClass] / sum,
-        OFACCOLADEPROJECTS: countAccoladeNumber[StrategicReportingClass],
-      })
-    );
+        RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: activeFillingRANPV[StrategicReportingClass] || 0,
+        OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: sum ? (activeFillingRANPV[StrategicReportingClass] || 0) / sum : 0,
+        OFACCOLADEPROJECTS: countAccoladeNumber[StrategicReportingClass] || 0,
+      };
+    });
 
     strategicReportingClass = [
-      ...strategicReportingClass.filter((item) => item['Strategic Reporting Class'] !== 'Total'), // Keep all except "Total"
-      ...strategicReportingClass.filter((item) => item['Strategic Reporting Class'] === 'Total'), // Add "Total" at the end
+      ...strategicReportingClass.filter((item) => item['StrategicReportingClass'] !== 'Total'), // Keep all except "Total"
+      ...strategicReportingClass.filter((item) => item['StrategicReportingClass'] === 'Total'), // Add "Total" at the end
     ];
     return strategicReportingClass;
   } catch (e) {
@@ -1087,15 +1095,19 @@ export function getNewCoverage({
       newAllRANPVGroup['Total'] += NPV ? NPV : 0;
     });
 
-    let newCoverage = Object.entries(allRANPVGroup).map(([STD, sum]: [string, number]) => ({
-      SBU: STD,
-      RANPVOFPHASE15PROJECTSM: sum,
-      RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: activePatentFillingRANPVGroup[STD],
-      OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: activePatentFillingRANPVGroup[STD] / sum,
-      NEWRANPVOFPHASE15PROJECTSM: newAllRANPVGroup[STD],
-      NEWRANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: newActivePatentFillingRANPVGroup[STD],
-      NEWOFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: newActivePatentFillingRANPVGroup[STD] / newAllRANPVGroup[STD],
-    }));
+    let newCoverage = Object.entries(allRANPVGroup).map(([STD, sum]: [string, number]) => {
+      return {
+        SBU: STD,
+        RANPVOFPHASE15PROJECTSM: sum,
+        RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: activePatentFillingRANPVGroup[STD] || 0,
+        OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: sum ? (activePatentFillingRANPVGroup[STD] || 0) / sum : 0,
+        NEWRANPVOFPHASE15PROJECTSM: newAllRANPVGroup[STD] || 0,
+        NEWRANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: newActivePatentFillingRANPVGroup[STD] || 0,
+        NEWOFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: newAllRANPVGroup[STD]
+          ? (newActivePatentFillingRANPVGroup[STD] || 0) / newAllRANPVGroup[STD]
+          : 0,
+      };
+    });
 
     newCoverage = [
       ...newCoverage.filter((item) => item.SBU !== 'Total'), // Keep all except "Total"

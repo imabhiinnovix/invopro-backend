@@ -729,10 +729,13 @@ export async function generateExcelReport({
   const workbook = new ExcelJS.Workbook();
 
   for (const setting of reportSettings) {
-    const { sheetName, sheetCode, startTableColumn, startRowNumber } = setting;
+    const { sheetName, sheetCode, startTableColumn, startRowNumber, isWhiteBackGround } = setting;
+
     const worksheet = workbook.addWorksheet(sheetName, {
       properties: { defaultColWidth: 22 },
+      views: [{ showGridLines: isWhiteBackGround ? false : true }],
     });
+
     const sections = designData[sheetCode] || [];
     const reportDataBasedOnSheetCode = reportData[sheetCode] || [];
 

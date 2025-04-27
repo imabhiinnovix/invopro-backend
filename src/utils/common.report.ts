@@ -373,6 +373,7 @@ export async function generateCustomReportBasedOnReportRequestId({
           query,
           page: 1,
           select: 'rowData',
+          sort: { createdAt: 1 },
           limit: Number.MAX_SAFE_INTEGER,
         });
 
