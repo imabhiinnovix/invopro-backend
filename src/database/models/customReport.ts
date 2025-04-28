@@ -12,6 +12,18 @@ interface IColumn {
   attributeValues: string[];
 }
 
+interface IComments {
+  comment: string;
+  backGroundColor: string;
+  horizontalAlignment: string;
+  verticalAlignment: string;
+  startTableColumn: string;
+  textColor: string;
+  fontBold: boolean;
+  isBorder: boolean;
+  mergeCell: number;
+}
+
 interface ISubSection {
   headerName: string;
   fontBold: boolean;
@@ -28,8 +40,7 @@ interface ISubSection {
 interface ISection {
   sectionName: string;
   fontBold: boolean;
-  comments: string[];
-  mergeCell: number;
+  comments: IComments[];
   sectionBackGroundColor: string;
   sectionTextColor: string;
   sectionHorizontalAlignment: string;
@@ -37,6 +48,7 @@ interface ISection {
   spanColumns: boolean;
   subSections: ISubSection[];
   view: string;
+  space: number;
 }
 
 interface IHeaderSection {
@@ -63,7 +75,17 @@ interface IReportSetting {
   startTableColumn: string;
   startRowNumber: number;
 }
-
+const CommentSchema = new Schema<IComments>({
+  comment: { type: String, required: true },
+  backGroundColor: { type: String },
+  horizontalAlignment: { type: String },
+  verticalAlignment: { type: String },
+  startTableColumn: { type: String },
+  textColor: { type: String },
+  fontBold: { type: Boolean },
+  isBorder: { type: Boolean },
+  mergeCell: { type: Number },
+});
 const ColumnSchema = new Schema<IColumn>({
   reportHeader: { type: String, required: true },
   attributeValues: { type: [String], required: true },
@@ -93,12 +115,12 @@ const SectionSchema = new Schema<ISection>({
   fontBold: { type: Boolean },
   sectionBackGroundColor: { type: String },
   sectionTextColor: { type: String },
-  comments: { type: [String] },
-  mergeCell: { type: Number },
+  comments: { type: [CommentSchema] },
   sectionHorizontalAlignment: { type: String },
   sectionVerticalAlignment: { type: String },
   spanColumns: { type: Boolean },
   subSections: { type: [SubSectionSchema] },
+  space: { type: Number },
   view: { type: String, required: true },
 });
 

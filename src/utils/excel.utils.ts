@@ -690,6 +690,26 @@ interface SubSection {
   lastCellBackGroundColor: string;
 }
 
+interface Comments {
+  comment: string;
+  backGroundColor: string;
+  horizontalAlignment?:
+    | 'left'
+    | 'center'
+    | 'right'
+    | 'fill'
+    | 'justify'
+    | 'centerContinuous'
+    | 'distributed'
+    | undefined;
+  verticalAlignment: 'middle' | 'top' | 'bottom' | 'distributed' | 'justify' | undefined;
+  startTableColumn: string;
+  textColor: string;
+  fontBold: boolean;
+  isBorder: boolean;
+  mergeCell: number;
+}
+
 interface Section {
   sectionName?: string;
   cellFormat: string;
@@ -706,8 +726,8 @@ interface Section {
     | 'distributed'
     | undefined;
   sectionVerticalAlignment?: 'middle' | 'top' | 'bottom' | 'distributed' | 'justify' | undefined;
-  mergeCell?: number;
-  comments?: string[];
+  space?: number;
+  comments?: Comments[];
   view: 'row' | 'column';
   spanColumns?: boolean;
   subSections: SubSection[];
@@ -829,24 +849,47 @@ export async function generateExcelReport({
       const subSections = section.subSections || [];
       const sectionView = section.view;
       const sectionComments = section.comments || [];
+      const space = section.space !== undefined && section.space >= 0 ? section.space : 2;
       if (sectionComments.length > 0) {
         for (const comment of sectionComments) {
-          const cell = worksheet.getCell(`${startTableColumn}${rowPointer}`);
-          cell.value = comment;
-          if (section.sectionBackGroundColor) {
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: section.sectionBackGroundColor },
+          const starComentColumn = comment.startTableColumn ? comment.startTableColumn : startTableColumn;
+          const cell = worksheet.getCell(`${starComentColumn}${rowPointer}`);
+          cell.value = comment.comment;
+          cell.font = {
+            bold: !!comment.fontBold,
+            color: { argb: comment.textColor ? comment.textColor : '000000' },
+          };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: comment.backGroundColor ? comment.backGroundColor : 'FFFFFF' },
+          };
+          cell.alignment = {
+            vertical: comment.verticalAlignment,
+            horizontal: comment.horizontalAlignment,
+            wrapText: false,
+          };
+          if (comment.isBorder) {
+            cell.border = {
+              top: { style: 'thin' },
+              left: { style: 'thin' },
+              bottom: { style: 'thin' },
+              right: { style: 'thin' },
             };
           }
-          if (section.mergeCell) {
-            const endCol = colToLetter(colToNumber(startTableColumn) + section.mergeCell - 1);
-            worksheet.mergeCells(`${startTableColumn}${rowPointer}:${endCol}${rowPointer}`);
+
+          if (comment.mergeCell) {
+            const endCol = colToLetter(colToNumber(starComentColumn) + comment.mergeCell - 1);
+            worksheet.mergeCells(`${starComentColumn}${rowPointer}:${endCol}${rowPointer}`);
           }
+          if (sectionView === 'column') {
+            rowPointer++;
+          }
+        }
+        if (sectionView === 'row') {
           rowPointer++;
         }
-        rowPointer = rowPointer + 2;
+        rowPointer = rowPointer + space;
       } else if (section.sectionName || subSections.length > 0) {
         if (section.sectionName) {
           const mergeEnd = colToLetter(colToNumber(startTableColumn) + processingTableHeaders.length - 1);
