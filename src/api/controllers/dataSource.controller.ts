@@ -1,7 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
+
 import * as dataSourceService from '../../database/services/dataSource.services';
 import * as defaultDataSourceVersionValue from '../../database/services/defaultDataSourceVersionValue.services';
+import * as entityService from '../../database/services/entity.services';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
+import createDefaultDataSourceVersionModel from '../../database/models/defaultDataSourceVersionModel';
+import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
+import { DataSourceVersion } from '../../types/widget.types';
+import { processFieldConditions } from '../../utils/conditionProcessor';
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -61,7 +69,7 @@ export const updateDataSource = async (req: Request, res: Response, next: NextFu
 export const checkDataSourceCodeAvailableOrNot = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { code } = req.params;
-    const { organizationId, orgCode } = req.user;
+    const { organizationId } = req.user;
 
     const dataSourceData = await dataSourceService.findDataSourceByCodeAndOrganization(code, organizationId);
     if (dataSourceData) {
@@ -114,7 +122,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
 
     const { organizationId } = req.user;
 
-    const query: any = {organizationId};
+    const query: any = { organizationId };
     if (search) query.name = { $regex: search, $options: 'i' };
 
     if (canEditInline) {
@@ -167,6 +175,152 @@ export const getDataSourceById = async (req: Request, res: Response, next: NextF
       data: dataSourceDetails,
     });
   } catch (err) {
+    next(err);
+  }
+};
+
+export const getWidgetDataByFilter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { dataSourceId, conditions, entityId, dimensions, groupBy } = req.body;
+    // const { sortBy } = req.query as any;
+    const page = parseInt(req.body.page as string, 10) || 1;
+    const limit = parseInt(req.body.limit as string, 10) || 10;
+    const skip = (Number(page) - 1) * Number(limit);
+    const { orgCode } = req.user;
+
+    // 1. Fetch entity and data source information
+    const entity: any = await entityService.getEntity({
+      _id: entityId || dataSourceId,
+    });
+
+    if (!entity) {
+      throw new Error('Entity not found');
+    }
+
+    const dataSource: any = await dataSourceService.getDataSource({
+      _id: dataSourceId,
+    });
+
+    // 2. Fetch current active data source version
+    const dataSourceVersion: any = (await dataSourceVersionService.getDataSourceVersion({
+      query: {
+        dataSourceId: dataSourceId,
+        isCurrent: true,
+        isActive: true,
+      },
+      sort: { versionValue: -1 },
+    })) as DataSourceVersion;
+
+    if (!dataSourceVersion) {
+      throw new Error('No active data source version found');
+    }
+
+    // Helper function to get field type from entity
+    const getFieldType = (fieldName: string) => {
+      const attribute = entity.attributes.find((attr: any) => attr.name === fieldName);
+      return attribute ? attribute.type : 'string';
+    };
+
+    // Group conditions by field
+    const conditionsByField: Record<string, any[]> = {};
+    conditions?.forEach((condition) => {
+      if (!conditionsByField[condition.field]) {
+        conditionsByField[condition.field] = [];
+      }
+      conditionsByField[condition.field].push(condition);
+    });
+
+    // Use the common utility to process conditions
+    const initialMatchConditions = {
+      dataSourceId: new Types.ObjectId(dataSourceId),
+      dataSourceVersionId: new Types.ObjectId(dataSourceVersion._id),
+    };
+
+    // Add dimension conditions to match
+    if (dimensions && Array.isArray(dimensions)) {
+      dimensions.forEach((dimension) => {
+        const [field, value] = Object.entries(dimension)[0];
+        initialMatchConditions[`rowData.${field}`] = value;
+      });
+    }
+
+    // Add groupBy conditions to match
+    if (groupBy && Array.isArray(groupBy)) {
+      groupBy.forEach((group) => {
+        const [field, value] = Object.entries(group)[0];
+        initialMatchConditions[`rowData.${field}`] = value;
+      });
+    }
+
+    const { matchConditions, dateConversions } = processFieldConditions(
+      conditionsByField,
+      getFieldType,
+      initialMatchConditions
+    );
+
+    const detailPipeline: any[] = [];
+
+    if (Object.keys(dateConversions).length > 0) {
+      detailPipeline.push({ $addFields: dateConversions });
+    }
+
+    detailPipeline.push(
+      { $match: matchConditions },
+      {
+        $project: {
+          _id: 0,
+          rowData: 1,
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: '$rowData',
+        },
+      },
+      {
+        $facet: {
+          metadata: [{ $count: 'totalRecords' }],
+          data: [{ $skip: skip }, { $limit: limit }],
+        },
+      },
+      {
+        $project: {
+          data: 1,
+          pagination: {
+            currentPage: page,
+            limit: limit,
+            totalRecords: { $arrayElemAt: ['$metadata.totalRecords', 0] },
+            totalPages: {
+              $ceil: {
+                $divide: [{ $arrayElemAt: ['$metadata.totalRecords', 0] }, limit],
+              },
+            },
+          },
+        },
+      }
+    );
+
+    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSource?.code,
+    });
+    const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
+
+    const detailedData = await DataSourceModel.aggregate(detailPipeline).exec();
+
+    const headers = entity?.attributes.map((attr: any) => attr.name);
+    // 6. Prepare response
+    const response = {
+      success: true,
+      message: 'Detailed chart data fetched successfully',
+      data: detailedData[0]?.data || [],
+      pagination: detailedData[0]?.pagination || {},
+      headers,
+    };
+
+    res.status(200).json(response);
+  } catch (err) {
+    console.error('Error in getWidgetClickData:', err);
     next(err);
   }
 };

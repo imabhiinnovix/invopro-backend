@@ -9,6 +9,7 @@ import {
   checkDataSourceNameAvailableOrNot,
   createDataSourcce,
   getDataSourceById,
+  getWidgetDataByFilter,
   listDataSource,
   updateDataSource,
 } from '../controllers/dataSource.controller';
@@ -28,5 +29,6 @@ router.put(
 
 router.get('/list', authenticateToken, listDataSource);
 router.get('/dataSourceId/:dataSourceId', authenticateToken, getDataSourceById);
+router.post('/getWidgetDataByFilter', authenticateToken, getWidgetDataByFilter);
 
 export default router;
