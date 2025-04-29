@@ -9,6 +9,7 @@ interface IDataSourceVersion {
   dataSourceVersionId: Types.ObjectId;
   versionCode: string;
   dataSourceId: Types.ObjectId;
+  allowPdfDownload: boolean;
 }
 
 interface IReportRequest extends Document {
@@ -31,6 +32,7 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
     tabName: { type: String, required: true },
     mappingFuctionName: { type: String, required: true },
     designCode: { type: String, required: true },
+    allowPdfDownload: { type: Boolean, required: true },
     dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'data_source_version' },
     versionCode: { type: String, required: true },
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_sources' },

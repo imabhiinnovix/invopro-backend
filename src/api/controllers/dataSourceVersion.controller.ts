@@ -793,7 +793,7 @@ export const getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValu
       groupBy: 'reportRequestId',
       page,
       limit,
-      sort: { versionValue: 1 },
+      sort: { versionValue: -1 },
 
       populate: [
         {
@@ -834,6 +834,7 @@ export const getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValu
         'dataSourceVersion.versionCode': 1,
         'dataSourceVersion.dataSourceId': 1,
         'dataSourceVersion.dataSourceVersionId': 1,
+        'dataSourceVersion.allowPdfDownload': 1,
         createdAt: 1,
       },
     });
