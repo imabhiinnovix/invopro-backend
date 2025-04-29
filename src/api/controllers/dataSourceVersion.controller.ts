@@ -15,6 +15,7 @@ import { generateCustomReportsFunction } from './customReport.controller';
 import * as reportRequestService from '../../database/services/reportRequest.services';
 import { DateTime } from 'luxon';
 import mongoose from 'mongoose';
+import { version } from 'os';
 const ObjectId = mongoose.Types.ObjectId;
 
 async function validateAndConvert({
@@ -616,6 +617,17 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
   userId,
   organizationId,
   orgCode,
+  customReportId,
+  reportRequestId,
+}: {
+  dataSourceId: string;
+  versionValue: string;
+  versionData: any;
+  userId: string;
+  organizationId: string;
+  orgCode: string;
+  customReportId?: string;
+  reportRequestId?: string;
 }) => {
   try {
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
@@ -629,6 +641,8 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
         isActive: true,
         isCurrent: false,
         organizationId,
+        customReportId,
+        reportRequestId,
       });
 
       const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
@@ -753,6 +767,86 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     }
   } catch (e) {
     console.log('Error in getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue.', e);
+    next(e);
+  }
+};
+
+export const getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { customReportId } = req.params;
+    const { userId, organizationId, orgCode } = req?.user;
+
+    // const { search, paginate = 'false' } = req.query;
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
+    const result = await dataSourceVersionService.getDataSourceVersionGroupedList({
+      match: {
+        customReportId: new ObjectId(customReportId),
+        reportRequestId: { $exists: true, $ne: '' },
+        organizationId: new ObjectId(organizationId),
+        isCurrent: true,
+      },
+      groupBy: 'reportRequestId',
+      page,
+      limit,
+      sort: { versionValue: -1 },
+
+      populate: [
+        {
+          from: 'custom_reports',
+          localField: 'customReportId',
+          foreignField: '_id',
+          as: 'customReportId',
+          isSingle: true,
+        },
+        {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'createdBy',
+          isSingle: true,
+        },
+        {
+          from: 'report_requests',
+          localField: 'reportRequestId',
+          foreignField: '_id',
+          as: 'reportRequest', // No need for extra nesting here
+          isSingle: false, // Assuming dataSourceVersion is an array
+        },
+      ],
+
+      selectFields: {
+        _id: '$reportRequestId', // Keep the reportRequestId as _id
+        versionValue: 1,
+        'customReportId.reportName': 1,
+        'customReportId._id': 1,
+        'createdBy.firstName': 1,
+        'createdBy.lastName': 1,
+        'dataSourceVersion.sheetName': 1,
+        'dataSourceVersion.sheetCode': 1,
+        'dataSourceVersion.tabName': 1,
+        'dataSourceVersion.mappingFuctionName': 1,
+        'dataSourceVersion.designCode': 1,
+        'dataSourceVersion.versionCode': 1,
+        'dataSourceVersion.dataSourceId': 1,
+        'dataSourceVersion.dataSourceVersionId': 1,
+        'dataSourceVersion.allowPdfDownload': 1,
+        createdAt: 1,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'The available version data has been successfully retrieved.',
+      data: result.data,
+      totalCount: result.totalCount,
+    });
+  } catch (e) {
+    console.log('Error in getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue.', e);
     next(e);
   }
 };

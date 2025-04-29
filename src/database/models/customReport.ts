@@ -12,28 +12,44 @@ interface IColumn {
   attributeValues: string[];
 }
 
+interface IComments {
+  comment: string;
+  backGroundColor: string;
+  horizontalAlignment: string;
+  verticalAlignment: string;
+  startTableColumn: string;
+  textColor: string;
+  fontBold: boolean;
+  isBorder: boolean;
+  mergeCell: number;
+  uiStartTableColumn?: number;
+}
+
 interface ISubSection {
   headerName: string;
+  fontBold: boolean;
   headerBackGroundColor: string;
-  headerColor: string;
+  headerTextColor: string;
   horizontalAlignment: string;
   verticalAlignment: string;
   type: string;
   spanColumns: boolean;
   format: string;
-  view: string;
   isRequired: boolean;
 }
 
 interface ISection {
   sectionName: string;
+  fontBold: boolean;
+  comments: IComments[];
   sectionBackGroundColor: string;
-  sectionColor: string;
+  sectionTextColor: string;
   sectionHorizontalAlignment: string;
   sectionVerticalAlignment: string;
   spanColumns: boolean;
   subSections: ISubSection[];
   view: string;
+  space: number;
 }
 
 interface IHeaderSection {
@@ -49,9 +65,29 @@ interface ICustomReport extends Document {
   organizationId: Types.ObjectId;
   sampleFilePath: string;
   headers: Record<string, IHeaderSection>;
-  design: Record<string, ISection[]>;
+  reportSettings: IReportSetting[];
+  design: Record<string, Record<string, ISection[]>>;
 }
 
+interface IReportSetting {
+  sheetName: string;
+  sheetCode: string;
+  isWhiteBackGround: boolean;
+  startTableColumn: string;
+  startRowNumber: number;
+}
+const CommentSchema = new Schema<IComments>({
+  comment: { type: String, required: true },
+  backGroundColor: { type: String },
+  horizontalAlignment: { type: String },
+  verticalAlignment: { type: String },
+  startTableColumn: { type: String },
+  textColor: { type: String },
+  fontBold: { type: Boolean },
+  isBorder: { type: Boolean },
+  mergeCell: { type: Number },
+  uiStartTableColumn: { type: Number },
+});
 const ColumnSchema = new Schema<IColumn>({
   reportHeader: { type: String, required: true },
   attributeValues: { type: [String], required: true },
@@ -65,8 +101,9 @@ const HeaderSectionSchema = new Schema<IHeaderSection>({
 
 const SubSectionSchema = new Schema<ISubSection>({
   headerName: { type: String, required: true },
+  fontBold: { type: Boolean },
   headerBackGroundColor: { type: String, required: true },
-  headerColor: { type: String, required: true },
+  headerTextColor: { type: String, required: true },
   horizontalAlignment: { type: String, required: true },
   verticalAlignment: { type: String, required: true },
   type: { type: String, required: true },
@@ -76,14 +113,25 @@ const SubSectionSchema = new Schema<ISubSection>({
 });
 
 const SectionSchema = new Schema<ISection>({
-  sectionName: { type: String, required: true },
-  sectionBackGroundColor: { type: String, required: true },
-  sectionColor: { type: String, required: true },
-  sectionHorizontalAlignment: { type: String, required: true },
-  sectionVerticalAlignment: { type: String, required: true },
-  spanColumns: { type: Boolean, required: true },
-  subSections: { type: [SubSectionSchema], required: true },
+  sectionName: { type: String },
+  fontBold: { type: Boolean },
+  sectionBackGroundColor: { type: String },
+  sectionTextColor: { type: String },
+  comments: { type: [CommentSchema] },
+  sectionHorizontalAlignment: { type: String },
+  sectionVerticalAlignment: { type: String },
+  spanColumns: { type: Boolean },
+  subSections: { type: [SubSectionSchema] },
+  space: { type: Number },
   view: { type: String, required: true },
+});
+
+const ReportSettingSchema = new Schema<IReportSetting>({
+  sheetName: { type: String, required: true },
+  sheetCode: { type: String, required: true },
+  isWhiteBackGround: { type: Boolean, required: true },
+  startTableColumn: { type: String, required: true },
+  startRowNumber: { type: Number, required: true },
 });
 
 const CustomReportSchema = new Schema<ICustomReport>(
@@ -101,7 +149,14 @@ const CustomReportSchema = new Schema<ICustomReport>(
     ],
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
     headers: { type: Map, of: HeaderSectionSchema },
-    design: { type: Map, of: [SectionSchema] },
+    reportSettings: { type: [ReportSettingSchema], required: true },
+    design: {
+      type: Map,
+      of: {
+        type: Map,
+        of: [SectionSchema],
+      },
+    },
   },
   {
     timestamps: true,

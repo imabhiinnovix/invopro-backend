@@ -501,11 +501,27 @@ function categorizeStdProjectsAndRemoveRowDataExtraKey(projects) {
       std = 'AGRI-NUTRIENTS';
     } else if (sbu.includes('hadeed') || tandI.includes('hadeed')) {
       std = 'METAL';
+    } else if (sbu.includes('petrochemicals')) {
+      if (
+        tandI.includes('chemicals') ||
+        tandI.includes('functionalchemicals') ||
+        bu.includes('chemicals') ||
+        bu.includes('functionalchemicals') ||
+        bu.includes('ksa')
+      ) {
+        std = 'PETCHEM-CHEMICALS';
+      } else if (
+        tandI.includes('polymers') ||
+        tandI.includes('functionalforms') ||
+        sbu.includes('functionalforms') ||
+        (bu && bu !== '' && !['tbd', 'technologyventuring', ''].includes(sbu))
+      ) {
+        std = 'PETCHEM-POLYMERS';
+      }
     } else if (
       tandI.includes('chemicals') ||
       tandI.includes('petrochemicals') ||
       tandI.includes('functionalchemicals') ||
-      sbu.includes('petrochemicals') ||
       bu.includes('chemicals') ||
       bu.includes('functionalchemicals') ||
       bu.includes('ksa')
@@ -515,7 +531,6 @@ function categorizeStdProjectsAndRemoveRowDataExtraKey(projects) {
       tandI.includes('polymers') ||
       tandI.includes('functionalforms') ||
       sbu.includes('functionalforms') ||
-      sbu.includes('petrochemicals') ||
       (bu && bu !== '' && !['tbd', 'technologyventuring', ''].includes(sbu))
     ) {
       std = 'PETCHEM-POLYMERS';
@@ -562,12 +577,12 @@ export async function getAccoladeMappingSheet({
           },
         },
       },
-      {
-        $group: {
-          _id: '$rowData.Case_Reference1',
-          rowData: { $first: '$rowData' },
-        },
-      },
+      // {
+      //   $group: {
+      //     _id: '$rowData.Case_Reference1',
+      //     rowData: { $first: '$rowData' },
+      //   },
+      // },
       {
         $project: {
           rowData: 1,
@@ -587,12 +602,12 @@ export async function getAccoladeMappingSheet({
           },
         },
       },
-      {
-        $group: {
-          _id: '$rowData.Case_Reference1',
-          rowData: { $first: '$rowData' },
-        },
-      },
+      // {
+      //   $group: {
+      //     _id: '$rowData.Case_Reference1',
+      //     rowData: { $first: '$rowData' },
+      //   },
+      // },
       {
         $project: {
           rowData: 1,
@@ -627,12 +642,12 @@ export async function getAccoladeMappingSheet({
           },
         },
       },
-      {
-        $group: {
-          _id: '$rowData.DisclosureNumber',
-          rowData: { $first: '$rowData' },
-        },
-      },
+      // {
+      //   $group: {
+      //     _id: '$rowData.DisclosureNumber',
+      //     rowData: { $first: '$rowData' },
+      //   },
+      // },
       {
         $project: {
           rowData: 1,
@@ -681,12 +696,6 @@ export async function getAccoladeMappingSheet({
         },
       },
       {
-        $group: {
-          _id: '$rowData.ProjectID',
-          rowData: { $first: '$rowData' },
-        },
-      },
-      {
         $project: {
           rowData: 1,
         },
@@ -703,12 +712,6 @@ export async function getAccoladeMappingSheet({
         },
       },
       {
-        $group: {
-          _id: '$rowData.ProjectID',
-          rowData: { $first: '$rowData' },
-        },
-      },
-      {
         $project: {
           rowData: 1,
         },
@@ -718,57 +721,28 @@ export async function getAccoladeMappingSheet({
     const shppAccoladeStdData = categorizeStdProjectsAndRemoveRowDataExtraKey(shppAccoladeRawData);
     const sabicAccoladeStdData = categorizeStdProjectsAndRemoveRowDataExtraKey(sabicAccoladeRawData);
     const combinedAccoladeStdData = [...shppAccoladeStdData, ...sabicAccoladeStdData];
-    const allStdData: any[] = [];
 
-    const rawDataActiveFilling: any[] = [];
-    const rawDataNewFilling: any[] = [];
-    const rawDataOpenDisclosure: any[] = [];
-    const rawDataDraftDisclosure: any[] = [];
-    const activeApplicationAccoladeStdData = activeApplicationRawData.map((row) => {
-      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
-      if (matchingStd) {
-        allStdData.push(matchingStd);
-        rawDataActiveFilling.push({ ...row.rowData, STD: matchingStd.STD });
+    const uniqueCombinedAccoladeStdData: any[] = [];
+    const seen = new Set();
+
+    for (const item of combinedAccoladeStdData) {
+      const key = `${item.SBU}_${item.ProjectID}`; // Combine SBU and ProjectID as a unique key
+
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueCombinedAccoladeStdData.push(item);
       }
-      return { accoladeStdData: matchingStd ? matchingStd : '', activeApplicationData: row.rowData };
-    });
-
-    const newFilingThisYearAccoladeStdData = newFilingThisYearRawData.map((row) => {
-      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.AccoladeID);
-      if (matchingStd) {
-        allStdData.push(matchingStd);
-        rawDataNewFilling.push({ ...row.rowData, STD: matchingStd.STD });
-      }
-      return { accoladeStdData: matchingStd ? matchingStd : '', newFilingThisYearData: row.rowData };
-    });
-
-    const openDisclosureAccoladeStdData = openDisclosureRawData.map((row) => {
-      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.Accolade);
-      if (matchingStd) {
-        allStdData.push(matchingStd);
-        rawDataOpenDisclosure.push({ ...row.rowData, STD: matchingStd.STD });
-      }
-      return { accoladeStdData: matchingStd ? matchingStd : '', openDisclosureData: row.rowData };
-    });
-
-    const draftDisclosureAccoladeStdData = draftDisclosureRawData.map((row) => {
-      const matchingStd = combinedAccoladeStdData.find((std) => std.ProjectID === row.rowData.Accolade);
-      if (matchingStd) {
-        allStdData.push(matchingStd);
-        rawDataDraftDisclosure.push({ ...row.rowData, STD: matchingStd.STD });
-      }
-      return { accoladeStdData: matchingStd ? matchingStd : '', draftDisclosureData: row.rowData };
-    });
-
-    if (isRowData) {
-      return { rawDataActiveFilling, rawDataNewFilling, rawDataOpenDisclosure, rawDataDraftDisclosure };
     }
+
+    // if (isRowData) {
+    //   return { rawDataActiveFilling, rawDataNewFilling, rawDataOpenDisclosure, rawDataDraftDisclosure };
+    // }
     return {
-      activeApplicationAccoladeStdData,
-      newFilingThisYearAccoladeStdData,
-      openDisclosureAccoladeStdData,
-      draftDisclosureAccoladeStdData,
-      allStdData,
+      combinedAccoladeStdData: uniqueCombinedAccoladeStdData,
+      activeApplicationRawData,
+      newFilingThisYearRawData,
+      openDisclosureRawData,
+      draftDisclosureRawData,
     };
   } catch (e) {
     console.log('Error in getAccoladeMappingSheet', e);
@@ -855,18 +829,22 @@ export function getActivePatentValueCoverage({
       allRANPVGroup['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
     });
 
-    let patentValueCoverageActive = Object.entries(allRANPVGroup).map(([STD, sum]: [string, number]) => ({
-      SBU: STD,
-      'RANPV OF PHASE 1-5 PROJECTS ($M)': sum,
-      'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': activePatentFillingRANPVGroup[STD],
-      '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': activePatentFillingRANPVGroup[STD] / sum,
-      'No Disclosure for filing': noDisclosuresForFilingRANPVGroup[STD],
-      '% OF RANPVE COVERED-No Disclosure for filing': noDisclosuresForFilingRANPVGroup[STD] / sum,
-      'Disclosure for Filing': noOfActiveDisclosuresRANPVGroup[STD],
-      '% OF RANPVE COVERED-Disclosure available for filing': noOfActiveDisclosuresRANPVGroup[STD] / sum,
-      'Patent application filing in progress(Rated to Draft)': noOfRTDDisclosuresRANPVGroup[STD],
-      '% COVERED-Patent application filing in progress': noOfRTDDisclosuresRANPVGroup[STD] / sum,
-    }));
+    let patentValueCoverageActive = Object.entries(allRANPVGroup).map(([STD, sum]: [string, number]) => {
+      const safeSum = sum || 1; // Avoid division by 0 (you can also customize this if you want 0 instead of 1)
+
+      return {
+        SBU: STD,
+        RANPVOFPHASE15PROJECTSM: sum,
+        RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: activePatentFillingRANPVGroup[STD] || 0,
+        OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: (activePatentFillingRANPVGroup[STD] || 0) / safeSum,
+        NoDisclosureforfiling: noDisclosuresForFilingRANPVGroup[STD] || 0,
+        OFRANPVECOVEREDNoDisclosureforfiling: (noDisclosuresForFilingRANPVGroup[STD] || 0) / safeSum,
+        DisclosureforFiling: noOfActiveDisclosuresRANPVGroup[STD] || 0,
+        OFRANPVECOVEREDDisclosureavailableforfiling: (noOfActiveDisclosuresRANPVGroup[STD] || 0) / safeSum,
+        PatentapplicationfilinginprogressRatedtoDraft: noOfRTDDisclosuresRANPVGroup[STD] || 0,
+        COVEREDPatentapplicationfilinginprogress: (noOfRTDDisclosuresRANPVGroup[STD] || 0) / safeSum,
+      };
+    });
 
     patentValueCoverageActive = [
       ...patentValueCoverageActive.filter((item) => item.SBU !== 'Total'), // Keep all except "Total"
@@ -947,16 +925,18 @@ export function getNewPatentValueCoverage({
       totalRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
     });
 
-    let patentValueCoverageNew = Object.entries(totalRANPV).map(([STD, sum]: [string, number]) => ({
-      SBU: STD,
-      'TOTAL FIRST FILINGS': noOfTotalFirstFilling[STD],
-      'FILINGS HAVING AT LEAST ONE ACCOLADE NUMBER /TSR': '',
-      'FILINGS HAVING NO ACCOLADE NUMBER /TSR': '',
-      'NO. OF ACCOLADE PROJECTS COVERED': noOfAccoladeProjectsCovered[STD],
-      'RANPV OF PHASE 3-5 PROJECTS ($M)': sum,
-      'RANPV OF PHASE 3-5 PROJECTS COVERED BY NEW PATENT FILINGS ($M)': newFillingRANPV[STD],
-      '% OF TOTAL RANPV COVERED BY NEW PATENT FILINGS': newFillingRANPV[STD] / sum,
-    }));
+    let patentValueCoverageNew = Object.entries(totalRANPV).map(([STD, sum]: [string, number]) => {
+      return {
+        SBU: STD,
+        TOTALFIRSTFILINGS: noOfTotalFirstFilling[STD] || 0,
+        FILINGSHAVINGATLEASTONEACCOLADENUMBERorTSR: '', // still no data provided
+        FILINGSHAVINGNOACCOLADENUMBERorTSR: '', // still no data provided
+        NOOFACCOLADEPROJECTSCOVERED: noOfAccoladeProjectsCovered[STD] || 0,
+        RANPVOFPHASE15PROJECTSM: sum,
+        RANPVOFPHASE15PROJECTSCOVEREDBYNEWPATENTFILINGSM: newFillingRANPV[STD] || 0,
+        OFTOTALRANPVCOVEREDBYNEWPATENTFILINGS: sum ? (newFillingRANPV[STD] || 0) / sum : 0,
+      };
+    });
 
     patentValueCoverageNew = [
       ...patentValueCoverageNew.filter((item) => item.SBU !== 'Total'), // Keep all except "Total"
@@ -986,6 +966,16 @@ export function getStrategicReportingClass({
         project.StrategicReportingClass?.toLowerCase() !== '[empty]' &&
         project.StrategicReportingClass?.toLowerCase() !== 'empty' &&
         project.StrategicReportingClass?.toLowerCase() !== 'no'
+      );
+    });
+
+    const filteredUniqueChemestryProjects = allAccoladeMappingSheetData.filter((project) => {
+      return (
+        project.ProjectClosed?.toLowerCase() === 'open' &&
+        project.ProjectLastGateDecision?.toLowerCase() !== 'hold' &&
+        project.ProjectLastGateDecision?.toLowerCase() !== 'stop' &&
+        /stage [1-5]/i.test(project.ProjectCurrentStageName) &&
+        project.UniqueChemistry?.toLowerCase() === 'yes'
       );
     });
 
@@ -1027,20 +1017,55 @@ export function getStrategicReportingClass({
       totalRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
     });
 
-    let strategicReportingClass = Object.entries(totalRANPV).map(
-      ([StrategicReportingClass, sum]: [string, number]) => ({
-        'Strategic Reporting Class': StrategicReportingClass,
-        'RANPV OF PHASE 1-5 PROJECTS ($M)': sum,
-        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)':
-          activeFillingRANPV[StrategicReportingClass],
-        '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': activeFillingRANPV[StrategicReportingClass] / sum,
-        '# OF ACCOLADE PROJECTS': countAccoladeNumber[StrategicReportingClass],
-      })
-    );
+    filteredUniqueChemestryProjects.forEach((project) => {
+      const { RiskAdjustedNPV, noOfActiveApplications } = project;
+      if (!totalRANPV['Unique Chemistry']) {
+        totalRANPV['Unique Chemistry'] = 0;
+      }
+      if (!totalRANPV['Total']) {
+        totalRANPV['Total'] = 0;
+      }
+
+      if (noOfActiveApplications) {
+        if (!activeFillingRANPV['Unique Chemistry']) {
+          activeFillingRANPV['Unique Chemistry'] = 0;
+        }
+        if (!activeFillingRANPV['Total']) {
+          activeFillingRANPV['Total'] = 0;
+        }
+        activeFillingRANPV['Unique Chemistry'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+        activeFillingRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      }
+
+      if (!countAccoladeNumber['Unique Chemistry']) {
+        countAccoladeNumber['Unique Chemistry'] = 0;
+      }
+      if (!countAccoladeNumber['Total']) {
+        countAccoladeNumber['Total'] = 0;
+      }
+
+      countAccoladeNumber['Unique Chemistry'] += 1;
+      countAccoladeNumber['Total'] += 1;
+
+      totalRANPV['Unique Chemistry'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      totalRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+    });
+
+    let strategicReportingClass = Object.entries(totalRANPV).map(([StrategicReportingClass, sum]: [string, number]) => {
+      const safeSum = sum && sum !== 0 ? sum : 1; // avoid divide by zero safely
+
+      return {
+        StrategicReportingClass: StrategicReportingClass,
+        RANPVOFPHASE15PROJECTSM: sum,
+        RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: activeFillingRANPV[StrategicReportingClass] || 0,
+        OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: sum ? (activeFillingRANPV[StrategicReportingClass] || 0) / sum : 0,
+        OFACCOLADEPROJECTS: countAccoladeNumber[StrategicReportingClass] || 0,
+      };
+    });
 
     strategicReportingClass = [
-      ...strategicReportingClass.filter((item) => item['Strategic Reporting Class'] !== 'Total'), // Keep all except "Total"
-      ...strategicReportingClass.filter((item) => item['Strategic Reporting Class'] === 'Total'), // Add "Total" at the end
+      ...strategicReportingClass.filter((item) => item['StrategicReportingClass'] !== 'Total'), // Keep all except "Total"
+      ...strategicReportingClass.filter((item) => item['StrategicReportingClass'] === 'Total'), // Add "Total" at the end
     ];
     return strategicReportingClass;
   } catch (e) {
@@ -1114,16 +1139,19 @@ export function getNewCoverage({
       newAllRANPVGroup['Total'] += NPV ? NPV : 0;
     });
 
-    let newCoverage = Object.entries(allRANPVGroup).map(([STD, sum]: [string, number]) => ({
-      SBU: STD,
-      'RANPV OF PHASE 1-5 PROJECTS ($M)': sum,
-      'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': activePatentFillingRANPVGroup[STD],
-      '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': activePatentFillingRANPVGroup[STD] / sum,
-      'NEW RANPV OF PHASE 1-5 PROJECTS ($M)': newAllRANPVGroup[STD],
-      'NEW RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': newActivePatentFillingRANPVGroup[STD],
-      'NEW % OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS':
-        newActivePatentFillingRANPVGroup[STD] / newAllRANPVGroup[STD],
-    }));
+    let newCoverage = Object.entries(allRANPVGroup).map(([STD, sum]: [string, number]) => {
+      return {
+        SBU: STD,
+        RANPVOFPHASE15PROJECTSM: sum,
+        RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: activePatentFillingRANPVGroup[STD] || 0,
+        OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: sum ? (activePatentFillingRANPVGroup[STD] || 0) / sum : 0,
+        NEWRANPVOFPHASE15PROJECTSM: newAllRANPVGroup[STD] || 0,
+        NEWRANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: newActivePatentFillingRANPVGroup[STD] || 0,
+        NEWOFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: newAllRANPVGroup[STD]
+          ? (newActivePatentFillingRANPVGroup[STD] || 0) / newAllRANPVGroup[STD]
+          : 0,
+      };
+    });
 
     newCoverage = [
       ...newCoverage.filter((item) => item.SBU !== 'Total'), // Keep all except "Total"

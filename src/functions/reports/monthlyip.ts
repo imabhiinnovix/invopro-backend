@@ -1,10 +1,5 @@
-import { promises as fsPromises } from 'fs';
-import path from 'path';
-
 import * as reportRequestService from '../../database/services/reportRequest.services';
 import {
-  addCellMaping,
-  DataItem,
   getAllProsecutionSavings,
   getAnnuitySavingsFromReductions,
   getAppsFiledBasedOnStc,
@@ -19,20 +14,23 @@ import {
   getTotalPortfolio,
   getTotalPortfolioPercentage,
   percentageOfCurrentYearInventionDisclosureConvertedToFilings,
-  processData,
   processStaticData,
   processSTCData,
 } from '../../database/services/monthlyipReport.services';
-import { createExcelSheetFile, createUpdateExcelTable, writeDataToExcel } from '../../utils/excel.utils';
+
 import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
 import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/dataSourceVersion.controller';
-import { processReportHeaders, transformMonthlyIpData, transformMonthlySTCData } from '../../utils/common.report';
+import {
+  processReportHeaders,
+  transformMonthlyIpData,
+  transformMonthlySTCData,
+  transformMonthlySTCSBUData,
+} from '../../utils/common.report';
 import { ReportHeaders } from '../../utils/common.type';
 
 export const generateMonthlyIpReport = async ({
   reportRequestPayload,
   requestedReportId,
-  sampleFilePath,
   disclosureDataSourceVersionId,
   portfolioDataSourceVersionId,
   sabicipDataSourceVersionId,
@@ -48,11 +46,11 @@ export const generateMonthlyIpReport = async ({
   organizationId,
   monthlyIpDataSource,
   monthlyipstcDataSource,
+  monthlyipstcsbuDataSource,
   headers,
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
-  sampleFilePath: string;
   disclosureDataSourceVersionId: string;
   portfolioDataSourceVersionId: string;
   sabicipDataSourceVersionId: string;
@@ -69,13 +67,14 @@ export const generateMonthlyIpReport = async ({
   headers: ReportHeaders;
   monthlyIpDataSource: string;
   monthlyipstcDataSource: string;
+  monthlyipstcsbuDataSource: string;
 }) => {
   try {
     const versionValue = reportRequestPayload.versionValue;
+    const customReportId = reportRequestPayload.customReportId;
     const splitedVersionValue = versionValue.split('-');
     const currentYear = splitedVersionValue[0];
     const currentMonth = splitedVersionValue[1];
-    const newFilePath = reportRequestPayload.filePath;
     const sbuHeaders = headers['global']['columns'];
 
     const toBeProcessedReportHeaders = [
@@ -83,7 +82,6 @@ export const generateMonthlyIpReport = async ({
       ...headers['global']['columns'],
       { reportHeader: 'Totals', attributeValues: ['Totals'] },
     ];
-    const reportHeaders = toBeProcessedReportHeaders.map((data) => data.reportHeader);
 
     const currentYearApplicationFiledData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
@@ -440,7 +438,7 @@ export const generateMonthlyIpReport = async ({
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
       customReportModel,
-      isRowData: true,
+      isRowData,
     });
 
     const partiallyProcessedAnnuitySavingsForNextYear = getFormattedDataToProcessReportHeaders({
@@ -475,7 +473,7 @@ export const generateMonthlyIpReport = async ({
       priorityDrop: reductionData.priorityDropArray,
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
-      isRowData: true,
+      isRowData,
     });
 
     const partiallyProcessedAllProsecutionSavings = getFormattedDataToProcessReportHeaders({
@@ -520,174 +518,6 @@ export const generateMonthlyIpReport = async ({
       ...processedSecondLargeData,
     ];
 
-    await createUpdateExcelTable({
-      data: finalProcessedData,
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableColumn: 'A',
-      headerColor: 'ffffff',
-      headerBackgroundColor: '7b7b7b',
-      headers: reportHeaders,
-      isWhiteBackGround: false,
-      borderColor: { right: '7b7b7b', bottom: '7b7b7b' },
-      tableRowBackGroundColor: {
-        2: 'ffc000',
-        3: 'b5c6e8',
-        4: 'b5c6e8',
-        5: 'b5c6e8',
-        11: 'b5c6e8',
-        12: 'b5c6e8',
-        17: 'b5c6e8',
-        26: 'b5c6e8',
-        32: 'b5c6e8',
-        34: 'b5c6e8',
-        35: 'b5c6e8',
-        37: 'b5c6e8',
-        39: 'b5c6e8',
-        42: 'b5c6e8',
-        44: 'b5c6e8',
-        45: 'b5c6e8',
-        47: 'b5c6e8',
-        10: 'ffc000',
-        18: 'ffc000',
-        21: 'ffc000',
-        27: 'ffc000',
-        36: 'ffc000',
-        38: 'ffc000',
-        49: '7b7b7b',
-      },
-      tableRowAlignment: {
-        2: 'center',
-        10: 'center',
-        18: 'center',
-        21: 'center',
-        27: 'center',
-        36: 'center',
-        38: 'center',
-      },
-      tableRowCellFormat: {
-        4: '0%',
-        35: '0%',
-        37: '"$" #,##0, "K"',
-        40: '"$" #,##0, "K"',
-        41: '"$" #,##0, "K"',
-        42: '"$" #,##0, "K"',
-        45: '"$" #,##0, "K"',
-        47: '"$" #,##0, "K"',
-      },
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 2,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 10,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 18,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 21,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 27,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 36,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 38,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 48,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 49,
-      startCellNumber: 1,
-      mergeEndColumn: reportHeaders.length + 1,
-      isMergeCell: true,
-    });
-
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Global',
-      gap: 0,
-      startTableRow: 1,
-      columnBackGroundColor: '7b7b7b',
-      columnBackGroundColorIndex: reportHeaders.length + 1,
-      numRows: finalProcessedData.length,
-      columnWidth: 5,
-    });
     //stc tab
     //first table
     const newProjectOpenedBasedOnStc = await getProjectBasedOnStcs({
@@ -820,30 +650,12 @@ export const generateMonthlyIpReport = async ({
       combinedData.push(result);
     });
 
-    await createUpdateExcelTable({
-      data: combinedSTCData,
-      filePath: newFilePath,
-      sheetName: 'STC',
-      gap: 0,
-      startTableColumn: 'A',
-      headerBackgroundColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      isWhiteBackGround: false,
-    });
-
-    await createUpdateExcelTable({
-      data: combinedData,
-      filePath: newFilePath,
-      sheetName: 'STC',
-      gap: 2,
-      startTableColumn: 'A',
-      headerBackgroundColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      isWhiteBackGround: false,
-    });
-
     const reverseMapping = transformMonthlyIpData({ currentYear: Number(currentYear), isReverseMapping: true });
     const reverseStcMapping = transformMonthlySTCData({ currentYear: Number(currentYear), isReverseMapping: true });
+    const reverseStcSbuMapping = transformMonthlySTCSBUData({
+      currentYear: Number(currentYear),
+      isReverseMapping: true,
+    });
 
     const sbusHeader = [...sbuHeaders.map((data) => data.reportHeader), 'Totals'];
     const saveData = sbusHeader.map((sbu) => {
@@ -870,8 +682,28 @@ export const generateMonthlyIpReport = async ({
       saveStcData.push(entry);
     }
 
+    const stcSBUHeaders = [
+      'SBU',
+      `New Projects opened in ${currentYear}`,
+      `Total Open Projects`,
+      `${currentYear} Filed`,
+    ];
+
+    const saveStcSbuData: any[] = [];
+
+    for (let i = 0; i < combinedData.length; i++) {
+      const stcSBUData = combinedData[i];
+      const entry = {};
+      for (let j = 0; j < stcSBUHeaders.length; j++) {
+        entry[reverseStcSbuMapping[stcSBUHeaders[j]]] = stcSBUData[stcSBUHeaders[j]];
+      }
+      saveStcSbuData.push(entry);
+    }
+
     const dataSourceVersionDetailsMonthlyIp = await createUpdateCustomDataSourceVersionValueFunction({
       dataSourceId: monthlyIpDataSource,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
       versionValue,
       versionData: saveData,
       userId,
@@ -881,8 +713,21 @@ export const generateMonthlyIpReport = async ({
 
     const dataSourceVersionDetailsMonthlyIpStc = await createUpdateCustomDataSourceVersionValueFunction({
       dataSourceId: monthlyipstcDataSource,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
       versionValue,
       versionData: saveStcData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+
+    const dataSourceVersionDetailsMonthlyIpStcSBU = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: monthlyipstcsbuDataSource,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: saveStcSbuData,
       userId,
       organizationId,
       orgCode,
@@ -898,6 +743,8 @@ export const generateMonthlyIpReport = async ({
           'New Filings': value,
         })),
       userId,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
       organizationId,
       orgCode,
     });
@@ -913,6 +760,8 @@ export const generateMonthlyIpReport = async ({
         })),
       userId,
       organizationId,
+      customReportId: customReportId,
+      reportRequestId: requestedReportId,
       orgCode,
     });
 
@@ -920,16 +769,37 @@ export const generateMonthlyIpReport = async ({
       status: 'completed',
       dataSourceVersion: [
         {
-          name: 'global',
+          sheetName: 'Global',
+          sheetCode: 'global',
+          tabName: 'Global',
+          mappingFuctionName: 'transformMonthlyIpData',
+          designCode: 'global',
+          allowPdfDownload: true,
           dataSourceVersionId: dataSourceVersionDetailsMonthlyIp.dataSourceVersionId,
           versionCode: dataSourceVersionDetailsMonthlyIp.versionCode,
           dataSourceId: monthlyIpDataSource,
         },
         {
-          name: 'stc',
+          sheetName: 'STC',
+          sheetCode: 'stc',
+          tabName: 'STC',
+          mappingFuctionName: 'transformMonthlySTCData',
+          designCode: 'stc',
+          allowPdfDownload: true,
           dataSourceVersionId: dataSourceVersionDetailsMonthlyIpStc.dataSourceVersionId,
           versionCode: dataSourceVersionDetailsMonthlyIpStc.versionCode,
           dataSourceId: monthlyipstcDataSource,
+        },
+        {
+          sheetName: 'STC',
+          sheetCode: 'stc',
+          tabName: 'STC:SBU',
+          mappingFuctionName: 'transformMonthlySTCSBUData',
+          designCode: 'sbu',
+          allowPdfDownload: true,
+          dataSourceVersionId: dataSourceVersionDetailsMonthlyIpStcSBU.dataSourceVersionId,
+          versionCode: dataSourceVersionDetailsMonthlyIpStcSBU.versionCode,
+          dataSourceId: monthlyipstcsbuDataSource,
         },
       ],
     });

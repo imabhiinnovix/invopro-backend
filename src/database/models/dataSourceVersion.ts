@@ -4,6 +4,8 @@ interface IDataSourceVersion extends Document {
   organizationId: Types.ObjectId;
   dataSourceId: Types.ObjectId;
   entityId: Types.ObjectId;
+  customReportId: Types.ObjectId;
+  reportRequestId: Types.ObjectId;
   versionValue: string;
   filePath: string;
   fileType: string;
@@ -26,6 +28,8 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     versionValue: { type: String, required: true },
     versionName: { type: String },
+    customReportId: { type: Schema.Types.ObjectId, ref: 'custom_reports' },
+    reportRequestId: { type: Schema.Types.ObjectId, ref: 'report_requests' },
     status: {
       type: String,
       enum: ['failed', 'processing', 'completed'], // Restricting the values of status

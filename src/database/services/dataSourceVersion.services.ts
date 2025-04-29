@@ -113,24 +113,137 @@ export const getDataSourceVersion = async ({ query, populate, sort }: any) => {
   }
 };
 
-// export const getDataSourceVersionBasedOnDataSourceIdAndVersionValueAndIsCurrent = async ({
-//   dataSourceId,
-//   versionValue,
-//   isCurrent,
-// }: {
-//   dataSourceId: string;
-//   versionValue: string;
-//   isCurrent: boolean;
-// }) => {
-//   try {
-//     const dataSourceVersionDetails = await DataSourceVersion.findOne({
-//       dataSourceId,
-//       versionValue,
-//       isCurrent,
-//     });
+const buildFieldProjection = (fields: string[]) => {
+  const projection: any = {};
+  fields.forEach((field) => {
+    projection[field] = `$${field}`;
+  });
+  return projection;
+};
+export const getDataSourceVersionGroupedList = async ({
+  match = {},
+  groupBy,
+  page = 1,
+  limit = 10,
+  sort = { createdAt: -1 },
+  selectFields = {},
+  populate = [],
+}: {
+  match?: any;
+  groupBy: string;
+  page?: number;
+  limit?: number;
+  sort?: any;
+  selectFields?: { [field: string]: 1 | 0 | string };
+  populate?: {
+    from: string;
+    localField: string;
+    foreignField: string;
+    as: string;
+    isSingle?: boolean;
+  }[];
+}) => {
+  try {
+    const pipeline: any[] = [];
 
-//     return dataSourceVersionDetails;
-//   } catch (err) {
-//     throw err;
-//   }
-// };
+    // 1. Match Stage
+    if (match && Object.keys(match).length > 0) {
+      pipeline.push({ $match: match });
+    }
+
+    // 2. Group Stage
+    pipeline.push({
+      $group: {
+        _id: `$${groupBy}`,
+        doc: { $first: '$$ROOT' },
+      },
+    });
+
+    // 3. Replace Root to flatten "doc"
+    pipeline.push({ $replaceRoot: { newRoot: '$doc' } });
+
+    // 4. Sort Stage
+    if (sort && Object.keys(sort).length > 0) {
+      pipeline.push({ $sort: sort });
+    }
+
+    // 5. Populate (lookups + unwind)
+    if (populate.length) {
+      populate.forEach((pop) => {
+        pipeline.push({
+          $lookup: {
+            from: pop.from,
+            localField: pop.localField,
+            foreignField: pop.foreignField,
+            as: pop.as,
+          },
+        });
+
+        // Use $unwind only if isSingle is true to flatten the result
+        if (pop.isSingle) {
+          pipeline.push({
+            $unwind: {
+              path: `$${pop.as}`,
+              preserveNullAndEmptyArrays: true, // Ensure missing fields are handled
+            },
+          });
+        } else {
+          // Unwind the dataSourceVersion if isSingle is false
+          if (pop.as === 'reportRequest') {
+            // No unwind needed if we just want to pull out the array
+            pipeline.push({
+              $addFields: {
+                dataSourceVersion: {
+                  $ifNull: [{ $arrayElemAt: [`$${pop.as}.dataSourceVersion`, 0] }, []],
+                },
+              },
+            });
+
+            // Optionally remove the original 'reportRequest' field
+            pipeline.push({
+              $project: {
+                reportRequest: 0,
+              },
+            });
+          }
+        }
+      });
+    }
+
+    // 6. Project Stage to flatten nested fields and move `dataSourceVersion` to the root level
+    if (selectFields && Object.keys(selectFields).length > 0) {
+      pipeline.push({ $project: selectFields });
+    } else {
+      pipeline.push({ $project: { _id: 0 } });
+    }
+
+    // 7. Pagination
+    if (page && limit) {
+      pipeline.push({ $skip: (page - 1) * limit }, { $limit: limit });
+    }
+
+    // Execute main query
+    const data = await DataSourceVersion.aggregate(pipeline).exec();
+
+    // Count total groups
+    const countPipeline: any[] = [];
+
+    if (match && Object.keys(match).length > 0) {
+      countPipeline.push({ $match: match });
+    }
+
+    countPipeline.push({
+      $group: { _id: `$${groupBy}` },
+    });
+
+    countPipeline.push({ $count: 'total' });
+
+    const countResult = await DataSourceVersion.aggregate(countPipeline).exec();
+    const totalCount = countResult[0]?.total || 0;
+
+    return { data, totalCount };
+  } catch (err) {
+    console.error('Error in getDataSourceVersionGroupedList:', err);
+    throw err;
+  }
+};

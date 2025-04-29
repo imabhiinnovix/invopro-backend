@@ -660,3 +660,398 @@ export function excelDateToJSDate(serial: number) {
     seconds
   ).toISOString();
 }
+
+interface ReportSettings {
+  sheetName: string;
+  sheetCode: string;
+  isWhiteBackGround: boolean;
+  startTableColumn: string;
+  startRowNumber: number;
+}
+
+interface SubSection {
+  headerName: string;
+  fontBold: boolean;
+  headerBackGroundColor: string;
+  headerTextColor: string;
+  horizontalAlignment:
+    | 'left'
+    | 'center'
+    | 'right'
+    | 'fill'
+    | 'justify'
+    | 'centerContinuous'
+    | 'distributed'
+    | undefined;
+  verticalAlignment: 'middle' | 'top' | 'bottom' | 'distributed' | 'justify' | undefined;
+  type: string;
+  cellFormat: string;
+  spanColumns: boolean;
+  lastCellBackGroundColor: string;
+}
+
+interface Comments {
+  comment: string;
+  backGroundColor: string;
+  horizontalAlignment?:
+    | 'left'
+    | 'center'
+    | 'right'
+    | 'fill'
+    | 'justify'
+    | 'centerContinuous'
+    | 'distributed'
+    | undefined;
+  verticalAlignment: 'middle' | 'top' | 'bottom' | 'distributed' | 'justify' | undefined;
+  startTableColumn: string;
+  textColor: string;
+  fontBold: boolean;
+  isBorder: boolean;
+  mergeCell: number;
+}
+
+interface Section {
+  sectionName?: string;
+  cellFormat: string;
+  fontBold: boolean;
+  sectionBackGroundColor?: string;
+  sectionTextColor?: string;
+  sectionHorizontalAlignment?:
+    | 'left'
+    | 'center'
+    | 'right'
+    | 'fill'
+    | 'justify'
+    | 'centerContinuous'
+    | 'distributed'
+    | undefined;
+  sectionVerticalAlignment?: 'middle' | 'top' | 'bottom' | 'distributed' | 'justify' | undefined;
+  space?: number;
+  comments?: Comments[];
+  view: 'row' | 'column';
+  spanColumns?: boolean;
+  subSections: SubSection[];
+}
+
+export async function generateExcelReport({
+  reportName,
+  reportData,
+  designData,
+  reportSettings,
+  filePath,
+}: {
+  reportName: string;
+  reportData: Record<string, any[][]>;
+  designData: Record<string, Section[]>;
+  reportSettings: ReportSettings[];
+  filePath: string;
+}) {
+  const workbook = new ExcelJS.Workbook();
+
+  for (const setting of reportSettings) {
+    const { sheetName, sheetCode, startTableColumn, startRowNumber, isWhiteBackGround } = setting;
+
+    const worksheet = workbook.addWorksheet(sheetName, {
+      properties: { defaultColWidth: 22 },
+      views: [{ showGridLines: isWhiteBackGround ? false : true }],
+    });
+
+    const sections = designData[sheetCode] || [];
+    const reportDataBasedOnSheetCode = reportData[sheetCode] || [];
+
+    let rowPointer = startRowNumber;
+    const tableData: any[] = [];
+    let processingDataTableIndex = 0;
+    let dataToBeProcessed: any = reportDataBasedOnSheetCode[processingDataTableIndex] || [];
+    let headerLabelKey = '';
+
+    let tableObj: any = { headers: [], rows: [] };
+
+    //for data prepration for table
+    for (let i = 0; i < sections.length; i++) {
+      const section = sections[i];
+      const subSections = section.subSections || [];
+      const sectionView = section.view;
+      if (section.sectionName || subSections.length > 0) {
+        if (section.sectionName && headerLabelKey) {
+          tableObj.rows.push([section.sectionName]);
+        }
+        for (let j = 0; j < subSections.length; j++) {
+          const subSection = subSections[j];
+          const headerName = subSection.headerName;
+          if (sectionView === 'row') {
+            if (!headerLabelKey) {
+              headerLabelKey = headerName;
+              const uniqueHeaders = new Set();
+              uniqueHeaders.add(headerLabelKey);
+              tableObj.headers.push({ name: headerLabelKey, filterButton: false });
+
+              dataToBeProcessed.forEach((obj) => {
+                const value = obj[headerLabelKey];
+                if (!uniqueHeaders.has(value)) {
+                  uniqueHeaders.add(value);
+                  tableObj.headers.push({ name: value, filterButton: false });
+                }
+              });
+            } else {
+              const rowData = [headerName];
+              for (let k = 1; k < tableObj.headers.length; k++) {
+                const tableHeader = tableObj.headers[k].name;
+                const checkAvailableData = dataToBeProcessed.find((item) => {
+                  return item[headerLabelKey] === tableHeader;
+                });
+
+                if (checkAvailableData) {
+                  rowData.push(checkAvailableData[headerName]);
+                } else {
+                  rowData.push('');
+                }
+              }
+              tableObj.rows.push(rowData);
+            }
+          } else {
+            tableObj.headers.push({ name: headerName, filterButton: false });
+          }
+        }
+      } else {
+        if (tableObj.headers.length > 0) {
+          if (tableObj.rows.length === 0) {
+            const newData = dataToBeProcessed.map((item) => tableObj.headers.map((key) => item[key.name]));
+            tableObj.rows = newData;
+          }
+          tableData.push(tableObj);
+          processingDataTableIndex++;
+          dataToBeProcessed = reportDataBasedOnSheetCode[processingDataTableIndex] || [];
+          headerLabelKey = '';
+          tableObj = { headers: [], rows: [] };
+        }
+      }
+    }
+
+    if (tableObj.headers.length > 0) {
+      if (tableObj.rows.length === 0) {
+        const newData = dataToBeProcessed.map((item) => tableObj.headers.map((key) => item[key.name]));
+        tableObj.rows = newData;
+      }
+      tableData.push(tableObj);
+      processingDataTableIndex = 0;
+      dataToBeProcessed = reportDataBasedOnSheetCode[processingDataTableIndex] || [];
+    }
+
+    //for table desing
+    let processingTableIndex = 0;
+    let processingTableHeaders = [];
+    let processingTableRows = [];
+    let headerRowIndex = 0;
+    let lastRowIndex = 0;
+    for (let i = 0; i < sections.length; i++) {
+      const section = sections[i];
+      const subSections = section.subSections || [];
+      const sectionView = section.view;
+      const sectionComments = section.comments || [];
+      const space = section.space !== undefined && section.space >= 0 ? section.space : 2;
+      if (sectionComments.length > 0) {
+        for (const comment of sectionComments) {
+          const starComentColumn = comment.startTableColumn ? comment.startTableColumn : startTableColumn;
+          const cell = worksheet.getCell(`${starComentColumn}${rowPointer}`);
+          cell.value = comment.comment;
+          cell.font = {
+            bold: !!comment.fontBold,
+            color: { argb: comment.textColor ? comment.textColor : '000000' },
+          };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: comment.backGroundColor ? comment.backGroundColor : 'FFFFFF' },
+          };
+          cell.alignment = {
+            vertical: comment.verticalAlignment,
+            horizontal: comment.horizontalAlignment,
+            wrapText: false,
+          };
+          if (comment.isBorder) {
+            cell.border = {
+              top: { style: 'thin' },
+              left: { style: 'thin' },
+              bottom: { style: 'thin' },
+              right: { style: 'thin' },
+            };
+          }
+
+          if (comment.mergeCell) {
+            const endCol = colToLetter(colToNumber(starComentColumn) + comment.mergeCell - 1);
+            worksheet.mergeCells(`${starComentColumn}${rowPointer}:${endCol}${rowPointer}`);
+          }
+          if (sectionView === 'column') {
+            rowPointer++;
+          }
+        }
+        if (sectionView === 'row') {
+          rowPointer++;
+        }
+        rowPointer = rowPointer + space;
+      } else if (section.sectionName || subSections.length > 0) {
+        if (section.sectionName) {
+          const mergeEnd = colToLetter(colToNumber(startTableColumn) + processingTableHeaders.length - 1);
+          const cell = worksheet.getCell(`${startTableColumn}${rowPointer}`);
+          cell.font = {
+            bold: section.fontBold,
+            color: { argb: section.sectionTextColor ? section.sectionTextColor : '000000' },
+          };
+          cell.alignment = {
+            horizontal: section.sectionHorizontalAlignment || 'center',
+            vertical: section.sectionVerticalAlignment || 'middle',
+          };
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' },
+          };
+          if (section.sectionBackGroundColor) {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: section.sectionBackGroundColor },
+            };
+          }
+          if (section.spanColumns) {
+            worksheet.mergeCells(`${startTableColumn}${rowPointer}:${mergeEnd}${rowPointer}`);
+          }
+          rowPointer++;
+        }
+
+        for (let j = 0; j < subSections.length; j++) {
+          const subSection = subSections[j];
+          const headerName = subSection.headerName;
+          const spanColumns = subSection.spanColumns;
+          const mergeEnd = colToLetter(colToNumber(startTableColumn) + processingTableHeaders.length - 1);
+          if (sectionView === 'row') {
+            const row = worksheet.getRow(rowPointer);
+            row.eachCell((cell, colIndex) => {
+              cell.font = {
+                bold: subSection.fontBold,
+                color: { argb: subSection.headerTextColor ? subSection.headerTextColor : '000000' },
+              };
+              cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: subSection.headerBackGroundColor ? subSection.headerBackGroundColor : 'FFFFFF ' }, // white background
+              };
+              cell.alignment = {
+                vertical: subSection.verticalAlignment,
+                horizontal: subSection.horizontalAlignment,
+                wrapText: true,
+              };
+              cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' },
+              };
+              if (subSection.cellFormat) {
+                cell.numFmt = subSection.cellFormat;
+              }
+            });
+            if (spanColumns) {
+              worksheet.mergeCells(`${startTableColumn}${rowPointer}:${mergeEnd}${rowPointer}`);
+            }
+            rowPointer++;
+          } else {
+            rowPointer = lastRowIndex + 2;
+            const headerRow = worksheet.getRow(headerRowIndex);
+            headerRow.eachCell((cell, colIndex) => {
+              if (cell.value === headerName) {
+                cell.font = {
+                  bold: subSection.fontBold,
+                  color: { argb: subSection.headerTextColor ? subSection.headerTextColor : '000000' },
+                };
+                cell.fill = {
+                  type: 'pattern',
+                  pattern: 'solid',
+                  fgColor: { argb: subSection.headerBackGroundColor ? subSection.headerBackGroundColor : '4472C4' }, // Blue background
+                };
+                cell.alignment = {
+                  vertical: subSection.verticalAlignment,
+                  horizontal: subSection.horizontalAlignment,
+                  wrapText: true,
+                };
+
+                const column = worksheet.getColumn(colIndex);
+                column.width = 22;
+                column.eachCell({ includeEmpty: true }, (cell, rowNumber) => {
+                  if (rowNumber >= headerRowIndex) {
+                    cell.border = {
+                      top: { style: 'thin' },
+                      left: { style: 'thin' },
+                      bottom: { style: 'thin' },
+                      right: { style: 'thin' },
+                    };
+                  }
+                });
+
+                if (subSection.cellFormat) {
+                  column.numFmt = subSection.cellFormat;
+                }
+                if (subSection.lastCellBackGroundColor) {
+                  const lastRow = worksheet.getRow(lastRowIndex);
+                  const lastCell = lastRow.getCell(colIndex);
+                  lastCell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: subSection.lastCellBackGroundColor },
+                  };
+                }
+              }
+            });
+          }
+        }
+      } else {
+        const individualTable = tableData[processingTableIndex];
+        processingTableHeaders = individualTable.headers;
+        processingTableRows = individualTable.rows;
+        headerRowIndex = rowPointer;
+        lastRowIndex = processingTableRows.length + headerRowIndex;
+        const tableRef = startTableColumn ? `${startTableColumn}${rowPointer}` : `A${rowPointer}`;
+
+        // Add a table to the worksheet
+        worksheet.addTable({
+          name: `DynamicTable_${sheetCode.toLowerCase().replace(/[^a-z]/g, '')}_${processingTableIndex}_${rowPointer}`, // Unique table name
+          ref: tableRef,
+          headerRow: true,
+          totalsRow: false,
+          style: {
+            theme: 'TableStyleMedium9', // Default table style
+            showRowStripes: true,
+          },
+          columns: processingTableHeaders,
+          rows: processingTableRows,
+        });
+
+        processingTableIndex++;
+      }
+    }
+  }
+
+  await workbook.xlsx.writeFile(filePath);
+  console.log(`${reportName}.xlsx generated successfully.`);
+}
+
+export function colToLetter(col: number | string): string {
+  if (typeof col === 'string') return col;
+  let letter = '';
+  while (col > 0) {
+    const mod = (col - 1) % 26;
+    letter = String.fromCharCode(65 + mod) + letter;
+    col = Math.floor((col - mod) / 26);
+  }
+  return letter;
+}
+
+export function colToNumber(col: string): number {
+  let num = 0;
+  for (let i = 0; i < col.length; i++) {
+    num = num * 26 + (col.charCodeAt(i) - 64);
+  }
+  return num;
+}

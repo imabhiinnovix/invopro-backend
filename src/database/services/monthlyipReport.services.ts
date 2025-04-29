@@ -894,6 +894,7 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
   headers: { reportHeader: string; attributeValues: string[] }[];
 }) {
   try {
+    // Use is row data true to generate the report
     const newYearApplicationFiledRowData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -1385,7 +1386,10 @@ export async function getReductions({
 
     const annuityDrop = await customReportModel.DataSourceVersionValuePortfolio.aggregate(annuityDropAggregate);
 
-    const annuityDropArray = annuityDrop.map((data) => data.rowData);
+    const annuityDropArray = annuityDrop.map((data) => ({
+      ...(data?.rowData || {}),
+      dropType: 'annuity',
+    }));
 
     const annuityDropCount = annuityDropArray.reduce((acc, item) => {
       const sbu = item['SBU'];
@@ -1415,7 +1419,7 @@ export async function getReductions({
           ],
           $and: [
             {
-              $or: [
+              $and: [
                 { 'rowData.Publication Date': { $eq: null } },
                 { 'rowData.Grant Date': { $eq: null } },
                 { 'rowData.Grant No': { $eq: null } },
@@ -1443,14 +1447,19 @@ export async function getReductions({
       priorityDropUnfilteredWithDate
     );
 
-    const priorityDropArray = groupedPriorityDropFiltered.filter((item) => {
-      const statusDate = DateTime.fromISO(item['Status Date']);
-      const filingDate = DateTime.fromISO(item['Filing Date']);
+    const priorityDropArray = groupedPriorityDropFiltered
+      .filter((item) => {
+        const statusDate = DateTime.fromISO(item['Status Date']);
+        const filingDate = DateTime.fromISO(item['Filing Date']);
 
-      const diffInMonths = statusDate.diff(filingDate, 'months').months;
+        const diffInMonths = statusDate.diff(filingDate, 'months').months;
 
-      return diffInMonths <= 24 && item['IsFirstFiling'] === 1;
-    });
+        return diffInMonths <= 24 && item['IsFirstFiling'] === 1;
+      })
+      .map((item) => ({
+        ...item,
+        dropType: 'priority',
+      }));
 
     const priorityDropCount = priorityDropArray.reduce((acc, item) => {
       const sbu = item['SBU'];
@@ -1488,7 +1497,10 @@ export async function getReductions({
 
     const pctDrop = await customReportModel.DataSourceVersionValuePortfolio.aggregate(pctDropAggregate);
 
-    const pctDropArray = filterCombineData(groupedCasesBasedOnFaimlyNumber, pctDrop);
+    const pctDropArray = filterCombineData(groupedCasesBasedOnFaimlyNumber, pctDrop).map((item) => ({
+      ...item,
+      dropType: 'pct',
+    }));
 
     const pctDropCount = pctDropArray.reduce((acc, item) => {
       const sbu = item['SBU'];
@@ -1579,7 +1591,12 @@ export async function getReductions({
 
     const prosecutionDrop = await customReportModel.DataSourceVersionValuePortfolio.aggregate(prosecutionDropAggregate);
     // const prosecutionDropArray = prosecutionDrop.map((data) => data.rowData);
-    const prosecutionDropArray = filterProsecutionDrop(groupedCasesBasedOnFaimlyNumber, prosecutionDrop);
+    const prosecutionDropArray = filterProsecutionDrop(groupedCasesBasedOnFaimlyNumber, prosecutionDrop).map(
+      (item) => ({
+        ...item,
+        dropType: 'prosecution',
+      })
+    );
 
     const prosecutionDropCount = prosecutionDropArray.reduce((acc, item) => {
       const sbu = item['SBU'];
@@ -1749,7 +1766,15 @@ export async function getAnnuitySavingsFromReductions({
       const total = sabicTotal + ctclinsabTotal + annuitiesTotal;
 
       if (isRowData) {
-        rowDataSavings.push({ Case_Reference1: caseRef, saving: total, procedureAgentRef });
+        rowDataSavings.push({
+          ...item,
+          Case_Reference1: caseRef,
+          dropType: item.dropType,
+          AnnuitiesDueList_SHPP_Savings: sabicTotal,
+          AnnuitiesDueList_Linde_Savings: ctclinsabTotal,
+          AnnuitiesDueList_CPi_Savings: annuitiesTotal,
+          Total_Saving: total,
+        });
       }
 
       if (sbu) {
