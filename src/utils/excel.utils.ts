@@ -974,13 +974,15 @@ export async function generateExcelReport({
 
                 const column = worksheet.getColumn(colIndex);
                 column.width = 22;
-                column.eachCell((cell, colIndex) => {
-                  cell.border = {
-                    top: { style: 'thin' },
-                    left: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    right: { style: 'thin' },
-                  };
+                column.eachCell({ includeEmpty: true }, (cell, rowNumber) => {
+                  if (rowNumber >= headerRowIndex) {
+                    cell.border = {
+                      top: { style: 'thin' },
+                      left: { style: 'thin' },
+                      bottom: { style: 'thin' },
+                      right: { style: 'thin' },
+                    };
+                  }
                 });
 
                 if (subSection.cellFormat) {
