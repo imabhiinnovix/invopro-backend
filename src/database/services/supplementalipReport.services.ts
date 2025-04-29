@@ -577,12 +577,12 @@ export async function getAccoladeMappingSheet({
           },
         },
       },
-      {
-        $group: {
-          _id: '$rowData.Case_Reference1',
-          rowData: { $first: '$rowData' },
-        },
-      },
+      // {
+      //   $group: {
+      //     _id: '$rowData.Case_Reference1',
+      //     rowData: { $first: '$rowData' },
+      //   },
+      // },
       {
         $project: {
           rowData: 1,
@@ -602,12 +602,12 @@ export async function getAccoladeMappingSheet({
           },
         },
       },
-      {
-        $group: {
-          _id: '$rowData.Case_Reference1',
-          rowData: { $first: '$rowData' },
-        },
-      },
+      // {
+      //   $group: {
+      //     _id: '$rowData.Case_Reference1',
+      //     rowData: { $first: '$rowData' },
+      //   },
+      // },
       {
         $project: {
           rowData: 1,
@@ -642,12 +642,12 @@ export async function getAccoladeMappingSheet({
           },
         },
       },
-      {
-        $group: {
-          _id: '$rowData.DisclosureNumber',
-          rowData: { $first: '$rowData' },
-        },
-      },
+      // {
+      //   $group: {
+      //     _id: '$rowData.DisclosureNumber',
+      //     rowData: { $first: '$rowData' },
+      //   },
+      // },
       {
         $project: {
           rowData: 1,
@@ -696,12 +696,6 @@ export async function getAccoladeMappingSheet({
         },
       },
       {
-        $group: {
-          _id: '$rowData.ProjectID',
-          rowData: { $first: '$rowData' },
-        },
-      },
-      {
         $project: {
           rowData: 1,
         },
@@ -718,12 +712,6 @@ export async function getAccoladeMappingSheet({
         },
       },
       {
-        $group: {
-          _id: '$rowData.ProjectID',
-          rowData: { $first: '$rowData' },
-        },
-      },
-      {
         $project: {
           rowData: 1,
         },
@@ -734,11 +722,23 @@ export async function getAccoladeMappingSheet({
     const sabicAccoladeStdData = categorizeStdProjectsAndRemoveRowDataExtraKey(sabicAccoladeRawData);
     const combinedAccoladeStdData = [...shppAccoladeStdData, ...sabicAccoladeStdData];
 
+    const uniqueCombinedAccoladeStdData: any[] = [];
+    const seen = new Set();
+
+    for (const item of combinedAccoladeStdData) {
+      const key = `${item.SBU}_${item.ProjectID}`; // Combine SBU and ProjectID as a unique key
+
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueCombinedAccoladeStdData.push(item);
+      }
+    }
+
     // if (isRowData) {
     //   return { rawDataActiveFilling, rawDataNewFilling, rawDataOpenDisclosure, rawDataDraftDisclosure };
     // }
     return {
-      combinedAccoladeStdData,
+      combinedAccoladeStdData: uniqueCombinedAccoladeStdData,
       activeApplicationRawData,
       newFilingThisYearRawData,
       openDisclosureRawData,
@@ -969,6 +969,16 @@ export function getStrategicReportingClass({
       );
     });
 
+    const filteredUniqueChemestryProjects = allAccoladeMappingSheetData.filter((project) => {
+      return (
+        project.ProjectClosed?.toLowerCase() === 'open' &&
+        project.ProjectLastGateDecision?.toLowerCase() !== 'hold' &&
+        project.ProjectLastGateDecision?.toLowerCase() !== 'stop' &&
+        /stage [1-5]/i.test(project.ProjectCurrentStageName) &&
+        project.UniqueChemistry?.toLowerCase() === 'yes'
+      );
+    });
+
     const totalRANPV: Record<string, number> = {};
     const activeFillingRANPV: Record<string, number> = {};
     const countAccoladeNumber: Record<string, number> = {};
@@ -1004,6 +1014,40 @@ export function getStrategicReportingClass({
       countAccoladeNumber['Total'] += 1;
 
       totalRANPV[StrategicReportingClass] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      totalRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+    });
+
+    filteredUniqueChemestryProjects.forEach((project) => {
+      const { RiskAdjustedNPV, noOfActiveApplications } = project;
+      if (!totalRANPV['Unique Chemistry']) {
+        totalRANPV['Unique Chemistry'] = 0;
+      }
+      if (!totalRANPV['Total']) {
+        totalRANPV['Total'] = 0;
+      }
+
+      if (noOfActiveApplications) {
+        if (!activeFillingRANPV['Unique Chemistry']) {
+          activeFillingRANPV['Unique Chemistry'] = 0;
+        }
+        if (!activeFillingRANPV['Total']) {
+          activeFillingRANPV['Total'] = 0;
+        }
+        activeFillingRANPV['Unique Chemistry'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+        activeFillingRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
+      }
+
+      if (!countAccoladeNumber['Unique Chemistry']) {
+        countAccoladeNumber['Unique Chemistry'] = 0;
+      }
+      if (!countAccoladeNumber['Total']) {
+        countAccoladeNumber['Total'] = 0;
+      }
+
+      countAccoladeNumber['Unique Chemistry'] += 1;
+      countAccoladeNumber['Total'] += 1;
+
+      totalRANPV['Unique Chemistry'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
       totalRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
     });
 

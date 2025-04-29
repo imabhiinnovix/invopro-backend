@@ -195,7 +195,7 @@ export const generateSupplementalIpReport = async ({
       });
 
     //Supplement ip part-2
-    const accoladeMappingSheetData = await getAccoladeMappingSheet({
+    const accoladeMappingSheetData: any = await getAccoladeMappingSheet({
       portfolioDataSourceVersionId,
       disclosureDataSourceVersionId,
       shppAccoladeDataSourceVersionId,
@@ -204,6 +204,7 @@ export const generateSupplementalIpReport = async ({
       currentYear,
       isRowData,
     });
+
     // if (isRowData) {
     //   // rawDataActiveFilling, rawDataNewFilling, rawDataOpenDisclosure, rawDataDraftDisclosure
     //   return accoladeMappingSheetData.rawDataDraftDisclosure;
@@ -259,24 +260,19 @@ export const generateSupplementalIpReport = async ({
       }
     });
 
-    const checkExistingProjectId = {};
     const allAccoladeMappingSheet: any[] = [];
     for (let i = 0; i < accoladeMappingSheetData.combinedAccoladeStdData.length; i++) {
       const stdData = accoladeMappingSheetData.combinedAccoladeStdData[i];
       const projectId = stdData.ProjectID;
-      if (!checkExistingProjectId[projectId]) {
-        allAccoladeMappingSheet.push({
-          ...stdData,
-          noOfActiveApplications: noOfActiveApplicationGroup[projectId],
-          noOfNewApplications: noOfnewFilingThisYearGroup[projectId],
-          noOfActiveDisclosures: openDisclosureMap[projectId]?.count,
-          listOfActiveDisclosures: openDisclosureMap[projectId]?.cases.join(','),
-          noOfRTDDisclosures: draftDisclosureMap[projectId]?.count,
-          'List of RTD Disclosures': draftDisclosureMap[projectId]?.cases.join(','),
-        });
-
-        checkExistingProjectId[projectId] = true;
-      }
+      allAccoladeMappingSheet.push({
+        ...stdData,
+        noOfActiveApplications: noOfActiveApplicationGroup[projectId],
+        noOfNewApplications: noOfnewFilingThisYearGroup[projectId],
+        noOfActiveDisclosures: openDisclosureMap[projectId]?.count,
+        listOfActiveDisclosures: openDisclosureMap[projectId]?.cases.join(','),
+        noOfRTDDisclosures: draftDisclosureMap[projectId]?.count,
+        'List of RTD Disclosures': draftDisclosureMap[projectId]?.cases.join(','),
+      });
     }
 
     const accoladeMappingSheetHeaders = [
@@ -391,6 +387,10 @@ export const generateSupplementalIpReport = async ({
       {
         reportHeader: 'SVR',
         attributeValues: ['SVR'],
+      },
+      {
+        reportHeader: 'Unique Chemistry',
+        attributeValues: ['UniqueChemistry'],
       },
     ];
 
@@ -582,577 +582,577 @@ export const generateSupplementalIpReport = async ({
       ],
     });
 
-    await createUpdateExcelTable({
-      data: proceessedFinalAgreement,
-      filePath: newFilePath,
-      sheetName: 'Agreements',
-      gap: 2,
-      startTableColumn: 'B',
-      headerBackgroundColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      headers: [
-        'Final AgreementType',
-        ...headers['finalAgreementTypes']['columns'].map((data) => data.reportHeader),
-        'Total',
-      ],
-      isWhiteBackGround: true,
-    });
+    // await createUpdateExcelTable({
+    //   data: proceessedFinalAgreement,
+    //   filePath: newFilePath,
+    //   sheetName: 'Agreements',
+    //   gap: 2,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: '9dc3e6',
+    //   lastRowColor: '9dc3e6',
+    //   headers: [
+    //     'Final AgreementType',
+    //     ...headers['finalAgreementTypes']['columns'].map((data) => data.reportHeader),
+    //     'Total',
+    //   ],
+    //   isWhiteBackGround: true,
+    // });
 
-    await createUpdateExcelTable({
-      data: [{ 'Final AgreementType': '', Others: '' }],
-      filePath: newFilePath,
-      sheetName: 'Agreements',
-      gap: 3,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      headers: ['Final AgreementType', 'Others'],
-      onlyHeader: true,
-      isWhiteBackGround: true,
-    });
+    // await createUpdateExcelTable({
+    //   data: [{ 'Final AgreementType': '', Others: '' }],
+    //   filePath: newFilePath,
+    //   sheetName: 'Agreements',
+    //   gap: 3,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   headers: ['Final AgreementType', 'Others'],
+    //   onlyHeader: true,
+    //   isWhiteBackGround: true,
+    // });
 
-    await createUpdateExcelTable({
-      data: proceessedOtherAgreement,
-      filePath: newFilePath,
-      sheetName: 'Agreements',
-      gap: 2,
-      startTableColumn: 'B',
-      headerBackgroundColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      headers: ['AgreementType', ...headers['agreementTypes']['columns'].map((data) => data.reportHeader), 'Total'],
-      isWhiteBackGround: true,
-    });
+    // await createUpdateExcelTable({
+    //   data: proceessedOtherAgreement,
+    //   filePath: newFilePath,
+    //   sheetName: 'Agreements',
+    //   gap: 2,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: '9dc3e6',
+    //   lastRowColor: '9dc3e6',
+    //   headers: ['AgreementType', ...headers['agreementTypes']['columns'].map((data) => data.reportHeader), 'Total'],
+    //   isWhiteBackGround: true,
+    // });
 
-    await createUpdateExcelTable({
-      data: currentYearIpAnalysis.countData,
-      filePath: newFilePath,
-      sheetName: 'BANGALORE IP GROUP',
-      gap: 2,
-      startTableColumn: 'B',
-      headerBackgroundColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      headers: ['Current Status', 'Count of Serial No'],
-      isWhiteBackGround: true,
-    });
+    // await createUpdateExcelTable({
+    //   data: currentYearIpAnalysis.countData,
+    //   filePath: newFilePath,
+    //   sheetName: 'BANGALORE IP GROUP',
+    //   gap: 2,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: '9dc3e6',
+    //   lastRowColor: '9dc3e6',
+    //   headers: ['Current Status', 'Count of Serial No'],
+    //   isWhiteBackGround: true,
+    // });
 
-    await createUpdateExcelTable({
-      data: [{ 'Current Status': '', Completed: '' }],
-      filePath: newFilePath,
-      sheetName: 'BANGALORE IP GROUP',
-      gap: 3,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      headers: ['Current Status', 'Completed'],
-      onlyHeader: true,
-      isWhiteBackGround: true,
-    });
+    // await createUpdateExcelTable({
+    //   data: [{ 'Current Status': '', Completed: '' }],
+    //   filePath: newFilePath,
+    //   sheetName: 'BANGALORE IP GROUP',
+    //   gap: 3,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   headers: ['Current Status', 'Completed'],
+    //   onlyHeader: true,
+    //   isWhiteBackGround: true,
+    // });
 
-    await createUpdateExcelTable({
-      data: currentYearIpAnalysis.firstBarGraphChartData,
-      filePath: newFilePath,
-      sheetName: 'BANGALORE IP GROUP',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      headers: ['SBU', 'Count of Serial No'],
-      isWhiteBackGround: true,
-    });
+    // await createUpdateExcelTable({
+    //   data: currentYearIpAnalysis.firstBarGraphChartData,
+    //   filePath: newFilePath,
+    //   sheetName: 'BANGALORE IP GROUP',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: '9dc3e6',
+    //   lastRowColor: '9dc3e6',
+    //   headers: ['SBU', 'Count of Serial No'],
+    //   isWhiteBackGround: true,
+    // });
 
-    await createUpdateExcelTable({
-      data: [{ 'Current Status': '', Completed: '' }],
-      filePath: newFilePath,
-      sheetName: 'BANGALORE IP GROUP',
-      gap: 3,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      headers: ['Current Status', 'Completed'],
-      onlyHeader: true,
-      isWhiteBackGround: true,
-    });
+    // await createUpdateExcelTable({
+    //   data: [{ 'Current Status': '', Completed: '' }],
+    //   filePath: newFilePath,
+    //   sheetName: 'BANGALORE IP GROUP',
+    //   gap: 3,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   headers: ['Current Status', 'Completed'],
+    //   onlyHeader: true,
+    //   isWhiteBackGround: true,
+    // });
 
-    await createUpdateExcelTable({
-      data: currentYearIpAnalysis.secondBarGraphChartData,
-      filePath: newFilePath,
-      sheetName: 'BANGALORE IP GROUP',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      headers: ['Workscope', 'Count of Serial No'],
-      isWhiteBackGround: true,
-    });
+    // await createUpdateExcelTable({
+    //   data: currentYearIpAnalysis.secondBarGraphChartData,
+    //   filePath: newFilePath,
+    //   sheetName: 'BANGALORE IP GROUP',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: '9dc3e6',
+    //   lastRowColor: '9dc3e6',
+    //   headers: ['Workscope', 'Count of Serial No'],
+    //   isWhiteBackGround: true,
+    // });
 
-    await createUpdateExcelTable({
-      data: [{ 'Current Status': 'Workscope', Completed: 'SEARCH & ANALYSIS' }],
-      filePath: newFilePath,
-      sheetName: 'BANGALORE IP GROUP',
-      gap: 3,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      cellBackGroundColor: 'fff2cc',
-      cellBold: true,
-      headers: ['Current Status', 'Completed'],
-      onlyHeader: false,
-      isWhiteBackGround: true,
-    });
+    // await createUpdateExcelTable({
+    //   data: [{ 'Current Status': 'Workscope', Completed: 'SEARCH & ANALYSIS' }],
+    //   filePath: newFilePath,
+    //   sheetName: 'BANGALORE IP GROUP',
+    //   gap: 3,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   cellBackGroundColor: 'fff2cc',
+    //   cellBold: true,
+    //   headers: ['Current Status', 'Completed'],
+    //   onlyHeader: false,
+    //   isWhiteBackGround: true,
+    // });
 
-    await createUpdateExcelTable({
-      data: currentYearIpAnalysis.thirdBarGraphChartData,
-      filePath: newFilePath,
-      sheetName: 'BANGALORE IP GROUP',
-      gap: 1,
-      startTableColumn: 'B',
-      headerBackgroundColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      headers: ['Work Product', 'Count of Serial No'],
-      isWhiteBackGround: true,
-    });
+    // await createUpdateExcelTable({
+    //   data: currentYearIpAnalysis.thirdBarGraphChartData,
+    //   filePath: newFilePath,
+    //   sheetName: 'BANGALORE IP GROUP',
+    //   gap: 1,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: '9dc3e6',
+    //   lastRowColor: '9dc3e6',
+    //   headers: ['Work Product', 'Count of Serial No'],
+    //   isWhiteBackGround: true,
+    // });
 
-    await createUpdateExcelTable({
-      data: proceessedMappingSheetData,
-      filePath: newFilePath,
-      sheetName: 'Accolade Mapping Sheet',
-      gap: 0,
-      startTableColumn: 'A',
-      headerBackgroundColor: '9dc3e6',
-      headers: accoladeMappingSheetHeaders.map((data) => data.reportHeader),
-      isWhiteBackGround: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: proceessedMappingSheetData,
+    //   filePath: newFilePath,
+    //   sheetName: 'Accolade Mapping Sheet',
+    //   gap: 0,
+    //   startTableColumn: 'A',
+    //   headerBackgroundColor: '9dc3e6',
+    //   headers: accoladeMappingSheetHeaders.map((data) => data.reportHeader),
+    //   isWhiteBackGround: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
-      gap: 1,
-      startTableColumn: 'B',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Project Closed= OPEN',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
+    //   gap: 1,
+    //   startTableColumn: 'B',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Project Closed= OPEN',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Project Last Gate Decision= Exclude HOLD/STOP',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Project Last Gate Decision= Exclude HOLD/STOP',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Project Current Stage Name= STAGE 1-STAGE 5',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Project Current Stage Name= STAGE 1-STAGE 5',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Strategic Reporting Class = Exclude ASSET SUPPORT',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Strategic Reporting Class = Exclude ASSET SUPPORT',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Project Type= Exclude the items that CONTAINS TSR',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Project Type= Exclude the items that CONTAINS TSR',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: activePatentValueCoverage,
-      filePath: newFilePath,
-      sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
-      gap: 3,
-      startTableColumn: 'B',
-      headerBackgroundColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      headers: [
-        'SBU',
-        'RANPV OF PHASE 1-5 PROJECTS ($M)',
-        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
-        '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
-        'No Disclosure for filing',
-        '% OF RANPVE COVERED-No Disclosure for filing',
-        'Disclosure for Filing',
-        '% OF RANPVE COVERED-Disclosure available for filing',
-        'Patent application filing in progress(Rated to Draft)',
-        '% COVERED-Patent application filing in progress',
-      ],
-      isWhiteBackGround: true,
-      cellFormats: {
-        'RANPV OF PHASE 1-5 PROJECTS ($M)': '"$" #,##0,, "M"',
-        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '"$" #,##0,, "M"',
-        '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '0%',
-        'No Disclosure for filing': '"$" #,##0,, "M"',
-        '% OF RANPVE COVERED-No Disclosure for filing': '0%',
-        'Disclosure for Filing': '"$" #,##0,, "M"',
-        '% OF RANPVE COVERED-Disclosure available for filing': '0%',
-        'Patent application filing in progress(Rated to Draft)': '"$" #,##0,, "M"',
-        '% COVERED-Patent application filing in progress': '0%',
-      },
-      startCellNumber: 2,
-    });
+    // await createUpdateExcelTable({
+    //   data: activePatentValueCoverage,
+    //   filePath: newFilePath,
+    //   sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
+    //   gap: 3,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: '9dc3e6',
+    //   lastRowColor: '9dc3e6',
+    //   headers: [
+    //     'SBU',
+    //     'RANPV OF PHASE 1-5 PROJECTS ($M)',
+    //     'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
+    //     '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
+    //     'No Disclosure for filing',
+    //     '% OF RANPVE COVERED-No Disclosure for filing',
+    //     'Disclosure for Filing',
+    //     '% OF RANPVE COVERED-Disclosure available for filing',
+    //     'Patent application filing in progress(Rated to Draft)',
+    //     '% COVERED-Patent application filing in progress',
+    //   ],
+    //   isWhiteBackGround: true,
+    //   cellFormats: {
+    //     'RANPV OF PHASE 1-5 PROJECTS ($M)': '"$" #,##0,, "M"',
+    //     'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '"$" #,##0,, "M"',
+    //     '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '0%',
+    //     'No Disclosure for filing': '"$" #,##0,, "M"',
+    //     '% OF RANPVE COVERED-No Disclosure for filing': '0%',
+    //     'Disclosure for Filing': '"$" #,##0,, "M"',
+    //     '% OF RANPVE COVERED-Disclosure available for filing': '0%',
+    //     'Patent application filing in progress(Rated to Draft)': '"$" #,##0,, "M"',
+    //     '% COVERED-Patent application filing in progress': '0%',
+    //   },
+    //   startCellNumber: 2,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'PATENT VALUE COVERAGE-NEW',
-      gap: 1,
-      startTableColumn: 'B',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Project Closed= OPEN',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'PATENT VALUE COVERAGE-NEW',
+    //   gap: 1,
+    //   startTableColumn: 'B',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Project Closed= OPEN',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'PATENT VALUE COVERAGE-NEW',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Project Last Gate Decision= Exclude HOLD/STOP',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'PATENT VALUE COVERAGE-NEW',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Project Last Gate Decision= Exclude HOLD/STOP',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'PATENT VALUE COVERAGE-NEW',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Project Current Stage Name= STAGE 3-STAGE 5',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'PATENT VALUE COVERAGE-NEW',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Project Current Stage Name= STAGE 3-STAGE 5',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'PATENT VALUE COVERAGE-NEW',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Strategic Reporting Class = Exclude ASSET SUPPORT',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'PATENT VALUE COVERAGE-NEW',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Strategic Reporting Class = Exclude ASSET SUPPORT',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'PATENT VALUE COVERAGE-NEW',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Project Type= Exclude the items that CONTAINS TSR',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'PATENT VALUE COVERAGE-NEW',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Project Type= Exclude the items that CONTAINS TSR',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: newPatentValueCoverage,
-      filePath: newFilePath,
-      sheetName: 'PATENT VALUE COVERAGE-NEW',
-      gap: 3,
-      startTableColumn: 'B',
-      headerBackgroundColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      headers: [
-        'SBU',
-        'TOTAL FIRST FILINGS',
-        'FILINGS HAVING AT LEAST ONE ACCOLADE NUMBER /TSR',
-        'FILINGS HAVING NO ACCOLADE NUMBER /TSR',
-        'NO. OF ACCOLADE PROJECTS COVERED',
-        'RANPV OF PHASE 3-5 PROJECTS ($M)',
-        'RANPV OF PHASE 3-5 PROJECTS COVERED BY NEW PATENT FILINGS ($M)',
-        '% OF TOTAL RANPV COVERED BY NEW PATENT FILINGS',
-      ],
-      isWhiteBackGround: true,
-      cellFormats: {
-        'RANPV OF PHASE 3-5 PROJECTS ($M)': '"$" #,##0,, "M"',
-        'RANPV OF PHASE 3-5 PROJECTS COVERED BY NEW PATENT FILINGS ($M)': '"$" #,##0,, "M"',
-        '% OF TOTAL RANPV COVERED BY NEW PATENT FILINGS': '0%',
-      },
-      startCellNumber: 2,
-    });
+    // await createUpdateExcelTable({
+    //   data: newPatentValueCoverage,
+    //   filePath: newFilePath,
+    //   sheetName: 'PATENT VALUE COVERAGE-NEW',
+    //   gap: 3,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: '9dc3e6',
+    //   lastRowColor: '9dc3e6',
+    //   headers: [
+    //     'SBU',
+    //     'TOTAL FIRST FILINGS',
+    //     'FILINGS HAVING AT LEAST ONE ACCOLADE NUMBER /TSR',
+    //     'FILINGS HAVING NO ACCOLADE NUMBER /TSR',
+    //     'NO. OF ACCOLADE PROJECTS COVERED',
+    //     'RANPV OF PHASE 3-5 PROJECTS ($M)',
+    //     'RANPV OF PHASE 3-5 PROJECTS COVERED BY NEW PATENT FILINGS ($M)',
+    //     '% OF TOTAL RANPV COVERED BY NEW PATENT FILINGS',
+    //   ],
+    //   isWhiteBackGround: true,
+    //   cellFormats: {
+    //     'RANPV OF PHASE 3-5 PROJECTS ($M)': '"$" #,##0,, "M"',
+    //     'RANPV OF PHASE 3-5 PROJECTS COVERED BY NEW PATENT FILINGS ($M)': '"$" #,##0,, "M"',
+    //     '% OF TOTAL RANPV COVERED BY NEW PATENT FILINGS': '0%',
+    //   },
+    //   startCellNumber: 2,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Strategic Reporting Class',
-      gap: 1,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Project Closed= OPEN',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'Strategic Reporting Class',
+    //   gap: 1,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Project Closed= OPEN',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Strategic Reporting Class',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Project Last Gate Decision= Exclude HOLD/STOP',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'Strategic Reporting Class',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Project Last Gate Decision= Exclude HOLD/STOP',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'Strategic Reporting Class',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Project Current Stage Name= STAGE 1-STAGE 5',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'Strategic Reporting Class',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Project Current Stage Name= STAGE 1-STAGE 5',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: strategicReportingClassData,
-      filePath: newFilePath,
-      sheetName: 'Strategic Reporting Class',
-      gap: 3,
-      startTableColumn: 'B',
-      headerBackgroundColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      headers: [
-        'Strategic Reporting Class',
-        'RANPV OF PHASE 1-5 PROJECTS ($M)',
-        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
-        '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
-        '# OF ACCOLADE PROJECTS',
-      ],
-      isWhiteBackGround: true,
-      cellFormats: {
-        'RANPV OF PHASE 1-5 PROJECTS ($M)': '"$" #,##0,, "M"',
-        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '"$" #,##0,, "M"',
-        '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '0%',
-        '# OF ACCOLADE PROJECTS': '0',
-      },
-      startCellNumber: 2,
-    });
+    // await createUpdateExcelTable({
+    //   data: strategicReportingClassData,
+    //   filePath: newFilePath,
+    //   sheetName: 'Strategic Reporting Class',
+    //   gap: 3,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: '9dc3e6',
+    //   lastRowColor: '9dc3e6',
+    //   headers: [
+    //     'Strategic Reporting Class',
+    //     'RANPV OF PHASE 1-5 PROJECTS ($M)',
+    //     'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
+    //     '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
+    //     '# OF ACCOLADE PROJECTS',
+    //   ],
+    //   isWhiteBackGround: true,
+    //   cellFormats: {
+    //     'RANPV OF PHASE 1-5 PROJECTS ($M)': '"$" #,##0,, "M"',
+    //     'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '"$" #,##0,, "M"',
+    //     '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '0%',
+    //     '# OF ACCOLADE PROJECTS': '0',
+    //   },
+    //   startCellNumber: 2,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'New Coverage',
-      gap: 1,
-      startTableColumn: 'B',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Project Closed= OPEN',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'New Coverage',
+    //   gap: 1,
+    //   startTableColumn: 'B',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Project Closed= OPEN',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'New Coverage',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Project Last Gate Decision= Exclude HOLD/STOP',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'New Coverage',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Project Last Gate Decision= Exclude HOLD/STOP',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'New Coverage',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Project Current Stage Name= STAGE 1-STAGE 5',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'New Coverage',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Project Current Stage Name= STAGE 1-STAGE 5',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'New Coverage',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Strategic Reporting Class = Exclude ASSET SUPPORT',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'New Coverage',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Strategic Reporting Class = Exclude ASSET SUPPORT',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'New Coverage',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 2,
-      mergeEndColumn: 5,
-      titleHeading: '·        Project Type= Exclude the items that CONTAINS TSR',
-      cellBold: false,
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'New Coverage',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 2,
+    //   mergeEndColumn: 5,
+    //   titleHeading: '·        Project Type= Exclude the items that CONTAINS TSR',
+    //   cellBold: false,
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'New Coverage',
-      gap: 2,
-      startTableColumn: 'C',
-      headerBackgroundColor: 'bfbfbf',
-      titleHeaderBackgroundColor: 'bfbfbf',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 3,
-      mergeEndColumn: 5,
-      titleHeading: 'CURRENT',
-      cellBold: true,
-      titleCellAlignment: 'center',
-    });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'New Coverage',
+    //   gap: 2,
+    //   startTableColumn: 'C',
+    //   headerBackgroundColor: 'bfbfbf',
+    //   titleHeaderBackgroundColor: 'bfbfbf',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 3,
+    //   mergeEndColumn: 5,
+    //   titleHeading: 'CURRENT',
+    //   cellBold: true,
+    //   titleCellAlignment: 'center',
+    // });
 
-    await createUpdateExcelTable({
-      data: [],
-      filePath: newFilePath,
-      sheetName: 'New Coverage',
-      gap: -1,
-      startTableColumn: 'F',
-      headerBackgroundColor: 'fff2cc',
-      titleHeaderBackgroundColor: 'fff2cc',
-      headers: [],
-      isWhiteBackGround: true,
-      startCellNumber: 6,
-      mergeEndColumn: 8,
-      titleHeading: 'NEW',
-      cellBold: true,
-      titleCellAlignment: 'center',
-    });
-    await createUpdateExcelTable({
-      data: newCoverageData,
-      filePath: newFilePath,
-      sheetName: 'New Coverage',
-      gap: 0,
-      startTableColumn: 'B',
-      headerBackgroundColor: '9dc3e6',
-      lastRowColor: '9dc3e6',
-      headers: [
-        'SBU',
-        'RANPV OF PHASE 1-5 PROJECTS ($M)',
-        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
-        '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
-        'NEW RANPV OF PHASE 1-5 PROJECTS ($M)',
-        'NEW RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
-        'NEW % OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
-      ],
-      isWhiteBackGround: true,
-      cellFormats: {
-        'RANPV OF PHASE 1-5 PROJECTS ($M)': '"$" #,##0,, "M"',
-        'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '"$" #,##0,, "M"',
-        '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '0%',
-        'NEW RANPV OF PHASE 1-5 PROJECTS ($M)': '"$" #,##0,, "M"',
-        'NEW RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '"$" #,##0,, "M"',
-        'NEW % OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '0%',
-      },
-      startCellNumber: 2,
-    });
-    await reportRequestService.updateReportRequest(requestedReportId, { status: 'completed' });
+    // await createUpdateExcelTable({
+    //   data: [],
+    //   filePath: newFilePath,
+    //   sheetName: 'New Coverage',
+    //   gap: -1,
+    //   startTableColumn: 'F',
+    //   headerBackgroundColor: 'fff2cc',
+    //   titleHeaderBackgroundColor: 'fff2cc',
+    //   headers: [],
+    //   isWhiteBackGround: true,
+    //   startCellNumber: 6,
+    //   mergeEndColumn: 8,
+    //   titleHeading: 'NEW',
+    //   cellBold: true,
+    //   titleCellAlignment: 'center',
+    // });
+    // await createUpdateExcelTable({
+    //   data: newCoverageData,
+    //   filePath: newFilePath,
+    //   sheetName: 'New Coverage',
+    //   gap: 0,
+    //   startTableColumn: 'B',
+    //   headerBackgroundColor: '9dc3e6',
+    //   lastRowColor: '9dc3e6',
+    //   headers: [
+    //     'SBU',
+    //     'RANPV OF PHASE 1-5 PROJECTS ($M)',
+    //     'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
+    //     '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
+    //     'NEW RANPV OF PHASE 1-5 PROJECTS ($M)',
+    //     'NEW RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)',
+    //     'NEW % OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS',
+    //   ],
+    //   isWhiteBackGround: true,
+    //   cellFormats: {
+    //     'RANPV OF PHASE 1-5 PROJECTS ($M)': '"$" #,##0,, "M"',
+    //     'RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '"$" #,##0,, "M"',
+    //     '% OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '0%',
+    //     'NEW RANPV OF PHASE 1-5 PROJECTS ($M)': '"$" #,##0,, "M"',
+    //     'NEW RANPV OF PHASE 1-5 PROJECTS COVERED BY ACTIVE PATENT FILINGS ($M)': '"$" #,##0,, "M"',
+    //     'NEW % OF TOTAL RANPV COVERED BY ACTIVE PATENT FILINGS': '0%',
+    //   },
+    //   startCellNumber: 2,
+    // });
+    // await reportRequestService.updateReportRequest(requestedReportId, { status: 'completed' });
   } catch (e) {
     console.log('Error in generateSupplementalIpReport.', e);
     await reportRequestService.updateReportRequest(requestedReportId, { status: 'failed' });

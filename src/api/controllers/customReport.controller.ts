@@ -95,6 +95,7 @@ export const generateCustomReportsFunction = async ({
       const requestedReport = await reportRequestService.createReportRequest(reportRequestPayload);
       reportRequestId = requestedReport._id;
     }
+
     const customReportModel = await CustomReportModelAccess({ orgCode });
     if (customReportDetails.reportName.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'monthlyip') {
       const versionMap = Object.fromEntries(

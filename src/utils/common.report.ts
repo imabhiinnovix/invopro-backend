@@ -260,6 +260,7 @@ export const transformFunctionsMap: Record<string, (params: MappingParams) => Re
       TI: 'T&I',
       IPLegalCounsilMemberAssigned: 'IP Legal Counsil Member Assigned',
       SVR: 'SVR',
+      'Unique Chemistry': 'Unique Chemistry',
     };
 
     return isReverseMapping ? Object.fromEntries(Object.entries(mapping).map(([k, v]) => [v, k])) : mapping;
