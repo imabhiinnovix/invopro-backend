@@ -22,6 +22,7 @@ interface IComments {
   fontBold: boolean;
   isBorder: boolean;
   mergeCell: number;
+  uiStartTableColumn?: number;
 }
 
 interface ISubSection {
@@ -85,6 +86,7 @@ const CommentSchema = new Schema<IComments>({
   fontBold: { type: Boolean },
   isBorder: { type: Boolean },
   mergeCell: { type: Number },
+  uiStartTableColumn: { type: Number },
 });
 const ColumnSchema = new Schema<IColumn>({
   reportHeader: { type: String, required: true },
