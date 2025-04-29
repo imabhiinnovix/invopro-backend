@@ -164,6 +164,7 @@ type MappingParams = {
 
 export const transformFunctionsMap: Record<string, (params: MappingParams) => Record<string, string>> = {
   transformMonthlyIpData: ({ currentYear, isReverseMapping }) => {
+    currentYear = Number(currentYear);
     const mapping = {
       SBU: 'SBU',
       'First Filings': 'First Filings',
@@ -212,6 +213,7 @@ export const transformFunctionsMap: Record<string, (params: MappingParams) => Re
   },
 
   transformMonthlySTCData: ({ currentYear, isReverseMapping }) => {
+    currentYear = Number(currentYear);
     const mapping = {
       STC: 'STC',
       'New Projects opened in Current Year': `New Projects opened in ${currentYear}`,
@@ -221,6 +223,7 @@ export const transformFunctionsMap: Record<string, (params: MappingParams) => Re
     return isReverseMapping ? Object.fromEntries(Object.entries(mapping).map(([k, v]) => [v, k])) : mapping;
   },
   transformMonthlySTCSBUData: ({ currentYear, isReverseMapping }) => {
+    currentYear = Number(currentYear);
     const mapping = {
       SBU: 'SBU',
       'New Projects opened in Current Year': `New Projects opened in ${currentYear}`,
@@ -231,6 +234,7 @@ export const transformFunctionsMap: Record<string, (params: MappingParams) => Re
   },
 
   transformSupplementalIpAccoladeMappingSheet: ({ currentYear, isReverseMapping }) => {
+    currentYear = Number(currentYear);
     const mapping = {
       SBU: 'SBU',
       BU: 'BU',
@@ -267,6 +271,7 @@ export const transformFunctionsMap: Record<string, (params: MappingParams) => Re
   },
 
   transformSupplementalIpPatentValueCoverageActive: ({ currentYear, isReverseMapping }) => {
+    currentYear = Number(currentYear);
     const mapping = {
       SBU: 'SBU',
       RANPVOFPHASE15PROJECTSM: 'RANPV OF PHASE 1-5 PROJECTS ($M)',
@@ -284,6 +289,7 @@ export const transformFunctionsMap: Record<string, (params: MappingParams) => Re
   },
 
   transformSupplementalIPatentValueCoverageNew: ({ currentYear, isReverseMapping }) => {
+    currentYear = Number(currentYear);
     const mapping = {
       SBU: 'SBU',
       TOTALFIRSTFILINGS: 'TOTAL FIRST FILINGS',
@@ -299,6 +305,7 @@ export const transformFunctionsMap: Record<string, (params: MappingParams) => Re
   },
 
   transformSupplementalIpStrategicReportingClass: ({ currentYear, isReverseMapping }) => {
+    currentYear = Number(currentYear);
     const mapping = {
       StrategicReportingClass: 'Strategic Reporting Class',
       RANPVOFPHASE15PROJECTSM: 'RANPV OF PHASE 1-5 PROJECTS ($M)',
@@ -311,6 +318,7 @@ export const transformFunctionsMap: Record<string, (params: MappingParams) => Re
   },
 
   transformSupplementalIpNewCoverage: ({ currentYear, isReverseMapping }) => {
+    currentYear = Number(currentYear);
     const mapping = {
       SBU: 'SBU',
       RANPVOFPHASE15PROJECTSM: 'RANPV OF PHASE 1-5 PROJECTS ($M)',

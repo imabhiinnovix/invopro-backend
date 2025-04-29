@@ -924,6 +924,8 @@ export async function generateExcelReport({
         for (let j = 0; j < subSections.length; j++) {
           const subSection = subSections[j];
           const headerName = subSection.headerName;
+          const spanColumns = subSection.spanColumns;
+          const mergeEnd = colToLetter(colToNumber(startTableColumn) + processingTableHeaders.length - 1);
           if (sectionView === 'row') {
             const row = worksheet.getRow(rowPointer);
             row.eachCell((cell, colIndex) => {
@@ -934,7 +936,7 @@ export async function generateExcelReport({
               cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: subSection.headerBackGroundColor ? subSection.headerBackGroundColor : '4472C4' }, // Blue background
+                fgColor: { argb: subSection.headerBackGroundColor ? subSection.headerBackGroundColor : 'FFFFFF ' }, // white background
               };
               cell.alignment = {
                 vertical: subSection.verticalAlignment,
@@ -951,6 +953,9 @@ export async function generateExcelReport({
                 cell.numFmt = subSection.cellFormat;
               }
             });
+            if (spanColumns) {
+              worksheet.mergeCells(`${startTableColumn}${rowPointer}:${mergeEnd}${rowPointer}`);
+            }
             rowPointer++;
           } else {
             rowPointer = lastRowIndex + 2;
