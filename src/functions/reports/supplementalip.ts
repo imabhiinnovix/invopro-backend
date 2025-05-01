@@ -13,6 +13,10 @@ import { CustomReportModelAccessReturnType } from '../../database/models/customR
 import { ReportHeaders } from '../../utils/common.type';
 import { processReportHeaders } from '../../utils/common.report';
 import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/dataSourceVersion.controller';
+import {
+  getCurrentYearNewApplicationFiled,
+  getFormattedDataToProcessReportHeaders,
+} from '../../database/services/monthlyipReport.services';
 
 export const generateSupplementalIpReport = async ({
   reportRequestPayload,
@@ -425,9 +429,57 @@ export const generateSupplementalIpReport = async ({
         organizationId,
         orgCode,
       });
-    const newPatentValueCoverage = getNewPatentValueCoverage({
-      allAccoladeMappingSheetData: allAccoladeMappingSheet,
+    // const newPatentValueCoverage = getNewPatentValueCoverage({
+    //   allAccoladeMappingSheetData: allAccoladeMappingSheet,
+    // });
+
+    const newPatentValueCoverageRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      customReportModel,
+      isRowData: true,
     });
+    const sbuHeaders = headers['patentvaluecoveragenew']['columns'];
+
+    const newPatentValueCoverage: any[] = [];
+    const total = {
+      SBU: 'Total',
+      TOTALFIRSTFILINGS: 0,
+      FILINGSHAVINGATLEASTONEACCOLADENUMBERorTSR: 0,
+      FILINGSHAVINGNOACCOLADENUMBERorTSR: 0,
+      NOOFACCOLADEPROJECTSCOVERED: 0,
+    };
+
+    for (const sbuHeader of sbuHeaders) {
+      const { reportHeader, attributeValues } = sbuHeader;
+
+      // Filter cases matching current SBU group
+      const filteredCases = newPatentValueCoverageRawData.filter(
+        (entry) => entry && attributeValues.includes(entry.SBU)
+      );
+
+      const totalFirstFilings = filteredCases.length;
+
+      const filingsWithAccolade = filteredCases.filter((entry) => !!entry.AccoladeID).length;
+      const filingsWithoutAccolade = filteredCases.filter((entry) => !entry.AccoladeID).length;
+
+      const accoladeProjects = new Set(filteredCases.map((entry) => entry.AccoladeID).filter((id) => !!id)).size;
+
+      newPatentValueCoverage.push({
+        SBU: reportHeader,
+        TOTALFIRSTFILINGS: totalFirstFilings,
+        FILINGSHAVINGATLEASTONEACCOLADENUMBERorTSR: filingsWithAccolade,
+        FILINGSHAVINGNOACCOLADENUMBERorTSR: filingsWithoutAccolade,
+        NOOFACCOLADEPROJECTSCOVERED: accoladeProjects,
+      });
+
+      total['TOTALFIRSTFILINGS'] += totalFirstFilings;
+      total['FILINGSHAVINGATLEASTONEACCOLADENUMBERorTSR'] += filingsWithAccolade;
+      total['FILINGSHAVINGNOACCOLADENUMBERorTSR'] += filingsWithoutAccolade;
+      total['NOOFACCOLADEPROJECTSCOVERED'] += accoladeProjects;
+    }
+
+    newPatentValueCoverage.push(total);
 
     const dataSourceVersionDetailsPatentValueCoverageNewData = await createUpdateCustomDataSourceVersionValueFunction({
       dataSourceId: patentValueCoverageNewDataSourceId,
