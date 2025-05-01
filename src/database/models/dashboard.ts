@@ -11,6 +11,10 @@ interface IDashboard extends Document {
   isShareble: boolean;
   settings: {
     columnsGrid: number;
+    dashBoardType: 'trend' | 'normal';
+    startVersionValue: string;
+    endVersionValue: string;
+    dynamicVersionValue: '12m' | '6m' | '3m' | '1m';
   };
 }
 
@@ -28,6 +32,10 @@ const dashboardSchema = new Schema<IDashboard>(
       type: Schema.Types.Mixed,
       default: {
         columnsGrid: 2,
+        dashBoardType: 'normal',
+        startVersionValue: '',
+        endVersionValue: '',
+        dynamicVersionValue: '1m',
       },
     },
   },

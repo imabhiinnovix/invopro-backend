@@ -18,7 +18,7 @@ import { DataSourceVersion } from '../../types/widget.types';
 
 export const createDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name } = req.body;
+    const { name, dashBoardType, startVersionValue, endVersionValue, dynamicVersionValue } = req.body;
     const { userId: createdBy, organizationId } = req.user;
 
     const dashboardExist = await dashboardService.getDashboard({
@@ -241,7 +241,8 @@ export const getDashboardWidgetList = async (req: Request, res: Response, next: 
 
 export const getWidgetData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { dataSourceId, dimensions, entityId, aggregation, groupBy, conditions, widgetType } = req.body;
+    const { dataSourceId, dimensions, entityId, aggregation, groupBy, conditions, widgetType, dashBoardType } =
+      req.body;
     const { orgCode } = req.user;
 
     // let dimensions = req.body.dimensions;
