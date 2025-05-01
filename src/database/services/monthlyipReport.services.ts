@@ -916,8 +916,8 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
 
     const newYearApplicationFiledStartsWith: string = currentYear.slice(-2);
 
-    const newYearApplicationFiledFilteredData = newYearApplicationFiledRowData.filter((item: { _id: string }) =>
-      item._id.startsWith(newYearApplicationFiledStartsWith)
+    const newYearApplicationFiledFilteredData = newYearApplicationFiledRowData.filter((item) =>
+      item?.Case_Reference1?.startsWith(newYearApplicationFiledStartsWith)
     );
 
     const newYearApplicationFiledSbuCount: Record<string, number> = newYearApplicationFiledFilteredData.reduce(
