@@ -4,6 +4,7 @@ interface IDefaultDataSourceVersionValue extends Document {
   entityId: Types.ObjectId;
   dataSourceId: Types.ObjectId;
   dataSourceVersionId: Types.ObjectId;
+  versionValue: string;
   rowData: Record<string, any>; // Defines rowData as an object with string keys and values of any type
   createdBy?: Types.ObjectId;
   createdAt?: Date; // Added by timestamps
@@ -16,6 +17,7 @@ const defaultDataSourceVersionSchema = new Schema<IDefaultDataSourceVersionValue
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'DataSource' },
     dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'data_source_version' },
+    versionValue: { type: String, required: true },
     rowData: { type: Schema.Types.Mixed }, // Accepts any type of object
     createdBy: { type: Schema.Types.ObjectId },
     createdAt: { type: Date, default: new Date(Date.now()).toISOString() },

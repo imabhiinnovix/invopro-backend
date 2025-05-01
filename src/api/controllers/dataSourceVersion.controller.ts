@@ -97,6 +97,7 @@ async function validateFileData({
   dataSourceId,
   entityId,
   dataSourceVersionId,
+  versionValue,
 }: {
   fileData: any[];
   attributes: any[];
@@ -105,6 +106,7 @@ async function validateFileData({
   dataSourceId: string;
   entityId: any;
   dataSourceVersionId: string;
+  versionValue: string;
 }) {
   try {
     const errors: any[] = [];
@@ -112,7 +114,7 @@ async function validateFileData({
     const newRowData: any[] = [];
 
     for (const [index, row] of fileData.entries()) {
-      const newRow = { dataSourceId, entityId, dataSourceVersionId, rowData: {} };
+      const newRow = { dataSourceId, entityId, dataSourceVersionId, versionValue, rowData: {} };
 
       for (const attr of attributes) {
         const attrName = attr.name;
@@ -253,9 +255,11 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
               const fileData = await readExcelFile(newFilePath);
               const entityDetails = dataSourceDetails.entityId as any;
               const attributes = entityDetails?.attributes || [];
+              const versionValueData = versionValue;
               const validatedData = await validateFileData({
                 fileData,
                 attributes,
+                versionValue: versionValueData,
                 mapping: jsonMapping,
                 separator: jsonSeparator,
                 dataSourceId: dataSourceId,
@@ -524,6 +528,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                       const validatedData = await validateFileData({
                         fileData,
                         attributes,
+                        versionValue,
                         mapping: jsonMapping,
                         separator: jsonSeparator,
                         dataSourceId: dataSourceId,
@@ -663,6 +668,7 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
       for (let i = 0; i < versionData.length; i++) {
         const newRow = {
           dataSourceId,
+          versionValue,
           entityId: dataSourceDetails.entityId._id,
           dataSourceVersionId: dataSourceVersion._id,
           rowData: versionData[i],
