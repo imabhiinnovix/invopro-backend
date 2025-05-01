@@ -484,6 +484,10 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                       if (!dataSourceVersion) {
                         dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
                         if (dataSourceDetails && dataSourceDetails.entityId) {
+                          await dataSourceVersionService.updateDataSourceVersions({
+                            query: { dataSourceId, versionValue },
+                            updateFields: { isCurrent: false },
+                          });
                           dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
                             entityId: dataSourceDetails.entityId._id,
                             dataSourceId,
@@ -562,10 +566,10 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                   versionCode: dataSourceDetails.code,
                 });
                 await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, validatedFinalData);
-                await dataSourceVersionService.updateDataSourceVersions({
-                  query: { dataSourceId, versionValue },
-                  updateFields: { isCurrent: false },
-                });
+                // await dataSourceVersionService.updateDataSourceVersions({
+                //   query: { dataSourceId, versionValue },
+                //   updateFields: { isCurrent: false },
+                // });
                 await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
                   status: 'completed',
                   isCurrent: true,
@@ -632,6 +636,10 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
   try {
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
     if (dataSourceDetails) {
+      await dataSourceVersionService.updateDataSourceVersions({
+        query: { dataSourceId, versionValue },
+        updateFields: { isCurrent: false },
+      });
       const dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
         entityId: dataSourceDetails.entityId._id,
         dataSourceId,
@@ -665,10 +673,7 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
         finalData.push(newRow);
       }
       await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, finalData);
-      await dataSourceVersionService.updateDataSourceVersions({
-        query: { dataSourceId, versionValue },
-        updateFields: { isCurrent: false },
-      });
+
       await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
         status: 'completed',
         isCurrent: true,

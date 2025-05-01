@@ -365,16 +365,27 @@ export async function getCurrentYearNewApplicationFiled({
       {
         $match: matchCondition,
       },
-
-      // Group by rowData.Case_Reference1 and count distinct cases
-      {
+    ];
+    if (isRowData) {
+      aggreagatePipeline.push(
+        {
+          $group: {
+            _id: '$rowData.Case_Reference1',
+            rowData: { $first: '$rowData' },
+          },
+        },
+        {
+          $replaceRoot: { newRoot: '$rowData' },
+        }
+      );
+    }
+    if (!isRowData) {
+      aggreagatePipeline.push({
         $group: {
           _id: '$rowData.Case_Reference1',
           SBU: { $first: '$rowData.SBU' },
         },
-      },
-    ];
-    if (!isRowData) {
+      });
       aggreagatePipeline.push({
         $group: {
           _id: '$SBU',
