@@ -34,7 +34,7 @@ export const createDashboard = async (req: Request, res: Response, next: NextFun
       organizationId,
     });
 
-    if (!widgetTheme) throw new Error('Widget theme not fond');
+    if (!widgetTheme) throw new Error('Widget theme not found');
 
     const data = await dashboardService.createDashboard({
       createdBy,
