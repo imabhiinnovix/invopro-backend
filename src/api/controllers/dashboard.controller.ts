@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from 'express';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 import * as dashboardService from '../../database/services/dashboard.services';
 import * as dashboardWidgetdService from '../../database/services/dashboardWidget.services';
@@ -15,6 +15,7 @@ import { buildAggregationPipeline } from '../../utils/aggregationPipeline';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
 import createDefaultDataSourceVersionModel from '../../database/models/defaultDataSourceVersionModel';
 import { DataSourceVersion } from '../../types/widget.types';
+import { DateTime } from 'luxon';
 
 export const createDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -241,10 +242,36 @@ export const getDashboardWidgetList = async (req: Request, res: Response, next: 
 
 export const getWidgetData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { dataSourceId, dimensions, entityId, aggregation, groupBy, conditions, widgetType, dashBoardType } =
-      req.body;
+    let {
+      dataSourceId,
+      dimensions,
+      entityId,
+      aggregation,
+      groupBy,
+      conditions,
+      widgetType,
+      dashBoardType,
+      startVersionValue,
+      endVersionValue,
+      dynamicVersionValue,
+    } = req.body;
     const { orgCode } = req.user;
 
+    if (dashBoardType === 'trend' && !!dynamicVersionValue) {
+      endVersionValue = DateTime.now().toFormat('yyyy-MM');
+
+      if (dynamicVersionValue === '3m') {
+        startVersionValue = DateTime.now().minus({ months: 3 }).toFormat('yyyy-MM');
+      } else if (dynamicVersionValue === '6m') {
+        startVersionValue = DateTime.now().minus({ months: 6 }).toFormat('yyyy-MM');
+      } else if (dynamicVersionValue === '12m') {
+        startVersionValue = DateTime.now().minus({ months: 12 }).toFormat('yyyy-MM');
+      } else {
+        startVersionValue = DateTime.now().minus({ months: 1 }).toFormat('yyyy-MM');
+      }
+    }
+
+    let labelVersionValue = '';
     // let dimensions = req.body.dimensions;
 
     const widgetTypeData = await widgetTypeService.getWidgetType({ chartType: widgetType });
@@ -267,25 +294,45 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     });
 
     // 2. Fetch current active data source version
-    const dataSourceVersion: any = (await dataSourceVersionService.getDataSourceVersion({
-      query: {
-        dataSourceId: dataSourceId,
-        isCurrent: true,
-        isActive: true,
-      },
-      sort: { versionValue: -1 },
-    })) as DataSourceVersion;
+    let dataSourceVersion: any;
+    if (startVersionValue && endVersionValue) {
+      dataSourceVersion = await dataSourceVersionService.getDataSourceVersionList({
+        query: {
+          dataSourceId: dataSourceId,
+          isCurrent: true,
+          isActive: true,
+          versionValue: { $gte: startVersionValue, $lte: endVersionValue },
+        },
+        sort: { versionValue: -1 },
+      });
 
-    if (!dataSourceVersion) {
+      console.log('dataSourceVersion', dataSourceVersion);
+      dataSourceVersion = dataSourceVersion.data as DataSourceVersion[];
+    } else {
+      dataSourceVersion = (await dataSourceVersionService.getDataSourceVersion({
+        query: {
+          dataSourceId: dataSourceId,
+          isCurrent: true,
+          isActive: true,
+        },
+        sort: { versionValue: -1 },
+      })) as DataSourceVersion;
+      labelVersionValue = dataSourceVersion.versionValue;
+      dataSourceVersion = [dataSourceVersion];
+    }
+    console.log(dataSourceVersion);
+    if (!dataSourceVersion || dataSourceVersion.length === 0) {
       throw new Error('No active data source version found');
     }
 
+    const dataSourceVersionIdArray = dataSourceVersion.map((data) => new Types.ObjectId(data._id.toString()));
     // 3. Build widget object for aggregation
     const widget: any = {
       dataSourceId: dataSourceId.toString(),
-      dataSourceVersionId: dataSourceVersion._id.toString(),
+      dataSourceVersionIdArray: dataSourceVersionIdArray,
       dimensions,
       groupBy,
+      dashBoardType,
       aggregation,
       entity, // Pass entity data for field type conversion
       conditions,
@@ -316,7 +363,10 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     const response = {
       success: true,
       message: 'Chart data fetched successfully',
-      data: dataResults,
+      data: {
+        label: dashBoardType === 'trend' ? `${startVersionValue}:${endVersionValue}` : labelVersionValue,
+        widgetData: dataResults,
+      },
       // widgetAppearance,
     };
 

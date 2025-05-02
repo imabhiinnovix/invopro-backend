@@ -7,7 +7,7 @@ export const buildAggregationPipeline = (widget: any) => {
   // Initialize match conditions with dataSourceId and dataSourceVersionId
   const initialMatchConditions = {
     dataSourceId: new Types.ObjectId(widget.dataSourceId),
-    dataSourceVersionId: new Types.ObjectId(widget.dataSourceVersionId),
+    dataSourceVersionId: { $in: widget.dataSourceVersionIdArray },
   };
 
   // Helper function to get field path
@@ -40,7 +40,11 @@ export const buildAggregationPipeline = (widget: any) => {
   // 2. Build grouping structure
   const groupFields = [...(widget.dimensions || []), ...(widget.groupBy || [])].reduce((acc, field) => {
     if (field === widget.dimensions[0]) {
-      acc['name'] = getFieldPath(`rowData.${field}`);
+      if (widget.dashBoardType === 'trend') {
+        acc['name'] = getFieldPath(`${field}`);
+      } else {
+        acc['name'] = getFieldPath(`rowData.${field}`);
+      }
     } else {
       acc[field] = getFieldPath(`rowData.${field}`);
     }
