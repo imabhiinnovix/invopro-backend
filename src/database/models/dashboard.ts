@@ -11,12 +11,28 @@ interface IDashboard extends Document {
   isShareble: boolean;
   settings: {
     columnsGrid: number;
-    dashBoardType: 'trend' | 'normal';
+    dashboardType: 'trend' | 'normal';
     startVersionValue: string;
     endVersionValue: string;
     dynamicVersionValue: '12m' | '6m' | '3m' | '1m';
   };
 }
+
+const settingsSchema = new Schema(
+  {
+    columnsGrid: { type: Number, default: 2 },
+    dashboardType: { type: String, enum: ['trend', 'normal'], default: 'normal' },
+    startVersionValue: { type: String, default: '' },
+    endVersionValue: { type: String, default: '' },
+    dynamicVersionValue: {
+      type: String,
+      enum: ['12m', '6m', '3m', '1m'],
+      default: '1m',
+    },
+    versionValue: { type: String, default: '' },
+  },
+  { _id: false }
+);
 
 const dashboardSchema = new Schema<IDashboard>(
   {
@@ -28,16 +44,7 @@ const dashboardSchema = new Schema<IDashboard>(
     isDeleted: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true, required: true },
     isShareble: { type: Boolean, default: false, required: true },
-    settings: {
-      type: Schema.Types.Mixed,
-      default: {
-        columnsGrid: 2,
-        dashBoardType: 'normal',
-        startVersionValue: '',
-        endVersionValue: '',
-        dynamicVersionValue: '1m',
-      },
-    },
+    settings: { type: settingsSchema, default: () => ({}) },
   },
   {
     timestamps: true,

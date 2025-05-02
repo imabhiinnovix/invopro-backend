@@ -136,6 +136,12 @@ export const buildAggregationPipeline = (widget: any) => {
         },
       }
     );
+
+    if (widget.dashBoardType === 'trend') {
+      pipeline.push({ $sort: { name: 1 } });
+    } else {
+      pipeline.push({ $sort: { data: 1 } });
+    }
   }
 
   return pipeline;

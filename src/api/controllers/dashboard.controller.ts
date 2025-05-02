@@ -19,7 +19,7 @@ import { DateTime } from 'luxon';
 
 export const createDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, dashBoardType, startVersionValue, endVersionValue, dynamicVersionValue } = req.body;
+    const { name } = req.body;
     const { userId: createdBy, organizationId } = req.user;
 
     const dashboardExist = await dashboardService.getDashboard({
@@ -84,14 +84,52 @@ export const getDashboards = async (req: Request, res: Response, next: NextFunct
 export const updateDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userId: createdBy } = req.user;
-    const { name, description, isActive } = req.body;
+    const { name, description, isActive, startVersionValue, endVersionValue, dynamicVersionValue, versionValue } =
+      req.body;
 
-    await dashboardService.getDashboardById(req.params.dashboardId);
+    const dashboardDetails = await dashboardService.getDashboardById(req.params.dashboardId);
 
-    const update: any = {
+    let update: any = {
       ...(name && { name }),
       ...(description && { description }),
     };
+
+    if (!!dynamicVersionValue) {
+      update = {
+        $set: {
+          ...(name && { name }),
+          ...(description && { description }),
+          ...(dynamicVersionValue && { 'settings.dynamicVersionValue': dynamicVersionValue }),
+          'settings.startVersionValue': '',
+          'settings.endVersionValue': '',
+        },
+      };
+    }
+
+    if (dashboardDetails.settings.dashboardType === 'trend') {
+      if (!dynamicVersionValue && !!startVersionValue && !!endVersionValue) {
+        update = {
+          $set: {
+            ...(name && { name }),
+            ...(description && { description }),
+            'settings.dynamicVersionValue': '',
+            'settings.startVersionValue': startVersionValue,
+            'settings.endVersionValue': endVersionValue,
+          },
+        };
+      }
+    } else {
+      if (!dynamicVersionValue && !!versionValue) {
+        update = {
+          $set: {
+            ...(name && { name }),
+            ...(description && { description }),
+            'settings.dynamicVersionValue': '',
+            'settings.versionValue': versionValue,
+          },
+        };
+      }
+    }
 
     if (isActive != null || isActive != undefined) {
       update.isActive = isActive;
@@ -251,11 +289,19 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       conditions,
       widgetType,
       dashBoardType,
-      startVersionValue,
-      endVersionValue,
-      dynamicVersionValue,
+      dashboardFilters,
     } = req.body;
     const { orgCode } = req.user;
+
+    let startVersionValue = dashboardFilters?.dashboardFilters;
+    let endVersionValue = dashboardFilters?.endVersionValue;
+    let dynamicVersionValue = dashboardFilters?.dynamicVersionValue;
+    let versionValue = dashboardFilters?.versionValue;
+
+    if (dashBoardType === 'normal' && versionValue && !!dynamicVersionValue) {
+      startVersionValue = versionValue;
+      endVersionValue = versionValue;
+    }
 
     if (dashBoardType === 'trend' && !!dynamicVersionValue) {
       endVersionValue = DateTime.now().toFormat('yyyy-MM');
@@ -306,7 +352,6 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
         sort: { versionValue: -1 },
       });
 
-      console.log('dataSourceVersion', dataSourceVersion);
       dataSourceVersion = dataSourceVersion.data as DataSourceVersion[];
     } else {
       dataSourceVersion = (await dataSourceVersionService.getDataSourceVersion({
@@ -322,7 +367,16 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     }
     console.log(dataSourceVersion);
     if (!dataSourceVersion || dataSourceVersion.length === 0) {
-      throw new Error('No active data source version found');
+      // throw new Error('No active data source version found');
+
+      res.status(200).json({
+        success: true,
+        message: 'Chart data fetched successfully',
+        data: {
+          label: dashBoardType === 'trend' ? `${startVersionValue}:${endVersionValue}` : labelVersionValue,
+          widgetData: [],
+        },
+      });
     }
 
     const dataSourceVersionIdArray = dataSourceVersion.map((data) => new Types.ObjectId(data._id.toString()));
