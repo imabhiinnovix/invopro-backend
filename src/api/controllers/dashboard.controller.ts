@@ -315,7 +315,7 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     const response = {
       success: true,
       message: 'Chart data fetched successfully',
-      data: dataResults,
+      data: { label: dataSourceVersion.versionValue, widgetData: dataResults },
       // widgetAppearance,
     };
 
