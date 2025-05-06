@@ -16,7 +16,7 @@ const generatePrompt = ({ collectionsMetadata, userQuery }) => {
     .map((collection) => {
       return `
   Collection: ${collection.name} (Code: ${collection.code})
-  Attributes: ${collection.attributes.map((attr) => `${attr.name} (${attr.type})`).join(', ')}
+  Attributes: ${collection.attributes.map((attr) => `rowData.${attr.name} (${attr.type})`).join(', ')}
       `;
     })
     .join('\n');
@@ -140,7 +140,7 @@ export const runNaturalLanguageAggregation = async (req: Request, res: Response,
       res.status(200).json({
         success: true,
         message: 'Widget theme selected successfully',
-        aggregation,
+        cleanedQueryResult,
         data: dataResults,
       });
     }
