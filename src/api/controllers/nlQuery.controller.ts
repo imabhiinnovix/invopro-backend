@@ -3,6 +3,10 @@ import { Request, Response, NextFunction } from 'express';
 import { getDataSourceList, getDataSourceListWithAggregation } from '../../database/services/dataSource.services';
 import mongoose from 'mongoose';
 import config from '../../config';
+import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
+import createDefaultDataSourceVersionModel from '../../database/models/defaultDataSourceVersionModel';
+import * as dataSourceService from '../../database/services/dataSource.services';
+import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
 const ObjectId = mongoose.Types.ObjectId;
 
 const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
@@ -25,13 +29,14 @@ const generatePrompt = ({ collectionsMetadata, userQuery }) => {
   The user query is: "${userQuery}"
   
   Your task:
-1. Identify which collection the query refers to.
-2. Generate a MongoDB aggregation pipeline in JavaScript format that satisfies the user query.
-3. Respond strictly in the following JSON format:
+1. Based solely on the above list of collections and attributes, identify the **single best collection** that matches the user's intent.
+   - ⚠️ Do NOT rely on previous answers or memory. Always make a fresh decision.
+2. Generate a MongoDB aggregation pipeline in JavaScript format that satisfies the user query using that collection.
+3. Respond strictly in the following raw JSON format (no markdown, no quotes):
 
 {
-  "code": "collection_code",     // e.g., "disclosure" or "portfolio etc"
-  "name": "Collection Name",     // e.g., "Disclosure" or "Portfolio etc"
+  "name": "Collection Name", 
+  "code":"collection Code",   
   "aggregation": [ /* MongoDB aggregation pipeline as an array */ ],
   "error": ""                    // Leave empty if no error, otherwise describe the issue
 }
@@ -71,7 +76,7 @@ function cleanModelJsonResponse(response) {
 
     return JSON.parse(cleaned); // Final parse gives usable object
   } catch (err) {
-    console.error('Failed to clean and parse model response:', err.message);
+    console.error('Failed to clean and parse model response:', err);
     return {
       code: '',
       name: '',
@@ -91,12 +96,54 @@ export const runNaturalLanguageAggregation = async (req: Request, res: Response,
       query: query,
     });
 
-    const finalResult = await selectCollectionBasedOnNlQuery({ userQuery, collectionsMetadata });
-    res.status(200).json({
-      success: true,
-      message: 'Widget theme selected successfully',
-      data: cleanModelJsonResponse(finalResult),
-    });
+    const queryResult = await selectCollectionBasedOnNlQuery({ userQuery, collectionsMetadata });
+    const cleanedQueryResult = cleanModelJsonResponse(queryResult);
+
+    if (!cleanedQueryResult || !cleanedQueryResult.code || !cleanedQueryResult.aggregation) {
+      console.log(cleanedQueryResult);
+      throw 'Something went wrong.Please try again.';
+    } else if (cleanedQueryResult.error && cleanedQueryResult.error.length > 0) {
+      console.log(cleanedQueryResult.error);
+      throw cleanedQueryResult.error;
+    } else {
+      const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+        orgCode,
+        versionCode: cleanedQueryResult.code,
+      });
+
+      const dataSource: any = await dataSourceService.getDataSource({
+        code: cleanedQueryResult.code,
+        organizationId: organizationId,
+      });
+
+      const dataSourceVersion: any = await dataSourceVersionService.getDataSourceVersion({
+        query: {
+          dataSourceId: dataSource._id,
+          isCurrent: true,
+          isActive: true,
+        },
+        sort: { versionValue: -1 },
+      });
+
+      const aggregation = cleanedQueryResult.aggregation;
+
+      const matchStage = aggregation.find((stage) => stage.$match);
+      if (matchStage) {
+        matchStage.$match.dataSourceVersionId = new ObjectId(dataSourceVersion._id.toString());
+      } else {
+        aggregation.unshift({ $match: { dataSourceVersionId: new ObjectId(dataSourceVersion._id.toString()) } });
+      }
+      const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
+
+      // 5. Execute aggregation
+      const dataResults = await DataSourceModel.aggregate(aggregation).exec();
+      res.status(200).json({
+        success: true,
+        message: 'Widget theme selected successfully',
+        aggregation,
+        data: dataResults,
+      });
+    }
   } catch (err) {
     next(err);
   }
