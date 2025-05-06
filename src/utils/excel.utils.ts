@@ -733,6 +733,54 @@ interface Section {
   subSections: SubSection[];
 }
 
+type ExcelTableColumn = {
+  name: string;
+  filterButton?: boolean;
+};
+
+type WriteTableOptions = {
+  striped?: boolean;
+  headerFill?: ExcelJS.FillPattern;
+  startRow?: number;
+};
+function writeDynamicTable(
+  worksheet: ExcelJS.Worksheet,
+  columns: ExcelTableColumn[],
+  rows: (string | number | null)[][],
+  options: WriteTableOptions = {}
+): number {
+  const { striped = false, headerFill, startRow } = options;
+
+  // Optional manual row positioning
+  const insertRowAt = startRow ?? worksheet.rowCount + 1;
+  let currentRowPointer = insertRowAt;
+
+  // Write header row
+  const headerValues = columns.map((col) => col.name);
+  const headerRow = worksheet.insertRow(currentRowPointer++, headerValues);
+  headerRow.font = { bold: true };
+  headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+  if (headerFill) {
+    headerRow.fill = headerFill;
+  }
+
+  // Write data rows
+  rows.forEach((rowData, i) => {
+    const row = worksheet.insertRow(currentRowPointer++, rowData);
+    if (striped && i % 2 === 0) {
+      row.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFF2F2F2' }, // light gray
+      };
+    }
+  });
+
+  // Return the next available row for chaining
+  return currentRowPointer;
+}
+
 export async function generateExcelReport({
   reportName,
   reportData,
@@ -766,19 +814,25 @@ export async function generateExcelReport({
     let headerLabelKey = '';
 
     let tableObj: any = { headers: [], rows: [] };
-
+    let isSpan = false;
     //for data prepration for table
     for (let i = 0; i < sections.length; i++) {
       const section = sections[i];
       const subSections = section.subSections || [];
       const sectionView = section.view;
       if (section.sectionName || subSections.length > 0) {
+        if (section.spanColumns) {
+          isSpan = true;
+        }
         if (section.sectionName && headerLabelKey) {
           tableObj.rows.push([section.sectionName]);
         }
         for (let j = 0; j < subSections.length; j++) {
           const subSection = subSections[j];
           const headerName = subSection.headerName;
+          if (subSection.spanColumns) {
+            isSpan = true;
+          }
           if (sectionView === 'row') {
             if (!headerLabelKey) {
               headerLabelKey = headerName;
@@ -1014,19 +1068,29 @@ export async function generateExcelReport({
         lastRowIndex = processingTableRows.length + headerRowIndex;
         const tableRef = startTableColumn ? `${startTableColumn}${rowPointer}` : `A${rowPointer}`;
 
-        // Add a table to the worksheet
-        worksheet.addTable({
-          name: `DynamicTable_${sheetCode.toLowerCase().replace(/[^a-z]/g, '')}_${processingTableIndex}_${rowPointer}`, // Unique table name
-          ref: tableRef,
-          headerRow: true,
-          totalsRow: false,
-          // style: {
-          //   theme: 'TableStyleMedium9', // Default table style
-          //   showRowStripes: true,
-          // },
-          columns: processingTableHeaders,
-          rows: processingTableRows,
-        });
+        if (isSpan) {
+          writeDynamicTable(worksheet, processingTableHeaders, processingTableRows, {
+            striped: false,
+            // headerFill: {
+            //   type: 'pattern',
+            //   pattern: 'solid',
+            //   fgColor: { argb: 'FFB8CCE4' }, // Light blue header background
+            // },
+          });
+        } else {
+          worksheet.addTable({
+            name: `DynamicTable_${sheetCode.toLowerCase().replace(/[^a-z]/g, '')}_${processingTableIndex}_${rowPointer}`, // Unique table name
+            ref: tableRef,
+            headerRow: true,
+            totalsRow: false,
+            // style: {
+            //   theme: 'TableStyleMedium9', // Default table style
+            //   showRowStripes: true,
+            // },
+            columns: processingTableHeaders,
+            rows: processingTableRows,
+          });
+        }
 
         processingTableIndex++;
       }
