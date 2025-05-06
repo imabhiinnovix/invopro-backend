@@ -281,7 +281,28 @@ export async function getCurrentYearNewApplicationFiled({
     if (isCurrentYearUSIssued || isCurrentYearINTIssued) {
       matchCondition['rowData.Grant Date'] = yearDateRange;
       matchCondition['rowData.Status'] = {
-        $nin: ['UNDER OPPOSITION', 'UNDEROPPOSITION', 'Under Opposition', 'UnderOpposition'],
+        $nin: [
+          'UNDER OPPOSITION',
+          'UNDEROPPOSITION',
+          'Under Opposition',
+          'UnderOpposition',
+          'Under Appeal',
+          'UnderAppeal',
+          'UNDERAPPEAL',
+          'UNDER APPEAL',
+          'Revoked-appeal',
+          'Revoked appeal',
+          'Revokedappeal',
+          'Revoked-Appeal',
+          'Revoked Appeal',
+          'RevokedAppeal',
+          'REVOKED-APPEAL',
+          'REVOKEDAPPEAL',
+          'REVOKED APPEAL',
+          'Opposed',
+          'opposed',
+          'OPPOSED',
+        ],
       };
       if (isCurrentYearUSIssued) matchCondition['rowData.Country'] = { $in: ['US'] };
       if (isCurrentYearINTIssued) matchCondition['rowData.Country'] = { $nin: ['US'] };
@@ -321,7 +342,29 @@ export async function getCurrentYearNewApplicationFiled({
           ...matchCondition,
           'rowData.In Force': 1,
           'rowData.Status': {
-            $nin: ['Unfiled', 'UNFILED', 'Under Opposition', 'UNDER OPPOSITION', 'UnderOpposition'],
+            $nin: [
+              'Unfiled',
+              'UNFILED',
+              'Under Opposition',
+              'UNDER OPPOSITION',
+              'UnderOpposition',
+              'Under Appeal',
+              'UnderAppeal',
+              'UNDERAPPEAL',
+              'UNDER APPEAL',
+              'Revoked-appeal',
+              'Revoked appeal',
+              'Revokedappeal',
+              'Revoked-Appeal',
+              'Revoked Appeal',
+              'RevokedAppeal',
+              'REVOKED-APPEAL',
+              'REVOKEDAPPEAL',
+              'REVOKED APPEAL',
+              'Opposed',
+              'opposed',
+              'OPPOSED',
+            ],
           },
 
           'rowData.Grant Date': { $ne: null }, // Checks if Grant Date is null
@@ -341,7 +384,28 @@ export async function getCurrentYearNewApplicationFiled({
               $and: [
                 {
                   'rowData.Status': {
-                    $in: ['Under Opposition', 'UNDER OPPOSITION', 'UnderOpposition', 'underopposition'],
+                    $in: [
+                      'Under Opposition',
+                      'UNDER OPPOSITION',
+                      'UnderOpposition',
+                      'underopposition',
+                      'Under Appeal',
+                      'UnderAppeal',
+                      'UNDERAPPEAL',
+                      'UNDER APPEAL',
+                      'Revoked-appeal',
+                      'Revoked appeal',
+                      'Revokedappeal',
+                      'Revoked-Appeal',
+                      'Revoked Appeal',
+                      'RevokedAppeal',
+                      'REVOKED-APPEAL',
+                      'REVOKEDAPPEAL',
+                      'REVOKED APPEAL',
+                      'Opposed',
+                      'opposed',
+                      'OPPOSED',
+                    ],
                   },
                 },
                 {
@@ -720,7 +784,28 @@ export async function getAppsFiledBasedOnStc({
     if (isCurrentYearUSIssued || isCurrentYearINTIssued) {
       matchCondition['rowData.Grant Date'] = yearDateRange;
       matchCondition['rowData.Status'] = {
-        $nin: ['UNDER OPPOSITION', 'UNDEROPPOSITION', 'Under Opposition', 'UnderOpposition'],
+        $nin: [
+          'UNDER OPPOSITION',
+          'UNDEROPPOSITION',
+          'Under Opposition',
+          'UnderOpposition',
+          'Under Appeal',
+          'UnderAppeal',
+          'UNDERAPPEAL',
+          'UNDER APPEAL',
+          'Revoked-appeal',
+          'Revoked appeal',
+          'Revokedappeal',
+          'Revoked-Appeal',
+          'Revoked Appeal',
+          'RevokedAppeal',
+          'REVOKED-APPEAL',
+          'REVOKEDAPPEAL',
+          'REVOKED APPEAL',
+          'Opposed',
+          'opposed',
+          'OPPOSED',
+        ],
       };
       if (isCurrentYearUSIssued) matchCondition['rowData.Country'] = { $in: ['US'] };
       if (isCurrentYearINTIssued) matchCondition['rowData.Country'] = { $nin: ['US'] };
@@ -760,7 +845,29 @@ export async function getAppsFiledBasedOnStc({
           ...matchCondition,
           'rowData.In Force': 1,
           'rowData.Status': {
-            $nin: ['Unfiled', 'UNFILED', 'Under Opposition', 'UNDER OPPOSITION', 'UnderOpposition'],
+            $nin: [
+              'Unfiled',
+              'UNFILED',
+              'Under Opposition',
+              'UNDER OPPOSITION',
+              'UnderOpposition',
+              'Under Appeal',
+              'UnderAppeal',
+              'UNDERAPPEAL',
+              'UNDER APPEAL',
+              'Revoked-appeal',
+              'Revoked appeal',
+              'Revokedappeal',
+              'Revoked-Appeal',
+              'Revoked Appeal',
+              'RevokedAppeal',
+              'REVOKED-APPEAL',
+              'REVOKEDAPPEAL',
+              'REVOKED APPEAL',
+              'Opposed',
+              'opposed',
+              'OPPOSED',
+            ],
           },
 
           'rowData.Grant Date': { $ne: null }, // Checks if Grant Date is null
@@ -780,7 +887,28 @@ export async function getAppsFiledBasedOnStc({
               $and: [
                 {
                   'rowData.Status': {
-                    $in: ['Under Opposition', 'UNDER OPPOSITION', 'UnderOpposition', 'underopposition'],
+                    $in: [
+                      'Under Opposition',
+                      'UNDER OPPOSITION',
+                      'UnderOpposition',
+                      'underopposition',
+                      'Under Appeal',
+                      'UnderAppeal',
+                      'UNDERAPPEAL',
+                      'UNDER APPEAL',
+                      'Revoked-appeal',
+                      'Revoked appeal',
+                      'Revokedappeal',
+                      'Revoked-Appeal',
+                      'Revoked Appeal',
+                      'RevokedAppeal',
+                      'REVOKED-APPEAL',
+                      'REVOKEDAPPEAL',
+                      'REVOKED APPEAL',
+                      'Opposed',
+                      'opposed',
+                      'OPPOSED',
+                    ],
                   },
                 },
                 {
