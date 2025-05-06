@@ -1020,10 +1020,10 @@ export async function generateExcelReport({
           ref: tableRef,
           headerRow: true,
           totalsRow: false,
-          style: {
-            theme: 'TableStyleMedium9', // Default table style
-            showRowStripes: true,
-          },
+          // style: {
+          //   theme: 'TableStyleMedium9', // Default table style
+          //   showRowStripes: true,
+          // },
           columns: processingTableHeaders,
           rows: processingTableRows,
         });
