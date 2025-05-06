@@ -37,7 +37,7 @@ export const getAllWidgetThemes = async (req: Request, res: Response, next: Next
 
 export const getWidgetThemeById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const widgetTheme = await widgetThemeService.findWidgetThemeById(req.params.dashboardWidgetThemeId);
+    const widgetTheme = await widgetThemeService.findWidgetThemeById(req.params.widgetThemeId);
     if (!widgetTheme) {
       return res.status(404).json({ message: 'Widget config not found' });
     }
@@ -55,7 +55,7 @@ export const updateWidgetTheme = async (req: Request, res: Response, next: NextF
   try {
     const { isDefault } = req.body;
     const widgetTheme = await widgetThemeService.findWidgetTheme({
-      _id: req.params.dashboardWidgetThemeId,
+      _id: req.params.widgetThemeId,
       organizationId: req.user.organizationId,
     });
 
@@ -67,7 +67,7 @@ export const updateWidgetTheme = async (req: Request, res: Response, next: NextF
       await widgetThemeService.updateWidgetThemeMany({}, { isDefault: false });
     }
 
-    await widgetThemeService.updateWidgetTheme(req.params.dashboardWidgetThemeId, req.body);
+    await widgetThemeService.updateWidgetTheme(req.params.widgetThemeId, req.body);
     return res.status(200).json({
       success: true,
       message: 'Widget theme updated successfully',
@@ -79,7 +79,7 @@ export const updateWidgetTheme = async (req: Request, res: Response, next: NextF
 
 export const deleteWidgetTheme = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const widgetTheme = await widgetThemeService.findWidgetThemeById(req.params.dashboardWidgetThemeId);
+    const widgetTheme = await widgetThemeService.findWidgetThemeById(req.params.widgetThemeId);
 
     if (!widgetTheme) {
       return res.status(404).json({
@@ -94,6 +94,33 @@ export const deleteWidgetTheme = async (req: Request, res: Response, next: NextF
     return res.status(200).json({
       success: true,
       message: 'Widget theme deleted successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const duplicateWidgetTheme = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const widgetTheme = await widgetThemeService.findWidgetThemeById(req.params.widgetThemeId);
+    if (!widgetTheme) {
+      return res.status(404).json({
+        success: false,
+        message: 'Widget theme not found',
+      });
+    }
+
+    const widgetThemeData = widgetTheme.toObject();
+
+    const newWidgetTheme = await widgetThemeService.createWidgetTheme({
+      ...widgetThemeData,
+      _id: undefined,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Widget theme duplicated successfully',
+      data: newWidgetTheme,
     });
   } catch (err) {
     next(err);
