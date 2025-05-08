@@ -293,7 +293,7 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     } = req.body;
     const { orgCode } = req.user;
 
-    let startVersionValue = dashboardFilters?.dashboardFilters;
+    let startVersionValue = dashboardFilters?.startVersionValue;
     let endVersionValue = dashboardFilters?.endVersionValue;
     let dynamicVersionValue = dashboardFilters?.dynamicVersionValue;
     let versionValue = dashboardFilters?.versionValue;
