@@ -278,6 +278,45 @@ export const getDashboardWidgetList = async (req: Request, res: Response, next: 
   }
 };
 
+type DataItem = {
+  name: string; // e.g., "2025-02"
+  data: number;
+  [key: string]: any;
+};
+
+function calculateMoMDifference<T extends DataItem>(data: T[], groupBy: string[]): DataItem[] {
+  const grouped: Record<string, T[]> = {};
+
+  // Group by dynamic fields
+  for (const item of data) {
+    const key = groupBy.map((field) => item[field]).join('||');
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(item);
+  }
+
+  const result: DataItem[] = [];
+
+  // Process each group
+  for (const records of Object.values(grouped)) {
+    // Sort records by `name` (expected format: YYYY-MM)
+    records.sort((a, b) => a.name.localeCompare(b.name));
+
+    for (let i = 0; i < records.length; i++) {
+      const current = records[i];
+      const previous = i > 0 ? records[i - 1] : null;
+
+      const difference = previous ? current.data - previous.data : current.data;
+
+      result.push({
+        ...current,
+        data: difference,
+      });
+    }
+  }
+
+  return result;
+}
+
 export const getWidgetData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     let {
@@ -290,6 +329,7 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       widgetType,
       dashBoardType,
       dashboardFilters,
+      incremental,
     } = req.body;
     const { orgCode } = req.user;
 
@@ -405,13 +445,33 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
 
     // 5. Execute aggregation
-    const dataResults = await DataSourceModel.aggregate(aggregationPipeline).exec();
+    let dataResults = await DataSourceModel.aggregate(aggregationPipeline).exec();
 
     // get the widget Appearance
     // let widgetAppearance: any = {};
     // if (widgetAppearanceId) {
     //   widgetAppearance = await widgetAppearanceService.getWidgetAppearance({ _id: widgetAppearanceId, organizationId });
     // }
+
+    if (incremental) {
+      if (groupBy && groupBy.length >= 0) {
+        dataResults = calculateMoMDifference(dataResults, groupBy);
+      } else {
+        dataResults = dataResults.map((entry, index) => {
+          if (index === 0) {
+            return {
+              ...entry,
+            };
+          } else {
+            const prevData = dataResults[index - 1].data;
+            return {
+              ...entry,
+              data: entry.data - prevData,
+            };
+          }
+        });
+      }
+    }
 
     // 6. Prepare response
     const response = {
