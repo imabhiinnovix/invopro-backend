@@ -156,8 +156,18 @@ export const updateDashboard = async (req: Request, res: Response, next: NextFun
 
 export const createWidget = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { dashboardId, widgetTypeId, name, dimensions, groupBy, conditions, aggregation, dataSourceId, position } =
-      req.body;
+    const {
+      dashboardId,
+      widgetTypeId,
+      name,
+      dimensions,
+      groupBy,
+      conditions,
+      aggregation,
+      dataSourceId,
+      position,
+      isIncremental,
+    } = req.body;
 
     const { organizationId, userId } = req.user;
 
@@ -190,6 +200,7 @@ export const createWidget = async (req: Request, res: Response, next: NextFuncti
       conditions,
       aggregation,
       dataSourceId,
+      isIncremental: isIncremental ? isIncremental : false,
       position: {
         ...position,
         index: nextIndex,
@@ -220,6 +231,7 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
       position,
       isActive,
       isDeleted,
+      isIncremental,
     } = req.body;
     const { dashboardWidgetId } = req.params;
 
@@ -235,6 +247,7 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
       ...(entityId && { entityId }),
       ...(typeof isActive !== 'undefined' && { isActive }),
       ...(typeof isDeleted !== 'undefined' && { isDeleted }),
+      ...(typeof isIncremental !== 'undefined' && { isIncremental }),
     });
 
     res.status(200).json({
@@ -298,14 +311,17 @@ function calculateMoMDifference<T extends DataItem>(data: T[], groupBy: string[]
 
   // Process each group
   for (const records of Object.values(grouped)) {
-    // Sort records by `name` (expected format: YYYY-MM)
+    // Sort by date string (assumes format: YYYY-MM)
     records.sort((a, b) => a.name.localeCompare(b.name));
 
     for (let i = 0; i < records.length; i++) {
       const current = records[i];
-      const previous = i > 0 ? records[i - 1] : null;
+      const prev = i > 0 ? records[i - 1] : null;
 
-      const difference = previous ? current.data - previous.data : current.data;
+      const currentYear = current.name.split('-')[0];
+      const prevYear = prev?.name.split('-')[0];
+
+      const difference = prev && currentYear === prevYear ? current.data - prev.data : current.data;
 
       result.push({
         ...current,
@@ -457,17 +473,22 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       if (groupBy && groupBy.length >= 0) {
         dataResults = calculateMoMDifference(dataResults, groupBy);
       } else {
-        dataResults = dataResults.map((entry, index) => {
+        dataResults = dataResults.map((entry, index, array) => {
           if (index === 0) {
+            return { ...entry }; // First entry, no difference
+          }
+
+          const currentYear = entry.name.split('-')[0];
+          const prevEntry = array[index - 1];
+          const prevYear = prevEntry.name.split('-')[0];
+
+          if (currentYear === prevYear) {
             return {
               ...entry,
+              data: entry.data - prevEntry.data,
             };
           } else {
-            const prevData = dataResults[index - 1].data;
-            return {
-              ...entry,
-              data: entry.data - prevData,
-            };
+            return { ...entry }; // New year, no subtraction
           }
         });
       }
