@@ -228,8 +228,8 @@ export const runNaturalLanguageAggregation = async (req: Request, res: Response,
 
       res.status(200).json({
         success: true,
-        message: 'Widget theme selected successfully',
-        cleanedQueryResult,
+        message: 'Query fetched successfully.',
+        data: cleanedQueryResult,
       });
     }
   } catch (err) {
