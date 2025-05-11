@@ -345,7 +345,7 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       widgetType,
       dashBoardType,
       dashboardFilters,
-      incremental,
+      isIncremental,
     } = req.body;
     const { orgCode } = req.user;
 
@@ -469,7 +469,7 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     //   widgetAppearance = await widgetAppearanceService.getWidgetAppearance({ _id: widgetAppearanceId, organizationId });
     // }
 
-    if (incremental) {
+    if (isIncremental) {
       if (groupBy && groupBy.length >= 0) {
         dataResults = calculateMoMDifference(dataResults, groupBy);
       } else {
