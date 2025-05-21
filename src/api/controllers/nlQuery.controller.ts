@@ -8,6 +8,8 @@ import createDefaultDataSourceVersionModel from '../../database/models/defaultDa
 import * as dataSourceService from '../../database/services/dataSource.services';
 import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
 import * as operatorService from '../../database/services/operator.service';
+import * as widgetTypeService from '../../database/services/widgetType.service';
+import { getWidgetChartData } from './dashboard.controller';
 const ObjectId = mongoose.Types.ObjectId;
 
 const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
@@ -91,13 +93,15 @@ Your task:
 
 ⚠️ IMPORTANT: This JSON format will be used elsewhere in the system to **dynamically generate MongoDB queries**. Ensure accuracy and strict adherence to the structure.
 
+
+Note:Always use the attributes of selected collection only don't mix.
 Respond strictly in the following raw JSON format (no markdown, no quotes):
 
 {
   "collectionName": "Collection Name",
   "collectionCode":"collection Code",
   "name": "Chart Name", (Dynamically generate the chart name based on user query which is short but meaningful)
-  "dimensions": "Field name for x-axis" (which you can select from Attributes for selected collection),
+  "dimensions": "Field name for x-axis" (which you can select from Attributes of selected collection),
   "groupBy": "Optional group by field" (which you can select from Attributes for selected collection)note:groupby field should not be same as dimension field ,
   "aggregation": {
     "type": "Aggregation type" choose one of ["Count", "Sum", "Average"],
@@ -204,6 +208,27 @@ export const runNaturalLanguageAggregation = async (req: Request, res: Response,
       if (!Array.isArray(cleanedQueryResult['groupBy'])) {
         cleanedQueryResult['groupBy'] = cleanedQueryResult['groupBy'] ? [cleanedQueryResult['groupBy']] : [];
       }
+
+      const defaultWidgetType = await widgetTypeService.getWidgetType({
+        code: 'line-1',
+      });
+
+      cleanedQueryResult['widgetTypeId'] = defaultWidgetType;
+      cleanedQueryResult['organizationId'] = organizationId;
+      cleanedQueryResult['userQuery'] = userQuery;
+      cleanedQueryResult['_id'] = Date.now();
+
+      const widgetData = await getWidgetChartData({
+        dataSourceId: cleanedQueryResult?.dataSourceId?._id,
+        dimensions: cleanedQueryResult.dimensions,
+        entityId: cleanedQueryResult.entityId,
+        aggregation: cleanedQueryResult.aggregation,
+        groupBy: cleanedQueryResult.groupBy,
+        conditions: cleanedQueryResult.conditions,
+        widgetType: cleanedQueryResult.widgetTypeId?.chartType,
+        orgCode,
+      });
+      cleanedQueryResult['data'] = widgetData;
       // const dataSourceVersion: any = await dataSourceVersionService.getDataSourceVersion({
       //   query: {
       //     dataSourceId: dataSource._id,

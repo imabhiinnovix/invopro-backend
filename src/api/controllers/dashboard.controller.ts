@@ -239,84 +239,118 @@ export const getDashboardWidgetList = async (req: Request, res: Response, next: 
   }
 };
 
+export const getWidgetChartData = async ({
+  dataSourceId,
+  dimensions,
+  entityId,
+  aggregation,
+  groupBy,
+  conditions,
+  widgetType,
+  orgCode,
+}: {
+  dataSourceId: string;
+  dimensions: any;
+  entityId: string;
+  aggregation: any;
+  groupBy: any;
+  conditions: any;
+  widgetType: string;
+  orgCode: string;
+}) => {
+  // let dimensions = req.body.dimensions;
+
+  const widgetTypeData = await widgetTypeService.getWidgetType({ chartType: widgetType });
+
+  if (!widgetTypeData) {
+    throw new Error('Widget type not found');
+  }
+
+  // 1. Fetch entity data for field type information
+  const entity: any = await entityService.getEntity({
+    _id: entityId,
+  });
+
+  if (!entity) {
+    throw new Error('Entity not found');
+  }
+
+  const dataSource: any = await dataSourceService.getDataSource({
+    _id: dataSourceId,
+  });
+
+  // 2. Fetch current active data source version
+  const dataSourceVersion: any = (await dataSourceVersionService.getDataSourceVersion({
+    query: {
+      dataSourceId: dataSourceId,
+      isCurrent: true,
+      isActive: true,
+    },
+    sort: { versionValue: -1 },
+  })) as DataSourceVersion;
+
+  if (!dataSourceVersion) {
+    throw new Error('No active data source version found');
+  }
+
+  // 3. Build widget object for aggregation
+  const widget: any = {
+    dataSourceId: dataSourceId.toString(),
+    dataSourceVersionId: dataSourceVersion._id.toString(),
+    dimensions,
+    groupBy,
+    aggregation,
+    entity, // Pass entity data for field type conversion
+    conditions,
+    widgetType,
+  };
+
+  const aggregationPipeline = buildAggregationPipeline(widget);
+
+  console.log('\nFinal Aggregation Pipeline:', JSON.stringify(aggregationPipeline, null, 2));
+
+  // 4. Get schema name and create model
+  const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+    orgCode,
+    versionCode: dataSource?.code,
+  });
+  const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
+
+  // 5. Execute aggregation
+  const dataResults = await DataSourceModel.aggregate(aggregationPipeline).exec();
+
+  // get the widget Appearance
+  // let widgetAppearance: any = {};
+  // if (widgetAppearanceId) {
+  //   widgetAppearance = await widgetAppearanceService.getWidgetAppearance({ _id: widgetAppearanceId, organizationId });
+  // }
+
+  return {
+    label: dataSourceVersion.versionValue,
+    widgetData: dataResults,
+  };
+};
+
 export const getWidgetData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { dataSourceId, dimensions, entityId, aggregation, groupBy, conditions, widgetType } = req.body;
     const { orgCode } = req.user;
 
-    // let dimensions = req.body.dimensions;
-
-    const widgetTypeData = await widgetTypeService.getWidgetType({ chartType: widgetType });
-
-    if (!widgetTypeData) {
-      throw new Error('Widget type not found');
-    }
-
-    // 1. Fetch entity data for field type information
-    const entity: any = await entityService.getEntity({
-      _id: entityId,
-    });
-
-    if (!entity) {
-      throw new Error('Entity not found');
-    }
-
-    const dataSource: any = await dataSourceService.getDataSource({
-      _id: dataSourceId,
-    });
-
-    // 2. Fetch current active data source version
-    const dataSourceVersion: any = (await dataSourceVersionService.getDataSourceVersion({
-      query: {
-        dataSourceId: dataSourceId,
-        isCurrent: true,
-        isActive: true,
-      },
-      sort: { versionValue: -1 },
-    })) as DataSourceVersion;
-
-    if (!dataSourceVersion) {
-      throw new Error('No active data source version found');
-    }
-
-    // 3. Build widget object for aggregation
-    const widget: any = {
-      dataSourceId: dataSourceId.toString(),
-      dataSourceVersionId: dataSourceVersion._id.toString(),
+    const result = await getWidgetChartData({
+      dataSourceId,
       dimensions,
-      groupBy,
+      entityId,
       aggregation,
-      entity, // Pass entity data for field type conversion
+      groupBy,
       conditions,
       widgetType,
-    };
-
-    const aggregationPipeline = buildAggregationPipeline(widget);
-
-    console.log('\nFinal Aggregation Pipeline:', JSON.stringify(aggregationPipeline, null, 2));
-
-    // 4. Get schema name and create model
-    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
       orgCode,
-      versionCode: dataSource?.code,
     });
-    const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
-
-    // 5. Execute aggregation
-    const dataResults = await DataSourceModel.aggregate(aggregationPipeline).exec();
-
-    // get the widget Appearance
-    // let widgetAppearance: any = {};
-    // if (widgetAppearanceId) {
-    //   widgetAppearance = await widgetAppearanceService.getWidgetAppearance({ _id: widgetAppearanceId, organizationId });
-    // }
-
     // 6. Prepare response
     const response = {
       success: true,
       message: 'Chart data fetched successfully',
-      data: { label: dataSourceVersion.versionValue, widgetData: dataResults },
-      // widgetAppearance,
+      data: result,
     };
 
     res.status(200).json(response);
