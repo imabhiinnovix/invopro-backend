@@ -409,6 +409,7 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       });
 
       dataSourceVersion = dataSourceVersion.data as DataSourceVersion[];
+      labelVersionValue = startVersionValue;
     } else {
       dataSourceVersion = (await dataSourceVersionService.getDataSourceVersion({
         query: {
@@ -421,7 +422,7 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       labelVersionValue = dataSourceVersion.versionValue;
       dataSourceVersion = [dataSourceVersion];
     }
-    console.log(dataSourceVersion);
+
     if (!dataSourceVersion || dataSourceVersion.length === 0) {
       // throw new Error('No active data source version found');
 
