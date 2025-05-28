@@ -22,6 +22,7 @@ import { CustomReportModelAccessReturnType } from '../../database/models/customR
 import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/dataSourceVersion.controller';
 import {
   processReportHeaders,
+  transformDataByEntityMapping,
   transformMonthlyIpData,
   transformMonthlySTCData,
   transformMonthlySTCSBUData,
@@ -48,6 +49,9 @@ export const generateMonthlyIpReport = async ({
   monthlyipstcDataSource,
   monthlyipstcsbuDataSource,
   headers,
+  intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails,
+  entityDetails,
+  intermediateReportId,
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
@@ -68,6 +72,9 @@ export const generateMonthlyIpReport = async ({
   monthlyIpDataSource: string;
   monthlyipstcDataSource: string;
   monthlyipstcsbuDataSource: string;
+  intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails: any;
+  entityDetails: any;
+  intermediateReportId: string;
 }) => {
   try {
     const versionValue = reportRequestPayload.versionValue;
@@ -89,6 +96,19 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
       isRowData,
     });
+    const currentYearApplicationFiledRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedCurrentYearApplicationFiledRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails.entityId,
+      entityDetails,
+      data: currentYearApplicationFiledRawData,
+    });
+
     const partiallyProcessedCurrentYearApplicationFiledData = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `${currentYear} New Apps Filed`,
       data: currentYearApplicationFiledData,
@@ -765,6 +785,18 @@ export const generateMonthlyIpReport = async ({
       orgCode,
     });
 
+    //intermediateReport
+    const intermediateDataSourceVersionDetailsCurrentYearApplicationFiled =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedCurrentYearApplicationFiledRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
     await reportRequestService.updateReportRequest(requestedReportId, {
       status: 'completed',
       dataSourceVersion: [
@@ -800,6 +832,19 @@ export const generateMonthlyIpReport = async ({
           dataSourceVersionId: dataSourceVersionDetailsMonthlyIpStcSBU.dataSourceVersionId,
           versionCode: dataSourceVersionDetailsMonthlyIpStcSBU.versionCode,
           dataSourceId: monthlyipstcsbuDataSource,
+        },
+        {
+          sheetName: 'Current Year New Apps Filed',
+          sheetCode: 'currentyearnewappfiled',
+          tabName: 'Current Year New Apps Filed',
+          mappingFuctionName: '',
+          designCode: 'currentyearnewappfiled',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsCurrentYearApplicationFiled.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsCurrentYearApplicationFiled.versionCode,
+          dataSourceId: intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails.entityId,
+          isIntermediate: true,
         },
       ],
     });

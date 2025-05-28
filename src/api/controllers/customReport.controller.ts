@@ -16,6 +16,7 @@ import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.ut
 import * as dataSourceVersionValueService from '../../database/services/defaultDataSourceVersionValue.services';
 import mongoose from 'mongoose';
 import { generateCustomReportBasedOnReportRequestId, transformFunctionsMap } from '../../utils/common.report';
+import * as entityService from '../../database/services/entity.services';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -82,6 +83,7 @@ export const generateCustomReportsFunction = async ({
       organizationId: organizationId,
       versionValue: versionValue,
       customReportId: customReportDetails._id,
+      intermediateReportId: customReportDetails.intermediateReportId,
       status: 'processing',
       fileName: fileName,
       filePath: path.join('uploads', organizationId, userId, 'generatedReports', `${fileName}`),
@@ -121,6 +123,13 @@ export const generateCustomReportsFunction = async ({
       const staticProjectOpenedDataSource = customReportDetails.dataSourceIds.find(
         (ds) => ds.code === 'projectsopened'
       );
+      const intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'intermediatemonthlyipcurrentyearnewappfiled');
+
+      const entityDetails = await entityService.getEntityList({
+        query: { _id: { $in: intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails.entityId } },
+      });
+
       const data = await generateMonthlyIpReport({
         reportRequestPayload,
         requestedReportId: reportRequestId as string,
@@ -141,6 +150,9 @@ export const generateCustomReportsFunction = async ({
         orgCode,
         customReportModel,
         headers: customReportDetails.headers,
+        intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails,
+        entityDetails: entityDetails.data,
+        intermediateReportId: customReportDetails.intermediateReportId.toString()!,
       });
 
       return data;
@@ -387,8 +399,13 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
   try {
     const { reportRequestId } = req.params;
     const { orgCode } = req.user;
+    const { isIntermediate } = req.query;
 
-    const generatedReportData = await generateCustomReportBasedOnReportRequestId({ reportRequestId, orgCode });
+    const generatedReportData = await generateCustomReportBasedOnReportRequestId({
+      reportRequestId,
+      orgCode,
+      isIntermediate: !!isIntermediate,
+    });
 
     res.download(generatedReportData.filePath!, generatedReportData.fileName!, (err) => {
       if (err) {

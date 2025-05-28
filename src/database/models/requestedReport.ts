@@ -10,6 +10,8 @@ interface IDataSourceVersion {
   versionCode: string;
   dataSourceId: Types.ObjectId;
   allowPdfDownload: boolean;
+  entityId: Types.ObjectId;
+  isIntermediate: boolean;
 }
 
 interface IReportRequest extends Document {
@@ -23,6 +25,7 @@ interface IReportRequest extends Document {
   fileName?: string;
   createdBy: Types.ObjectId;
   dataSourceVersion: IDataSourceVersion[];
+  intermediateReportId: Types.ObjectId;
 }
 
 const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
@@ -36,6 +39,8 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
     dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'data_source_version' },
     versionCode: { type: String, required: true },
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_sources' },
+    entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
+    isIntermediate: { type: Boolean, default: false },
   },
   { _id: false }
 );
@@ -44,6 +49,7 @@ const reportRequestSchema = new Schema<IReportRequest>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
     customReportId: { type: Schema.Types.ObjectId, ref: 'custom_reports' },
+    intermediateReportId: { type: Schema.Types.ObjectId, ref: 'custom_reports' },
     versionValue: { type: String, required: true },
     status: {
       type: String,

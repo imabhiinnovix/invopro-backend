@@ -1,4 +1,4 @@
-import { Schema, model, Document, Types } from 'mongoose';
+import mongoose, { Schema, model, Document, Types } from 'mongoose';
 
 interface IDataSource {
   code: string;
@@ -67,6 +67,7 @@ interface ICustomReport extends Document {
   headers: Record<string, IHeaderSection>;
   reportSettings: IReportSetting[];
   design: Record<string, Record<string, ISection[]>>;
+  intermediateReportId: Types.ObjectId;
 }
 
 interface IReportSetting {
@@ -150,6 +151,7 @@ const CustomReportSchema = new Schema<ICustomReport>(
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
     headers: { type: Map, of: HeaderSectionSchema },
     reportSettings: { type: [ReportSettingSchema], required: true },
+    intermediateReportId: { type: mongoose.Schema.Types.ObjectId },
     design: {
       type: Map,
       of: {
