@@ -344,9 +344,10 @@ export async function generateCustomReportBasedOnReportRequestId({
   orgCode: string;
   isIntermediate: boolean;
 }) {
+  console.log(isIntermediate, 'kishan');
   try {
     const reportDetails: any = await reportRequestService.findReportRequestById(reportRequestId, [
-      { path: 'customReportId', select: 'reportName reportSettings design' },
+      { path: isIntermediate ? 'intermediateReportId' : 'customReportId', select: 'reportName reportSettings design' },
     ]);
 
     const reportData = {};
@@ -365,7 +366,7 @@ export async function generateCustomReportBasedOnReportRequestId({
     }
 
     if (isIntermediate) {
-      dataSourceVersions = dataSourceVersions.filter((item) => item.isIntermediate === true);
+      dataSourceVersions = dataSourceVersions.filter((item) => item.isIntermediate);
     } else {
       dataSourceVersions = dataSourceVersions.filter((item) => !item.isIntermediate);
     }

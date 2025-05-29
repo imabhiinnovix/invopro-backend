@@ -152,7 +152,7 @@ export const generateCustomReportsFunction = async ({
         headers: customReportDetails.headers,
         intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails,
         entityDetails: entityDetails.data,
-        intermediateReportId: customReportDetails.intermediateReportId.toString()!,
+        intermediateReportId: customReportDetails.intermediateReportId,
       });
 
       return data;
@@ -400,11 +400,12 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
     const { reportRequestId } = req.params;
     const { orgCode } = req.user;
     const { isIntermediate } = req.query;
+    const isIntermediateBool = isIntermediate === 'true';
 
     const generatedReportData = await generateCustomReportBasedOnReportRequestId({
       reportRequestId,
       orgCode,
-      isIntermediate: !!isIntermediate,
+      isIntermediate: isIntermediateBool,
     });
 
     res.download(generatedReportData.filePath!, generatedReportData.fileName!, (err) => {

@@ -74,7 +74,7 @@ export const generateMonthlyIpReport = async ({
   monthlyipstcsbuDataSource: string;
   intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails: any;
   entityDetails: any;
-  intermediateReportId: string;
+  intermediateReportId: any;
 }) => {
   try {
     const versionValue = reportRequestPayload.versionValue;
@@ -799,6 +799,7 @@ export const generateMonthlyIpReport = async ({
       });
     await reportRequestService.updateReportRequest(requestedReportId, {
       status: 'completed',
+      intermediateReportId: intermediateReportId,
       dataSourceVersion: [
         {
           sheetName: 'Global',
