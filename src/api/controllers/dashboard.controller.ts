@@ -333,6 +333,179 @@ function calculateMoMDifference<T extends DataItem>(data: T[], groupBy: string[]
   return result;
 }
 
+export const getWidgetChartData = async ({
+  dataSourceId,
+  dimensions,
+  entityId,
+  aggregation,
+  groupBy,
+  conditions,
+  widgetType,
+  orgCode,
+  dashBoardType,
+  dashboardFilters,
+  isIncremental,
+}: {
+  dataSourceId: string;
+  dimensions: any;
+  entityId: string;
+  aggregation: any;
+  groupBy: any;
+  conditions: any;
+  widgetType: string;
+  orgCode: string;
+  dashBoardType?: string;
+  dashboardFilters?: any;
+  isIncremental?: boolean;
+}) => {
+  let startVersionValue = dashboardFilters?.startVersionValue;
+  let endVersionValue = dashboardFilters?.endVersionValue;
+  let dynamicVersionValue = dashboardFilters?.dynamicVersionValue;
+  let versionValue = dashboardFilters?.versionValue;
+
+  if (dashBoardType === 'normal' && versionValue && !!dynamicVersionValue) {
+    startVersionValue = versionValue;
+    endVersionValue = versionValue;
+  }
+
+  if (dashBoardType === 'trend' && !!dynamicVersionValue) {
+    endVersionValue = DateTime.now().toFormat('yyyy-MM');
+
+    if (dynamicVersionValue === '3m') {
+      startVersionValue = DateTime.now().minus({ months: 3 }).toFormat('yyyy-MM');
+    } else if (dynamicVersionValue === '6m') {
+      startVersionValue = DateTime.now().minus({ months: 6 }).toFormat('yyyy-MM');
+    } else if (dynamicVersionValue === '12m') {
+      startVersionValue = DateTime.now().minus({ months: 12 }).toFormat('yyyy-MM');
+    } else {
+      startVersionValue = DateTime.now().minus({ months: 1 }).toFormat('yyyy-MM');
+    }
+  }
+
+  let labelVersionValue = '';
+  // let dimensions = req.body.dimensions;
+
+  const widgetTypeData = await widgetTypeService.getWidgetType({ chartType: widgetType });
+
+  if (!widgetTypeData) {
+    throw new Error('Widget type not found');
+  }
+
+  // 1. Fetch entity data for field type information
+  const entity: any = await entityService.getEntity({
+    _id: entityId,
+  });
+
+  if (!entity) {
+    throw new Error('Entity not found');
+  }
+
+  const dataSource: any = await dataSourceService.getDataSource({
+    _id: dataSourceId,
+  });
+
+  // 2. Fetch current active data source version
+  let dataSourceVersion: any;
+  if (startVersionValue && endVersionValue) {
+    dataSourceVersion = await dataSourceVersionService.getDataSourceVersionList({
+      query: {
+        dataSourceId: dataSourceId,
+        isCurrent: true,
+        isActive: true,
+        versionValue: { $gte: startVersionValue, $lte: endVersionValue },
+      },
+      sort: { versionValue: -1 },
+    });
+
+    dataSourceVersion = dataSourceVersion.data as DataSourceVersion[];
+    labelVersionValue = startVersionValue;
+  } else {
+    dataSourceVersion = (await dataSourceVersionService.getDataSourceVersion({
+      query: {
+        dataSourceId: dataSourceId,
+        isCurrent: true,
+        isActive: true,
+      },
+      sort: { versionValue: -1 },
+    })) as DataSourceVersion;
+    labelVersionValue = dataSourceVersion.versionValue;
+    dataSourceVersion = [dataSourceVersion];
+  }
+
+  if (!dataSourceVersion || dataSourceVersion.length === 0) {
+    // throw new Error('No active data source version found');
+
+    return {
+      label: dashBoardType === 'trend' ? `${startVersionValue}:${endVersionValue}` : labelVersionValue,
+      widgetData: [],
+    };
+  }
+
+  const dataSourceVersionIdArray = dataSourceVersion.map((data) => new Types.ObjectId(data._id.toString()));
+  // 3. Build widget object for aggregation
+  const widget: any = {
+    dataSourceId: dataSourceId.toString(),
+    dataSourceVersionIdArray: dataSourceVersionIdArray,
+    dimensions,
+    groupBy,
+    dashBoardType,
+    aggregation,
+    entity, // Pass entity data for field type conversion
+    conditions,
+    widgetType,
+  };
+
+  const aggregationPipeline = buildAggregationPipeline(widget);
+
+  console.log('\nFinal Aggregation Pipeline:', JSON.stringify(aggregationPipeline, null, 2));
+
+  // 4. Get schema name and create model
+  const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+    orgCode,
+    versionCode: dataSource?.code,
+  });
+  const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
+
+  // 5. Execute aggregation
+  let dataResults = await DataSourceModel.aggregate(aggregationPipeline).exec();
+
+  // get the widget Appearance
+  // let widgetAppearance: any = {};
+  // if (widgetAppearanceId) {
+  //   widgetAppearance = await widgetAppearanceService.getWidgetAppearance({ _id: widgetAppearanceId, organizationId });
+  // }
+
+  if (isIncremental) {
+    if (groupBy && groupBy.length >= 0) {
+      dataResults = calculateMoMDifference(dataResults, groupBy);
+    } else {
+      dataResults = dataResults.map((entry, index, array) => {
+        if (index === 0) {
+          return { ...entry }; // First entry, no difference
+        }
+
+        const currentYear = entry.name.split('-')[0];
+        const prevEntry = array[index - 1];
+        const prevYear = prevEntry.name.split('-')[0];
+
+        if (currentYear === prevYear) {
+          return {
+            ...entry,
+            data: entry.data - prevEntry.data,
+          };
+        } else {
+          return { ...entry }; // New year, no subtraction
+        }
+      });
+    }
+  }
+
+  return {
+    label: dashBoardType === 'trend' ? `${startVersionValue}:${endVersionValue}` : labelVersionValue,
+    widgetData: dataResults,
+  };
+};
+
 export const getWidgetData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     let {
@@ -349,163 +522,24 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     } = req.body;
     const { orgCode } = req.user;
 
-    let startVersionValue = dashboardFilters?.startVersionValue;
-    let endVersionValue = dashboardFilters?.endVersionValue;
-    let dynamicVersionValue = dashboardFilters?.dynamicVersionValue;
-    let versionValue = dashboardFilters?.versionValue;
-
-    if (dashBoardType === 'normal' && versionValue && !!dynamicVersionValue) {
-      startVersionValue = versionValue;
-      endVersionValue = versionValue;
-    }
-
-    if (dashBoardType === 'trend' && !!dynamicVersionValue) {
-      endVersionValue = DateTime.now().toFormat('yyyy-MM');
-
-      if (dynamicVersionValue === '3m') {
-        startVersionValue = DateTime.now().minus({ months: 3 }).toFormat('yyyy-MM');
-      } else if (dynamicVersionValue === '6m') {
-        startVersionValue = DateTime.now().minus({ months: 6 }).toFormat('yyyy-MM');
-      } else if (dynamicVersionValue === '12m') {
-        startVersionValue = DateTime.now().minus({ months: 12 }).toFormat('yyyy-MM');
-      } else {
-        startVersionValue = DateTime.now().minus({ months: 1 }).toFormat('yyyy-MM');
-      }
-    }
-
-    let labelVersionValue = '';
-    // let dimensions = req.body.dimensions;
-
-    const widgetTypeData = await widgetTypeService.getWidgetType({ chartType: widgetType });
-
-    if (!widgetTypeData) {
-      throw new Error('Widget type not found');
-    }
-
-    // 1. Fetch entity data for field type information
-    const entity: any = await entityService.getEntity({
-      _id: entityId,
-    });
-
-    if (!entity) {
-      throw new Error('Entity not found');
-    }
-
-    const dataSource: any = await dataSourceService.getDataSource({
-      _id: dataSourceId,
-    });
-
-    // 2. Fetch current active data source version
-    let dataSourceVersion: any;
-    if (startVersionValue && endVersionValue) {
-      dataSourceVersion = await dataSourceVersionService.getDataSourceVersionList({
-        query: {
-          dataSourceId: dataSourceId,
-          isCurrent: true,
-          isActive: true,
-          versionValue: { $gte: startVersionValue, $lte: endVersionValue },
-        },
-        sort: { versionValue: -1 },
-      });
-
-      dataSourceVersion = dataSourceVersion.data as DataSourceVersion[];
-      labelVersionValue = startVersionValue;
-    } else {
-      dataSourceVersion = (await dataSourceVersionService.getDataSourceVersion({
-        query: {
-          dataSourceId: dataSourceId,
-          isCurrent: true,
-          isActive: true,
-        },
-        sort: { versionValue: -1 },
-      })) as DataSourceVersion;
-      labelVersionValue = dataSourceVersion.versionValue;
-      dataSourceVersion = [dataSourceVersion];
-    }
-
-    if (!dataSourceVersion || dataSourceVersion.length === 0) {
-      // throw new Error('No active data source version found');
-
-      res.status(200).json({
-        success: true,
-        message: 'Chart data fetched successfully',
-        data: {
-          label: dashBoardType === 'trend' ? `${startVersionValue}:${endVersionValue}` : labelVersionValue,
-          widgetData: [],
-        },
-      });
-    }
-
-    const dataSourceVersionIdArray = dataSourceVersion.map((data) => new Types.ObjectId(data._id.toString()));
-    // 3. Build widget object for aggregation
-    const widget: any = {
-      dataSourceId: dataSourceId.toString(),
-      dataSourceVersionIdArray: dataSourceVersionIdArray,
+    const result = await getWidgetChartData({
+      dataSourceId,
       dimensions,
-      groupBy,
-      dashBoardType,
+      entityId,
       aggregation,
-      entity, // Pass entity data for field type conversion
+      groupBy,
       conditions,
       widgetType,
-    };
-
-    const aggregationPipeline = buildAggregationPipeline(widget);
-
-    console.log('\nFinal Aggregation Pipeline:', JSON.stringify(aggregationPipeline, null, 2));
-
-    // 4. Get schema name and create model
-    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
       orgCode,
-      versionCode: dataSource?.code,
+      dashBoardType,
+      dashboardFilters,
+      isIncremental,
     });
-    const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
-
-    // 5. Execute aggregation
-    let dataResults = await DataSourceModel.aggregate(aggregationPipeline).exec();
-
-    // get the widget Appearance
-    // let widgetAppearance: any = {};
-    // if (widgetAppearanceId) {
-    //   widgetAppearance = await widgetAppearanceService.getWidgetAppearance({ _id: widgetAppearanceId, organizationId });
-    // }
-
-    if (isIncremental) {
-      if (groupBy && groupBy.length >= 0) {
-        dataResults = calculateMoMDifference(dataResults, groupBy);
-      } else {
-        dataResults = dataResults.map((entry, index, array) => {
-          if (index === 0) {
-            return { ...entry }; // First entry, no difference
-          }
-
-          const currentYear = entry.name.split('-')[0];
-          const prevEntry = array[index - 1];
-          const prevYear = prevEntry.name.split('-')[0];
-
-          if (currentYear === prevYear) {
-            return {
-              ...entry,
-              data: entry.data - prevEntry.data,
-            };
-          } else {
-            return { ...entry }; // New year, no subtraction
-          }
-        });
-      }
-    }
-
-    // 6. Prepare response
     const response = {
       success: true,
       message: 'Chart data fetched successfully',
-      data: {
-        label: dashBoardType === 'trend' ? `${startVersionValue}:${endVersionValue}` : labelVersionValue,
-        widgetData: dataResults,
-      },
-      // widgetAppearance,
+      data: result,
     };
-
     res.status(200).json(response);
   } catch (err) {
     console.error('Error in getWidgetData:', err);
