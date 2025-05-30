@@ -227,6 +227,9 @@ export const runNaturalLanguageAggregation = async (req: Request, res: Response,
         conditions: cleanedQueryResult.conditions,
         widgetType: cleanedQueryResult.widgetTypeId?.chartType,
         orgCode,
+        dashBoardType: 'normal', // Add if available
+        dashboardFilters: {}, // Add if available
+        isIncremental: false, // Optional
       });
       cleanedQueryResult['data'] = widgetData;
       // const dataSourceVersion: any = await dataSourceVersionService.getDataSourceVersion({
