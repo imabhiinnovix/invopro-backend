@@ -413,7 +413,6 @@ export async function generateCustomReportBasedOnReportRequestId({
           limit: Number.MAX_SAFE_INTEGER,
         });
 
-        console.log(designSettings, sheetCode, isIntermediate);
         designDetails = JSON.parse(JSON.stringify(designSettings.get(sheetCode)));
 
         console.log('designDetails', designDetails);
