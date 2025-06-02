@@ -439,6 +439,7 @@ export const generateSupplementalIpReport = async ({
       customReportModel,
       isRowData: true,
     });
+
     const sbuHeaders = headers['patentvaluecoveragenew']['columns'];
 
     const newPatentValueCoverage: any[] = [];
@@ -507,6 +508,7 @@ export const generateSupplementalIpReport = async ({
     });
 
     const newCoverageData = getNewCoverage({ allAccoladeMappingSheetData: allAccoladeMappingSheet });
+
     const dataSourceVersionDetailspNewCoverageData = await createUpdateCustomDataSourceVersionValueFunction({
       dataSourceId: supplementalIpNewCoverageDataSourceId,
       customReportId: customReportId,

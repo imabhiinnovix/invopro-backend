@@ -1072,6 +1072,13 @@ export function getStrategicReportingClass({
   }
 }
 
+function normalize(str) {
+  return str
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
 export function getNewCoverage({
   allAccoladeMappingSheetData,
 }: {
@@ -1092,8 +1099,8 @@ export function getNewCoverage({
     const allRANPVGroup: Record<string, number> = {};
     const activePatentFillingRANPVGroup: Record<string, number> = {};
 
-    const newAllRANPVGroup: Record<string, number> = {};
     const newActivePatentFillingRANPVGroup: Record<string, number> = {};
+    const newNotActivePatentFillingRANPVGroupArray: Record<string, number[]> = {};
 
     filteredProjects.forEach((project) => {
       const { STD, RiskAdjustedNPV, noOfActiveApplications, NPV } = project;
@@ -1102,13 +1109,6 @@ export function getNewCoverage({
       }
       if (!allRANPVGroup['Total']) {
         allRANPVGroup['Total'] = 0;
-      }
-
-      if (!newAllRANPVGroup[STD]) {
-        newAllRANPVGroup[STD] = 0;
-      }
-      if (!newAllRANPVGroup['Total']) {
-        newAllRANPVGroup['Total'] = 0;
       }
 
       if (noOfActiveApplications) {
@@ -1129,13 +1129,33 @@ export function getNewCoverage({
         }
         newActivePatentFillingRANPVGroup[STD] += NPV ? NPV : 0;
         newActivePatentFillingRANPVGroup['Total'] += NPV ? NPV : 0;
+      } else {
+        if (!newNotActivePatentFillingRANPVGroupArray[STD]) {
+          newNotActivePatentFillingRANPVGroupArray[STD] = [];
+        }
+        if (!!RiskAdjustedNPV) {
+          newNotActivePatentFillingRANPVGroupArray[STD].push(RiskAdjustedNPV);
+        }
       }
-
       allRANPVGroup[STD] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
       allRANPVGroup['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
-      newAllRANPVGroup[STD] += NPV ? NPV : 0;
-      newAllRANPVGroup['Total'] += NPV ? NPV : 0;
     });
+
+    const newRanpv = { Total: 0 };
+
+    for (const [key, values] of Object.entries(newNotActivePatentFillingRANPVGroupArray)) {
+      const sorted = values.slice().sort((a, b) => b - a);
+
+      if (normalize(key) === normalize('PETCHEM-POLYMERS')) {
+        const top5Sum = sorted.slice(0, 5).reduce((sum, val) => sum + val, 0);
+        newRanpv[key] = top5Sum;
+        newRanpv['Total'] = newRanpv['Total'] + top5Sum;
+      } else {
+        const top3Sum = sorted.slice(0, 3).reduce((sum, val) => sum + val, 0);
+        newRanpv[key] = top3Sum;
+        newRanpv['Total'] = newRanpv['Total'] + top3Sum;
+      }
+    }
 
     let newCoverage = Object.entries(allRANPVGroup).map(([STD, sum]: [string, number]) => {
       return {
@@ -1143,10 +1163,11 @@ export function getNewCoverage({
         RANPVOFPHASE15PROJECTSM: sum,
         RANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: activePatentFillingRANPVGroup[STD] || 0,
         OFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: sum ? (activePatentFillingRANPVGroup[STD] || 0) / sum : 0,
-        NEWRANPVOFPHASE15PROJECTSM: newAllRANPVGroup[STD] || 0,
-        NEWRANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM: newActivePatentFillingRANPVGroup[STD] || 0,
-        NEWOFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: newAllRANPVGroup[STD]
-          ? (newActivePatentFillingRANPVGroup[STD] || 0) / newAllRANPVGroup[STD]
+        NEWRANPVOFPHASE15PROJECTSM: newRanpv[STD] || 0,
+        NEWRANPVOFPHASE15PROJECTSCOVEREDBYACTIVEPATENTFILINGSM:
+          (activePatentFillingRANPVGroup[STD] || 0) + (newRanpv[STD] || 0),
+        NEWOFTOTALRANPVCOVEREDBYACTIVEPATENTFILINGS: sum
+          ? ((activePatentFillingRANPVGroup[STD] || 0) + (newRanpv[STD] || 0)) / sum
           : 0,
       };
     });
