@@ -350,14 +350,24 @@ export async function generateCustomReportBasedOnReportRequestId({
       { path: isIntermediate ? 'intermediateReportId' : 'customReportId', select: 'reportName reportSettings design' },
     ]);
 
+    console.log(reportDetails);
     const reportData = {};
     const designData = {};
-    const reportSettings = reportDetails?.customReportId?.reportSettings;
-    const designSettings = reportDetails?.customReportId?.design;
+
+    const reportSettings = isIntermediate
+      ? reportDetails?.intermediateReportId?.reportSettings
+      : reportDetails?.customReportId?.reportSettings;
+    const designSettings = isIntermediate
+      ? reportDetails?.intermediateReportId?.design
+      : reportDetails?.customReportId?.design;
+    const reportName = isIntermediate
+      ? reportDetails.intermediateReportId.reportName
+      : reportDetails.customReportId.reportName;
+
     let dataSourceVersions = reportDetails?.dataSourceVersion ? reportDetails?.dataSourceVersion : [];
     const versionValue = reportDetails?.versionValue || '';
     const currentYearVersionValue = versionValue.split('-')[0];
-    const reportName = reportDetails.customReportId.reportName;
+
     const fileName = reportDetails.fileName;
     const filePath = reportDetails.filePath;
 
@@ -379,7 +389,6 @@ export async function generateCustomReportBasedOnReportRequestId({
       });
     }
 
-    console.log(dataSourceVersions);
     if (dataSourceVersions && dataSourceVersions.length > 0) {
       let mappings: Record<string, any> = {};
       let designDetails: any[] = [];
