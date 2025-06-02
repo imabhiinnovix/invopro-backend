@@ -1001,17 +1001,16 @@ export function getStrategicReportingClass({
         }
         activeFillingRANPV[StrategicReportingClass] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
         activeFillingRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
-      }
+        if (!countAccoladeNumber[StrategicReportingClass]) {
+          countAccoladeNumber[StrategicReportingClass] = 0;
+        }
+        if (!countAccoladeNumber['Total']) {
+          countAccoladeNumber['Total'] = 0;
+        }
 
-      if (!countAccoladeNumber[StrategicReportingClass]) {
-        countAccoladeNumber[StrategicReportingClass] = 0;
+        countAccoladeNumber[StrategicReportingClass] += 1;
+        countAccoladeNumber['Total'] += 1;
       }
-      if (!countAccoladeNumber['Total']) {
-        countAccoladeNumber['Total'] = 0;
-      }
-
-      countAccoladeNumber[StrategicReportingClass] += 1;
-      countAccoladeNumber['Total'] += 1;
 
       totalRANPV[StrategicReportingClass] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
       totalRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
@@ -1035,17 +1034,16 @@ export function getStrategicReportingClass({
         }
         activeFillingRANPV['Unique Chemistry'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
         activeFillingRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
-      }
+        if (!countAccoladeNumber['Unique Chemistry']) {
+          countAccoladeNumber['Unique Chemistry'] = 0;
+        }
+        if (!countAccoladeNumber['Total']) {
+          countAccoladeNumber['Total'] = 0;
+        }
 
-      if (!countAccoladeNumber['Unique Chemistry']) {
-        countAccoladeNumber['Unique Chemistry'] = 0;
+        countAccoladeNumber['Unique Chemistry'] += 1;
+        countAccoladeNumber['Total'] += 1;
       }
-      if (!countAccoladeNumber['Total']) {
-        countAccoladeNumber['Total'] = 0;
-      }
-
-      countAccoladeNumber['Unique Chemistry'] += 1;
-      countAccoladeNumber['Total'] += 1;
 
       totalRANPV['Unique Chemistry'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
       totalRANPV['Total'] += RiskAdjustedNPV ? RiskAdjustedNPV : 0;
