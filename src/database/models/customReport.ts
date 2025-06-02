@@ -68,6 +68,7 @@ interface ICustomReport extends Document {
   reportSettings: IReportSetting[];
   design: Record<string, Record<string, ISection[]>>;
   intermediateReportId: Types.ObjectId;
+  isVisible: boolean;
 }
 
 interface IReportSetting {
@@ -152,6 +153,7 @@ const CustomReportSchema = new Schema<ICustomReport>(
     headers: { type: Map, of: HeaderSectionSchema },
     reportSettings: { type: [ReportSettingSchema], required: true },
     intermediateReportId: { type: mongoose.Schema.Types.ObjectId },
+    isVisible: { type: Boolean },
     design: {
       type: Map,
       of: {
