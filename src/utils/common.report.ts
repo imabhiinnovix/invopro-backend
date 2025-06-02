@@ -344,13 +344,11 @@ export async function generateCustomReportBasedOnReportRequestId({
   orgCode: string;
   isIntermediate: boolean;
 }) {
-  console.log(isIntermediate, 'kishan');
   try {
     const reportDetails: any = await reportRequestService.findReportRequestById(reportRequestId, [
       { path: isIntermediate ? 'intermediateReportId' : 'customReportId', select: 'reportName reportSettings design' },
     ]);
 
-    console.log(reportDetails);
     const reportData = {};
     const designData = {};
 
