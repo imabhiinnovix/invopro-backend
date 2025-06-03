@@ -16,6 +16,7 @@ import widgetTypeRoutes from './widgetType.routes';
 import operatorRoutes from './operator.routes';
 import widgetThemeRoutes from './widgetTheme.routes';
 import dashboardShareRoutes from './dashboardShare.routes';
+import nlQueryRoutes from './nlQuery.routes';
 // import widgetAppearanceRoutes from './WidgetAppearance';
 
 const router = Router();
@@ -36,6 +37,7 @@ router.use('/widgetType', widgetTypeRoutes);
 router.use('/operator', operatorRoutes);
 router.use('/widgetTheme', widgetThemeRoutes);
 router.use('/dashboardShare', dashboardShareRoutes);
+router.use('/nlQuery', nlQueryRoutes);
 // router.use('/widgetAppearances', widgetAppearanceRoutes);
 
 export default router;

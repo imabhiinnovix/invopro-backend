@@ -2,6 +2,10 @@ import Dashboard from '../database/models/dashboard';
 
 const defaultSettings = {
   columnsGrid: 2,
+  dashboardType: 'normal',
+  startVersionValue: '',
+  endVersionValue: '',
+  dynamicVersionValue: '1m',
 };
 
 export async function seedDashboard() {
@@ -18,12 +22,22 @@ export async function seedDashboard() {
   console.info(`Updated ${updateWidgetThemeId.modifiedCount} dashboard with widgetThemeId.`);
 
   const dashboards = await Dashboard.find({
-    $or: [{ 'settings.columnsGrid': { $exists: false } }],
+    $or: [
+      { 'settings.columnsGrid': { $exists: false } },
+      { 'settings.dashboardType': { $exists: false } },
+      { 'settings.startVersionValue': { $exists: false } },
+      { 'settings.endVersionValue': { $exists: false } },
+      { 'settings.dynamicVersionValue': { $exists: false } },
+    ],
   });
 
   for (const dashboard of dashboards) {
     const settings = {
-      columnsGrid: dashboard.settings?.columnsGrid || defaultSettings.columnsGrid,
+      columnsGrid: dashboard.settings?.columnsGrid ?? defaultSettings.columnsGrid,
+      dashboardType: dashboard.settings?.dashboardType ?? defaultSettings.dashboardType,
+      startVersionValue: dashboard.settings?.startVersionValue ?? defaultSettings.startVersionValue,
+      endVersionValue: dashboard.settings?.endVersionValue ?? defaultSettings.endVersionValue,
+      dynamicVersionValue: dashboard.settings?.dynamicVersionValue ?? defaultSettings.dynamicVersionValue,
     };
 
     dashboard.settings = settings;

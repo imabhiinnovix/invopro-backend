@@ -79,6 +79,46 @@ export const getDataSourceList = async ({
   }
 };
 
+export const getDataSourceListWithAggregation = async ({ query }: any) => {
+  try {
+    const data = await DataSource.aggregate([
+      { $match: query },
+
+      {
+        $lookup: {
+          from: 'entities',
+          localField: 'entityId',
+          foreignField: '_id',
+          as: 'entityInfo',
+        },
+      },
+      { $unwind: '$entityInfo' },
+
+      {
+        $project: {
+          _id: 0,
+          code: 1,
+          name: 1,
+          attributes: {
+            $map: {
+              input: '$entityInfo.attributes',
+              as: 'attr',
+              in: {
+                name: '$$attr.name',
+                type: '$$attr.type',
+              },
+            },
+          },
+        },
+      },
+    ]);
+
+    return data;
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const getDataSource = async (query: any) => {
   try {
     const dataSource = await DataSource.findOne(query);

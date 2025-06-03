@@ -181,7 +181,18 @@ export const getDataSourceById = async (req: Request, res: Response, next: NextF
 
 export const getWidgetDataByFilter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { dataSourceId, conditions, entityId, dimensions, groupBy } = req.body;
+    const { dataSourceId, conditions, entityId, dimensions, groupBy, dashBoardType, dashboardFilters } = req.body;
+
+    let startVersionValue = dashboardFilters?.startVersionValue;
+    let endVersionValue = dashboardFilters?.endVersionValue;
+    let dynamicVersionValue = dashboardFilters?.dynamicVersionValue;
+    let versionValue = dashboardFilters?.versionValue;
+
+    if (dashBoardType === 'normal' && versionValue && !!dynamicVersionValue) {
+      startVersionValue = versionValue;
+      endVersionValue = versionValue;
+    }
+
     // const { sortBy } = req.query as any;
     const page = parseInt(req.body.page as string, 10) || 1;
     const limit = parseInt(req.body.limit as string, 10) || 10;
@@ -202,19 +213,59 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
     });
 
     // 2. Fetch current active data source version
-    const dataSourceVersion: any = (await dataSourceVersionService.getDataSourceVersion({
-      query: {
-        dataSourceId: dataSourceId,
-        isCurrent: true,
-        isActive: true,
-      },
-      sort: { versionValue: -1 },
-    })) as DataSourceVersion;
+    // const dataSourceVersion: any = (await dataSourceVersionService.getDataSourceVersion({
+    //   query: {
+    //     dataSourceId: dataSourceId,
+    //     isCurrent: true,
+    //     isActive: true,
+    //   },
+    //   sort: { versionValue: -1 },
+    // })) as DataSourceVersion;
 
-    if (!dataSourceVersion) {
-      throw new Error('No active data source version found');
+    let dataSourceVersion: any;
+    if (startVersionValue && endVersionValue) {
+      dataSourceVersion = await dataSourceVersionService.getDataSourceVersionList({
+        query: {
+          dataSourceId: dataSourceId,
+          isCurrent: true,
+          isActive: true,
+          versionValue: { $gte: startVersionValue, $lte: endVersionValue },
+        },
+        sort: { versionValue: -1 },
+      });
+
+      dataSourceVersion = dataSourceVersion.data as DataSourceVersion[];
+    } else {
+      dataSourceVersion = (await dataSourceVersionService.getDataSourceVersion({
+        query: {
+          dataSourceId: dataSourceId,
+          isCurrent: true,
+          isActive: true,
+        },
+        sort: { versionValue: -1 },
+      })) as DataSourceVersion;
+
+      dataSourceVersion = [dataSourceVersion];
     }
 
+    // if (!dataSourceVersion) {
+    //   throw new Error('No active data source version found');
+    // }
+
+    const headers = entity?.attributes.map((attr: any) => attr.name);
+    if (!dataSourceVersion || dataSourceVersion.length === 0) {
+      // throw new Error('No active data source version found');
+
+      res.status(200).json({
+        success: true,
+        message: 'Detailed chart data fetched successfully',
+        data: [],
+        pagination: {},
+        headers,
+      });
+    }
+
+    const dataSourceVersionIdArray = dataSourceVersion.map((data) => new Types.ObjectId(data._id.toString()));
     // Helper function to get field type from entity
     const getFieldType = (fieldName: string) => {
       const attribute = entity.attributes.find((attr: any) => attr.name === fieldName);
@@ -233,14 +284,18 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
     // Use the common utility to process conditions
     const initialMatchConditions = {
       dataSourceId: new Types.ObjectId(dataSourceId),
-      dataSourceVersionId: new Types.ObjectId(dataSourceVersion._id),
+      dataSourceVersionId: { $in: dataSourceVersionIdArray },
     };
 
     // Add dimension conditions to match
     if (dimensions && Array.isArray(dimensions)) {
       dimensions.forEach((dimension) => {
         const [field, value] = Object.entries(dimension)[0];
-        initialMatchConditions[`rowData.${field}`] = value;
+        if (dashBoardType === 'trend') {
+          initialMatchConditions[`${field}`] = value;
+        } else {
+          initialMatchConditions[`rowData.${field}`] = value;
+        }
       });
     }
 
@@ -308,7 +363,6 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
 
     const detailedData = await DataSourceModel.aggregate(detailPipeline).exec();
 
-    const headers = entity?.attributes.map((attr: any) => attr.name);
     // 6. Prepare response
     const response = {
       success: true,
