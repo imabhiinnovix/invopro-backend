@@ -409,7 +409,7 @@ export const listReportRequest = async (req: Request, res: Response, next: NextF
     if (paginate) {
       result = await reportRequestService.getReportRequestList({
         query,
-        select: ['versionValue', 'dataSourceVersion', 'status', 'createdAt'],
+        select: ['versionValue', 'dataSourceVersion', 'status', 'createdAt', 'intermediateReportId'],
         page,
         limit,
         populate: [
