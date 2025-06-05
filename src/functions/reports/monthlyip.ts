@@ -69,6 +69,10 @@ export const generateMonthlyIpReport = async ({
   intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails,
   intermediateMonthlyIpTotalIssuedEntityDataSourceDetails,
   intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails,
+  intermediateMonthlyIpAnnuityDropEntityDataSourceDetails,
+  intermediateMonthlyIpPriorityDropEntityDataSourceDetails,
+  intermediateMonthlyIpPctDropEntityDataSourceDetails,
+  intermediateMonthlyIpProsecutionDropEntityDataSourceDetails,
   entityDetails,
   intermediateReportId,
 }: {
@@ -111,6 +115,10 @@ export const generateMonthlyIpReport = async ({
   intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails: any;
   intermediateMonthlyIpTotalIssuedEntityDataSourceDetails: any;
   intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails: any;
+  intermediateMonthlyIpAnnuityDropEntityDataSourceDetails: any;
+  intermediateMonthlyIpPriorityDropEntityDataSourceDetails: any;
+  intermediateMonthlyIpPctDropEntityDataSourceDetails: any;
+  intermediateMonthlyIpProsecutionDropEntityDataSourceDetails: any;
   entityDetails: any;
   intermediateReportId: any;
 }) => {
@@ -735,6 +743,29 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
     });
 
+    const transformedAnnuityDropRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpAnnuityDropEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: reductionData.annuityDropArray,
+    });
+    const transformedPriorityDropRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpPriorityDropEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: reductionData.priorityDropArray,
+    });
+
+    const transformedPctDropRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpPctDropEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: reductionData.pctDropArray,
+    });
+
+    const transformedProsecutionDropRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpProsecutionDropEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: reductionData.prosecutionDropArray,
+    });
+
     const partiallyProcessedDropCountResult = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total No. of ${currentYear}** Reductions (Including reductions during prosecution)`,
       data: reductionData.dropCountResult,
@@ -1337,6 +1368,47 @@ export const generateMonthlyIpReport = async ({
         orgCode,
       });
 
+    const intermediateDataSourceVersionDetailsAnnuityDrop = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: intermediateMonthlyIpAnnuityDropEntityDataSourceDetails.dataSourceId,
+      customReportId: intermediateReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: transformedAnnuityDropRawData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+    const intermediateDataSourceVersionDetailsPriorityDrop = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: intermediateMonthlyIpPriorityDropEntityDataSourceDetails.dataSourceId,
+      customReportId: intermediateReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: transformedPriorityDropRawData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+    const intermediateDataSourceVersionDetailsPctDrop = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: intermediateMonthlyIpPctDropEntityDataSourceDetails.dataSourceId,
+      customReportId: intermediateReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: transformedPctDropRawData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+    const intermediateDataSourceVersionDetailsProsecutionDrop = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: intermediateMonthlyIpProsecutionDropEntityDataSourceDetails.dataSourceId,
+      customReportId: intermediateReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: transformedProsecutionDropRawData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+
     await reportRequestService.updateReportRequest(requestedReportId, {
       status: 'completed',
       intermediateReportId: intermediateReportId,
@@ -1647,6 +1719,58 @@ export const generateMonthlyIpReport = async ({
           versionCode: intermediateDataSourceVersionDetailsCurrentYearRenewalDue.versionCode,
           dataSourceId: intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails.dataSourceId,
           entityId: intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Annuity Drop',
+          sheetCode: 'annuity_drop',
+          tabName: 'Annuity Drop',
+          mappingFuctionName: 'entity',
+          designCode: 'annuity_drop',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsAnnuityDrop.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsAnnuityDrop.versionCode,
+          dataSourceId: intermediateMonthlyIpAnnuityDropEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpAnnuityDropEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Priority Drop',
+          sheetCode: 'priority_drop',
+          tabName: 'Priority Drop',
+          mappingFuctionName: 'entity',
+          designCode: 'priority_drop',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsPriorityDrop.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsPriorityDrop.versionCode,
+          dataSourceId: intermediateMonthlyIpPriorityDropEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpPriorityDropEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Pct Drop',
+          sheetCode: 'pct_drop',
+          tabName: 'Pct Drop',
+          mappingFuctionName: 'entity',
+          designCode: 'pct_drop',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsPctDrop.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsPctDrop.versionCode,
+          dataSourceId: intermediateMonthlyIpPctDropEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpPctDropEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Prosecution Drop',
+          sheetCode: 'prosecution_drop',
+          tabName: 'Prosecution Drop',
+          mappingFuctionName: 'entity',
+          designCode: 'prosecution_drop',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsProsecutionDrop.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsProsecutionDrop.versionCode,
+          dataSourceId: intermediateMonthlyIpProsecutionDropEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpProsecutionDropEntityDataSourceDetails.entityId,
           isIntermediate: true,
         },
       ],
