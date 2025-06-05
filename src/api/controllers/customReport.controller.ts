@@ -175,19 +175,17 @@ export const generateCustomReportsFunction = async ({
       const intermediateMonthlyIpTotalIssuedEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
         (ds) => ds.code === 'total_issued'
       );
+
+      const intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'cy_renewals_due'
+      );
       const entityDetails = await entityService.getEntityList({
         query: {
           _id: {
             $in: [
               intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails.entityId,
-              intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorDEnitityDataSourceDetails.entityId,
-              intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorIEnitityDataSourceDetails.entityId,
-              intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsDenominatorTotalEnitityDataSourceDetails.entityId,
               intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails.entityId,
-              intermediateMonthlyIpOpenApplicationDisclosureEnitityDataSourceDetails.entityId,
-              intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails.entityId,
-              intermediateMonthlyIpCurrentYearUsIssuedEnitityDataSourceDetails.entityId,
-              intermediateMonthlyIpCurrentYearIntlssuedEnitityDataSourceDetails.entityId,
+              intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails.entityId,
             ],
           },
         },
@@ -232,6 +230,7 @@ export const generateCustomReportsFunction = async ({
         intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails,
         intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails,
         intermediateMonthlyIpTotalIssuedEntityDataSourceDetails,
+        intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails,
         entityDetails: entityDetails.data,
         intermediateReportId: customReportDetails.intermediateReportId,
       });

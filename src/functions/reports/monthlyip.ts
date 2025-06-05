@@ -68,6 +68,7 @@ export const generateMonthlyIpReport = async ({
   intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails,
   intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails,
   intermediateMonthlyIpTotalIssuedEntityDataSourceDetails,
+  intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails,
   entityDetails,
   intermediateReportId,
 }: {
@@ -109,6 +110,7 @@ export const generateMonthlyIpReport = async ({
   intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails: any;
   intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails: any;
   intermediateMonthlyIpTotalIssuedEntityDataSourceDetails: any;
+  intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails: any;
   entityDetails: any;
   intermediateReportId: any;
 }) => {
@@ -707,6 +709,21 @@ export const generateMonthlyIpReport = async ({
       isRowData,
     });
 
+    const currentYearRenewalDueRawData = await getCurrentYearRenewalDue({
+      portfolioDataSourceVersionId,
+      sabicipDataSourceVersionId,
+      ctclinsabDataSourceVersionId,
+      annuitiesbDataSourceVersionId,
+      currentYear,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedPercentageOfCurrentYearRenewalDueRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: currentYearRenewalDueRawData,
+    });
     const partiallyProcessedCurrentYearRenewalDue = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `${currentYear} Renewals Due`,
       data: currentYearRenewalDue,
@@ -1307,6 +1324,19 @@ export const generateMonthlyIpReport = async ({
         organizationId,
         orgCode,
       });
+
+    const intermediateDataSourceVersionDetailsCurrentYearRenewalDue =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedPercentageOfCurrentYearRenewalDueRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
     await reportRequestService.updateReportRequest(requestedReportId, {
       status: 'completed',
       intermediateReportId: intermediateReportId,
@@ -1604,6 +1634,19 @@ export const generateMonthlyIpReport = async ({
           versionCode: intermediateDataSourceVersionDetailsTotalIssuedApplication.versionCode,
           dataSourceId: intermediateMonthlyIpTotalIssuedEntityDataSourceDetails.dataSourceId,
           entityId: intermediateMonthlyIpTotalIssuedEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'CY Renewals Due',
+          sheetCode: 'cy_renewals_due',
+          tabName: 'CY Renewals Due',
+          mappingFuctionName: 'entity',
+          designCode: 'cy_renewals_due',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsCurrentYearRenewalDue.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsCurrentYearRenewalDue.versionCode,
+          dataSourceId: intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails.entityId,
           isIntermediate: true,
         },
       ],
