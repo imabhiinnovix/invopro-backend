@@ -861,3 +861,37 @@ export const getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValu
     next(e);
   }
 };
+
+export const listAllAvailableDataSourceVersionValue = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { organizationId } = req?.user;
+    // const { search, paginate = 'false' } = req.query;
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
+    const result = await dataSourceVersionService.getDataSourceVersionListAdvanceFunction({
+      match: {
+        organizationId,
+        isCurrent: true,
+        isActive: true,
+      },
+      page,
+      limit,
+      sort: { versionValue: -1 },
+      group: {
+        _id: '$versionValue',
+        count: { $sum: 1 },
+      },
+      select: 'versionValue',
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'The available data source version has been successfully retrieved.',
+      data: result.data,
+      totalCount: result.totalCount,
+    });
+  } catch (e) {
+    console.log('Error in listAllAvailableDataSourceVersionValue.', e);
+    next(e);
+  }
+};

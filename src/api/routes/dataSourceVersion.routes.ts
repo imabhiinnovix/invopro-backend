@@ -6,6 +6,7 @@ import {
   createUpdateCustomDataSourceVersionValue,
   getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue,
   getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue,
+  listAllAvailableDataSourceVersionValue,
   listDataSourceVersion,
 } from '../controllers/dataSourceVersion.controller';
 
@@ -27,5 +28,7 @@ router.get(
   authenticateToken,
   getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue
 );
+
+router.get('/listAllAvailableDataSourceVersionValue', authenticateToken, listAllAvailableDataSourceVersionValue);
 
 export default router;

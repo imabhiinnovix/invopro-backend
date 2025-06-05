@@ -40,6 +40,7 @@ export interface IWidgetTheme extends Document {
   isDefault?: boolean;
   isActive?: boolean;
   isDeleted?: boolean;
+  showLegendOverlay?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -81,6 +82,7 @@ const widgetThemeSchema = new Schema<IWidgetTheme>(
     isDefault: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
+    showLegendOverlay: { type: Boolean, default: false },
   },
   {
     timestamps: true,

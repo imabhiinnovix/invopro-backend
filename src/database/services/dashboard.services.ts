@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Settings } from 'luxon';
 import { buildAggregationPipeline } from '../../utils/aggregationPipeline';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
 import Dashboard from '../models/dashboard';
@@ -229,6 +230,7 @@ export const getAllDashboardsAggregation = async ({
                 createdAt: '$$dashboard.createdAt',
                 updatedAt: '$$dashboard.updatedAt',
                 widgetThemeId: '$$dashboard.widgetThemeId',
+                settings: '$$dashboard.settings',
                 createdBy: {
                   _id: '$$dashboard.createdBy._id',
                   name: '$$dashboard.createdBy.name',

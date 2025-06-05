@@ -77,6 +77,101 @@ export const getDataSourceVersionList = async ({
   }
 };
 
+export const getDataSourceVersionListAdvanceFunction = async ({
+  query = {},
+  select = '',
+  page,
+  limit,
+  sort = { createdAt: -1 },
+  populate,
+  group, // Expecting an object like { _id: "$someField", count: { $sum: 1 } }
+}: any) => {
+  try {
+    const skip = (page - 1) * limit;
+
+    if (group) {
+      // Use aggregation when group is specified
+      const pipeline: any[] = [];
+
+      if (Object.keys(query).length > 0) {
+        pipeline.push({ $match: query });
+      }
+
+      pipeline.push({ $group: group });
+
+      if (typeof skip === 'number') {
+        pipeline.push({ $skip: skip });
+      }
+
+      if (typeof limit === 'number') {
+        pipeline.push({ $limit: limit });
+      }
+
+      // Optional projection
+      if (select) {
+        const selectFields = select.split(' ').reduce((acc: any, field: string) => {
+          acc[field] = 1;
+          return acc;
+        }, {});
+        pipeline.push({ $project: selectFields });
+      }
+
+      if (sort && typeof sort === 'object') {
+        const adjustedSort: any = {};
+        for (const key in sort) {
+          if (key in group || '$' + key === group._id) {
+            adjustedSort['_id'] = sort[key]; // Sort by _id if grouped on it
+          } else {
+            adjustedSort[key] = sort[key];
+          }
+        }
+        pipeline.push({ $sort: adjustedSort });
+      }
+
+      if (typeof group._id === 'string' && group._id.startsWith('$')) {
+        const groupField = group._id.slice(1); // e.g., 'versionValue'
+        const projection: any = {
+          [groupField]: '$_id',
+          _id: 0,
+        };
+
+        // Copy over computed fields like count
+        Object.keys(group).forEach((key) => {
+          if (key !== '_id') {
+            projection[key] = 1;
+          }
+        });
+
+        pipeline.push({ $project: projection });
+      }
+      const dataSourceVersion = await DataSourceVersion.aggregate(pipeline);
+
+      // To get total count in case of group
+      const countPipeline = [{ $match: query }, { $group: group }, { $count: 'total' }];
+      const countResult = await DataSourceVersion.aggregate(countPipeline);
+      const totalCount = countResult[0]?.total || 0;
+
+      return { data: dataSourceVersion, totalCount };
+    } else {
+      // Use normal find when no group is provided
+      let dataSourceVersionQuery: any = DataSourceVersion.find(query).select(select).skip(skip).limit(limit).sort(sort);
+
+      if (populate && Array.isArray(populate)) {
+        populate.forEach((field) => {
+          dataSourceVersionQuery = dataSourceVersionQuery.populate(field);
+        });
+      }
+
+      const dataSourceVersion = await dataSourceVersionQuery.exec();
+      const totalCount = await DataSourceVersion.countDocuments(query);
+
+      return { data: dataSourceVersion, totalCount };
+    }
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const updateDataSourceVersions = async ({ query, updateFields }: any) => {
   try {
     // Perform the update operation
