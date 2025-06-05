@@ -387,6 +387,7 @@ export async function generateCustomReportBasedOnReportRequestId({
       });
     }
 
+    console.log('dataSourceVersions', dataSourceVersions);
     if (dataSourceVersions && dataSourceVersions.length > 0) {
       let mappings: Record<string, any> = {};
       let designDetails: any[] = [];
@@ -413,6 +414,7 @@ export async function generateCustomReportBasedOnReportRequestId({
           limit: Number.MAX_SAFE_INTEGER,
         });
 
+        console.log('dataSourceVersionData', dataSourceVersionData, 'sheetCode', sheetCode);
         designDetails = JSON.parse(JSON.stringify(designSettings.get(sheetCode)));
 
         console.log('designDetails', designDetails);

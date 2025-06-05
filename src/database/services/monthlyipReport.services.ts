@@ -544,15 +544,26 @@ export async function getDisclosureCount({
       {
         $match: matchCondition,
       },
-      {
+    ];
+
+    if (isRowData) {
+      aggreagatePipeline.push({
+        $group: {
+          _id: '$rowData.DisclosureNumber',
+          row: { $first: '$rowData' }, // only pick one document per DisclosureNumber
+        },
+      });
+      // Flatten the row object into top-level fields
+      aggreagatePipeline.push({
+        $replaceRoot: { newRoot: '$row' },
+      });
+    } else {
+      aggreagatePipeline.push({
         $group: {
           _id: '$rowData.DisclosureNumber',
           SBU: { $first: '$rowData.SBU' },
         },
-      },
-    ];
-
-    if (!isRowData) {
+      });
       aggreagatePipeline.push({
         $group: {
           _id: '$SBU',
@@ -1042,27 +1053,6 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       isRowData: true,
     });
 
-    const newYearApplicationFiledStartsWith: string = currentYear.slice(-2);
-
-    const newYearApplicationFiledFilteredData = newYearApplicationFiledRowData.filter((item) =>
-      item?.Case_Reference1?.startsWith(newYearApplicationFiledStartsWith)
-    );
-
-    const newYearApplicationFiledSbuCount: Record<string, number> = newYearApplicationFiledFilteredData.reduce(
-      (acc: Record<string, number>, item: { SBU: string }) => {
-        acc[item.SBU] = (acc[item.SBU] || 0) + 1;
-        return acc;
-      },
-      {}
-    );
-
-    const newYearApplicationFiled = Object.entries(newYearApplicationFiledSbuCount).map(
-      ([SBU, value]: [string, number]) => ({
-        value,
-        SBU,
-      })
-    );
-
     const activeDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,
@@ -1082,6 +1072,30 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       customReportModel,
       isRowData,
     });
+    const newYearApplicationFiledStartsWith: string = currentYear.slice(-2);
+
+    const newYearApplicationFiledFilteredData = newYearApplicationFiledRowData.filter((item) =>
+      item?.Case_Reference1?.startsWith(newYearApplicationFiledStartsWith)
+    );
+
+    if (isRowData) {
+      return { newYearApplicationFiledFilteredData, activeDisclosureCount, totalDisclosureCount };
+    }
+
+    const newYearApplicationFiledSbuCount: Record<string, number> = newYearApplicationFiledFilteredData.reduce(
+      (acc: Record<string, number>, item: { SBU: string }) => {
+        acc[item.SBU] = (acc[item.SBU] || 0) + 1;
+        return acc;
+      },
+      {}
+    );
+
+    const newYearApplicationFiled = Object.entries(newYearApplicationFiledSbuCount).map(
+      ([SBU, value]: [string, number]) => ({
+        value,
+        SBU,
+      })
+    );
 
     const newYearApplicationFiledRecord: Record<string, any> = {};
     for (let item of newYearApplicationFiled) {
@@ -1121,10 +1135,6 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
     );
 
     return [{ SBU: `% of ${currentYear} Invention Disclosures converted to Filings`, ...result }];
-
-    // if (isRowData) {
-    //   return { newYearApplicationFiled, activeDisclosureCount, totalDisclosureCount };
-    // }
   } catch (error) {
     throw error;
   }

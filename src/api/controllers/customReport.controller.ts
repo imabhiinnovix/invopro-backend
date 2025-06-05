@@ -126,8 +126,37 @@ export const generateCustomReportsFunction = async ({
       const intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails: any =
         customReportDetails.dataSourceIds.find((ds) => ds.code === 'intermediatemonthlyipcurrentyearnewappfiled');
 
+      const intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorDEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'pctcyinvdisclosurescnvtfilingd');
+
+      const intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorIEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'pctcyinvdisclosurescnvtfilingi');
+
+      const intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsDenominatorTotalEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'pctcyinvdisclosurescnvtfilingt');
+
+      const intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'intermediatemonthlyipappsbeingdrafted'
+      );
+      const intermediateMonthlyIpOpenApplicationDisclosureEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyip_projects_opened_cy');
+
+      const intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyip_total_active_projects');
       const entityDetails = await entityService.getEntityList({
-        query: { _id: { $in: intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails.entityId } },
+        query: {
+          _id: {
+            $in: [
+              intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails.entityId,
+              intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorDEnitityDataSourceDetails.entityId,
+              intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorIEnitityDataSourceDetails.entityId,
+              intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsDenominatorTotalEnitityDataSourceDetails.entityId,
+              intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails.entityId,
+              intermediateMonthlyIpOpenApplicationDisclosureEnitityDataSourceDetails.entityId,
+              intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails.entityId,
+            ],
+          },
+        },
       });
 
       const data = await generateMonthlyIpReport({
@@ -151,6 +180,12 @@ export const generateCustomReportsFunction = async ({
         customReportModel,
         headers: customReportDetails.headers,
         intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails,
+        intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorDEnitityDataSourceDetails,
+        intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorIEnitityDataSourceDetails,
+        intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsDenominatorTotalEnitityDataSourceDetails,
+        intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails,
+        intermediateMonthlyIpOpenApplicationDisclosureEnitityDataSourceDetails,
+        intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails,
         entityDetails: entityDetails.data,
         intermediateReportId: customReportDetails.intermediateReportId,
       });
