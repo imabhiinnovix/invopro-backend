@@ -161,6 +161,20 @@ export const generateCustomReportsFunction = async ({
       const intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
         (ds) => ds.code === 'total_apps_pending'
       );
+      const intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'total_us_issued'
+      );
+      const intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'total_ep_issued'
+      );
+      const intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'total_cn_issued'
+      );
+      const intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'other_country_issued');
+      const intermediateMonthlyIpTotalIssuedEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'total_issued'
+      );
       const entityDetails = await entityService.getEntityList({
         query: {
           _id: {
@@ -213,6 +227,11 @@ export const generateCustomReportsFunction = async ({
         intermediateMonthlyIpTotalCNAppsPendingEnitityDataSourceDetails,
         intermediateMonthlyIpOtherCountryAppsPendingEntityDataSourceDetails,
         intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails,
+        intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails,
+        intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails,
+        intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails,
+        intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails,
+        intermediateMonthlyIpTotalIssuedEntityDataSourceDetails,
         entityDetails: entityDetails.data,
         intermediateReportId: customReportDetails.intermediateReportId,
       });

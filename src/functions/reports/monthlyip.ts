@@ -63,6 +63,11 @@ export const generateMonthlyIpReport = async ({
   intermediateMonthlyIpTotalCNAppsPendingEnitityDataSourceDetails,
   intermediateMonthlyIpOtherCountryAppsPendingEntityDataSourceDetails,
   intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails,
+  intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails,
+  intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails,
+  intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails,
+  intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails,
+  intermediateMonthlyIpTotalIssuedEntityDataSourceDetails,
   entityDetails,
   intermediateReportId,
 }: {
@@ -99,6 +104,11 @@ export const generateMonthlyIpReport = async ({
   intermediateMonthlyIpTotalCNAppsPendingEnitityDataSourceDetails: any;
   intermediateMonthlyIpOtherCountryAppsPendingEntityDataSourceDetails: any;
   intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails: any;
+  intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails: any;
+  intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails: any;
+  intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails: any;
+  intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails: any;
+  intermediateMonthlyIpTotalIssuedEntityDataSourceDetails: any;
   entityDetails: any;
   intermediateReportId: any;
 }) => {
@@ -510,6 +520,21 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
     });
 
+    const usIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isUSIssuedApplication: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedUSIssuedApplicationRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: usIssuedApplicationRawData,
+    });
+
     const partiallyProcessedUsIssuedApplication = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total US Issued`,
       data: usIssuedApplication,
@@ -523,6 +548,20 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
     });
 
+    const epIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isEPIssuedApplication: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedEPIssuedApplicationRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: epIssuedApplicationRawData,
+    });
     const partiallyProcessedEpIssuedApplication = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total EP Issued`,
       data: epIssuedApplication,
@@ -536,6 +575,20 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
     });
 
+    const cnIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isCNIssuedApplication: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedCNIssuedApplicationRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: cnIssuedApplicationRawData,
+    });
     const partiallyProcessedCnIssuedApplication = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total CN Issued`,
       data: cnIssuedApplication,
@@ -549,6 +602,21 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
     });
 
+    const otherIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isOtherIssuedApplication: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedOtherIssuedApplicationRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: otherIssuedApplicationRawData,
+    });
+
     const partiallyProcessedOtherIssuedApplication = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Other Country Issued`,
       data: otherIssuedApplication,
@@ -560,6 +628,21 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isTotalIssuedApplication: true,
       customReportModel,
+    });
+
+    const totalIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isTotalIssuedApplication: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedTotalIssuedApplicationRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpTotalIssuedEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: totalIssuedApplicationRawData,
     });
 
     const partiallyProcessedTotalIssuedApplication = getFormattedDataToProcessReportHeaders({
@@ -1164,6 +1247,66 @@ export const generateMonthlyIpReport = async ({
         organizationId,
         orgCode,
       });
+
+    const intermediateDataSourceVersionDetailsUSIssuedApplication =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedUSIssuedApplicationRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsEPIssuedApplication =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedEPIssuedApplicationRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsCNIssuedApplication =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedCNIssuedApplicationRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsOtherIssuedApplication =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedOtherIssuedApplicationRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsTotalIssuedApplication =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpTotalIssuedEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedTotalIssuedApplicationRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
     await reportRequestService.updateReportRequest(requestedReportId, {
       status: 'completed',
       intermediateReportId: intermediateReportId,
@@ -1396,6 +1539,71 @@ export const generateMonthlyIpReport = async ({
           versionCode: intermediateDataSourceVersionDetailsTotalPendingApplication.versionCode,
           dataSourceId: intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails.dataSourceId,
           entityId: intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Total US Issued',
+          sheetCode: 'total_us_issued',
+          tabName: 'Total US Issued',
+          mappingFuctionName: 'entity',
+          designCode: 'total_us_issued',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsUSIssuedApplication.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsUSIssuedApplication.versionCode,
+          dataSourceId: intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Total EP Issued',
+          sheetCode: 'total_ep_issued',
+          tabName: 'Total EP Issued',
+          mappingFuctionName: 'entity',
+          designCode: 'total_ep_issued',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsEPIssuedApplication.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsEPIssuedApplication.versionCode,
+          dataSourceId: intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Total CN Issued',
+          sheetCode: 'total_cn_issued',
+          tabName: 'Total CN Issued',
+          mappingFuctionName: 'entity',
+          designCode: 'total_cn_issued',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsCNIssuedApplication.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsCNIssuedApplication.versionCode,
+          dataSourceId: intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Other Country Issued',
+          sheetCode: 'other_country_issued',
+          tabName: 'Other Country Issued',
+          mappingFuctionName: 'entity',
+          designCode: 'other_country_issued',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsOtherIssuedApplication.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsOtherIssuedApplication.versionCode,
+          dataSourceId: intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Total Issued',
+          sheetCode: 'total_issued',
+          tabName: 'Total Issued',
+          mappingFuctionName: 'entity',
+          designCode: 'total_issued',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsTotalIssuedApplication.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsTotalIssuedApplication.versionCode,
+          dataSourceId: intermediateMonthlyIpTotalIssuedEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpTotalIssuedEntityDataSourceDetails.entityId,
           isIntermediate: true,
         },
       ],
