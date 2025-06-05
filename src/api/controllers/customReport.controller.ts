@@ -362,7 +362,7 @@ export const listCustomReports = async (req: Request, res: Response, next: NextF
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
-    const query: any = { organizationId: organizationId };
+    const query: any = { organizationId: organizationId, isVisible: true };
     if (search) query.reportName = { $regex: search, $options: 'i' };
 
     let result: any = {};
