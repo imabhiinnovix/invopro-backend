@@ -149,6 +149,18 @@ export const generateCustomReportsFunction = async ({
 
       const intermediateMonthlyIpCurrentYearIntlssuedEnitityDataSourceDetails: any =
         customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyip_cy_intl_issued');
+
+      const intermediateMonthlyIpTotalUSAppsPendingEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'total_us_apps_pending');
+      const intermediateMonthlyIpTotalEPAppsPendingEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'total_ep_apps_pending');
+      const intermediateMonthlyIpTotalCNAppsPendingEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'total_cn_apps_pending');
+      const intermediateMonthlyIpOtherCountryAppsPendingEntityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'other_country_apps_pending');
+      const intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'total_apps_pending'
+      );
       const entityDetails = await entityService.getEntityList({
         query: {
           _id: {
@@ -196,6 +208,11 @@ export const generateCustomReportsFunction = async ({
         intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails,
         intermediateMonthlyIpCurrentYearUsIssuedEnitityDataSourceDetails,
         intermediateMonthlyIpCurrentYearIntlssuedEnitityDataSourceDetails,
+        intermediateMonthlyIpTotalUSAppsPendingEnitityDataSourceDetails,
+        intermediateMonthlyIpTotalEPAppsPendingEnitityDataSourceDetails,
+        intermediateMonthlyIpTotalCNAppsPendingEnitityDataSourceDetails,
+        intermediateMonthlyIpOtherCountryAppsPendingEntityDataSourceDetails,
+        intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails,
         entityDetails: entityDetails.data,
         intermediateReportId: customReportDetails.intermediateReportId,
       });
