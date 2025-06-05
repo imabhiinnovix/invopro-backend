@@ -143,6 +143,12 @@ export const generateCustomReportsFunction = async ({
 
       const intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails: any =
         customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyip_total_active_projects');
+
+      const intermediateMonthlyIpCurrentYearUsIssuedEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyip_cy_us_issued');
+
+      const intermediateMonthlyIpCurrentYearIntlssuedEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyip_cy_intl_issued');
       const entityDetails = await entityService.getEntityList({
         query: {
           _id: {
@@ -154,6 +160,8 @@ export const generateCustomReportsFunction = async ({
               intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails.entityId,
               intermediateMonthlyIpOpenApplicationDisclosureEnitityDataSourceDetails.entityId,
               intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails.entityId,
+              intermediateMonthlyIpCurrentYearUsIssuedEnitityDataSourceDetails.entityId,
+              intermediateMonthlyIpCurrentYearIntlssuedEnitityDataSourceDetails.entityId,
             ],
           },
         },
@@ -186,6 +194,8 @@ export const generateCustomReportsFunction = async ({
         intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails,
         intermediateMonthlyIpOpenApplicationDisclosureEnitityDataSourceDetails,
         intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails,
+        intermediateMonthlyIpCurrentYearUsIssuedEnitityDataSourceDetails,
+        intermediateMonthlyIpCurrentYearIntlssuedEnitityDataSourceDetails,
         entityDetails: entityDetails.data,
         intermediateReportId: customReportDetails.intermediateReportId,
       });
