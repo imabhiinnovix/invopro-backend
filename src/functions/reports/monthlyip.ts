@@ -73,6 +73,8 @@ export const generateMonthlyIpReport = async ({
   intermediateMonthlyIpPriorityDropEntityDataSourceDetails,
   intermediateMonthlyIpPctDropEntityDataSourceDetails,
   intermediateMonthlyIpProsecutionDropEntityDataSourceDetails,
+  intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails,
+  intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails,
   entityDetails,
   intermediateReportId,
 }: {
@@ -119,6 +121,8 @@ export const generateMonthlyIpReport = async ({
   intermediateMonthlyIpPriorityDropEntityDataSourceDetails: any;
   intermediateMonthlyIpPctDropEntityDataSourceDetails: any;
   intermediateMonthlyIpProsecutionDropEntityDataSourceDetails: any;
+  intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails: any;
+  intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails: any;
   entityDetails: any;
   intermediateReportId: any;
 }) => {
@@ -784,6 +788,24 @@ export const generateMonthlyIpReport = async ({
       isRowData,
     });
 
+    const annuitySavingsForCurrentYearRawData = await getAnnuitySavingsFromReductions({
+      sabicipDataSourceVersionId,
+      ctclinsabDataSourceVersionId,
+      annuitiesbDataSourceVersionId,
+      currentYear,
+      annuityDrop: reductionData.annuityDropArray,
+      priorityDrop: reductionData.priorityDropArray,
+      pctDrop: reductionData.pctDropArray,
+      prosecutionDrop: reductionData.prosecutionDropArray,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedAnnuitySavingsForCurrentYearRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: annuitySavingsForCurrentYearRawData,
+    });
     const partiallyProcessedAnnuitySavingsForCurrentYear = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `${Number(currentYear)} Annuity Savings from ${currentYear} reductions`,
       data: annuitySavingsForCurrentYear,
@@ -802,6 +824,23 @@ export const generateMonthlyIpReport = async ({
       isRowData,
     });
 
+    const annuitySavingsForNextYearRawData = await getAnnuitySavingsFromReductions({
+      sabicipDataSourceVersionId,
+      ctclinsabDataSourceVersionId,
+      annuitiesbDataSourceVersionId,
+      currentYear: `${Number(currentYear) + 1}`,
+      annuityDrop: reductionData.annuityDropArray,
+      priorityDrop: reductionData.priorityDropArray,
+      pctDrop: reductionData.pctDropArray,
+      prosecutionDrop: reductionData.prosecutionDropArray,
+      customReportModel,
+      isRowData: true,
+    });
+    const transformedAnnuitySavingsForNextYearRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: annuitySavingsForNextYearRawData,
+    });
     const partiallyProcessedAnnuitySavingsForNextYear = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `${Number(currentYear) + 1} Annuity Savings from ${currentYear} reductions`,
       data: annuitySavingsForNextYear,
@@ -1409,6 +1448,30 @@ export const generateMonthlyIpReport = async ({
       orgCode,
     });
 
+    const intermediateDataSourceVersionDetailsAnnuitySavingsForCurrentYear =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedAnnuitySavingsForCurrentYearRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsAnnuitySavingsForNextYear =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedAnnuitySavingsForNextYearRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
     await reportRequestService.updateReportRequest(requestedReportId, {
       status: 'completed',
       intermediateReportId: intermediateReportId,
@@ -1771,6 +1834,32 @@ export const generateMonthlyIpReport = async ({
           versionCode: intermediateDataSourceVersionDetailsProsecutionDrop.versionCode,
           dataSourceId: intermediateMonthlyIpProsecutionDropEntityDataSourceDetails.dataSourceId,
           entityId: intermediateMonthlyIpProsecutionDropEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'CY Annuity Savings',
+          sheetCode: 'cy_annuity_savings',
+          tabName: 'CY Annuity Savings',
+          mappingFuctionName: 'entity',
+          designCode: 'cy_annuity_savings',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsAnnuitySavingsForCurrentYear.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsAnnuitySavingsForCurrentYear.versionCode,
+          dataSourceId: intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'NY Annuity Savings',
+          sheetCode: 'ny_annuity_savings',
+          tabName: 'NY Annuity Savings',
+          mappingFuctionName: 'entity',
+          designCode: 'ny_annuity_savings',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsAnnuitySavingsForNextYear.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsAnnuitySavingsForNextYear.versionCode,
+          dataSourceId: intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails.entityId,
           isIntermediate: true,
         },
       ],
