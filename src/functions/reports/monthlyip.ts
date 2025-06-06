@@ -75,6 +75,7 @@ export const generateMonthlyIpReport = async ({
   intermediateMonthlyIpProsecutionDropEntityDataSourceDetails,
   intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails,
   intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails,
+  intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails,
   entityDetails,
   intermediateReportId,
 }: {
@@ -123,6 +124,7 @@ export const generateMonthlyIpReport = async ({
   intermediateMonthlyIpProsecutionDropEntityDataSourceDetails: any;
   intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails: any;
   intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails: any;
+  intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails: any;
   entityDetails: any;
   intermediateReportId: any;
 }) => {
@@ -876,6 +878,19 @@ export const generateMonthlyIpReport = async ({
       isRowData,
     });
 
+    const allProsecutionSavingsRawData = await getAllProsecutionSavings({
+      priorityDrop: reductionData.priorityDropArray,
+      pctDrop: reductionData.pctDropArray,
+      prosecutionDrop: reductionData.prosecutionDropArray,
+      isRowData: true,
+    });
+
+    const transformedAllProsecutionSavingsRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: allProsecutionSavingsRawData,
+    });
+
     const partiallyProcessedAllProsecutionSavings = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Prosecution cost Savings`,
       data: allProsecutionSavings,
@@ -1472,6 +1487,18 @@ export const generateMonthlyIpReport = async ({
         orgCode,
       });
 
+    const intermediateDataSourceVersionDetailsAllProsecutionSavings =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedAllProsecutionSavingsRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
     await reportRequestService.updateReportRequest(requestedReportId, {
       status: 'completed',
       intermediateReportId: intermediateReportId,
@@ -1860,6 +1887,19 @@ export const generateMonthlyIpReport = async ({
           versionCode: intermediateDataSourceVersionDetailsAnnuitySavingsForNextYear.versionCode,
           dataSourceId: intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails.dataSourceId,
           entityId: intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Prosecution Savings',
+          sheetCode: 'prosecution_savings',
+          tabName: 'Prosecution Savings',
+          mappingFuctionName: 'entity',
+          designCode: 'prosecution_savings',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsAllProsecutionSavings.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsAllProsecutionSavings.versionCode,
+          dataSourceId: intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails.entityId,
           isIntermediate: true,
         },
       ],

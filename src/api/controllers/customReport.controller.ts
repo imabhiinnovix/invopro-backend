@@ -199,6 +199,9 @@ export const generateCustomReportsFunction = async ({
       const intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
         (ds) => ds.code === 'ny_annuity_savings'
       );
+
+      const intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'prosecution_savings');
       const entityDetails = await entityService.getEntityList({
         query: {
           _id: {
@@ -207,6 +210,7 @@ export const generateCustomReportsFunction = async ({
               intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails.entityId,
               intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails.entityId,
               intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails.entityId,
+              intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails.entityId,
             ],
           },
         },
@@ -258,6 +262,7 @@ export const generateCustomReportsFunction = async ({
         intermediateMonthlyIpProsecutionDropEntityDataSourceDetails,
         intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails,
         intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails,
+        intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails,
         entityDetails: entityDetails.data,
         intermediateReportId: customReportDetails.intermediateReportId,
       });
