@@ -114,6 +114,10 @@ export const generateCustomReportsFunction = async ({
 
       const annuitiesbDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'annuities');
 
+      const annuitiesOutstandingDataSource = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'annuities_outstanding'
+      );
+
       const staticNewFilingsDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'newfilings');
 
       const currentStaticEstimatesDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'estimates');
@@ -224,6 +228,7 @@ export const generateCustomReportsFunction = async ({
         sabicipDataSourceVersionId: versionMap[sabicipDataSource?.dataSourceId!],
         ctclinsabDataSourceVersionId: versionMap[ctclinsabDataSource?.dataSourceId!],
         annuitiesbDataSourceVersionId: versionMap[annuitiesbDataSource?.dataSourceId!],
+        annuitiesOutstandingDataSourceVersionId: versionMap[annuitiesOutstandingDataSource?.dataSourceId!],
         staticNewFilingsDataSourceId: staticNewFilingsDataSource?.dataSourceId!,
         staticEstimatesDataSourceId: currentStaticEstimatesDataSource?.dataSourceId!,
         staticProjectOpenedDataSourceId: staticProjectOpenedDataSource?.dataSourceId!,

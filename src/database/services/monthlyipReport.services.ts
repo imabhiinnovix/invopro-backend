@@ -1310,7 +1310,7 @@ export async function getCurrentYearRenewalDue({
       value: (data as Record<string, any>).total,
     }));
 
-    const annuitiesData = await customReportModel.DataSourceVersionValueAnnuities.aggregate([
+    const annuitiesData = await customReportModel.DataSourceVersionValueAnnuitiesOutStanding.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(annuitiesbDataSourceVersionId),

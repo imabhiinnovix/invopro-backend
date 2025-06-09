@@ -37,6 +37,7 @@ export const generateMonthlyIpReport = async ({
   sabicipDataSourceVersionId,
   ctclinsabDataSourceVersionId,
   annuitiesbDataSourceVersionId,
+  annuitiesOutstandingDataSourceVersionId,
   customReportModel,
   isRowData,
   staticNewFilingsDataSourceId,
@@ -86,6 +87,7 @@ export const generateMonthlyIpReport = async ({
   sabicipDataSourceVersionId: string;
   ctclinsabDataSourceVersionId: string;
   annuitiesbDataSourceVersionId: string;
+  annuitiesOutstandingDataSourceVersionId: string;
   customReportModel: CustomReportModelAccessReturnType;
   isRowData?: boolean;
   staticNewFilingsDataSourceId: string;
@@ -717,7 +719,7 @@ export const generateMonthlyIpReport = async ({
       portfolioDataSourceVersionId,
       sabicipDataSourceVersionId,
       ctclinsabDataSourceVersionId,
-      annuitiesbDataSourceVersionId,
+      annuitiesbDataSourceVersionId: annuitiesOutstandingDataSourceVersionId,
       currentYear,
       customReportModel,
       isRowData,
@@ -727,7 +729,7 @@ export const generateMonthlyIpReport = async ({
       portfolioDataSourceVersionId,
       sabicipDataSourceVersionId,
       ctclinsabDataSourceVersionId,
-      annuitiesbDataSourceVersionId,
+      annuitiesbDataSourceVersionId: annuitiesOutstandingDataSourceVersionId,
       currentYear,
       customReportModel,
       isRowData: true,
