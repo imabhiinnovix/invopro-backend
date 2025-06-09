@@ -527,7 +527,7 @@ export const generateMonthlyIpReport = async ({
     const partiallyProcessedTotalPendingApplication = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total Apps pending`,
       data: totalPendingApplication,
-      defaultValue: { 'Scientific Design': 109 },
+      defaultValue: { 'Scientific Design': 0 },
     });
 
     const usIssuedApplication = await getCurrentYearNewApplicationFiled({
@@ -666,7 +666,7 @@ export const generateMonthlyIpReport = async ({
     const partiallyProcessedTotalIssuedApplication = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total Issued`,
       data: totalIssuedApplication,
-      defaultValue: { 'Scientific Design': 263 },
+      defaultValue: { 'Scientific Design': 0 },
     });
 
     const processedFirstLargeData = processReportHeaders({
