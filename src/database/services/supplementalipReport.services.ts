@@ -570,6 +570,7 @@ export async function getAccoladeMappingSheet({
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
+          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
           'rowData.In Force': 1,
           'rowData.AccoladeID': {
             $ne: null,
@@ -594,6 +595,7 @@ export async function getAccoladeMappingSheet({
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
+          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
           'rowData.IsFirstFiling': 1,
           'rowData.Filing Date': yearDateRange,
           'rowData.AccoladeID': {
@@ -619,6 +621,7 @@ export async function getAccoladeMappingSheet({
       {
         $match: {
           dataSourceVersionId: new ObjectId(disclosureDataSourceVersionId),
+          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
           'rowData.DisclosureStatus': {
             $in: [
               'Open',
@@ -659,6 +662,7 @@ export async function getAccoladeMappingSheet({
       {
         $match: {
           dataSourceVersionId: new ObjectId(disclosureDataSourceVersionId),
+          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
           'rowData.DisclosureStatus': {
             $in: [
               'Rated to Draft OC',
