@@ -10,6 +10,8 @@ import createDefaultDataSourceVersionModel from '../../database/models/defaultDa
 import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
 import { DataSourceVersion } from '../../types/widget.types';
 import { processFieldConditions } from '../../utils/conditionProcessor';
+import * as cacheService from '../../database/services/aiCache.service';
+import { DateTime } from 'luxon';
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -36,6 +38,12 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       isActive: true,
       description,
     });
+
+    const cacheData = await cacheService.findCacheDataByCodeAndOrganization('chart', organizationId);
+    if (cacheData) {
+      const nowISO = DateTime.now().minus({ days: 2 }).toISO();
+      await cacheService.updateCacheData(cacheData._id.toString(), { updatedAt: nowISO });
+    }
     res.status(201).json({
       success: true,
       message: 'Data Source Created Successfully',

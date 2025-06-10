@@ -19,5 +19,5 @@ const aiCacheSchema = new Schema<IAiCache>({
 
 aiCacheSchema.index({ organizationId: 1, code: 1 }, { unique: true });
 
-const AiCacheModel = model<IAiCache>('AiCache', aiCacheSchema);
+const AiCacheModel = model<IAiCache>('ai_cache', aiCacheSchema);
 export default AiCacheModel;
