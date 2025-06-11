@@ -60,6 +60,7 @@ interface IHeaderSection {
 
 interface ICustomReport extends Document {
   reportName: string;
+  reportCode: string;
   functionName: string;
   dataSourceIds: IDataSource[];
   organizationId: Types.ObjectId;
@@ -140,6 +141,7 @@ const CustomReportSchema = new Schema<ICustomReport>(
   {
     reportName: { type: String, required: true },
     functionName: { type: String, required: true },
+    reportCode: { type: String, required: true },
     sampleFilePath: { type: String },
     dataSourceIds: [
       {
@@ -167,6 +169,7 @@ const CustomReportSchema = new Schema<ICustomReport>(
   }
 );
 
+CustomReportSchema.index({ code: 1, organizationId: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
 const CustomReportModel = model<ICustomReport>('custom_reports', CustomReportSchema);
 
 export default CustomReportModel;

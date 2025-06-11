@@ -1,7 +1,5 @@
 import DataSource from '../database/models/dataSource';
 
-import mongoose from 'mongoose';
-
 function getDataSourceToBeSeed({ entityDataSourceMap, organizationId, createdBy, updatedBy }) {
   return [
     {
