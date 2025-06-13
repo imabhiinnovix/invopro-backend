@@ -130,7 +130,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
 
     const { organizationId } = req.user;
 
-    const query: any = { organizationId };
+    const query: any = { organizationId, isVisible: true };
     if (search) query.name = { $regex: search, $options: 'i' };
 
     if (canEditInline) {
