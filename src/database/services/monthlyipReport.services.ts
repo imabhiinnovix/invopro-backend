@@ -248,6 +248,7 @@ export async function getCurrentYearNewApplicationFiled({
   isTotalIssuedApplication,
   customReportModel,
   isRowData,
+  isSupplementalReport,
 }: {
   portfolioDataSourceVersionId: string;
   currentYear: string;
@@ -266,13 +267,17 @@ export async function getCurrentYearNewApplicationFiled({
   isTotalIssuedApplication?: boolean;
   customReportModel: CustomReportModelAccessReturnType;
   isRowData?: boolean;
+  isSupplementalReport?: boolean;
 }) {
   try {
     const otherCountryNegative = [...epCountry, 'CN', 'US'];
     let matchCondition: Record<string, any> = {
       dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
-      'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
     };
+
+    if (!isSupplementalReport) {
+      matchCondition['rowData.SBU'] = { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] };
+    }
 
     const yearDateRange = {
       $gte: `${currentYear}-01-01T00:00:00.000Z`,

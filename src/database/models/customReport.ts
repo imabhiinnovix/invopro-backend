@@ -169,7 +169,10 @@ const CustomReportSchema = new Schema<ICustomReport>(
   }
 );
 
-CustomReportSchema.index({ code: 1, organizationId: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
+CustomReportSchema.index(
+  { reportCode: 1, organizationId: 1 },
+  { unique: true, collation: { locale: 'en', strength: 2 } }
+);
 const CustomReportModel = model<ICustomReport>('custom_reports', CustomReportSchema);
 
 export default CustomReportModel;
