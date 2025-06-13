@@ -34,8 +34,9 @@ interface ISubSection {
   verticalAlignment: string;
   type: string;
   spanColumns: boolean;
-  format: string;
+  cellFormat: string;
   isRequired: boolean;
+  lastCellBackGroundColor: string;
 }
 
 interface ISection {
@@ -103,16 +104,17 @@ const HeaderSectionSchema = new Schema<IHeaderSection>({
 });
 
 const SubSectionSchema = new Schema<ISubSection>({
-  headerName: { type: String, required: true },
+  headerName: { type: String },
   fontBold: { type: Boolean },
-  headerBackGroundColor: { type: String, required: true },
-  headerTextColor: { type: String, required: true },
-  horizontalAlignment: { type: String, required: true },
-  verticalAlignment: { type: String, required: true },
-  type: { type: String, required: true },
-  spanColumns: { type: Boolean, required: true },
-  format: { type: String },
+  headerBackGroundColor: { type: String },
+  headerTextColor: { type: String },
+  horizontalAlignment: { type: String },
+  verticalAlignment: { type: String },
+  type: { type: String },
+  spanColumns: { type: Boolean },
+  cellFormat: { type: String },
   isRequired: { type: Boolean },
+  lastCellBackGroundColor: { type: String },
 });
 
 const SectionSchema = new Schema<ISection>({
@@ -126,7 +128,7 @@ const SectionSchema = new Schema<ISection>({
   spanColumns: { type: Boolean },
   subSections: { type: [SubSectionSchema] },
   space: { type: Number },
-  view: { type: String, required: true },
+  view: { type: String },
 });
 
 const ReportSettingSchema = new Schema<IReportSetting>({
@@ -146,9 +148,10 @@ const CustomReportSchema = new Schema<ICustomReport>(
     dataSourceIds: [
       {
         code: { type: String, required: true },
-        dataSourceId: { type: String, required: true, ref: 'data_source' },
-        fileDetails: { type: [{ name: String, sheetName: String, isRequired: Boolean }] },
+        dataSourceId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'data_source' },
+        fileDetails: { type: [{ name: String, isRequired: Boolean }] },
         isRequired: { type: Boolean },
+        entityId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Entity' },
       },
     ],
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },

@@ -363,9 +363,14 @@ export const getWidgetChartData = async ({
   let dynamicVersionValue = dashboardFilters?.dynamicVersionValue;
   let versionValue = dashboardFilters?.versionValue;
 
-  if (dashBoardType === 'normal' && versionValue && !!dynamicVersionValue) {
-    startVersionValue = versionValue;
-    endVersionValue = versionValue;
+  if (dashBoardType === 'normal') {
+    if (versionValue && !!dynamicVersionValue) {
+      startVersionValue = versionValue;
+      endVersionValue = versionValue;
+    } else {
+      startVersionValue = '';
+      endVersionValue = '';
+    }
   }
 
   if (dashBoardType === 'trend' && !!dynamicVersionValue) {
