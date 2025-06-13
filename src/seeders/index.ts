@@ -289,6 +289,255 @@ const customReportMapReportivix = {
   },
 };
 
+const entityDataSourceMapSabic = {
+  disclosure: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b4'),
+    dataSourceId: new mongoose.Types.ObjectId('67cab7a2598bffd31565e1c9'),
+  },
+  portfolio: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('67cab7a2598bffd31565e1ca'),
+  },
+  sabicip: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b6'),
+    dataSourceId: new mongoose.Types.ObjectId('67cab7a2598bffd31565e1cb'),
+  },
+  ctclinsab: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b7'),
+    dataSourceId: new mongoose.Types.ObjectId('67cab7a2598bffd31565e1cc'),
+  },
+  annuities: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b8'),
+    dataSourceId: new mongoose.Types.ObjectId('67cab7a2598bffd31565e1cd'),
+  },
+  sabiccontracts: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b9'),
+    dataSourceId: new mongoose.Types.ObjectId('67cab7a2598bffd31565e1ce'),
+  },
+  shppcontracts: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1ba'),
+    dataSourceId: new mongoose.Types.ObjectId('67cab7a2598bffd31565e1cf'),
+  },
+  ksacontracts: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1bb'),
+    dataSourceId: new mongoose.Types.ObjectId('67cab7a2598bffd31565e1d0'),
+  },
+  attorneymapping: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1bc'),
+    dataSourceId: new mongoose.Types.ObjectId('67cab7a2598bffd31565e1d1'),
+  },
+  agreementtypemapping: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1bd'),
+    dataSourceId: new mongoose.Types.ObjectId('67cab7a2598bffd31565e1d2'),
+  },
+  ipanalystdashboard: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1be'),
+    dataSourceId: new mongoose.Types.ObjectId('67cab7a2598bffd31565e1d3'),
+  },
+  shppaccolade: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1c0'),
+    dataSourceId: new mongoose.Types.ObjectId('67cab7a2598bffd31565e1d4'),
+  },
+  sabicaccolade: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1bf'),
+    dataSourceId: new mongoose.Types.ObjectId('67cab7a2598bffd31565e1d5'),
+  },
+  newfilings: {
+    entityId: new mongoose.Types.ObjectId('67dcfd75a80fbc2659345173'),
+    dataSourceId: new mongoose.Types.ObjectId('67dd0040a80fbc265934517a'),
+  },
+  estimates: {
+    entityId: new mongoose.Types.ObjectId('67dcfd75a80fbc2659345174'),
+    dataSourceId: new mongoose.Types.ObjectId('67dd0040a80fbc265934517b'),
+  },
+  projectsopened: {
+    entityId: new mongoose.Types.ObjectId('67dcfd75a80fbc2659345175'),
+    dataSourceId: new mongoose.Types.ObjectId('67dd0040a80fbc265934517c'),
+  },
+  monthlyipstc: {
+    entityId: new mongoose.Types.ObjectId('67fcff74b127d9456c7c6c23'),
+    dataSourceId: new mongoose.Types.ObjectId('67fd01f6b127d9456c7c6c31'),
+  },
+  monthlyipglobal: {
+    entityId: new mongoose.Types.ObjectId('67fcfdf3b127d9456c7c6c13'),
+    dataSourceId: new mongoose.Types.ObjectId('67fd047ab127d9456c7c6c4f'),
+  },
+  monthlyipstcsbu: {
+    entityId: new mongoose.Types.ObjectId('6810c14f80b5a97f62abdb7a'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abdb8b'),
+  },
+  supplementalipagreementsfinalagreementtype: {
+    entityId: new mongoose.Types.ObjectId('6810c14f80b5a97f62abdb7b'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abdb8c'),
+  },
+  supplementalipagreementsothers: {
+    entityId: new mongoose.Types.ObjectId('6810c14f80b5a97f62abdb7c'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abdb8d'),
+  },
+  supplementalipbangaloreipgroupcurrentstatus: {
+    entityId: new mongoose.Types.ObjectId('6810c14f80b5a97f62abdb7d'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abdb8e'),
+  },
+  supplementalipbangaloreipgroupsbu: {
+    entityId: new mongoose.Types.ObjectId('6810c14f80b5a97f62abdb7e'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abdb8f'),
+  },
+  supplementalipbangaloreipgroupworkscope: {
+    entityId: new mongoose.Types.ObjectId('6810c14f80b5a97f62abdb7f'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abdb90'),
+  },
+  supplementalipbangaloreipgroupworkproduct: {
+    entityId: new mongoose.Types.ObjectId('6810c14f80b5a97f62abdb80'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abdb91'),
+  },
+  supplementalipaccolademappingsheet: {
+    entityId: new mongoose.Types.ObjectId('6810c14f80b5a97f62abdb81'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abdb92'),
+  },
+  supplementalippatentvaluecoverageactive: {
+    entityId: new mongoose.Types.ObjectId('6810c14f80b5a97f62abdb82'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abdb93'),
+  },
+  patentvaluecoveragenew: {
+    entityId: new mongoose.Types.ObjectId('6810c14f80b5a97f62abdb83'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abdb94'),
+  },
+  supplementalipstrategicreportingclass: {
+    entityId: new mongoose.Types.ObjectId('6810c14f80b5a97f62abdb84'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abdb95'),
+  },
+  supplementalipnewcoverage: {
+    entityId: new mongoose.Types.ObjectId('6810c14f80b5a97f62abdb85'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abdb96'),
+  },
+  intermediatemonthlyipcurrentyearnewappfiled: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abdb97'),
+  },
+  pctcyinvdisclosurescnvtfilingd: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abdb98'),
+  },
+  pctcyinvdisclosurescnvtfilingi: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b4'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abdb99'),
+  },
+  pctcyinvdisclosurescnvtfilingt: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b4'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda10'),
+  },
+  intermediatemonthlyipappsbeingdrafted: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b4'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda11'),
+  },
+  monthlyip_projects_opened_cy: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b4'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda12'),
+  },
+  monthlyip_total_active_projects: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b4'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda13'),
+  },
+  monthlyip_cy_us_issued: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda14'),
+  },
+  monthlyip_cy_intl_issued: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda15'),
+  },
+  total_us_apps_pending: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda16'),
+  },
+  total_ep_apps_pending: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda17'),
+  },
+  total_cn_apps_pending: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda18'),
+  },
+  other_country_apps_pending: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda19'),
+  },
+  total_apps_pending: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda20'),
+  },
+  total_us_issued: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda21'),
+  },
+  total_ep_issued: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda22'),
+  },
+  total_cn_issued: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda23'),
+  },
+  other_country_issued: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda24'),
+  },
+  total_issued: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda25'),
+  },
+  //
+  cy_renewals_due: {
+    entityId: new mongoose.Types.ObjectId('6841e260b47f76d5abdd0040'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda26'),
+  },
+  annuity_drop: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda27'),
+  },
+  priority_drop: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda28'),
+  },
+  pct_drop: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda29'),
+  },
+  prosecution_drop: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b5'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda30'),
+  },
+  cy_annuity_savings: {
+    entityId: new mongoose.Types.ObjectId('6841e260b47f76d5abdd0041'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda31'),
+  },
+  ny_annuity_savings: {
+    entityId: new mongoose.Types.ObjectId('6841e260b47f76d5abdd0041'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda32'),
+  },
+  prosecution_savings: {
+    entityId: new mongoose.Types.ObjectId('6841e260b47f76d5abdd0042'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda33'),
+  },
+  annuities_outstanding: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b8'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda34'),
+  },
+};
+
+const customReportMapSabic = {
+  monthlyip: {
+    reportId: new mongoose.Types.ObjectId('67caadc2598bffd31565e1b0'),
+    intermediateReportId: new mongoose.Types.ObjectId('67caadc2598bffd31565e1b1'),
+  },
+  intermediatemonthlyip: {
+    reportId: new mongoose.Types.ObjectId('67caadc2598bffd31565e1b1'),
+  },
+  supplementalip: {
+    reportId: new mongoose.Types.ObjectId('6810cbd11ecbf1ab5b047f1a'),
+  },
+};
+
 export async function seedDatabase() {
   try {
     // Connect to MongoDB
@@ -302,7 +551,7 @@ export async function seedDatabase() {
     console.info('\n====> Seeding organizations <====');
     await seedOrganizations(payload);
 
-    console.info('\n====> Seeding Entities <====');
+    console.info('\n====> Seeding Entities Reportivix <====');
     await seedEntities({
       organizationId: payload.reportivixOrganizationId,
       createdBy: payload.reportivixSuperAdminUserId,
@@ -310,7 +559,7 @@ export async function seedDatabase() {
       entityDataSourceMap: entityDataSourceMapReportivix,
     });
 
-    console.info('\n====> Seeding Data source <====');
+    console.info('\n====> Seeding Data source Reportivix <====');
     await seedDataSource({
       organizationId: payload.reportivixOrganizationId,
       createdBy: payload.reportivixSuperAdminUserId,
@@ -318,11 +567,34 @@ export async function seedDatabase() {
       entityDataSourceMap: entityDataSourceMapReportivix,
     });
 
-    console.info('\n====> Seeding Custom Report <====');
+    console.info('\n====> Seeding Custom Report Reportivx<====');
     await seedCustomReports({
       organizationId: payload.reportivixOrganizationId,
       entityDataSourceMap: entityDataSourceMapReportivix,
       customReportMap: customReportMapReportivix,
+    });
+
+    console.info('\n====> Seeding Entities Sabic <====');
+    await seedEntities({
+      organizationId: payload.sabicOrganizationId,
+      createdBy: payload.sabicAdminUserId,
+      updatedBy: payload.sabicAdminUserId,
+      entityDataSourceMap: entityDataSourceMapSabic,
+    });
+
+    console.info('\n====> Seeding Data source Sabic <====');
+    await seedDataSource({
+      organizationId: payload.sabicOrganizationId,
+      createdBy: payload.sabicAdminUserId,
+      updatedBy: payload.sabicAdminUserId,
+      entityDataSourceMap: entityDataSourceMapSabic,
+    });
+
+    console.info('\n====> Seeding Custom Report Sabic<====');
+    await seedCustomReports({
+      organizationId: payload.sabicOrganizationId,
+      entityDataSourceMap: entityDataSourceMapSabic,
+      customReportMap: customReportMapSabic,
     });
 
     console.info('\n====> Seeding Dashboard <====');
