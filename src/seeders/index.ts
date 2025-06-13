@@ -107,12 +107,12 @@ const entityDataSourceMapReportivix = {
     dataSourceId: new mongoose.Types.ObjectId('67dac4b17d55c5d9d00417e5'),
   },
   monthlyipglobal: {
-    entityId: new mongoose.Types.ObjectId('67f4da8505b8b2e078bbcbac'),
-    dataSourceId: new mongoose.Types.ObjectId('67f4e08505b8b2e078bbcc2a'),
+    entityId: new mongoose.Types.ObjectId('67fcfdb0b127d9456c7c6c11'),
+    dataSourceId: new mongoose.Types.ObjectId('67fd0309b127d9456c7c6c44'),
   },
   monthlyipstc: {
-    entityId: new mongoose.Types.ObjectId('67f899ee3555d2f356d0743f'),
-    dataSourceId: new mongoose.Types.ObjectId('67f89a513555d2f356d07485'),
+    entityId: new mongoose.Types.ObjectId('67fcff64b127d9456c7c6c21'),
+    dataSourceId: new mongoose.Types.ObjectId('67fd01a5b127d9456c7c6c2f'),
   },
   monthlyipstcsbu: {
     entityId: new mongoose.Types.ObjectId('680b63c114c2fd3bb0972817'),
