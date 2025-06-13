@@ -364,9 +364,10 @@ export const getWidgetChartData = async ({
   let versionValue = dashboardFilters?.versionValue;
 
   if (dashBoardType === 'normal') {
-    if (versionValue && !!dynamicVersionValue) {
-      startVersionValue = versionValue;
-      endVersionValue = versionValue;
+    if (versionValue && !dynamicVersionValue) {
+      const formattedVersionValue = DateTime.fromISO(versionValue).toFormat('yyyy-MM');
+      startVersionValue = formattedVersionValue;
+      endVersionValue = formattedVersionValue;
     } else {
       startVersionValue = '';
       endVersionValue = '';
