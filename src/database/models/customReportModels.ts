@@ -4,6 +4,7 @@ export type CustomReportModelAccessReturnType = {
   DataSourceVersionValuePortfolio: ReturnType<typeof createDefaultDataSourceVersionModel>;
   DataSourceVersionValueDisclosure: ReturnType<typeof createDefaultDataSourceVersionModel>;
   DataSourceVersionValueAnnuities: ReturnType<typeof createDefaultDataSourceVersionModel>;
+  DataSourceVersionValueAnnuitiesOutStanding: ReturnType<typeof createDefaultDataSourceVersionModel>;
   DataSourceVersionValueCtclinsabs: ReturnType<typeof createDefaultDataSourceVersionModel>;
   DataSourceVersionValueSabicips: ReturnType<typeof createDefaultDataSourceVersionModel>;
   DataSourceVersionValueSabicContracts: ReturnType<typeof createDefaultDataSourceVersionModel>;
@@ -23,6 +24,9 @@ export async function CustomReportModelAccess({ orgCode }: { orgCode: string }) 
   const DataSourceVersionValuePortfolio = createDefaultDataSourceVersionModel(`data_${orgCode}_portfolios`);
   const DataSourceVersionValueDisclosure = createDefaultDataSourceVersionModel(`data_${orgCode}_disclosures`);
   const DataSourceVersionValueAnnuities = createDefaultDataSourceVersionModel(`data_${orgCode}_annuities`);
+  const DataSourceVersionValueAnnuitiesOutStanding = createDefaultDataSourceVersionModel(
+    `data_${orgCode}_annuities_outstanding`
+  );
   const DataSourceVersionValueCtclinsabs = createDefaultDataSourceVersionModel(`data_${orgCode}_ctclinsabs`);
   const DataSourceVersionValueSabicips = createDefaultDataSourceVersionModel(`data_${orgCode}_sabicips`);
 
@@ -63,5 +67,6 @@ export async function CustomReportModelAccess({ orgCode }: { orgCode: string }) 
     DataSourceVersionValueStaticProjectOpened,
     DataSourceVersionValueShppAccolade,
     DataSourceVersionValueSabicAccolade,
+    DataSourceVersionValueAnnuitiesOutStanding,
   };
 }

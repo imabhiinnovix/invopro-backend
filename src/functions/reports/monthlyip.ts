@@ -22,6 +22,7 @@ import { CustomReportModelAccessReturnType } from '../../database/models/customR
 import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/dataSourceVersion.controller';
 import {
   processReportHeaders,
+  transformDataByEntityMapping,
   transformMonthlyIpData,
   transformMonthlySTCData,
   transformMonthlySTCSBUData,
@@ -36,6 +37,7 @@ export const generateMonthlyIpReport = async ({
   sabicipDataSourceVersionId,
   ctclinsabDataSourceVersionId,
   annuitiesbDataSourceVersionId,
+  annuitiesOutstandingDataSourceVersionId,
   customReportModel,
   isRowData,
   staticNewFilingsDataSourceId,
@@ -48,6 +50,35 @@ export const generateMonthlyIpReport = async ({
   monthlyipstcDataSource,
   monthlyipstcsbuDataSource,
   headers,
+  intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails,
+  intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorDEnitityDataSourceDetails,
+  intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorIEnitityDataSourceDetails,
+  intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsDenominatorTotalEnitityDataSourceDetails,
+  intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails,
+  intermediateMonthlyIpOpenApplicationDisclosureEnitityDataSourceDetails,
+  intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails,
+  intermediateMonthlyIpCurrentYearUsIssuedEnitityDataSourceDetails,
+  intermediateMonthlyIpCurrentYearIntlssuedEnitityDataSourceDetails,
+  intermediateMonthlyIpTotalUSAppsPendingEnitityDataSourceDetails,
+  intermediateMonthlyIpTotalEPAppsPendingEnitityDataSourceDetails,
+  intermediateMonthlyIpTotalCNAppsPendingEnitityDataSourceDetails,
+  intermediateMonthlyIpOtherCountryAppsPendingEntityDataSourceDetails,
+  intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails,
+  intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails,
+  intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails,
+  intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails,
+  intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails,
+  intermediateMonthlyIpTotalIssuedEntityDataSourceDetails,
+  intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails,
+  intermediateMonthlyIpAnnuityDropEntityDataSourceDetails,
+  intermediateMonthlyIpPriorityDropEntityDataSourceDetails,
+  intermediateMonthlyIpPctDropEntityDataSourceDetails,
+  intermediateMonthlyIpProsecutionDropEntityDataSourceDetails,
+  intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails,
+  intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails,
+  intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails,
+  entityDetails,
+  intermediateReportId,
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
@@ -56,6 +87,7 @@ export const generateMonthlyIpReport = async ({
   sabicipDataSourceVersionId: string;
   ctclinsabDataSourceVersionId: string;
   annuitiesbDataSourceVersionId: string;
+  annuitiesOutstandingDataSourceVersionId: string;
   customReportModel: CustomReportModelAccessReturnType;
   isRowData?: boolean;
   staticNewFilingsDataSourceId: string;
@@ -68,6 +100,35 @@ export const generateMonthlyIpReport = async ({
   monthlyIpDataSource: string;
   monthlyipstcDataSource: string;
   monthlyipstcsbuDataSource: string;
+  intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails: any;
+  intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorDEnitityDataSourceDetails: any;
+  intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorIEnitityDataSourceDetails: any;
+  intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsDenominatorTotalEnitityDataSourceDetails: any;
+  intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails: any;
+  intermediateMonthlyIpOpenApplicationDisclosureEnitityDataSourceDetails: any;
+  intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails: any;
+  intermediateMonthlyIpCurrentYearUsIssuedEnitityDataSourceDetails: any;
+  intermediateMonthlyIpCurrentYearIntlssuedEnitityDataSourceDetails: any;
+  intermediateMonthlyIpTotalUSAppsPendingEnitityDataSourceDetails: any;
+  intermediateMonthlyIpTotalEPAppsPendingEnitityDataSourceDetails: any;
+  intermediateMonthlyIpTotalCNAppsPendingEnitityDataSourceDetails: any;
+  intermediateMonthlyIpOtherCountryAppsPendingEntityDataSourceDetails: any;
+  intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails: any;
+  intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails: any;
+  intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails: any;
+  intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails: any;
+  intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails: any;
+  intermediateMonthlyIpTotalIssuedEntityDataSourceDetails: any;
+  intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails: any;
+  intermediateMonthlyIpAnnuityDropEntityDataSourceDetails: any;
+  intermediateMonthlyIpPriorityDropEntityDataSourceDetails: any;
+  intermediateMonthlyIpPctDropEntityDataSourceDetails: any;
+  intermediateMonthlyIpProsecutionDropEntityDataSourceDetails: any;
+  intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails: any;
+  intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails: any;
+  intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails: any;
+  entityDetails: any;
+  intermediateReportId: any;
 }) => {
   try {
     const versionValue = reportRequestPayload.versionValue;
@@ -89,6 +150,19 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
       isRowData,
     });
+    const currentYearApplicationFiledRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedCurrentYearApplicationFiledRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails.entityId,
+      entityDetails,
+      data: currentYearApplicationFiledRawData,
+    });
+
     const partiallyProcessedCurrentYearApplicationFiledData = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `${currentYear} New Apps Filed`,
       data: currentYearApplicationFiledData,
@@ -100,7 +174,7 @@ export const generateMonthlyIpReport = async ({
       totalColumnName: 'Totals',
     });
 
-    const processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData =
+    const processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData: any =
       await percentageOfCurrentYearInventionDisclosureConvertedToFilings({
         portfolioDataSourceVersionId,
         disclosureDataSourceVersionId,
@@ -108,6 +182,39 @@ export const generateMonthlyIpReport = async ({
         customReportModel,
         isRowData,
         headers: sbuHeaders,
+      });
+    const percentageOfCurrentYearInventionDisclosureConvertedToFilingsRawData: any =
+      await percentageOfCurrentYearInventionDisclosureConvertedToFilings({
+        portfolioDataSourceVersionId,
+        disclosureDataSourceVersionId,
+        currentYear,
+        customReportModel,
+        isRowData: true,
+        headers: sbuHeaders,
+      });
+
+    const transformedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataD =
+      transformDataByEntityMapping({
+        entityId:
+          intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorDEnitityDataSourceDetails.entityId,
+        entityDetails,
+        data: percentageOfCurrentYearInventionDisclosureConvertedToFilingsRawData.newYearApplicationFiledFilteredData,
+      });
+
+    const transformedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataI =
+      transformDataByEntityMapping({
+        entityId:
+          intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorIEnitityDataSourceDetails.entityId,
+        entityDetails,
+        data: percentageOfCurrentYearInventionDisclosureConvertedToFilingsRawData.activeDisclosureCount,
+      });
+
+    const transformedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataTotal =
+      transformDataByEntityMapping({
+        entityId:
+          intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsDenominatorTotalEnitityDataSourceDetails.entityId,
+        entityDetails,
+        data: percentageOfCurrentYearInventionDisclosureConvertedToFilingsRawData.totalDisclosureCount,
       });
 
     const staticData = await processStaticData({
@@ -134,6 +241,22 @@ export const generateMonthlyIpReport = async ({
       isRowData,
     });
 
+    const draftedApplicationDisclosureCountRawData = await getDisclosureCount({
+      disclosureDataSourceVersionId,
+      currentYear,
+      isActive: false,
+      isDrafted: true,
+      isYearRequired: false,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedDraftedApplicationDisclosureCountRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails.entityId,
+      entityDetails,
+      data: draftedApplicationDisclosureCountRawData,
+    });
+
     const partiallyProcessedDraftedApplicationDisclosureCount = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Apps Being Drafted`,
       data: draftedApplicationDisclosureCount,
@@ -148,6 +271,21 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
     });
 
+    const openApplicationDisclosureCountRawData = await getDisclosureCount({
+      disclosureDataSourceVersionId,
+      currentYear,
+      isActive: false,
+      isDrafted: false,
+      isYearRequired: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedOpenApplicationDisclosureCountRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpOpenApplicationDisclosureEnitityDataSourceDetails.entityId,
+      entityDetails,
+      data: openApplicationDisclosureCountRawData,
+    });
     const partiallyProcessedOpenApplicationDisclosureCount = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Projects Opened in ${currentYear}`,
       data: openApplicationDisclosureCount,
@@ -169,6 +307,21 @@ export const generateMonthlyIpReport = async ({
       isRowData,
     });
 
+    const totalActiveProjectsRawData = await getDisclosureCount({
+      disclosureDataSourceVersionId,
+      currentYear,
+      isActive: true,
+      isDrafted: false,
+      isYearRequired: false,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedtotalActiveProjectsRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails.entityId,
+      entityDetails,
+      data: totalActiveProjectsRawData,
+    });
     const partiallyProcessedTotalActiveProjects = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total Active Projects`,
       data: totalActiveProjects,
@@ -188,6 +341,21 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
     });
 
+    const currentYearUsIssuedRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isCurrentYearUSIssued: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedCurrentYearUsIssuedRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpCurrentYearUsIssuedEnitityDataSourceDetails.entityId,
+      entityDetails,
+      data: currentYearUsIssuedRawData,
+    });
+
     const partiallyProcessedCurrentYearUsIssued = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `${currentYear} US Issued`,
       data: currentYearUsIssued,
@@ -199,6 +367,21 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isCurrentYearINTIssued: true,
       customReportModel,
+    });
+
+    const currentYearIntlssuedRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isCurrentYearINTIssued: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedCurrentYearIntIssuedRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpCurrentYearIntlssuedEnitityDataSourceDetails.entityId,
+      entityDetails,
+      data: currentYearIntlssuedRawData,
     });
 
     const partiallyProcessedCurrentYearIntlssued = getFormattedDataToProcessReportHeaders({
@@ -214,6 +397,21 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
     });
 
+    const usPendingApplicationRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isUSPendingApplication: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedUSPendingApplicationRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpTotalUSAppsPendingEnitityDataSourceDetails.entityId,
+      entityDetails,
+      data: usPendingApplicationRawData,
+    });
+
     const partiallyProcessedUsPendingApplication = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total US Apps pending`,
       data: usPendingApplication,
@@ -225,6 +423,21 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isEPPendingApplication: true,
       customReportModel,
+    });
+
+    const epPendingApplicationRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isEPPendingApplication: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedEPPendingApplicationRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpTotalEPAppsPendingEnitityDataSourceDetails.entityId,
+      entityDetails,
+      data: epPendingApplicationRawData,
     });
 
     const partiallyProcessedEpPendingApplication = getFormattedDataToProcessReportHeaders({
@@ -240,6 +453,21 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
     });
 
+    const cnPendingApplicationRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isCNPendingApplication: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedCNPendingApplicationRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpTotalCNAppsPendingEnitityDataSourceDetails.entityId,
+      entityDetails,
+      data: cnPendingApplicationRawData,
+    });
+
     const partiallyProcessedCnPendingApplication = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total CN Apps pending`,
       data: cnPendingApplication,
@@ -251,6 +479,21 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isOtherPendingApplication: true,
       customReportModel,
+    });
+
+    const otherPendingApplicationRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isOtherPendingApplication: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedOtherPendingApplicationRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpOtherCountryAppsPendingEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: otherPendingApplicationRawData,
     });
 
     const partiallyProcessedotherPendingApplication = getFormattedDataToProcessReportHeaders({
@@ -266,10 +509,25 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
     });
 
+    const totalPendingApplicationRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isTotalPendingApplication: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedTotalPendingApplicationRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: totalPendingApplicationRawData,
+    });
+
     const partiallyProcessedTotalPendingApplication = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total Apps pending`,
       data: totalPendingApplication,
-      defaultValue: { 'Scientific Design': 109 },
+      defaultValue: { 'Scientific Design': 0 },
     });
 
     const usIssuedApplication = await getCurrentYearNewApplicationFiled({
@@ -278,6 +536,21 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isUSIssuedApplication: true,
       customReportModel,
+    });
+
+    const usIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isUSIssuedApplication: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedUSIssuedApplicationRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: usIssuedApplicationRawData,
     });
 
     const partiallyProcessedUsIssuedApplication = getFormattedDataToProcessReportHeaders({
@@ -293,6 +566,20 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
     });
 
+    const epIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isEPIssuedApplication: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedEPIssuedApplicationRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: epIssuedApplicationRawData,
+    });
     const partiallyProcessedEpIssuedApplication = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total EP Issued`,
       data: epIssuedApplication,
@@ -306,6 +593,20 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
     });
 
+    const cnIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isCNIssuedApplication: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedCNIssuedApplicationRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: cnIssuedApplicationRawData,
+    });
     const partiallyProcessedCnIssuedApplication = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total CN Issued`,
       data: cnIssuedApplication,
@@ -317,6 +618,21 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isOtherIssuedApplication: true,
       customReportModel,
+    });
+
+    const otherIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isOtherIssuedApplication: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedOtherIssuedApplicationRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: otherIssuedApplicationRawData,
     });
 
     const partiallyProcessedOtherIssuedApplication = getFormattedDataToProcessReportHeaders({
@@ -332,10 +648,25 @@ export const generateMonthlyIpReport = async ({
       customReportModel,
     });
 
+    const totalIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      isPercentagePart: false,
+      isTotalIssuedApplication: true,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedTotalIssuedApplicationRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpTotalIssuedEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: totalIssuedApplicationRawData,
+    });
+
     const partiallyProcessedTotalIssuedApplication = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `Total Issued`,
       data: totalIssuedApplication,
-      defaultValue: { 'Scientific Design': 263 },
+      defaultValue: { 'Scientific Design': 0 },
     });
 
     const processedFirstLargeData = processReportHeaders({
@@ -388,12 +719,27 @@ export const generateMonthlyIpReport = async ({
       portfolioDataSourceVersionId,
       sabicipDataSourceVersionId,
       ctclinsabDataSourceVersionId,
-      annuitiesbDataSourceVersionId,
+      annuitiesbDataSourceVersionId: annuitiesOutstandingDataSourceVersionId,
       currentYear,
       customReportModel,
       isRowData,
     });
 
+    const currentYearRenewalDueRawData = await getCurrentYearRenewalDue({
+      portfolioDataSourceVersionId,
+      sabicipDataSourceVersionId,
+      ctclinsabDataSourceVersionId,
+      annuitiesbDataSourceVersionId: annuitiesOutstandingDataSourceVersionId,
+      currentYear,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedPercentageOfCurrentYearRenewalDueRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: currentYearRenewalDueRawData,
+    });
     const partiallyProcessedCurrentYearRenewalDue = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `${currentYear} Renewals Due`,
       data: currentYearRenewalDue,
@@ -403,6 +749,29 @@ export const generateMonthlyIpReport = async ({
       portfolioDataSourceVersionId,
       currentYear,
       customReportModel,
+    });
+
+    const transformedAnnuityDropRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpAnnuityDropEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: reductionData.annuityDropArray,
+    });
+    const transformedPriorityDropRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpPriorityDropEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: reductionData.priorityDropArray,
+    });
+
+    const transformedPctDropRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpPctDropEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: reductionData.pctDropArray,
+    });
+
+    const transformedProsecutionDropRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpProsecutionDropEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: reductionData.prosecutionDropArray,
     });
 
     const partiallyProcessedDropCountResult = getFormattedDataToProcessReportHeaders({
@@ -423,6 +792,24 @@ export const generateMonthlyIpReport = async ({
       isRowData,
     });
 
+    const annuitySavingsForCurrentYearRawData = await getAnnuitySavingsFromReductions({
+      sabicipDataSourceVersionId,
+      ctclinsabDataSourceVersionId,
+      annuitiesbDataSourceVersionId,
+      currentYear,
+      annuityDrop: reductionData.annuityDropArray,
+      priorityDrop: reductionData.priorityDropArray,
+      pctDrop: reductionData.pctDropArray,
+      prosecutionDrop: reductionData.prosecutionDropArray,
+      customReportModel,
+      isRowData: true,
+    });
+
+    const transformedAnnuitySavingsForCurrentYearRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: annuitySavingsForCurrentYearRawData,
+    });
     const partiallyProcessedAnnuitySavingsForCurrentYear = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `${Number(currentYear)} Annuity Savings from ${currentYear} reductions`,
       data: annuitySavingsForCurrentYear,
@@ -441,6 +828,23 @@ export const generateMonthlyIpReport = async ({
       isRowData,
     });
 
+    const annuitySavingsForNextYearRawData = await getAnnuitySavingsFromReductions({
+      sabicipDataSourceVersionId,
+      ctclinsabDataSourceVersionId,
+      annuitiesbDataSourceVersionId,
+      currentYear: `${Number(currentYear) + 1}`,
+      annuityDrop: reductionData.annuityDropArray,
+      priorityDrop: reductionData.priorityDropArray,
+      pctDrop: reductionData.pctDropArray,
+      prosecutionDrop: reductionData.prosecutionDropArray,
+      customReportModel,
+      isRowData: true,
+    });
+    const transformedAnnuitySavingsForNextYearRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: annuitySavingsForNextYearRawData,
+    });
     const partiallyProcessedAnnuitySavingsForNextYear = getFormattedDataToProcessReportHeaders({
       sbuColumnDetails: `${Number(currentYear) + 1} Annuity Savings from ${currentYear} reductions`,
       data: annuitySavingsForNextYear,
@@ -474,6 +878,19 @@ export const generateMonthlyIpReport = async ({
       pctDrop: reductionData.pctDropArray,
       prosecutionDrop: reductionData.prosecutionDropArray,
       isRowData,
+    });
+
+    const allProsecutionSavingsRawData = await getAllProsecutionSavings({
+      priorityDrop: reductionData.priorityDropArray,
+      pctDrop: reductionData.pctDropArray,
+      prosecutionDrop: reductionData.prosecutionDropArray,
+      isRowData: true,
+    });
+
+    const transformedAllProsecutionSavingsRawData = transformDataByEntityMapping({
+      entityId: intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails.entityId,
+      entityDetails,
+      data: allProsecutionSavingsRawData,
     });
 
     const partiallyProcessedAllProsecutionSavings = getFormattedDataToProcessReportHeaders({
@@ -765,8 +1182,328 @@ export const generateMonthlyIpReport = async ({
       orgCode,
     });
 
+    //intermediateReport
+    const intermediateDataSourceVersionDetailsCurrentYearApplicationFiled =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedCurrentYearApplicationFiledRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+    const intermediateDataSourceVersionDetailstPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataD =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId:
+          intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorDEnitityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataD,
+        userId,
+        organizationId,
+        orgCode,
+      });
+    const intermediateDataSourceVersionDetailstPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataI =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId:
+          intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorIEnitityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataI,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailstPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataTotal =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId:
+          intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsDenominatorTotalEnitityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataTotal,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsAppsBeingDraftedEnitityDataSourceDetails =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedDraftedApplicationDisclosureCountRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsOpenApplicationDisclosureCountDataSourceDetails =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpOpenApplicationDisclosureEnitityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedOpenApplicationDisclosureCountRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsTotalActiveProjectsDataSourceDetails =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedtotalActiveProjectsRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsCurrentYearUsIssued =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpCurrentYearUsIssuedEnitityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedCurrentYearUsIssuedRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsCurrentYearIntIssued =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpCurrentYearIntlssuedEnitityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedCurrentYearIntIssuedRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsUSPendingApplication =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpTotalUSAppsPendingEnitityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedUSPendingApplicationRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsEPPendingApplication =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpTotalEPAppsPendingEnitityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedEPPendingApplicationRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsCNPendingApplication =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpTotalCNAppsPendingEnitityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedCNPendingApplicationRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsOtherPendingApplication =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedOtherPendingApplicationRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsTotalPendingApplication =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpOtherCountryAppsPendingEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedTotalPendingApplicationRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsUSIssuedApplication =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedUSIssuedApplicationRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsEPIssuedApplication =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedEPIssuedApplicationRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsCNIssuedApplication =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedCNIssuedApplicationRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsOtherIssuedApplication =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedOtherIssuedApplicationRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsTotalIssuedApplication =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpTotalIssuedEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedTotalIssuedApplicationRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsCurrentYearRenewalDue =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedPercentageOfCurrentYearRenewalDueRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsAnnuityDrop = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: intermediateMonthlyIpAnnuityDropEntityDataSourceDetails.dataSourceId,
+      customReportId: intermediateReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: transformedAnnuityDropRawData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+    const intermediateDataSourceVersionDetailsPriorityDrop = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: intermediateMonthlyIpPriorityDropEntityDataSourceDetails.dataSourceId,
+      customReportId: intermediateReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: transformedPriorityDropRawData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+    const intermediateDataSourceVersionDetailsPctDrop = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: intermediateMonthlyIpPctDropEntityDataSourceDetails.dataSourceId,
+      customReportId: intermediateReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: transformedPctDropRawData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+    const intermediateDataSourceVersionDetailsProsecutionDrop = await createUpdateCustomDataSourceVersionValueFunction({
+      dataSourceId: intermediateMonthlyIpProsecutionDropEntityDataSourceDetails.dataSourceId,
+      customReportId: intermediateReportId,
+      reportRequestId: requestedReportId,
+      versionValue,
+      versionData: transformedProsecutionDropRawData,
+      userId,
+      organizationId,
+      orgCode,
+    });
+
+    const intermediateDataSourceVersionDetailsAnnuitySavingsForCurrentYear =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedAnnuitySavingsForCurrentYearRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsAnnuitySavingsForNextYear =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedAnnuitySavingsForNextYearRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
+    const intermediateDataSourceVersionDetailsAllProsecutionSavings =
+      await createUpdateCustomDataSourceVersionValueFunction({
+        dataSourceId: intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails.dataSourceId,
+        customReportId: intermediateReportId,
+        reportRequestId: requestedReportId,
+        versionValue,
+        versionData: transformedAllProsecutionSavingsRawData,
+        userId,
+        organizationId,
+        orgCode,
+      });
+
     await reportRequestService.updateReportRequest(requestedReportId, {
       status: 'completed',
+      intermediateReportId: intermediateReportId,
       dataSourceVersion: [
         {
           sheetName: 'Global',
@@ -800,6 +1537,372 @@ export const generateMonthlyIpReport = async ({
           dataSourceVersionId: dataSourceVersionDetailsMonthlyIpStcSBU.dataSourceVersionId,
           versionCode: dataSourceVersionDetailsMonthlyIpStcSBU.versionCode,
           dataSourceId: monthlyipstcsbuDataSource,
+        },
+        {
+          sheetName: 'Current Year New Apps Filed',
+          sheetCode: 'currentyearnewappfiled',
+          tabName: 'Current Year New Apps Filed',
+          mappingFuctionName: 'entity',
+          designCode: 'currentyearnewappfiled',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsCurrentYearApplicationFiled.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsCurrentYearApplicationFiled.versionCode,
+          dataSourceId: intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: '%CYInvDisclosuresCnvtFiling(D)',
+          sheetCode: 'pctcyinvdisclosurescnvtfilingd',
+          tabName: '%CYInvDisclosuresCnvtFiling(D)',
+          mappingFuctionName: 'entity',
+          designCode: 'pctcyinvdisclosurescnvtfilingd',
+          allowPdfDownload: false,
+          dataSourceVersionId:
+            intermediateDataSourceVersionDetailstPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataD.dataSourceVersionId,
+          versionCode:
+            intermediateDataSourceVersionDetailstPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataD.versionCode,
+          dataSourceId:
+            intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorDEnitityDataSourceDetails.dataSourceId,
+          entityId:
+            intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorDEnitityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: '%CYInvDisclosuresCnvtFiling(I)',
+          sheetCode: 'pctcyinvdisclosurescnvtfilingi',
+          tabName: '%CYInvDisclosuresCnvtFiling(I)',
+          mappingFuctionName: 'entity',
+          designCode: 'pctcyinvdisclosurescnvtfilingi',
+          allowPdfDownload: false,
+          dataSourceVersionId:
+            intermediateDataSourceVersionDetailstPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataI.dataSourceVersionId,
+          versionCode:
+            intermediateDataSourceVersionDetailstPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataI.versionCode,
+          dataSourceId:
+            intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorIEnitityDataSourceDetails.dataSourceId,
+          entityId:
+            intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorIEnitityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: '%CYInvDisclosuresCnvtFiling(T)',
+          sheetCode: 'pctcyinvdisclosurescnvtfilingt',
+          tabName: '%CYInvDisclosuresCnvtFiling(T)',
+          mappingFuctionName: 'entity',
+          designCode: 'pctcyinvdisclosurescnvtfilingt',
+          allowPdfDownload: false,
+          dataSourceVersionId:
+            intermediateDataSourceVersionDetailstPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataTotal.dataSourceVersionId,
+          versionCode:
+            intermediateDataSourceVersionDetailstPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataTotal.versionCode,
+          dataSourceId:
+            intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsDenominatorTotalEnitityDataSourceDetails.dataSourceId,
+          entityId:
+            intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsDenominatorTotalEnitityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Apps Being Drafted',
+          sheetCode: 'appsbeingdrafted',
+          tabName: 'Apps Being Drafted',
+          mappingFuctionName: 'entity',
+          designCode: 'appsbeingdrafted',
+          allowPdfDownload: false,
+          dataSourceVersionId:
+            intermediateDataSourceVersionDetailsAppsBeingDraftedEnitityDataSourceDetails.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsAppsBeingDraftedEnitityDataSourceDetails.versionCode,
+          dataSourceId: intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Projects Opened in CY',
+          sheetCode: 'projects_opened_cy',
+          tabName: 'Projects Opened in CY',
+          mappingFuctionName: 'entity',
+          designCode: 'projects_opened_cy',
+          allowPdfDownload: false,
+          dataSourceVersionId:
+            intermediateDataSourceVersionDetailsOpenApplicationDisclosureCountDataSourceDetails.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsOpenApplicationDisclosureCountDataSourceDetails.versionCode,
+          dataSourceId: intermediateMonthlyIpOpenApplicationDisclosureEnitityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpOpenApplicationDisclosureEnitityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Total Active Projects',
+          sheetCode: 'total_active_projects',
+          tabName: 'Total Active Projects',
+          mappingFuctionName: 'entity',
+          designCode: 'total_active_projects',
+          allowPdfDownload: false,
+          dataSourceVersionId:
+            intermediateDataSourceVersionDetailsTotalActiveProjectsDataSourceDetails.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsTotalActiveProjectsDataSourceDetails.versionCode,
+          dataSourceId: intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'CY US Issued',
+          sheetCode: 'cy_us_issued',
+          tabName: 'CY US Issued',
+          mappingFuctionName: 'entity',
+          designCode: 'cy_us_issued',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsCurrentYearUsIssued.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsCurrentYearUsIssued.versionCode,
+          dataSourceId: intermediateMonthlyIpCurrentYearUsIssuedEnitityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpCurrentYearUsIssuedEnitityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'CY Intl Issued',
+          sheetCode: 'cy_intl_issued',
+          tabName: 'CY Intl Issued',
+          mappingFuctionName: 'entity',
+          designCode: 'cy_intl_issued',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsCurrentYearIntIssued.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsCurrentYearIntIssued.versionCode,
+          dataSourceId: intermediateMonthlyIpCurrentYearIntlssuedEnitityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpCurrentYearIntlssuedEnitityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Total US Apps pending',
+          sheetCode: 'total_us_apps_pending',
+          tabName: 'Total US Apps pending',
+          mappingFuctionName: 'entity',
+          designCode: 'total_us_apps_pending',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsUSPendingApplication.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsUSPendingApplication.versionCode,
+          dataSourceId: intermediateMonthlyIpTotalUSAppsPendingEnitityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpTotalUSAppsPendingEnitityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Total EP Apps pending',
+          sheetCode: 'total_ep_apps_pending',
+          tabName: 'Total EP Apps pending',
+          mappingFuctionName: 'entity',
+          designCode: 'total_ep_apps_pending',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsEPPendingApplication.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsEPPendingApplication.versionCode,
+          dataSourceId: intermediateMonthlyIpTotalEPAppsPendingEnitityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpTotalEPAppsPendingEnitityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Total CN Apps pending',
+          sheetCode: 'total_cn_apps_pending',
+          tabName: 'Total CN Apps pending',
+          mappingFuctionName: 'entity',
+          designCode: 'total_cn_apps_pending',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsCNPendingApplication.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsCNPendingApplication.versionCode,
+          dataSourceId: intermediateMonthlyIpTotalCNAppsPendingEnitityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpTotalCNAppsPendingEnitityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Other Country Apps pending',
+          sheetCode: 'other_country_apps_pending',
+          tabName: 'Other Country Apps pending',
+          mappingFuctionName: 'entity',
+          designCode: 'other_country_apps_pending',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsOtherPendingApplication.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsOtherPendingApplication.versionCode,
+          dataSourceId: intermediateMonthlyIpOtherCountryAppsPendingEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpOtherCountryAppsPendingEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Total Apps pending',
+          sheetCode: 'total_apps_pending',
+          tabName: 'Total Apps pending',
+          mappingFuctionName: 'entity',
+          designCode: 'total_apps_pending',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsTotalPendingApplication.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsTotalPendingApplication.versionCode,
+          dataSourceId: intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Total US Issued',
+          sheetCode: 'total_us_issued',
+          tabName: 'Total US Issued',
+          mappingFuctionName: 'entity',
+          designCode: 'total_us_issued',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsUSIssuedApplication.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsUSIssuedApplication.versionCode,
+          dataSourceId: intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Total EP Issued',
+          sheetCode: 'total_ep_issued',
+          tabName: 'Total EP Issued',
+          mappingFuctionName: 'entity',
+          designCode: 'total_ep_issued',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsEPIssuedApplication.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsEPIssuedApplication.versionCode,
+          dataSourceId: intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Total CN Issued',
+          sheetCode: 'total_cn_issued',
+          tabName: 'Total CN Issued',
+          mappingFuctionName: 'entity',
+          designCode: 'total_cn_issued',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsCNIssuedApplication.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsCNIssuedApplication.versionCode,
+          dataSourceId: intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Other Country Issued',
+          sheetCode: 'other_country_issued',
+          tabName: 'Other Country Issued',
+          mappingFuctionName: 'entity',
+          designCode: 'other_country_issued',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsOtherIssuedApplication.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsOtherIssuedApplication.versionCode,
+          dataSourceId: intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Total Issued',
+          sheetCode: 'total_issued',
+          tabName: 'Total Issued',
+          mappingFuctionName: 'entity',
+          designCode: 'total_issued',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsTotalIssuedApplication.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsTotalIssuedApplication.versionCode,
+          dataSourceId: intermediateMonthlyIpTotalIssuedEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpTotalIssuedEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'CY Renewals Due',
+          sheetCode: 'cy_renewals_due',
+          tabName: 'CY Renewals Due',
+          mappingFuctionName: 'entity',
+          designCode: 'cy_renewals_due',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsCurrentYearRenewalDue.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsCurrentYearRenewalDue.versionCode,
+          dataSourceId: intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Annuity Drop',
+          sheetCode: 'annuity_drop',
+          tabName: 'Annuity Drop',
+          mappingFuctionName: 'entity',
+          designCode: 'annuity_drop',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsAnnuityDrop.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsAnnuityDrop.versionCode,
+          dataSourceId: intermediateMonthlyIpAnnuityDropEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpAnnuityDropEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Priority Drop',
+          sheetCode: 'priority_drop',
+          tabName: 'Priority Drop',
+          mappingFuctionName: 'entity',
+          designCode: 'priority_drop',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsPriorityDrop.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsPriorityDrop.versionCode,
+          dataSourceId: intermediateMonthlyIpPriorityDropEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpPriorityDropEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Pct Drop',
+          sheetCode: 'pct_drop',
+          tabName: 'Pct Drop',
+          mappingFuctionName: 'entity',
+          designCode: 'pct_drop',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsPctDrop.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsPctDrop.versionCode,
+          dataSourceId: intermediateMonthlyIpPctDropEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpPctDropEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Prosecution Drop',
+          sheetCode: 'prosecution_drop',
+          tabName: 'Prosecution Drop',
+          mappingFuctionName: 'entity',
+          designCode: 'prosecution_drop',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsProsecutionDrop.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsProsecutionDrop.versionCode,
+          dataSourceId: intermediateMonthlyIpProsecutionDropEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpProsecutionDropEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'CY Annuity Savings',
+          sheetCode: 'cy_annuity_savings',
+          tabName: 'CY Annuity Savings',
+          mappingFuctionName: 'entity',
+          designCode: 'cy_annuity_savings',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsAnnuitySavingsForCurrentYear.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsAnnuitySavingsForCurrentYear.versionCode,
+          dataSourceId: intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'NY Annuity Savings',
+          sheetCode: 'ny_annuity_savings',
+          tabName: 'NY Annuity Savings',
+          mappingFuctionName: 'entity',
+          designCode: 'ny_annuity_savings',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsAnnuitySavingsForNextYear.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsAnnuitySavingsForNextYear.versionCode,
+          dataSourceId: intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails.entityId,
+          isIntermediate: true,
+        },
+        {
+          sheetName: 'Prosecution Savings',
+          sheetCode: 'prosecution_savings',
+          tabName: 'Prosecution Savings',
+          mappingFuctionName: 'entity',
+          designCode: 'prosecution_savings',
+          allowPdfDownload: false,
+          dataSourceVersionId: intermediateDataSourceVersionDetailsAllProsecutionSavings.dataSourceVersionId,
+          versionCode: intermediateDataSourceVersionDetailsAllProsecutionSavings.versionCode,
+          dataSourceId: intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails.dataSourceId,
+          entityId: intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails.entityId,
+          isIntermediate: true,
         },
       ],
     });

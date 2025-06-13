@@ -12,6 +12,7 @@ interface IDataSource extends Document {
   isActive: boolean;
   canEditInline: boolean;
   uniqueAttributeName: string[];
+  isVisible: boolean;
 }
 
 const dataSourceSchema = new Schema<IDataSource>(
@@ -27,6 +28,7 @@ const dataSourceSchema = new Schema<IDataSource>(
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     canEditInline: { type: Boolean, default: false },
     uniqueAttributeName: { type: [String] },
+    isVisible: { type: Boolean, default: true },
   },
   {
     timestamps: true,

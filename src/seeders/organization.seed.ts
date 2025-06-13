@@ -3,31 +3,43 @@ import Organization from '../database/models/organization';
 
 export async function seedOrganizations(payload) {
   // Check if the organization already exists
-  const existingOrganization = await Organization.findById(payload.organizationId);
+  const reportivixExistingOrganization = await Organization.findById(payload.reportivixOrganizationId);
 
-  if (!existingOrganization) {
+  if (!reportivixExistingOrganization) {
     // If it doesn't exist, create a new organization
     const newOrganization = new Organization({
-      _id: payload.organizationId,
+      _id: payload.reportivixOrganizationId,
       name: 'reportivix',
-      owner: payload.adminUserId,
+      owner: payload.reportivixAdminUserId,
       isMaster: true,
       licenseExpiresAt: new Date('2025-12-31'),
       code: 'reportivix',
+      status: 'active',
+      totalLicenses: 10,
     });
 
     await newOrganization.save();
-    console.info('Organization created successfully.');
+    console.info('Reportivix Organization created successfully.');
   }
 
-  const updateStatus = await Organization.updateMany({ status: { $exists: false } }, { $set: { status: 'active' } });
-  console.info(`Updated ${updateStatus.modifiedCount} organizations with status.`);
+  const sabicExistingOrganization = await Organization.findById(payload.sabicOrganizationId);
 
-  const updateLicense = await Organization.updateMany(
-    { totalLicenses: { $exists: false } },
-    { $set: { totalLicenses: 50 } }
-  );
-  console.info(`Updated ${updateLicense.modifiedCount} organizations with totalLicenses.`);
+  if (!sabicExistingOrganization) {
+    // If it doesn't exist, create a new organization
+    const newOrganization = new Organization({
+      _id: payload.sabicOrganizationId,
+      name: 'sabic',
+      owner: payload.reportivixSuperAdminUserId,
+      isMaster: true,
+      licenseExpiresAt: new Date('2025-12-31'),
+      code: 'sabic',
+      status: 'active',
+      totalLicenses: 10,
+    });
+
+    await newOrganization.save();
+    console.info('Sabic Organization created successfully.');
+  }
 
   const updateLicenseExpiresAt = await Organization.updateMany(
     { licenseExpiresAt: { $exists: false } },

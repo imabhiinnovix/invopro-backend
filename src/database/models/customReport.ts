@@ -1,4 +1,4 @@
-import { Schema, model, Document, Types } from 'mongoose';
+import mongoose, { Schema, model, Document, Types } from 'mongoose';
 
 interface IDataSource {
   code: string;
@@ -34,8 +34,9 @@ interface ISubSection {
   verticalAlignment: string;
   type: string;
   spanColumns: boolean;
-  format: string;
+  cellFormat: string;
   isRequired: boolean;
+  lastCellBackGroundColor: string;
 }
 
 interface ISection {
@@ -60,6 +61,7 @@ interface IHeaderSection {
 
 interface ICustomReport extends Document {
   reportName: string;
+  reportCode: string;
   functionName: string;
   dataSourceIds: IDataSource[];
   organizationId: Types.ObjectId;
@@ -67,6 +69,8 @@ interface ICustomReport extends Document {
   headers: Record<string, IHeaderSection>;
   reportSettings: IReportSetting[];
   design: Record<string, Record<string, ISection[]>>;
+  intermediateReportId: Types.ObjectId;
+  isVisible: boolean;
 }
 
 interface IReportSetting {
@@ -100,16 +104,17 @@ const HeaderSectionSchema = new Schema<IHeaderSection>({
 });
 
 const SubSectionSchema = new Schema<ISubSection>({
-  headerName: { type: String, required: true },
+  headerName: { type: String },
   fontBold: { type: Boolean },
-  headerBackGroundColor: { type: String, required: true },
-  headerTextColor: { type: String, required: true },
-  horizontalAlignment: { type: String, required: true },
-  verticalAlignment: { type: String, required: true },
-  type: { type: String, required: true },
-  spanColumns: { type: Boolean, required: true },
-  format: { type: String },
+  headerBackGroundColor: { type: String },
+  headerTextColor: { type: String },
+  horizontalAlignment: { type: String },
+  verticalAlignment: { type: String },
+  type: { type: String },
+  spanColumns: { type: Boolean },
+  cellFormat: { type: String },
   isRequired: { type: Boolean },
+  lastCellBackGroundColor: { type: String },
 });
 
 const SectionSchema = new Schema<ISection>({
@@ -123,7 +128,7 @@ const SectionSchema = new Schema<ISection>({
   spanColumns: { type: Boolean },
   subSections: { type: [SubSectionSchema] },
   space: { type: Number },
-  view: { type: String, required: true },
+  view: { type: String },
 });
 
 const ReportSettingSchema = new Schema<IReportSetting>({
@@ -138,18 +143,22 @@ const CustomReportSchema = new Schema<ICustomReport>(
   {
     reportName: { type: String, required: true },
     functionName: { type: String, required: true },
+    reportCode: { type: String, required: true },
     sampleFilePath: { type: String },
     dataSourceIds: [
       {
         code: { type: String, required: true },
-        dataSourceId: { type: String, required: true, ref: 'data_source' },
-        fileDetails: { type: [{ name: String, sheetName: String, isRequired: Boolean }] },
+        dataSourceId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'data_source' },
+        fileDetails: { type: [{ name: String, isRequired: Boolean }] },
         isRequired: { type: Boolean },
+        entityId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Entity' },
       },
     ],
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
     headers: { type: Map, of: HeaderSectionSchema },
     reportSettings: { type: [ReportSettingSchema], required: true },
+    intermediateReportId: { type: mongoose.Schema.Types.ObjectId },
+    isVisible: { type: Boolean },
     design: {
       type: Map,
       of: {
@@ -163,6 +172,10 @@ const CustomReportSchema = new Schema<ICustomReport>(
   }
 );
 
+CustomReportSchema.index(
+  { reportCode: 1, organizationId: 1 },
+  { unique: true, collation: { locale: 'en', strength: 2 } }
+);
 const CustomReportModel = model<ICustomReport>('custom_reports', CustomReportSchema);
 
 export default CustomReportModel;

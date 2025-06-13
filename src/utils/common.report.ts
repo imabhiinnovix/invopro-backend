@@ -2,6 +2,7 @@ import { getSchemaNameBasedOnVersionCodeAndOrgCode } from './common.utils';
 import { generateExcelReport } from './excel.utils';
 import * as dataSourceVersionValueService from '../database/services/defaultDataSourceVersionValue.services';
 import * as reportRequestService from '../database/services/reportRequest.services';
+import * as entityService from '../database/services/entity.services';
 
 export function processReportHeaders({
   data,
@@ -337,23 +338,34 @@ export const transformFunctionsMap: Record<string, (params: MappingParams) => Re
 export async function generateCustomReportBasedOnReportRequestId({
   reportRequestId,
   orgCode,
+  isIntermediate = false,
 }: {
   reportRequestId: string;
   orgCode: string;
+  isIntermediate: boolean;
 }) {
   try {
     const reportDetails: any = await reportRequestService.findReportRequestById(reportRequestId, [
-      { path: 'customReportId', select: 'reportName reportSettings design' },
+      { path: isIntermediate ? 'intermediateReportId' : 'customReportId', select: 'reportName reportSettings design' },
     ]);
 
     const reportData = {};
     const designData = {};
-    const reportSettings = reportDetails?.customReportId?.reportSettings;
-    const designSettings = reportDetails?.customReportId?.design;
-    const dataSourceVersions = reportDetails?.dataSourceVersion;
+
+    const reportSettings = isIntermediate
+      ? reportDetails?.intermediateReportId?.reportSettings
+      : reportDetails?.customReportId?.reportSettings;
+    const designSettings = isIntermediate
+      ? reportDetails?.intermediateReportId?.design
+      : reportDetails?.customReportId?.design;
+    const reportName = isIntermediate
+      ? reportDetails.intermediateReportId.reportName
+      : reportDetails.customReportId.reportName;
+
+    let dataSourceVersions = reportDetails?.dataSourceVersion ? reportDetails?.dataSourceVersion : [];
     const versionValue = reportDetails?.versionValue || '';
     const currentYearVersionValue = versionValue.split('-')[0];
-    const reportName = reportDetails.customReportId.reportName;
+
     const fileName = reportDetails.fileName;
     const filePath = reportDetails.filePath;
 
@@ -361,6 +373,21 @@ export async function generateCustomReportBasedOnReportRequestId({
       throw new Error(`The report is currently in '${reportDetails?.status}' status and cannot be downloaded.`);
     }
 
+    if (isIntermediate) {
+      dataSourceVersions = dataSourceVersions.filter((item) => item.isIntermediate);
+    } else {
+      dataSourceVersions = dataSourceVersions.filter((item) => !item.isIntermediate);
+    }
+
+    const entityIds = dataSourceVersions.filter((item) => !!item.entityId).map((item) => item.entityId);
+    let entityDetails: any = [];
+    if (entityIds.length > 0) {
+      entityDetails = await entityService.getEntityList({
+        query: { _id: { $in: entityIds } },
+      });
+    }
+
+    console.log('dataSourceVersions', dataSourceVersions);
     if (dataSourceVersions && dataSourceVersions.length > 0) {
       let mappings: Record<string, any> = {};
       let designDetails: any[] = [];
@@ -371,6 +398,7 @@ export async function generateCustomReportBasedOnReportRequestId({
         const versionCode = dataSourceVersion.versionCode;
         const dataSourceVersionId = dataSourceVersion.dataSourceVersionId;
         const mappingFuctionName = dataSourceVersion.mappingFuctionName;
+        const entityId = dataSourceVersion.entityId;
         const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
           orgCode: orgCode,
           versionCode: versionCode,
@@ -386,13 +414,26 @@ export async function generateCustomReportBasedOnReportRequestId({
           limit: Number.MAX_SAFE_INTEGER,
         });
 
+        console.log('dataSourceVersionData', dataSourceVersionData, 'sheetCode', sheetCode);
         designDetails = JSON.parse(JSON.stringify(designSettings.get(sheetCode)));
 
-        const mappingFunc = transformFunctionsMap[mappingFuctionName];
+        console.log('designDetails', designDetails);
 
-        if (mappingFunc) {
-          mappings = mappingFunc({ currentYear: currentYearVersionValue, isReverseMapping: false }) || {};
+        if (mappingFuctionName === 'entity' && entityId) {
+          const entity = entityDetails.data.find((e) => e._id.toString() === entityId.toString());
+          if (entity) {
+            for (const attr of entity.attributes) {
+              mappings[attr.name] = attr.mappingName;
+            }
+          }
+        } else {
+          const mappingFunc = transformFunctionsMap[mappingFuctionName];
+
+          if (mappingFunc) {
+            mappings = mappingFunc({ currentYear: currentYearVersionValue, isReverseMapping: false }) || {};
+          }
         }
+
         const transformedVersionData = dataSourceVersionData.data.map((entry) => {
           const newRow = {};
           const rowData = entry.rowData;
@@ -459,4 +500,44 @@ export async function generateCustomReportBasedOnReportRequestId({
     console.log('Errror in generateCustomReportBasedOnReportRequestId', e);
     throw e;
   }
+}
+
+type Attribute = {
+  name: string;
+  mappingName: string;
+};
+
+type Entity = {
+  _id: string;
+  attributes: Attribute[];
+};
+
+type Params = {
+  entityId: string;
+  entityDetails: Entity[];
+  data: Record<string, any>[];
+};
+
+export function transformDataByEntityMapping({ entityId, entityDetails, data }: Params): Record<string, any>[] {
+  // Find entity by ID
+  const entity = entityDetails.find((e) => e._id.toString() === entityId.toString());
+  if (!entity) {
+    return data;
+  }
+
+  // Build mapping from mappingName to name
+  const mapping: Record<string, string> = {};
+  for (const attr of entity.attributes) {
+    mapping[attr.mappingName] = attr.name;
+  }
+
+  // Transform each data object
+  return data.map((item) => {
+    const transformedItem: Record<string, any> = {};
+    for (const key in item) {
+      const newKey = mapping[key] || key; // Default to original key if no mapping found
+      transformedItem[newKey] = item[key];
+    }
+    return transformedItem;
+  });
 }

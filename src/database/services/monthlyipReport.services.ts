@@ -248,6 +248,7 @@ export async function getCurrentYearNewApplicationFiled({
   isTotalIssuedApplication,
   customReportModel,
   isRowData,
+  isSupplementalReport,
 }: {
   portfolioDataSourceVersionId: string;
   currentYear: string;
@@ -266,12 +267,17 @@ export async function getCurrentYearNewApplicationFiled({
   isTotalIssuedApplication?: boolean;
   customReportModel: CustomReportModelAccessReturnType;
   isRowData?: boolean;
+  isSupplementalReport?: boolean;
 }) {
   try {
     const otherCountryNegative = [...epCountry, 'CN', 'US'];
     let matchCondition: Record<string, any> = {
       dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
     };
+
+    if (!isSupplementalReport) {
+      matchCondition['rowData.SBU'] = { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] };
+    }
 
     const yearDateRange = {
       $gte: `${currentYear}-01-01T00:00:00.000Z`,
@@ -499,6 +505,7 @@ export async function getDisclosureCount({
 
     const matchCondition = {
       dataSourceVersionId: new ObjectId(disclosureDataSourceVersionId),
+      'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
     };
 
     if (isActive) {
@@ -544,15 +551,26 @@ export async function getDisclosureCount({
       {
         $match: matchCondition,
       },
-      {
+    ];
+
+    if (isRowData) {
+      aggreagatePipeline.push({
+        $group: {
+          _id: '$rowData.DisclosureNumber',
+          row: { $first: '$rowData' }, // only pick one document per DisclosureNumber
+        },
+      });
+      // Flatten the row object into top-level fields
+      aggreagatePipeline.push({
+        $replaceRoot: { newRoot: '$row' },
+      });
+    } else {
+      aggreagatePipeline.push({
         $group: {
           _id: '$rowData.DisclosureNumber',
           SBU: { $first: '$rowData.SBU' },
         },
-      },
-    ];
-
-    if (!isRowData) {
+      });
       aggreagatePipeline.push({
         $group: {
           _id: '$SBU',
@@ -600,6 +618,7 @@ export async function getProjectBasedOnStcs({
 
     const matchCondition = {
       dataSourceVersionId: new ObjectId(disclosureDataSourceVersionId),
+      'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
       // 'rowData.OriginalSTCs': { $ne: null },
     };
 
@@ -773,6 +792,7 @@ export async function getAppsFiledBasedOnStc({
     const otherCountryNegative = [...epCountry, 'CN', 'US'];
     let matchCondition: Record<string, any> = {
       dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
+      'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
       // 'rowData.Original STCs': { $ne: null },
     };
 
@@ -1042,27 +1062,6 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       isRowData: true,
     });
 
-    const newYearApplicationFiledStartsWith: string = currentYear.slice(-2);
-
-    const newYearApplicationFiledFilteredData = newYearApplicationFiledRowData.filter((item) =>
-      item?.Case_Reference1?.startsWith(newYearApplicationFiledStartsWith)
-    );
-
-    const newYearApplicationFiledSbuCount: Record<string, number> = newYearApplicationFiledFilteredData.reduce(
-      (acc: Record<string, number>, item: { SBU: string }) => {
-        acc[item.SBU] = (acc[item.SBU] || 0) + 1;
-        return acc;
-      },
-      {}
-    );
-
-    const newYearApplicationFiled = Object.entries(newYearApplicationFiledSbuCount).map(
-      ([SBU, value]: [string, number]) => ({
-        value,
-        SBU,
-      })
-    );
-
     const activeDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,
@@ -1082,6 +1081,30 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       customReportModel,
       isRowData,
     });
+    const newYearApplicationFiledStartsWith: string = currentYear.slice(-2);
+
+    const newYearApplicationFiledFilteredData = newYearApplicationFiledRowData.filter((item) =>
+      item?.Case_Reference1?.startsWith(newYearApplicationFiledStartsWith)
+    );
+
+    if (isRowData) {
+      return { newYearApplicationFiledFilteredData, activeDisclosureCount, totalDisclosureCount };
+    }
+
+    const newYearApplicationFiledSbuCount: Record<string, number> = newYearApplicationFiledFilteredData.reduce(
+      (acc: Record<string, number>, item: { SBU: string }) => {
+        acc[item.SBU] = (acc[item.SBU] || 0) + 1;
+        return acc;
+      },
+      {}
+    );
+
+    const newYearApplicationFiled = Object.entries(newYearApplicationFiledSbuCount).map(
+      ([SBU, value]: [string, number]) => ({
+        value,
+        SBU,
+      })
+    );
 
     const newYearApplicationFiledRecord: Record<string, any> = {};
     for (let item of newYearApplicationFiled) {
@@ -1121,10 +1144,6 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
     );
 
     return [{ SBU: `% of ${currentYear} Invention Disclosures converted to Filings`, ...result }];
-
-    // if (isRowData) {
-    //   return { newYearApplicationFiled, activeDisclosureCount, totalDisclosureCount };
-    // }
   } catch (error) {
     throw error;
   }
@@ -1174,6 +1193,7 @@ export async function getCurrentYearRenewalDue({
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
+          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
           'rowData.In Force': 1,
         },
       },
@@ -1300,7 +1320,7 @@ export async function getCurrentYearRenewalDue({
       value: (data as Record<string, any>).total,
     }));
 
-    const annuitiesData = await customReportModel.DataSourceVersionValueAnnuities.aggregate([
+    const annuitiesData = await customReportModel.DataSourceVersionValueAnnuitiesOutStanding.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(annuitiesbDataSourceVersionId),
@@ -1457,7 +1477,12 @@ export async function getReductions({
 }) {
   try {
     const allCasesFromPortfolio = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
-      { $match: { dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId) } },
+      {
+        $match: {
+          dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
+          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
+        },
+      },
     ]);
 
     const groupedCasesBasedOnFaimlyNumber = {};
@@ -1483,6 +1508,7 @@ export async function getReductions({
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
+          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
           'rowData.Status Date': yearDateRange,
           'rowData.Status': { $in: currentStatus },
           'rowData.Case_Reference1': { $not: { $regex: 'CNRO' } },
@@ -1546,6 +1572,7 @@ export async function getReductions({
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
+          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
           'rowData.Status Date': yearDateRange,
           'rowData.Status': { $in: currentStatus },
           'rowData.Case_Reference1': {
@@ -1615,6 +1642,7 @@ export async function getReductions({
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
+          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
           'rowData.Status Date': yearDateRange,
           'rowData.Status': { $in: currentStatus },
           'rowData.Case_Reference1': {
@@ -1656,6 +1684,7 @@ export async function getReductions({
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
+          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
           'rowData.Status Date': yearDateRange,
           'rowData.Status': { $in: currentStatus },
           'rowData.Case_Reference1': {

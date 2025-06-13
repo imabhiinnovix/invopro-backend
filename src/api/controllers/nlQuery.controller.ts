@@ -1,56 +1,20 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { Request, Response, NextFunction } from 'express';
-import { getDataSourceList, getDataSourceListWithAggregation } from '../../database/services/dataSource.services';
+import { GoogleGenAI } from '@google/genai';
+import e, { Request, Response, NextFunction } from 'express';
+import { getDataSourceListWithAggregation } from '../../database/services/dataSource.services';
 import mongoose from 'mongoose';
 import config from '../../config';
-import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.utils';
-import createDefaultDataSourceVersionModel from '../../database/models/defaultDataSourceVersionModel';
+
 import * as dataSourceService from '../../database/services/dataSource.services';
-import * as dataSourceVersionService from '../../database/services/dataSourceVersion.services';
 import * as operatorService from '../../database/services/operator.service';
 import * as widgetTypeService from '../../database/services/widgetType.service';
 import { getWidgetChartData } from './dashboard.controller';
+import * as cacheService from '../../database/services/aiCache.service';
+import { DateTime } from 'luxon';
 const ObjectId = mongoose.Types.ObjectId;
 
-const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
+const genAI = new GoogleGenAI({ apiKey: config.GEMINI_API_KEY });
 
-// const generatePrompt = ({ collectionsMetadata, userQuery, operators }) => {
-//   const formattedCollections = collectionsMetadata
-//     .map((collection) => {
-//       return `
-//   Collection: ${collection.name} (Code: ${collection.code})
-//   Attributes: ${collection.attributes.map((attr) => `rowData.${attr.name} (${attr.type})`).join(', ')}
-//       `;
-//     })
-//     .join('\n');
-
-//   return `
-//   Here are the available collections in the system:
-
-//   ${formattedCollections}
-
-//   The user query is: "${userQuery}"
-
-//   Your task:
-// 1. Based solely on the above list of collections and attributes, identify the **single best collection** that matches the user's intent.
-//    - ⚠️ Do NOT rely on previous answers or memory. Always make a fresh decision.
-// 2. Generate a MongoDB aggregation pipeline in JavaScript format that satisfies the user query using that collection.
-// 3. Respond strictly in the following raw JSON format (no markdown, no quotes):
-
-// {
-// "name": "Collection Name",
-// "code":"collection Code",
-//   "aggregation": [ /* MongoDB aggregation pipeline as an array */ ],
-//   "error": ""                    // Leave empty if no error, otherwise describe the issue
-// }
-
-// If the query is ambiguous or cannot be fulfilled with the available data, leave the aggregation empty and include an appropriate error message in the "error" field.
-
-// ⚠️ Do not include any explanation or text outside the JSON response.
-// `;
-// };
-
-const generatePrompt = ({ collectionsMetadata, userQuery, operators }) => {
+const generatePrompt = ({ collectionsMetadata, operators }) => {
   const formattedCollections = collectionsMetadata
     .map((collection) => {
       return `
@@ -68,17 +32,14 @@ Operators: ${opGroup.operators.map((op) => `${op.operatorKey}`).join(', ')}`;
     .join('\n\n');
 
   return `
+
+You are an AI expert in generating MongoDB query for chart definitions based on metadata.
 Here are the available collections in the system:
-
 ${formattedCollections}
-
 Available operators by field type:
-
 ${formattedOperators}
 
-The user query is: "${userQuery}"
-
-Your task:
+Your task, based on the user query that we will provide in a subsequent request:
 1. Based solely on the above list of collections and attributes, identify the **single best collection** that matches the user's intent (Identify based on Collection and Attributes).
    - ⚠️ Do NOT rely on previous answers or memory. Always make a fresh decision.
 2. Generate a chart definition object that includes:
@@ -123,19 +84,40 @@ If the query is ambiguous or cannot be fulfilled with the available data, leave 
 `;
 };
 
-async function selectCollectionBasedOnNlQuery({
-  userQuery,
+async function selectCollectionBasedOnNlQueryCache({
   collectionsMetadata,
   operators,
 }: {
-  userQuery: string;
   collectionsMetadata: any;
   operators: any[];
 }) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-  const prompt = generatePrompt({ collectionsMetadata, userQuery, operators });
-  const result = await model.generateContent(prompt);
-  return result.response.text();
+  const prompt = generatePrompt({ collectionsMetadata, operators });
+  const cacheResult = await genAI.caches.create({
+    model: 'gemini-2.0-flash-001',
+    config: {
+      systemInstruction: prompt,
+      ttl: '86400s',
+    },
+  });
+
+  return cacheResult.name;
+}
+
+async function selectCollectionBasedOnNlQueryResultBasedOnCacheName({
+  userQuery,
+  cacheName,
+}: {
+  userQuery: string;
+  cacheName: string;
+}) {
+  const chat = genAI.chats.create({
+    model: 'gemini-2.0-flash-001',
+    config: { cachedContent: cacheName },
+  });
+
+  const response = await chat.sendMessage({ message: `userQuery:${userQuery}` });
+
+  return response.text;
 }
 
 function cleanModelJsonResponse(response) {
@@ -168,18 +150,60 @@ export const runNaturalLanguageAggregation = async (req: Request, res: Response,
   try {
     const { organizationId, orgCode } = req.user;
     const { userQuery }: any = req.query;
-    const query = { organizationId: new ObjectId(organizationId) };
 
-    const collectionsMetadata = await getDataSourceListWithAggregation({
-      query: query,
-    });
+    const cacheData = await cacheService.findCacheDataByCodeAndOrganization('chart', organizationId);
+    let cacheName = '';
+    const nowISO = DateTime.now().toISO();
+    if (cacheData) {
+      cacheName = cacheData.cacheName;
+      const updateAt = cacheData.updatedAt;
+      const diff = DateTime.fromISO(nowISO).diff(DateTime.fromISO(updateAt), 'seconds').seconds;
 
-    const operatorData = await operatorService.getAllOperators({});
-    const queryResult = await selectCollectionBasedOnNlQuery({
+      if (diff >= 86400) {
+        const query = { organizationId: new ObjectId(organizationId) };
+        const collectionsMetadata = await getDataSourceListWithAggregation({
+          query: query,
+        });
+
+        const operatorData = await operatorService.getAllOperators({});
+
+        const cacheResult = await selectCollectionBasedOnNlQueryCache({
+          collectionsMetadata,
+          operators: operatorData.data,
+        });
+
+        await cacheService.updateCacheData(cacheData._id.toString(), { cacheName: cacheResult, updatedAt: nowISO });
+        cacheName = cacheResult!;
+      }
+    } else {
+      const query = { organizationId: new ObjectId(organizationId) };
+      const collectionsMetadata = await getDataSourceListWithAggregation({
+        query: query,
+      });
+
+      const operatorData = await operatorService.getAllOperators({});
+
+      const cacheResult = await selectCollectionBasedOnNlQueryCache({
+        collectionsMetadata,
+        operators: operatorData.data,
+      });
+
+      cacheName = cacheResult!;
+
+      await cacheService.createAiCacheData({
+        organizationId: organizationId,
+        code: 'chart',
+        cacheName: cacheResult,
+        createdAt: nowISO,
+        updatedAt: nowISO,
+      });
+    }
+
+    const queryResult = await selectCollectionBasedOnNlQueryResultBasedOnCacheName({
       userQuery,
-      collectionsMetadata,
-      operators: operatorData.data,
+      cacheName: cacheName,
     });
+
     const cleanedQueryResult = cleanModelJsonResponse(queryResult);
 
     if (!cleanedQueryResult || !cleanedQueryResult.collectionCode || !cleanedQueryResult.dimensions) {
@@ -189,11 +213,6 @@ export const runNaturalLanguageAggregation = async (req: Request, res: Response,
       console.log(cleanedQueryResult.error);
       throw cleanedQueryResult.error;
     } else {
-      // const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
-      //   orgCode,
-      //   versionCode: cleanedQueryResult.code,
-      // });
-
       const dataSource: any = await dataSourceService.getDataSource({
         code: cleanedQueryResult.collectionCode,
         organizationId: organizationId,
@@ -232,27 +251,6 @@ export const runNaturalLanguageAggregation = async (req: Request, res: Response,
         isIncremental: false, // Optional
       });
       cleanedQueryResult['data'] = widgetData;
-      // const dataSourceVersion: any = await dataSourceVersionService.getDataSourceVersion({
-      //   query: {
-      //     dataSourceId: dataSource._id,
-      //     isCurrent: true,
-      //     isActive: true,
-      //   },
-      //   sort: { versionValue: -1 },
-      // });
-
-      // const aggregation = cleanedQueryResult.aggregation;
-
-      // const matchStage = aggregation.find((stage) => stage.$match);
-      // if (matchStage) {
-      //   matchStage.$match.dataSourceVersionId = new ObjectId(dataSourceVersion._id.toString());
-      // } else {
-      //   aggregation.unshift({ $match: { dataSourceVersionId: new ObjectId(dataSourceVersion._id.toString()) } });
-      // }
-      // const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
-
-      // // 5. Execute aggregation
-      // const dataResults = await DataSourceModel.aggregate(aggregation).exec();
 
       res.status(200).json({
         success: true,

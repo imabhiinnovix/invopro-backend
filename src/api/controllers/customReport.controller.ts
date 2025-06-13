@@ -16,6 +16,7 @@ import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../utils/common.ut
 import * as dataSourceVersionValueService from '../../database/services/defaultDataSourceVersionValue.services';
 import mongoose from 'mongoose';
 import { generateCustomReportBasedOnReportRequestId, transformFunctionsMap } from '../../utils/common.report';
+import * as entityService from '../../database/services/entity.services';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -82,6 +83,7 @@ export const generateCustomReportsFunction = async ({
       organizationId: organizationId,
       versionValue: versionValue,
       customReportId: customReportDetails._id,
+      intermediateReportId: customReportDetails.intermediateReportId,
       status: 'processing',
       fileName: fileName,
       filePath: path.join('uploads', organizationId, userId, 'generatedReports', `${fileName}`),
@@ -112,6 +114,10 @@ export const generateCustomReportsFunction = async ({
 
       const annuitiesbDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'annuities');
 
+      const annuitiesOutstandingDataSource = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'annuities_outstanding'
+      );
+
       const staticNewFilingsDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'newfilings');
 
       const currentStaticEstimatesDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'estimates');
@@ -121,6 +127,99 @@ export const generateCustomReportsFunction = async ({
       const staticProjectOpenedDataSource = customReportDetails.dataSourceIds.find(
         (ds) => ds.code === 'projectsopened'
       );
+      const intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'intermediatemonthlyipcurrentyearnewappfiled');
+
+      const intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorDEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'pctcyinvdisclosurescnvtfilingd');
+
+      const intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorIEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'pctcyinvdisclosurescnvtfilingi');
+
+      const intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsDenominatorTotalEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'pctcyinvdisclosurescnvtfilingt');
+
+      const intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'intermediatemonthlyipappsbeingdrafted'
+      );
+      const intermediateMonthlyIpOpenApplicationDisclosureEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyip_projects_opened_cy');
+
+      const intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyip_total_active_projects');
+
+      const intermediateMonthlyIpCurrentYearUsIssuedEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyip_cy_us_issued');
+
+      const intermediateMonthlyIpCurrentYearIntlssuedEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'monthlyip_cy_intl_issued');
+
+      const intermediateMonthlyIpTotalUSAppsPendingEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'total_us_apps_pending');
+      const intermediateMonthlyIpTotalEPAppsPendingEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'total_ep_apps_pending');
+      const intermediateMonthlyIpTotalCNAppsPendingEnitityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'total_cn_apps_pending');
+      const intermediateMonthlyIpOtherCountryAppsPendingEntityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'other_country_apps_pending');
+      const intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'total_apps_pending'
+      );
+      const intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'total_us_issued'
+      );
+      const intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'total_ep_issued'
+      );
+      const intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'total_cn_issued'
+      );
+      const intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'other_country_issued');
+      const intermediateMonthlyIpTotalIssuedEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'total_issued'
+      );
+
+      const intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'cy_renewals_due'
+      );
+
+      const intermediateMonthlyIpAnnuityDropEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'annuity_drop'
+      );
+      const intermediateMonthlyIpPriorityDropEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'priority_drop'
+      );
+      const intermediateMonthlyIpPctDropEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'pct_drop'
+      );
+      const intermediateMonthlyIpProsecutionDropEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'prosecution_drop'
+      );
+
+      const intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'cy_annuity_savings'
+      );
+      const intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails: any = customReportDetails.dataSourceIds.find(
+        (ds) => ds.code === 'ny_annuity_savings'
+      );
+
+      const intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails: any =
+        customReportDetails.dataSourceIds.find((ds) => ds.code === 'prosecution_savings');
+      const entityDetails = await entityService.getEntityList({
+        query: {
+          _id: {
+            $in: [
+              intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails.entityId,
+              intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails.entityId,
+              intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails.entityId,
+              intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails.entityId,
+              intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails.entityId,
+            ],
+          },
+        },
+      });
+
       const data = await generateMonthlyIpReport({
         reportRequestPayload,
         requestedReportId: reportRequestId as string,
@@ -129,6 +228,7 @@ export const generateCustomReportsFunction = async ({
         sabicipDataSourceVersionId: versionMap[sabicipDataSource?.dataSourceId!],
         ctclinsabDataSourceVersionId: versionMap[ctclinsabDataSource?.dataSourceId!],
         annuitiesbDataSourceVersionId: versionMap[annuitiesbDataSource?.dataSourceId!],
+        annuitiesOutstandingDataSourceVersionId: versionMap[annuitiesOutstandingDataSource?.dataSourceId!],
         staticNewFilingsDataSourceId: staticNewFilingsDataSource?.dataSourceId!,
         staticEstimatesDataSourceId: currentStaticEstimatesDataSource?.dataSourceId!,
         staticProjectOpenedDataSourceId: staticProjectOpenedDataSource?.dataSourceId!,
@@ -141,6 +241,35 @@ export const generateCustomReportsFunction = async ({
         orgCode,
         customReportModel,
         headers: customReportDetails.headers,
+        intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails,
+        intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorDEnitityDataSourceDetails,
+        intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorIEnitityDataSourceDetails,
+        intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsDenominatorTotalEnitityDataSourceDetails,
+        intermediateMonthlyIpAppsBeingDraftedEnitityDataSourceDetails,
+        intermediateMonthlyIpOpenApplicationDisclosureEnitityDataSourceDetails,
+        intermediateMonthlyIpTotalActiveProjectsEnitityDataSourceDetails,
+        intermediateMonthlyIpCurrentYearUsIssuedEnitityDataSourceDetails,
+        intermediateMonthlyIpCurrentYearIntlssuedEnitityDataSourceDetails,
+        intermediateMonthlyIpTotalUSAppsPendingEnitityDataSourceDetails,
+        intermediateMonthlyIpTotalEPAppsPendingEnitityDataSourceDetails,
+        intermediateMonthlyIpTotalCNAppsPendingEnitityDataSourceDetails,
+        intermediateMonthlyIpOtherCountryAppsPendingEntityDataSourceDetails,
+        intermediateMonthlyIpTotalAppsPendingEntityDataSourceDetails,
+        intermediateMonthlyIpTotalUSIssuedEntityDataSourceDetails,
+        intermediateMonthlyIpTotalEPIssuedEntityDataSourceDetails,
+        intermediateMonthlyIpTotalCNIssuedEntityDataSourceDetails,
+        intermediateMonthlyIpOtherCountryIssuedEntityDataSourceDetails,
+        intermediateMonthlyIpTotalIssuedEntityDataSourceDetails,
+        intermediateMonthlyIpCYRenewalsDueEntityDataSourceDetails,
+        intermediateMonthlyIpAnnuityDropEntityDataSourceDetails,
+        intermediateMonthlyIpPriorityDropEntityDataSourceDetails,
+        intermediateMonthlyIpPctDropEntityDataSourceDetails,
+        intermediateMonthlyIpProsecutionDropEntityDataSourceDetails,
+        intermediateMonthlyIpCyAnnuitySavingsEntityDataSourceDetails,
+        intermediateMonthlyIpNyAnnuitySavingsEntityDataSourceDetails,
+        intermediateMonthlyIpProsecutionSavingsEntityDataSourceDetails,
+        entityDetails: entityDetails.data,
+        intermediateReportId: customReportDetails.intermediateReportId,
       });
 
       return data;
@@ -305,7 +434,7 @@ export const listCustomReports = async (req: Request, res: Response, next: NextF
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
-    const query: any = { organizationId: organizationId };
+    const query: any = { organizationId: organizationId, isVisible: true };
     if (search) query.reportName = { $regex: search, $options: 'i' };
 
     let result: any = {};
@@ -352,7 +481,7 @@ export const listReportRequest = async (req: Request, res: Response, next: NextF
     if (paginate) {
       result = await reportRequestService.getReportRequestList({
         query,
-        select: ['versionValue', 'dataSourceVersion', 'status', 'createdAt'],
+        select: ['versionValue', 'dataSourceVersion', 'status', 'createdAt', 'intermediateReportId'],
         page,
         limit,
         populate: [
@@ -387,8 +516,14 @@ export const downloadReport = async (req: Request, res: Response, next: NextFunc
   try {
     const { reportRequestId } = req.params;
     const { orgCode } = req.user;
+    const { isIntermediate } = req.query;
+    const isIntermediateBool = isIntermediate === 'true';
 
-    const generatedReportData = await generateCustomReportBasedOnReportRequestId({ reportRequestId, orgCode });
+    const generatedReportData = await generateCustomReportBasedOnReportRequestId({
+      reportRequestId,
+      orgCode,
+      isIntermediate: isIntermediateBool,
+    });
 
     res.download(generatedReportData.filePath!, generatedReportData.fileName!, (err) => {
       if (err) {
