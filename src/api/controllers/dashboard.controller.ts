@@ -473,7 +473,10 @@ export const getWidgetChartData = async ({
   const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
 
   // 5. Execute aggregation
-  let dataResults = await DataSourceModel.aggregate(aggregationPipeline).exec();
+  const dataResultsWithTotalArray = await DataSourceModel.aggregate(aggregationPipeline).exec();
+
+  const dataResultsWithTotalMap =
+    dataResultsWithTotalArray && dataResultsWithTotalArray.length > 0 ? dataResultsWithTotalArray[0] : {};
 
   // get the widget Appearance
   // let widgetAppearance: any = {};
@@ -481,6 +484,7 @@ export const getWidgetChartData = async ({
   //   widgetAppearance = await widgetAppearanceService.getWidgetAppearance({ _id: widgetAppearanceId, organizationId });
   // }
 
+  let dataResults = dataResultsWithTotalMap?.data ? dataResultsWithTotalMap?.data : [];
   if (isIncremental) {
     if (groupBy && groupBy.length >= 0) {
       dataResults = calculateMoMDifference(dataResults, groupBy);
@@ -509,6 +513,7 @@ export const getWidgetChartData = async ({
   return {
     label: dashBoardType === 'trend' ? `${startVersionValue}:${endVersionValue}` : labelVersionValue,
     widgetData: dataResults,
+    total: dataResultsWithTotalMap?.total ? dataResultsWithTotalMap?.total : 0,
   };
 };
 

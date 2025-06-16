@@ -105,6 +105,23 @@ export const buildAggregationPipeline = (widget: any) => {
         $match: {
           name: { $ne: null },
         },
+      },
+      {
+        $group: {
+          _id: null,
+          data: { $push: '$$ROOT' },
+          total: { $sum: '$data' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          data: 1,
+          total: 1,
+        },
+      },
+      {
+        $replaceRoot: { newRoot: { data: '$data', total: '$total' } },
       }
     );
   } else {
@@ -141,6 +158,16 @@ export const buildAggregationPipeline = (widget: any) => {
           data: { $push: '$$ROOT' },
           total: { $sum: '$data' },
         },
+      },
+      {
+        $project: {
+          _id: 0,
+          data: 1,
+          total: 1,
+        },
+      },
+      {
+        $replaceRoot: { newRoot: { data: '$data', total: '$total' } },
       }
     );
 
