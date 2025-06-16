@@ -513,7 +513,7 @@ export const getWidgetChartData = async ({
   return {
     label: dashBoardType === 'trend' ? `${startVersionValue}:${endVersionValue}` : labelVersionValue,
     widgetData: dataResults,
-    total: dataResultsWithTotalMap?.total ? dataResultsWithTotalMap?.total : 0,
+    totalCount: dataResultsWithTotalMap?.total ? dataResultsWithTotalMap?.total : 0,
   };
 };
 
