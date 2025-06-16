@@ -21,7 +21,7 @@ export async function handleFileUpload({ userId }: { userId: string }) {
   await fileService.deleteAllFiles();
 
   const disclosureFile = await genAI.files.upload({
-    file: path.join('reports/sample/All Disclosures-PETCHEM.csv'),
+    file: path.join('reports/sample/IP Analyst Dashboard.csv'),
     config: { mimeType: 'text/plain' },
   });
 
@@ -37,11 +37,11 @@ export async function handleFileUpload({ userId }: { userId: string }) {
 
   const expirationTimeDisclosure = new Date(disclosureFile.expirationTime!);
   expirationTimeDisclosure.setHours(expirationTimeDisclosure.getHours() - 1);
-  const disclosureFileData = {
+  const ipAnalystFileData = {
     userId,
-    name: 'Disclosure',
+    name: 'IpAnalyst',
     mimeType: disclosureFile.mimeType,
-    type: 'json',
+    type: 'csv',
     fileUri: disclosureFile.uri,
     path: disclosureFile.downloadUri,
     isDeleted: false,
@@ -54,13 +54,13 @@ export async function handleFileUpload({ userId }: { userId: string }) {
     userId,
     name: 'Annuity',
     mimeType: annuityFile.mimeType,
-    type: 'json',
+    type: 'csv',
     fileUri: annuityFile.uri,
     path: annuityFile.downloadUri,
     isDeleted: false,
     uriExpiresAt: expirationTimeAnnuity,
   };
 
-  await fileService.createManyFiles([disclosureFileData, annuityFileData]);
-  return { annuityFileData, disclosureFileData };
+  await fileService.createManyFiles([ipAnalystFileData, annuityFileData]);
+  return { annuityFileData, ipAnalystFileData };
 }

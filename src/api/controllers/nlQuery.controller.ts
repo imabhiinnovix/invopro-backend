@@ -277,19 +277,19 @@ export const runNaturalLanguageInsights = async (req: Request, res: Response, ne
     let fileData;
     if (files && files.length === 2) {
       const annuityFileData = files.find((file) => file.name === 'Annuity');
-      const disclosureFileData = files.find((file) => file.name === 'Disclosure');
+      const ipAnalystFileData = files.find((file) => file.name === 'IpAnalyst');
 
       if (
         !annuityFileData.uriExpiresAt ||
         !annuityFileData.fileUri ||
         new Date() > new Date(annuityFileData.uriExpiresAt) ||
-        !disclosureFileData.uriExpiresAt ||
-        !disclosureFileData.fileUri ||
-        new Date() > new Date(disclosureFileData.uriExpiresAt)
+        !ipAnalystFileData.uriExpiresAt ||
+        !ipAnalystFileData.fileUri ||
+        new Date() > new Date(ipAnalystFileData.uriExpiresAt)
       ) {
         fileData = await handleFileUpload({ userId });
       } else {
-        fileData = { annuityFileData, disclosureFileData };
+        fileData = { annuityFileData, ipAnalystFileData };
       }
     } else {
       fileData = await handleFileUpload({ userId });
@@ -320,7 +320,7 @@ ${userQuery}`;
     const response = await genAI.models.generateContent({
       model: 'gemini-2.0-flash-001',
       contents: createUserContent([
-        // createPartFromUri(fileData.disclosureFileData.fileUri, fileData.disclosureFileData.mimeType),
+        createPartFromUri(fileData.ipAnalystFileData.fileUri, fileData.ipAnalystFileData.mimeType),
         createPartFromUri(fileData.annuityFileData.fileUri, fileData.annuityFileData.mimeType),
         prompt,
       ]),
