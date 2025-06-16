@@ -134,6 +134,13 @@ export const buildAggregationPipeline = (widget: any) => {
         $match: {
           name: { $ne: null },
         },
+      },
+      {
+        $group: {
+          _id: null,
+          data: { $push: '$$ROOT' },
+          total: { $sum: '$data' },
+        },
       }
     );
 
