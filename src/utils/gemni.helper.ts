@@ -17,16 +17,18 @@ interface FileDocument {
 const genAI = new GoogleGenAI({ apiKey: config.GEMINI_API_KEY });
 
 export async function handleFileUpload({ userId }: { userId: string }) {
+  console.log('Inside handle file upload.');
   await fileService.deleteAllFiles();
 
   const disclosureFile = await genAI.files.upload({
-    file: path.join('Cajun_instruments.jpg'),
-    config: { mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+    file: path.join('reports/sample/All Disclosures-PETCHEM.csv'),
+    config: { mimeType: 'text/plain' },
   });
 
+  console.log(disclosureFile, 'disclosureFile');
   const annuityFile = await genAI.files.upload({
-    file: path.join('Cajun_instruments.jpg'),
-    config: { mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+    file: path.join('reports/sample/AnnuitiesDueList.csv'),
+    config: { mimeType: 'text/plain' },
   });
 
   if (!disclosureFile?.uri || !annuityFile?.uri) {
@@ -39,7 +41,7 @@ export async function handleFileUpload({ userId }: { userId: string }) {
     userId,
     name: 'Disclosure',
     mimeType: disclosureFile.mimeType,
-    type: 'xlsx',
+    type: 'json',
     fileUri: disclosureFile.uri,
     path: disclosureFile.downloadUri,
     isDeleted: false,
@@ -52,7 +54,7 @@ export async function handleFileUpload({ userId }: { userId: string }) {
     userId,
     name: 'Annuity',
     mimeType: annuityFile.mimeType,
-    type: 'xlsx',
+    type: 'json',
     fileUri: annuityFile.uri,
     path: annuityFile.downloadUri,
     isDeleted: false,

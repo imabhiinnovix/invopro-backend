@@ -287,12 +287,12 @@ export const runNaturalLanguageInsights = async (req: Request, res: Response, ne
         !disclosureFileData.fileUri ||
         new Date() > new Date(disclosureFileData.uriExpiresAt)
       ) {
-        fileData = handleFileUpload({ userId });
+        fileData = await handleFileUpload({ userId });
       } else {
         fileData = { annuityFileData, disclosureFileData };
       }
     } else {
-      fileData = handleFileUpload({ userId });
+      fileData = await handleFileUpload({ userId });
     }
     const prompt = `
 You are an intelligent document analysis assistant.
@@ -320,7 +320,7 @@ ${userQuery}`;
     const response = await genAI.models.generateContent({
       model: 'gemini-2.0-flash-001',
       contents: createUserContent([
-        createPartFromUri(fileData.disclosureFileData.fileUri, fileData.disclosureFileData.mimeType),
+        // createPartFromUri(fileData.disclosureFileData.fileUri, fileData.disclosureFileData.mimeType),
         createPartFromUri(fileData.annuityFileData.fileUri, fileData.annuityFileData.mimeType),
         prompt,
       ]),
