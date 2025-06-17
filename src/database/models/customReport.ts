@@ -149,7 +149,7 @@ const CustomReportSchema = new Schema<ICustomReport>(
       {
         code: { type: String, required: true },
         dataSourceId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'data_source' },
-        fileDetails: { type: [{ name: String, isRequired: Boolean }] },
+        fileDetails: { type: [{ name: String, sheetName: String, isRequired: Boolean }] },
         isRequired: { type: Boolean },
         entityId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Entity' },
       },

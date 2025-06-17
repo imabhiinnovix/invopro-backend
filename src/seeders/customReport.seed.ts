@@ -15283,4 +15283,40 @@ export async function seedCustomReports({ organizationId, entityDataSourceMap, c
       console.info(`New custom report with custom report id ${customReport._id} already exists.`);
     }
   }
+
+  await CustomReportModel.updateMany({ reportName: 'Monthly Ip' }, { $set: { reportName: 'Monthly IP' } });
+  await CustomReportModel.updateMany({ reportName: 'Supplemental Ip' }, { $set: { reportName: 'Supplemental IP' } });
+  await CustomReportModel.updateMany(
+    { reportName: 'Intermediate Monthly Ip' },
+    { $set: { reportName: 'Intermediate Monthly IP' } }
+  );
+
+  await CustomReportModel.updateMany(
+    {},
+    {
+      $set: {
+        'dataSourceIds.$[elem].fileDetails': [
+          { name: 'All Disclosures', isRequired: true },
+          { name: 'All Disclosures_SHPP', isRequired: false },
+        ],
+      },
+    },
+    {
+      arrayFilters: [{ 'elem.code': 'disclosure' }],
+    }
+  );
+  await CustomReportModel.updateMany(
+    {},
+    {
+      $set: {
+        'dataSourceIds.$[elem].fileDetails': [
+          { name: 'Complete Portfolio', isRequired: true },
+          { name: 'Complete Portfolio_SHPP', isRequired: false },
+        ],
+      },
+    },
+    {
+      arrayFilters: [{ 'elem.code': 'portfolio' }],
+    }
+  );
 }
