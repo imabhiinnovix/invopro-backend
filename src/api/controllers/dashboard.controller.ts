@@ -510,6 +510,9 @@ export const getWidgetChartData = async ({
     }
   }
 
+  if (dashBoardType === 'trend') {
+    dataResults = dataResults.sort((x, y) => x.name.localeCompare(y.name));
+  }
   return {
     label: dashBoardType === 'trend' ? `${startVersionValue}:${endVersionValue}` : labelVersionValue,
     widgetData: dataResults,
