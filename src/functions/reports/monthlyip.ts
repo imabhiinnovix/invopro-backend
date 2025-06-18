@@ -28,6 +28,7 @@ import {
   transformMonthlySTCSBUData,
 } from '../../utils/common.report';
 import { ReportHeaders } from '../../utils/common.type';
+import { ICustomReport } from '../../database/models/customReport';
 
 export const generateMonthlyIpReport = async ({
   reportRequestPayload,
@@ -49,7 +50,7 @@ export const generateMonthlyIpReport = async ({
   monthlyIpDataSource,
   monthlyipstcDataSource,
   monthlyipstcsbuDataSource,
-  headers,
+  customReportDetails,
   intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails,
   intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorDEnitityDataSourceDetails,
   intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorIEnitityDataSourceDetails,
@@ -96,7 +97,7 @@ export const generateMonthlyIpReport = async ({
   userId: string;
   orgCode: string;
   organizationId: string;
-  headers: ReportHeaders;
+  customReportDetails: ICustomReport;
   monthlyIpDataSource: string;
   monthlyipstcDataSource: string;
   monthlyipstcsbuDataSource: string;
@@ -136,11 +137,13 @@ export const generateMonthlyIpReport = async ({
     const splitedVersionValue = versionValue.split('-');
     const currentYear = splitedVersionValue[0];
     const currentMonth = splitedVersionValue[1];
-    const sbuHeaders = headers['global']['columns'];
+    const globalSBUHeadersFilter = customReportDetails.filters.find((filter) => filter.sheetCode === 'global');
+    const globalSBUHeaders = globalSBUHeadersFilter?.['columns'] ? globalSBUHeadersFilter?.['columns'] : [];
+    const globalSBUHeadersAll = globalSBUHeaders.flatMap((item) => item.attributeValues);
 
     const toBeProcessedReportHeaders = [
       { reportHeader: 'SBU', attributeValues: ['SBU'] },
-      ...headers['global']['columns'],
+      ...globalSBUHeaders,
       { reportHeader: 'Totals', attributeValues: ['Totals'] },
     ];
 
@@ -148,6 +151,7 @@ export const generateMonthlyIpReport = async ({
       portfolioDataSourceVersionId,
       currentYear,
       customReportModel,
+      sbuHeaders: globalSBUHeadersAll,
       isRowData,
     });
     const currentYearApplicationFiledRawData = await getCurrentYearNewApplicationFiled({
@@ -155,6 +159,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedCurrentYearApplicationFiledRawData = transformDataByEntityMapping({
@@ -181,7 +186,8 @@ export const generateMonthlyIpReport = async ({
         currentYear,
         customReportModel,
         isRowData,
-        headers: sbuHeaders,
+        headers: globalSBUHeaders,
+        sbuHeaders: globalSBUHeadersAll,
       });
     const percentageOfCurrentYearInventionDisclosureConvertedToFilingsRawData: any =
       await percentageOfCurrentYearInventionDisclosureConvertedToFilings({
@@ -190,7 +196,8 @@ export const generateMonthlyIpReport = async ({
         currentYear,
         customReportModel,
         isRowData: true,
-        headers: sbuHeaders,
+        headers: globalSBUHeaders,
+        sbuHeaders: globalSBUHeadersAll,
       });
 
     const transformedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsRawDataD =
@@ -239,6 +246,7 @@ export const generateMonthlyIpReport = async ({
       isYearRequired: false,
       customReportModel,
       isRowData,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const draftedApplicationDisclosureCountRawData = await getDisclosureCount({
@@ -249,6 +257,7 @@ export const generateMonthlyIpReport = async ({
       isYearRequired: false,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedDraftedApplicationDisclosureCountRawData = transformDataByEntityMapping({
@@ -269,6 +278,7 @@ export const generateMonthlyIpReport = async ({
       isDrafted: false,
       isYearRequired: true,
       customReportModel,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const openApplicationDisclosureCountRawData = await getDisclosureCount({
@@ -279,6 +289,7 @@ export const generateMonthlyIpReport = async ({
       isYearRequired: true,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedOpenApplicationDisclosureCountRawData = transformDataByEntityMapping({
@@ -305,6 +316,7 @@ export const generateMonthlyIpReport = async ({
       isYearRequired: false,
       customReportModel,
       isRowData,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const totalActiveProjectsRawData = await getDisclosureCount({
@@ -315,6 +327,7 @@ export const generateMonthlyIpReport = async ({
       isYearRequired: false,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedtotalActiveProjectsRawData = transformDataByEntityMapping({
@@ -339,6 +352,7 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isCurrentYearUSIssued: true,
       customReportModel,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const currentYearUsIssuedRawData = await getCurrentYearNewApplicationFiled({
@@ -348,6 +362,7 @@ export const generateMonthlyIpReport = async ({
       isCurrentYearUSIssued: true,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedCurrentYearUsIssuedRawData = transformDataByEntityMapping({
@@ -367,6 +382,7 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isCurrentYearINTIssued: true,
       customReportModel,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const currentYearIntlssuedRawData = await getCurrentYearNewApplicationFiled({
@@ -376,6 +392,7 @@ export const generateMonthlyIpReport = async ({
       isCurrentYearINTIssued: true,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedCurrentYearIntIssuedRawData = transformDataByEntityMapping({
@@ -395,6 +412,7 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isUSPendingApplication: true,
       customReportModel,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const usPendingApplicationRawData = await getCurrentYearNewApplicationFiled({
@@ -404,6 +422,7 @@ export const generateMonthlyIpReport = async ({
       isUSPendingApplication: true,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedUSPendingApplicationRawData = transformDataByEntityMapping({
@@ -423,6 +442,7 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isEPPendingApplication: true,
       customReportModel,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const epPendingApplicationRawData = await getCurrentYearNewApplicationFiled({
@@ -432,6 +452,7 @@ export const generateMonthlyIpReport = async ({
       isEPPendingApplication: true,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedEPPendingApplicationRawData = transformDataByEntityMapping({
@@ -451,6 +472,7 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isCNPendingApplication: true,
       customReportModel,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const cnPendingApplicationRawData = await getCurrentYearNewApplicationFiled({
@@ -460,6 +482,7 @@ export const generateMonthlyIpReport = async ({
       isCNPendingApplication: true,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedCNPendingApplicationRawData = transformDataByEntityMapping({
@@ -479,6 +502,7 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isOtherPendingApplication: true,
       customReportModel,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const otherPendingApplicationRawData = await getCurrentYearNewApplicationFiled({
@@ -488,6 +512,7 @@ export const generateMonthlyIpReport = async ({
       isOtherPendingApplication: true,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedOtherPendingApplicationRawData = transformDataByEntityMapping({
@@ -507,6 +532,7 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isTotalPendingApplication: true,
       customReportModel,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const totalPendingApplicationRawData = await getCurrentYearNewApplicationFiled({
@@ -516,6 +542,7 @@ export const generateMonthlyIpReport = async ({
       isTotalPendingApplication: true,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedTotalPendingApplicationRawData = transformDataByEntityMapping({
@@ -536,6 +563,7 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isUSIssuedApplication: true,
       customReportModel,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const usIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
@@ -545,6 +573,7 @@ export const generateMonthlyIpReport = async ({
       isUSIssuedApplication: true,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedUSIssuedApplicationRawData = transformDataByEntityMapping({
@@ -564,6 +593,7 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isEPIssuedApplication: true,
       customReportModel,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const epIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
@@ -573,6 +603,7 @@ export const generateMonthlyIpReport = async ({
       isEPIssuedApplication: true,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedEPIssuedApplicationRawData = transformDataByEntityMapping({
@@ -591,6 +622,7 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isCNIssuedApplication: true,
       customReportModel,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const cnIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
@@ -600,6 +632,7 @@ export const generateMonthlyIpReport = async ({
       isCNIssuedApplication: true,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedCNIssuedApplicationRawData = transformDataByEntityMapping({
@@ -618,6 +651,7 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isOtherIssuedApplication: true,
       customReportModel,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const otherIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
@@ -627,6 +661,7 @@ export const generateMonthlyIpReport = async ({
       isOtherIssuedApplication: true,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedOtherIssuedApplicationRawData = transformDataByEntityMapping({
@@ -646,6 +681,7 @@ export const generateMonthlyIpReport = async ({
       isPercentagePart: false,
       isTotalIssuedApplication: true,
       customReportModel,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const totalIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
@@ -655,6 +691,7 @@ export const generateMonthlyIpReport = async ({
       isTotalIssuedApplication: true,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedTotalIssuedApplicationRawData = transformDataByEntityMapping({
@@ -723,6 +760,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       customReportModel,
       isRowData,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const currentYearRenewalDueRawData = await getCurrentYearRenewalDue({
@@ -733,6 +771,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       customReportModel,
       isRowData: true,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedPercentageOfCurrentYearRenewalDueRawData = transformDataByEntityMapping({
@@ -749,6 +788,7 @@ export const generateMonthlyIpReport = async ({
       portfolioDataSourceVersionId,
       currentYear,
       customReportModel,
+      sbuHeaders: globalSBUHeadersAll,
     });
 
     const transformedAnnuityDropRawData = transformDataByEntityMapping({
@@ -936,6 +976,9 @@ export const generateMonthlyIpReport = async ({
     ];
 
     //stc tab
+    const stcSBUHeadersFilters = customReportDetails.filters.find((filter) => filter.sheetCode === 'stc');
+    const stcSBUHeaders = stcSBUHeadersFilters?.['columns'] ? stcSBUHeadersFilters?.['columns'] : [];
+    const stcSBUHeadersAll = stcSBUHeaders.flatMap((item) => item.attributeValues);
     //first table
     const newProjectOpenedBasedOnStc = await getProjectBasedOnStcs({
       disclosureDataSourceVersionId,
@@ -945,6 +988,7 @@ export const generateMonthlyIpReport = async ({
       isYearRequired: true,
       customReportModel,
       isRowData,
+      sbuHeaders: stcSBUHeadersAll,
     });
 
     const totalOpenProjectsBasedOnStc = await getProjectBasedOnStcs({
@@ -955,6 +999,7 @@ export const generateMonthlyIpReport = async ({
       isYearRequired: false,
       customReportModel,
       isRowData,
+      sbuHeaders: stcSBUHeadersAll,
     });
 
     const newAppsFiledBasedOnStc = await getAppsFiledBasedOnStc({
@@ -962,6 +1007,7 @@ export const generateMonthlyIpReport = async ({
       currentYear,
       customReportModel,
       isRowData,
+      sbuHeaders: stcSBUHeadersAll,
     });
 
     const processedNewProjectOpenedBasedOnStc = processSTCData(newProjectOpenedBasedOnStc);
@@ -1074,7 +1120,7 @@ export const generateMonthlyIpReport = async ({
       isReverseMapping: true,
     });
 
-    const sbusHeader = [...sbuHeaders.map((data) => data.reportHeader), 'Totals'];
+    const sbusHeader = [...stcSBUHeaders.map((data) => data.reportHeader), 'Totals'];
     const saveData = sbusHeader.map((sbu) => {
       const entry = {};
       finalProcessedData.forEach((item) => {
@@ -1099,7 +1145,7 @@ export const generateMonthlyIpReport = async ({
       saveStcData.push(entry);
     }
 
-    const stcSBUHeaders = [
+    const stcSBUColumnHeaders = [
       'SBU',
       `New Projects opened in ${currentYear}`,
       `Total Open Projects`,
@@ -1112,7 +1158,7 @@ export const generateMonthlyIpReport = async ({
       const stcSBUData = combinedData[i];
       const entry = {};
       for (let j = 0; j < stcSBUHeaders.length; j++) {
-        entry[reverseStcSbuMapping[stcSBUHeaders[j]]] = stcSBUData[stcSBUHeaders[j]];
+        entry[reverseStcSbuMapping[stcSBUColumnHeaders[j]]] = stcSBUData[stcSBUColumnHeaders[j]];
       }
       saveStcSbuData.push(entry);
     }
@@ -1501,12 +1547,17 @@ export const generateMonthlyIpReport = async ({
         orgCode,
       });
 
+    const reportSettingDetails = customReportDetails.reportSettings;
+    const sheetCodeNameMap = reportSettingDetails.reduce((acc, { sheetCode, sheetName }) => {
+      acc[sheetCode] = sheetName;
+      return acc;
+    }, {});
     await reportRequestService.updateReportRequest(requestedReportId, {
       status: 'completed',
       intermediateReportId: intermediateReportId,
       dataSourceVersion: [
         {
-          sheetName: 'Global',
+          sheetName: sheetCodeNameMap['global'],
           sheetCode: 'global',
           tabName: 'Global',
           mappingFuctionName: 'transformMonthlyIpData',
@@ -1517,7 +1568,7 @@ export const generateMonthlyIpReport = async ({
           dataSourceId: monthlyIpDataSource,
         },
         {
-          sheetName: 'STC',
+          sheetName: sheetCodeNameMap['stc'],
           sheetCode: 'stc',
           tabName: 'STC',
           mappingFuctionName: 'transformMonthlySTCData',
@@ -1528,7 +1579,7 @@ export const generateMonthlyIpReport = async ({
           dataSourceId: monthlyipstcDataSource,
         },
         {
-          sheetName: 'STC',
+          sheetName: sheetCodeNameMap['stc'],
           sheetCode: 'stc',
           tabName: 'STC:SBU',
           mappingFuctionName: 'transformMonthlySTCSBUData',

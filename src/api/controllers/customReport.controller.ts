@@ -99,7 +99,7 @@ export const generateCustomReportsFunction = async ({
     }
 
     const customReportModel = await CustomReportModelAccess({ orgCode });
-    if (customReportDetails.reportName.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'monthlyip') {
+    if (customReportDetails.reportCode.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'monthlyip') {
       const versionMap = Object.fromEntries(
         dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
       );
@@ -240,7 +240,7 @@ export const generateCustomReportsFunction = async ({
         organizationId,
         orgCode,
         customReportModel,
-        headers: customReportDetails.headers,
+        customReportDetails: customReportDetails,
         intermediateMonthlyIpCurrentYearNewAppFiledEnitityDataSourceDetails,
         intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorDEnitityDataSourceDetails,
         intermediateMonthlyPercentageOfCurrentYearInventionDisclosuresConvertedToFilingsNumeratorIEnitityDataSourceDetails,
@@ -273,7 +273,7 @@ export const generateCustomReportsFunction = async ({
       });
 
       return data;
-    } else if (customReportDetails.reportName.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'supplementalip') {
+    } else if (customReportDetails.reportCode.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase() === 'supplementalip') {
       const versionMap = Object.fromEntries(
         dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
       );
@@ -388,7 +388,7 @@ export const generateCustomReportsFunction = async ({
         patentValueCoverageNewDataSourceId: patentValueCoverageNew?.dataSourceId!,
         supplementalIpStrategicReportingClassDataSourceId: supplementalIpStrategicReportingClass?.dataSourceId!,
         supplementalIpNewCoverageDataSourceId: supplementalIpNewCoverage?.dataSourceId!,
-        headers: customReportDetails.headers,
+        customReportDetails: customReportDetails,
         customReportModel,
         userId,
         organizationId,
@@ -798,6 +798,42 @@ export const getCustomReportDataBasedOnDataSourcedIdAndVersionValueRange = async
     });
   } catch (err) {
     console.log('Error in getCustomReportChartData.', err);
+    next(err);
+  }
+};
+
+export const getCustomReportSettings = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { search, paginate = 'false' } = req.query;
+    const { organizationId } = req.user;
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
+
+    const query: any = { organizationId: organizationId, isVisible: true };
+    if (search) query.reportName = { $regex: search, $options: 'i' };
+
+    let result: any = {};
+    if (paginate) {
+      result = await customReportServices.getCustomReportList({
+        query,
+        select: ['_id', 'reportName', 'headers', 'reportSettings', 'design'],
+        page,
+        limit,
+      });
+    } else {
+      result = await customReportServices.getCustomReportList({
+        query,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Custom Report Settings Fetched Successfully',
+      data: result.data,
+      totalCount: result.totalCount,
+    });
+  } catch (err) {
+    console.log('Error in getCustomReportSettings.', err);
     next(err);
   }
 };

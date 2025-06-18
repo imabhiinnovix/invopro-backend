@@ -53,24 +53,11 @@ interface ISection {
   space: number;
 }
 
-interface IHeaderSection {
+interface IFilterSection {
+  sheetCode: string;
   section: string;
   attribute: string;
   columns: IColumn[];
-}
-
-interface ICustomReport extends Document {
-  reportName: string;
-  reportCode: string;
-  functionName: string;
-  dataSourceIds: IDataSource[];
-  organizationId: Types.ObjectId;
-  sampleFilePath: string;
-  headers: Record<string, IHeaderSection>;
-  reportSettings: IReportSetting[];
-  design: Record<string, Record<string, ISection[]>>;
-  intermediateReportId: Types.ObjectId;
-  isVisible: boolean;
 }
 
 interface IReportSetting {
@@ -80,6 +67,21 @@ interface IReportSetting {
   startTableColumn: string;
   startRowNumber: number;
 }
+
+export interface ICustomReport extends Document {
+  reportName: string;
+  reportCode: string;
+  functionName: string;
+  dataSourceIds: IDataSource[];
+  organizationId: Types.ObjectId;
+  sampleFilePath: string;
+  filters: IFilterSection[];
+  reportSettings: IReportSetting[];
+  design: Record<string, Record<string, ISection[]>>;
+  intermediateReportId: Types.ObjectId;
+  isVisible: boolean;
+}
+
 const CommentSchema = new Schema<IComments>({
   comment: { type: String, required: true },
   backGroundColor: { type: String },
@@ -97,7 +99,8 @@ const ColumnSchema = new Schema<IColumn>({
   attributeValues: { type: [String], required: true },
 });
 
-const HeaderSectionSchema = new Schema<IHeaderSection>({
+const filterSectionSchema = new Schema<IFilterSection>({
+  sheetCode: { type: String, required: true },
   section: { type: String, required: true },
   attribute: { type: String, required: true },
   columns: { type: [ColumnSchema], required: true },
@@ -155,7 +158,7 @@ const CustomReportSchema = new Schema<ICustomReport>(
       },
     ],
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
-    headers: { type: Map, of: HeaderSectionSchema },
+    filters: { type: [filterSectionSchema] },
     reportSettings: { type: [ReportSettingSchema], required: true },
     intermediateReportId: { type: mongoose.Schema.Types.ObjectId },
     isVisible: { type: Boolean },

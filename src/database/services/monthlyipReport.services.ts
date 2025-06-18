@@ -248,7 +248,7 @@ export async function getCurrentYearNewApplicationFiled({
   isTotalIssuedApplication,
   customReportModel,
   isRowData,
-  isSupplementalReport,
+  sbuHeaders,
 }: {
   portfolioDataSourceVersionId: string;
   currentYear: string;
@@ -267,7 +267,7 @@ export async function getCurrentYearNewApplicationFiled({
   isTotalIssuedApplication?: boolean;
   customReportModel: CustomReportModelAccessReturnType;
   isRowData?: boolean;
-  isSupplementalReport?: boolean;
+  sbuHeaders: string[];
 }) {
   try {
     const otherCountryNegative = [...epCountry, 'CN', 'US'];
@@ -275,9 +275,7 @@ export async function getCurrentYearNewApplicationFiled({
       dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
     };
 
-    if (!isSupplementalReport) {
-      matchCondition['rowData.SBU'] = { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] };
-    }
+    matchCondition['rowData.SBU'] = { $in: sbuHeaders };
 
     const yearDateRange = {
       $gte: `${currentYear}-01-01T00:00:00.000Z`,
@@ -486,6 +484,7 @@ export async function getDisclosureCount({
   isYearRequired,
   isPercentage,
   customReportModel,
+  sbuHeaders,
   isRowData,
 }: {
   disclosureDataSourceVersionId: string;
@@ -496,6 +495,7 @@ export async function getDisclosureCount({
   isPercentage?: boolean;
   customReportModel: CustomReportModelAccessReturnType;
   isRowData?: boolean;
+  sbuHeaders: string[];
 }) {
   try {
     const yearDateRange = {
@@ -505,7 +505,7 @@ export async function getDisclosureCount({
 
     const matchCondition = {
       dataSourceVersionId: new ObjectId(disclosureDataSourceVersionId),
-      'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
+      'rowData.SBU': { $in: sbuHeaders },
     };
 
     if (isActive) {
@@ -601,6 +601,7 @@ export async function getProjectBasedOnStcs({
   isYearRequired,
   customReportModel,
   isRowData,
+  sbuHeaders,
 }: {
   disclosureDataSourceVersionId: string;
   currentYear: string;
@@ -609,6 +610,7 @@ export async function getProjectBasedOnStcs({
   isYearRequired: boolean;
   customReportModel: CustomReportModelAccessReturnType;
   isRowData?: boolean;
+  sbuHeaders: string[];
 }) {
   try {
     const yearDateRange = {
@@ -618,7 +620,7 @@ export async function getProjectBasedOnStcs({
 
     const matchCondition = {
       dataSourceVersionId: new ObjectId(disclosureDataSourceVersionId),
-      'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
+      'rowData.SBU': { $in: sbuHeaders },
       // 'rowData.OriginalSTCs': { $ne: null },
     };
 
@@ -722,6 +724,7 @@ export async function getAppsFiledBasedOnStc({
   isTotalIssuedApplication,
   customReportModel,
   isRowData,
+  sbuHeaders,
 }: {
   portfolioDataSourceVersionId: string;
   currentYear: string;
@@ -740,6 +743,7 @@ export async function getAppsFiledBasedOnStc({
   isTotalIssuedApplication?: boolean;
   customReportModel: CustomReportModelAccessReturnType;
   isRowData?: boolean;
+  sbuHeaders: string[];
 }) {
   try {
     const epCountry = [
@@ -792,7 +796,7 @@ export async function getAppsFiledBasedOnStc({
     const otherCountryNegative = [...epCountry, 'CN', 'US'];
     let matchCondition: Record<string, any> = {
       dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
-      'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
+      'rowData.SBU': { $in: sbuHeaders },
       // 'rowData.Original STCs': { $ne: null },
     };
 
@@ -1044,6 +1048,7 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
   customReportModel,
   isRowData,
   headers,
+  sbuHeaders,
 }: {
   portfolioDataSourceVersionId: string;
   disclosureDataSourceVersionId: string;
@@ -1051,6 +1056,7 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
   customReportModel: CustomReportModelAccessReturnType;
   isRowData?: boolean;
   headers: { reportHeader: string; attributeValues: string[] }[];
+  sbuHeaders: string[];
 }) {
   try {
     // Use is row data true to generate the report
@@ -1060,6 +1066,7 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       isPercentagePart: true,
       customReportModel,
       isRowData: true,
+      sbuHeaders,
     });
 
     const activeDisclosureCount = await getDisclosureCount({
@@ -1071,6 +1078,7 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       isYearRequired: true,
       customReportModel,
       isRowData,
+      sbuHeaders,
     });
     const totalDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
@@ -1080,6 +1088,7 @@ export async function percentageOfCurrentYearInventionDisclosureConvertedToFilin
       isYearRequired: true,
       customReportModel,
       isRowData,
+      sbuHeaders,
     });
     const newYearApplicationFiledStartsWith: string = currentYear.slice(-2);
 
@@ -1157,6 +1166,7 @@ export async function getCurrentYearRenewalDue({
   currentYear,
   customReportModel,
   isRowData,
+  sbuHeaders,
 }: {
   portfolioDataSourceVersionId: string;
   sabicipDataSourceVersionId: string;
@@ -1165,6 +1175,7 @@ export async function getCurrentYearRenewalDue({
   currentYear: string;
   customReportModel: CustomReportModelAccessReturnType;
   isRowData?: boolean;
+  sbuHeaders: string[];
 }) {
   try {
     const yearDateRange = {
@@ -1193,7 +1204,7 @@ export async function getCurrentYearRenewalDue({
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
-          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
+          'rowData.SBU': { $in: sbuHeaders },
           'rowData.In Force': 1,
         },
       },
@@ -1470,17 +1481,19 @@ export async function getReductions({
   portfolioDataSourceVersionId,
   currentYear,
   customReportModel,
+  sbuHeaders,
 }: {
   portfolioDataSourceVersionId: string;
   currentYear: string;
   customReportModel: CustomReportModelAccessReturnType;
+  sbuHeaders: string[];
 }) {
   try {
     const allCasesFromPortfolio = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
-          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
+          'rowData.SBU': { $in: sbuHeaders },
         },
       },
     ]);
@@ -1508,7 +1521,7 @@ export async function getReductions({
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
-          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
+          'rowData.SBU': { $in: sbuHeaders },
           'rowData.Status Date': yearDateRange,
           'rowData.Status': { $in: currentStatus },
           'rowData.Case_Reference1': { $not: { $regex: 'CNRO' } },
@@ -1572,7 +1585,7 @@ export async function getReductions({
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
-          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
+          'rowData.SBU': { $in: sbuHeaders },
           'rowData.Status Date': yearDateRange,
           'rowData.Status': { $in: currentStatus },
           'rowData.Case_Reference1': {
@@ -1642,7 +1655,7 @@ export async function getReductions({
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
-          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
+          'rowData.SBU': { $in: sbuHeaders },
           'rowData.Status Date': yearDateRange,
           'rowData.Status': { $in: currentStatus },
           'rowData.Case_Reference1': {
@@ -1684,7 +1697,7 @@ export async function getReductions({
       {
         $match: {
           dataSourceVersionId: new ObjectId(portfolioDataSourceVersionId),
-          'rowData.SBU': { $nin: ['SBU Metals', 'SHPP', 'SBU Scientific Design', 'Scientific Design'] },
+          'rowData.SBU': { $in: sbuHeaders },
           'rowData.Status Date': yearDateRange,
           'rowData.Status': { $in: currentStatus },
           'rowData.Case_Reference1': {

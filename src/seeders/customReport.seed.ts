@@ -15319,4 +15319,204 @@ export async function seedCustomReports({ organizationId, entityDataSourceMap, c
       arrayFilters: [{ 'elem.code': 'portfolio' }],
     }
   );
+
+  await CustomReportModel.updateMany(
+    { reportCode: 'monthlyip' },
+    {
+      $set: {
+        filters: [
+          {
+            sheetCode: 'global',
+            section: 'global',
+            attribute: 'SBU',
+            columns: [
+              {
+                reportHeader: 'Corp T&I',
+                attributeValues: ['SBU T&I', 'T&I'],
+              },
+              {
+                reportHeader: 'Agri-Nutrients',
+                attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
+              },
+              {
+                reportHeader: 'Chemicals',
+                attributeValues: ['SBU Chemicals', 'Chemicals'],
+              },
+              {
+                reportHeader: 'Polymers',
+                attributeValues: [
+                  'SBU Polymers',
+                  'SBU Temp Polymers Transfer (from Spec)',
+                  'SBU PNJ Saudi Aramco-SABIC',
+                  'Polymers',
+                ],
+              },
+              {
+                reportHeader: 'Specialties',
+                attributeValues: ['SBU SHPP', 'SHPP'],
+              },
+              {
+                reportHeader: 'Strategy & Transformation',
+                attributeValues: ['SBU Strategy & Transformation', 'Strategy & Transformation'],
+              },
+            ],
+          },
+          {
+            sheetCode: 'stc',
+            section: 'stc',
+            attribute: 'SBU',
+            columns: [
+              {
+                reportHeader: 'Corp T&I',
+                attributeValues: ['SBU T&I', 'T&I'],
+              },
+              {
+                reportHeader: 'Agri-Nutrients',
+                attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
+              },
+              {
+                reportHeader: 'Chemicals',
+                attributeValues: ['SBU Chemicals', 'Chemicals'],
+              },
+              {
+                reportHeader: 'Polymers',
+                attributeValues: [
+                  'SBU Polymers',
+                  'SBU Temp Polymers Transfer (from Spec)',
+                  'SBU PNJ Saudi Aramco-SABIC',
+                  'Polymers',
+                ],
+              },
+              {
+                reportHeader: 'Specialties',
+                attributeValues: ['SBU SHPP', 'SHPP'],
+              },
+              {
+                reportHeader: 'Strategy & Transformation',
+                attributeValues: ['SBU Strategy & Transformation', 'Strategy & Transformation'],
+              },
+            ],
+          },
+        ],
+      },
+    }
+  );
+
+  await CustomReportModel.updateMany(
+    { reportCode: 'supplementalip' },
+    {
+      $set: {
+        filters: [
+          {
+            sheetCode: 'agreements',
+            section: 'finalAgreementTypes',
+            attribute: 'SBU',
+            columns: [
+              {
+                reportHeader: 'Agri-Nutrients',
+                attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
+              },
+              {
+                reportHeader: 'Chemicals',
+                attributeValues: ['SBU Chemicals', 'Chemicals'],
+              },
+              {
+                reportHeader: 'Polymers',
+                attributeValues: [
+                  'SBU Polymers',
+                  'SBU Temp Polymers Transfer (from Spec)',
+                  'SBU PNJ Saudi Aramco-SABIC',
+                  'Polymers',
+                ],
+              },
+              {
+                reportHeader: 'SHPP',
+                attributeValues: ['SBU SHPP', 'SHPP'],
+              },
+              {
+                reportHeader: 'T&I',
+                attributeValues: ['SBU T&I', 'T&I'],
+              },
+              { reportHeader: 'Metals', attributeValues: ['SBU Metals'] },
+              { reportHeader: 'Scientific Design', attributeValues: ['SBU Scientific Design', 'Scientific Design'] },
+            ],
+          },
+          {
+            sheetCode: 'agreements',
+            section: 'agreementTypes',
+            attribute: 'SBU',
+            columns: [
+              {
+                reportHeader: 'Agri-Nutrients',
+                attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
+              },
+              {
+                reportHeader: 'Chemicals',
+                attributeValues: ['SBU Chemicals', 'Chemicals'],
+              },
+              {
+                reportHeader: 'Polymers',
+                attributeValues: [
+                  'SBU Polymers',
+                  'SBU Temp Polymers Transfer (from Spec)',
+                  'SBU PNJ Saudi Aramco-SABIC',
+                  'Polymers',
+                ],
+              },
+              {
+                reportHeader: 'SHPP',
+                attributeValues: ['SBU SHPP', 'SHPP'],
+              },
+              {
+                reportHeader: 'T&I',
+                attributeValues: ['SBU T&I', 'T&I'],
+              },
+              { reportHeader: 'Metals', attributeValues: ['SBU Metals'] },
+              { reportHeader: 'Scientific Design', attributeValues: ['SBU Scientific Design', 'Scientific Design'] },
+            ],
+          },
+          {
+            sheetCode: 'patentvaluecoveragenew',
+            section: 'patentvaluecoveragenew',
+            attribute: 'SBU',
+            columns: [
+              {
+                reportHeader: 'Corp T&I',
+                attributeValues: ['SBU T&I', 'T&I'],
+              },
+              {
+                reportHeader: 'Agri-Nutrients',
+                attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
+              },
+              {
+                reportHeader: 'Chemicals',
+                attributeValues: ['SBU Chemicals', 'Chemicals'],
+              },
+              {
+                reportHeader: 'Polymers',
+                attributeValues: [
+                  'SBU Polymers',
+                  'SBU Temp Polymers Transfer (from Spec)',
+                  'SBU PNJ Saudi Aramco-SABIC',
+                  'Polymers',
+                ],
+              },
+              {
+                reportHeader: 'Specialties',
+                attributeValues: ['SBU SHPP', 'SHPP'],
+              },
+              {
+                reportHeader: 'Strategy & Transformation',
+                attributeValues: ['SBU Strategy & Transformation', 'Strategy & Transformation'],
+              },
+              { reportHeader: 'Metals', attributeValues: ['SBU Metals'] },
+              { reportHeader: 'Scientific Design', attributeValues: ['SBU Scientific Design', 'Scientific Design'] },
+            ],
+          },
+        ],
+      },
+    }
+  );
+
+  await CustomReportModel.collection.updateMany({ headers: { $exists: true } }, { $unset: { headers: '' } });
 }
