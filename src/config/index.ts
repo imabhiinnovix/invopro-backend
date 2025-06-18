@@ -44,6 +44,7 @@ const ENV = {
     'polarArea',
     'radar',
     'scatter',
+    'tabular',
   ],
   FIELD_TYPE_ENUM: ['number', 'text', 'date', 'boolean', 'richtext', 'url', 'option', 'multioption', 'user'],
 };
