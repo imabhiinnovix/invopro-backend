@@ -549,6 +549,9 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       dashboardFilters,
       isIncremental,
     });
+    if (result.widgetData && result.widgetData.length > 500) {
+      res.status(400).json({ success: false, message: 'Chart data is very large please change the dimensions.' });
+    }
     const response = {
       success: true,
       message: 'Chart data fetched successfully',
