@@ -816,7 +816,7 @@ export const getCustomReportSettings = async (req: Request, res: Response, next:
     if (paginate) {
       result = await customReportServices.getCustomReportList({
         query,
-        select: ['_id', 'reportName', 'headers', 'reportSettings', 'design'],
+        select: ['_id', 'reportName', 'filters', 'reportSettings'],
         page,
         limit,
       });
@@ -834,6 +834,68 @@ export const getCustomReportSettings = async (req: Request, res: Response, next:
     });
   } catch (err) {
     console.log('Error in getCustomReportSettings.', err);
+    next(err);
+  }
+};
+
+export const updateCustomReportSettings = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { customReportId } = req.params as { customReportId: string };
+    const { reportName, reportSettings = [], filters = [] } = req.body;
+
+    if (!customReportId) return res.status(400).json({ message: 'Missing custom report id' });
+
+    const report = await customReportServices.findCustomReportById(customReportId);
+    if (!report) return res.status(404).json({ message: 'Report not found' });
+
+    const updatedReport: any = {
+      reportName: reportName || report.reportName,
+      reportSettings: [...report.reportSettings],
+      filters: [...report.filters],
+    };
+
+    // 1. Update reportSettings with sheetName changes
+    const sheetNameSet = new Set<string>();
+    for (const { sheetCode, sheetName } of reportSettings) {
+      if (!sheetName) {
+        throw new Error(`sheetName is required for sheetCode '${sheetCode}'`);
+      }
+
+      if (sheetNameSet.has(sheetName)) {
+        throw new Error(`Duplicate sheetName '${sheetName}' is not allowed.`);
+      }
+      sheetNameSet.add(sheetName);
+
+      const existingSetting = updatedReport.reportSettings.find((s: any) => s.sheetCode === sheetCode);
+      if (existingSetting) {
+        existingSetting.sheetName = sheetName;
+      }
+    }
+
+    // 2. Update filters (replace columns where sheetCode + section match)
+    for (const { sheetCode, section, columns = [] } of filters) {
+      const targetFilter = updatedReport.filters.find((f: any) => f.sheetCode === sheetCode && f.section === section);
+
+      if (!targetFilter) continue;
+
+      const headerSet = new Set<string>();
+      for (const col of columns) {
+        if (headerSet.has(col.reportHeader)) {
+          throw new Error(
+            `Duplicate reportHeader '${col.reportHeader}' in sheetCode='${sheetCode}', section='${section}'`
+          );
+        }
+        headerSet.add(col.reportHeader);
+      }
+
+      targetFilter.columns = columns;
+    }
+
+    await customReportServices.updateCustomReportById(customReportId, updatedReport);
+
+    return res.status(200).json({ message: 'Report updated successfully.' });
+  } catch (err) {
+    console.error('Error in updateCustomReportSettings:', err);
     next(err);
   }
 };
