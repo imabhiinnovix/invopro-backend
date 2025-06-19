@@ -15321,7 +15321,7 @@ export async function seedCustomReports({ organizationId, entityDataSourceMap, c
   );
 
   await CustomReportModel.updateMany(
-    { reportCode: 'monthlyip' },
+    { reportCode: 'monthlyip', filters: { $exists: false } },
     {
       $set: {
         filters: [
@@ -15403,7 +15403,7 @@ export async function seedCustomReports({ organizationId, entityDataSourceMap, c
   );
 
   await CustomReportModel.updateMany(
-    { reportCode: 'supplementalip' },
+    { reportCode: 'supplementalip', filters: { $exists: false } },
     {
       $set: {
         filters: [

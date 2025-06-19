@@ -139,6 +139,7 @@ export const generateMonthlyIpReport = async ({
     const currentMonth = splitedVersionValue[1];
     const globalSBUHeadersFilter = customReportDetails.filters.find((filter) => filter.sheetCode === 'global');
     const globalSBUHeaders = globalSBUHeadersFilter?.['columns'] ? globalSBUHeadersFilter?.['columns'] : [];
+
     const globalSBUHeadersAll = globalSBUHeaders.flatMap((item) => item.attributeValues);
 
     const toBeProcessedReportHeaders = [
@@ -1072,18 +1073,41 @@ export const generateMonthlyIpReport = async ({
 
     const combinedData: any[] = [];
 
+    const toBeProcessedStcSBuReportHeaders = [
+      { reportHeader: 'SBU', attributeValues: ['SBU'] },
+      ...stcSBUHeaders,
+      { reportHeader: 'Totals', attributeValues: ['Totals'] },
+    ];
+    const processedCurrentYearApplicationFiledDataStcSbu = processReportHeaders({
+      data: [{ SBU: 'First Filings' }, partiallyProcessedCurrentYearApplicationFiledData],
+      headers: toBeProcessedStcSBuReportHeaders,
+      totalColumnName: 'Totals',
+    });
+
     const processedCurrentYearApplicationFiledDataObject =
-      processedCurrentYearApplicationFiledData && processedCurrentYearApplicationFiledData.length === 2
-        ? processedCurrentYearApplicationFiledData[1]
+      processedCurrentYearApplicationFiledDataStcSbu && processedCurrentYearApplicationFiledDataStcSbu.length === 2
+        ? processedCurrentYearApplicationFiledDataStcSbu[1]
         : {};
 
+    const processedOpenApplicationDisclosureCountStcSbu = processReportHeaders({
+      data: [partiallyProcessedOpenApplicationDisclosureCount],
+      headers: toBeProcessedStcSBuReportHeaders,
+      totalColumnName: 'Totals',
+    });
     const processedOpenApplicationDisclosureCountObject =
-      processedOpenApplicationDisclosureCount && processedOpenApplicationDisclosureCount.length > 0
-        ? processedOpenApplicationDisclosureCount[0]
+      processedOpenApplicationDisclosureCountStcSbu && processedOpenApplicationDisclosureCountStcSbu.length > 0
+        ? processedOpenApplicationDisclosureCountStcSbu[0]
         : {};
 
+    const processedTotalActiveProjectsStcSbu = processReportHeaders({
+      data: [partiallyProcessedTotalActiveProjects],
+      headers: toBeProcessedStcSBuReportHeaders,
+      totalColumnName: 'Totals',
+    });
     const processedTotalActiveProjectsObject =
-      processedTotalActiveProjects && processedTotalActiveProjects.length > 0 ? processedTotalActiveProjects[0] : {};
+      processedTotalActiveProjectsStcSbu && processedTotalActiveProjectsStcSbu.length > 0
+        ? processedTotalActiveProjectsStcSbu[0]
+        : {};
 
     const allSBUs = new Set([
       ...Object.keys(processedOpenApplicationDisclosureCountObject).filter((data) => !['SBU', 'Totals'].includes(data)),
@@ -1120,8 +1144,9 @@ export const generateMonthlyIpReport = async ({
       isReverseMapping: true,
     });
 
-    const sbusHeader = [...stcSBUHeaders.map((data) => data.reportHeader), 'Totals'];
-    const saveData = sbusHeader.map((sbu) => {
+    const sbuGlobalHeader = [...globalSBUHeaders.map((data) => data.reportHeader), 'Totals'];
+
+    const saveGlobalData = sbuGlobalHeader.map((sbu) => {
       const entry = {};
       finalProcessedData.forEach((item) => {
         if (item.SBU && reverseMapping[item.SBU]) {
@@ -1168,7 +1193,7 @@ export const generateMonthlyIpReport = async ({
       customReportId: customReportId,
       reportRequestId: requestedReportId,
       versionValue,
-      versionData: saveData,
+      versionData: saveGlobalData,
       userId,
       organizationId,
       orgCode,
