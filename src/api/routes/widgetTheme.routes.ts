@@ -5,6 +5,7 @@ import {
   getWidgetThemeById,
   updateWidgetTheme,
   deleteWidgetTheme,
+  duplicateWidgetTheme,
   // selectThemeForDashboard,
 } from '../controllers/widgetTheme.controller';
 import { authenticateToken } from '../../middlewares/authenticate.middleware';
@@ -15,19 +16,25 @@ const router = Router();
 
 // Theme management routes (admin only)
 router.get('/list', authenticateToken, getAllWidgetThemes);
-router.get('/:dashboardWidgetThemeId', authenticateToken, getWidgetThemeById);
+router.get('/:widgetThemeId', authenticateToken, getWidgetThemeById);
 
 router.post('/create', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), createWidgetTheme);
+router.post(
+  '/duplicate/:widgetThemeId',
+  authenticateToken,
+  roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
+  duplicateWidgetTheme
+);
 
 router.post(
-  '/update/:dashboardWidgetThemeId',
+  '/update/:widgetThemeId',
   authenticateToken,
   roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
   updateWidgetTheme
 );
 
 router.post(
-  '/delete/:dashboardWidgetThemeId',
+  '/delete/:widgetThemeId',
   authenticateToken,
   roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
   deleteWidgetTheme
