@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { createPartFromUri, createUserContent, GoogleGenAI } from '@google/genai';
 import e, { Request, Response, NextFunction } from 'express';
 import { getDataSourceListWithAggregation } from '../../database/services/dataSource.services';
 import mongoose from 'mongoose';
@@ -9,7 +9,10 @@ import * as operatorService from '../../database/services/operator.service';
 import * as widgetTypeService from '../../database/services/widgetType.service';
 import { getWidgetChartData } from './dashboard.controller';
 import * as cacheService from '../../database/services/aiCache.service';
+import * as fileService from '../../database/services/file.services';
 import { DateTime } from 'luxon';
+import { handleFileUpload } from '../../utils/gemni.helper';
+import { findEntityById } from '../../database/services/entity.services';
 const ObjectId = mongoose.Types.ObjectId;
 
 const genAI = new GoogleGenAI({ apiKey: config.GEMINI_API_KEY });
@@ -260,5 +263,75 @@ export const runNaturalLanguageAggregation = async (req: Request, res: Response,
     }
   } catch (err) {
     next(err);
+  }
+};
+
+export const runNaturalLanguageInsights = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userQuery }: any = req.query;
+    const { userId } = req.user;
+    let files: any = await fileService.getAllFiles({
+      query: {},
+    });
+
+    let fileData;
+    if (files && files.length === 2) {
+      const annuityFileData = files.find((file) => file.name === 'Annuity');
+      const ipAnalystFileData = files.find((file) => file.name === 'IpAnalyst');
+
+      if (
+        !annuityFileData.uriExpiresAt ||
+        !annuityFileData.fileUri ||
+        new Date() > new Date(annuityFileData.uriExpiresAt) ||
+        !ipAnalystFileData.uriExpiresAt ||
+        !ipAnalystFileData.fileUri ||
+        new Date() > new Date(ipAnalystFileData.uriExpiresAt)
+      ) {
+        fileData = await handleFileUpload({ userId });
+      } else {
+        fileData = { annuityFileData, ipAnalystFileData };
+      }
+    } else {
+      fileData = await handleFileUpload({ userId });
+    }
+    const prompt = `
+You are an intelligent document analysis assistant.
+
+You are provided with two documents. Your responsibilities:
+
+---
+
+### Instructions:
+
+1. Based on the **user's query**, identify the relevant document to work with. Do **not** combine both documents unless the user explicitly asks you to do so.
+2. Analyze the selected document and generate a response.
+3. If suitable, generate **HTML tables** to display structured data.
+4. If visualization helps, include **charts or diagrams** as images using base64-encoded data URLs inside <img> tags.
+5. Return your entire answer in **HTML format** using semantic tags like:
+   - <h2>, <p>, <ul>, <table>, <thead>, <tbody>, <tr>, <td>, and <img src="data:image/png;base64,...">
+
+Make sure your HTML is clean, readable, and directly usable in a modern frontend.
+
+---
+
+### User Query:
+${userQuery}`;
+
+    const response = await genAI.models.generateContent({
+      model: 'gemini-2.0-flash-001',
+      contents: createUserContent([
+        createPartFromUri(fileData.ipAnalystFileData.fileUri, fileData.ipAnalystFileData.mimeType),
+        createPartFromUri(fileData.annuityFileData.fileUri, fileData.annuityFileData.mimeType),
+        prompt,
+      ]),
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Query fetched successfully.',
+      data: response.text,
+    });
+  } catch (e) {
+    next(e);
   }
 };

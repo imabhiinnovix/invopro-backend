@@ -473,7 +473,10 @@ export const getWidgetChartData = async ({
   const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
 
   // 5. Execute aggregation
-  let dataResults = await DataSourceModel.aggregate(aggregationPipeline).exec();
+  const dataResultsWithTotalArray = await DataSourceModel.aggregate(aggregationPipeline).exec();
+
+  const dataResultsWithTotalMap =
+    dataResultsWithTotalArray && dataResultsWithTotalArray.length > 0 ? dataResultsWithTotalArray[0] : {};
 
   // get the widget Appearance
   // let widgetAppearance: any = {};
@@ -481,6 +484,7 @@ export const getWidgetChartData = async ({
   //   widgetAppearance = await widgetAppearanceService.getWidgetAppearance({ _id: widgetAppearanceId, organizationId });
   // }
 
+  let dataResults = dataResultsWithTotalMap?.data ? dataResultsWithTotalMap?.data : [];
   if (isIncremental) {
     if (groupBy && groupBy.length >= 0) {
       dataResults = calculateMoMDifference(dataResults, groupBy);
@@ -506,9 +510,13 @@ export const getWidgetChartData = async ({
     }
   }
 
+  if (dashBoardType === 'trend') {
+    dataResults = dataResults.sort((x, y) => x.name.localeCompare(y.name));
+  }
   return {
     label: dashBoardType === 'trend' ? `${startVersionValue}:${endVersionValue}` : labelVersionValue,
     widgetData: dataResults,
+    totalCount: dataResultsWithTotalMap?.total ? dataResultsWithTotalMap?.total : 0,
   };
 };
 
@@ -541,6 +549,14 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       dashboardFilters,
       isIncremental,
     });
+
+    if (result.widgetData && result.widgetData.length > 500) {
+      res.status(400).json({
+        success: false,
+        message: 'Chart data is very large please change the dimensions.',
+        errors: [{ fieldName: 'Dimension', message: 'Data is very large please choose another dimension.' }],
+      });
+    }
     const response = {
       success: true,
       message: 'Chart data fetched successfully',

@@ -363,6 +363,10 @@ export async function generateCustomReportBasedOnReportRequestId({
       : reportDetails.customReportId.reportName;
 
     let dataSourceVersions = reportDetails?.dataSourceVersion ? reportDetails?.dataSourceVersion : [];
+    const sheetCodeNameMap = dataSourceVersions.reduce((acc, { sheetCode, sheetName }) => {
+      acc[sheetCode] = sheetName;
+      return acc;
+    }, {});
     const versionValue = reportDetails?.versionValue || '';
     const currentYearVersionValue = versionValue.split('-')[0];
 
@@ -387,7 +391,6 @@ export async function generateCustomReportBasedOnReportRequestId({
       });
     }
 
-    console.log('dataSourceVersions', dataSourceVersions);
     if (dataSourceVersions && dataSourceVersions.length > 0) {
       let mappings: Record<string, any> = {};
       let designDetails: any[] = [];
@@ -414,10 +417,7 @@ export async function generateCustomReportBasedOnReportRequestId({
           limit: Number.MAX_SAFE_INTEGER,
         });
 
-        console.log('dataSourceVersionData', dataSourceVersionData, 'sheetCode', sheetCode);
         designDetails = JSON.parse(JSON.stringify(designSettings.get(sheetCode)));
-
-        console.log('designDetails', designDetails);
 
         if (mappingFuctionName === 'entity' && entityId) {
           const entity = entityDetails.data.find((e) => e._id.toString() === entityId.toString());
@@ -492,6 +492,7 @@ export async function generateCustomReportBasedOnReportRequestId({
       reportData,
       designData: designData,
       reportSettings,
+      sheetCodeNameMap,
       filePath: filePath,
     });
 

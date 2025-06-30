@@ -40,3 +40,12 @@ export const findCustomReportById = async (id: string, populate = true) => {
     throw err;
   }
 };
+
+export const updateCustomReportById = async (id: string, settingData: any) => {
+  try {
+    const reportSetting = await CustomReportModel.findByIdAndUpdate(id, settingData, { new: true });
+    return reportSetting;
+  } catch (err) {
+    throw err;
+  }
+};

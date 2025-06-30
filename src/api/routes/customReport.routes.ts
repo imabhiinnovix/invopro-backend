@@ -13,6 +13,8 @@ import {
   listReportRequest,
   getReportDataBasedOnDataSourceVersionId,
   getCustomReportDesignDetailsBasedOnReportId,
+  getCustomReportSettings,
+  updateCustomReportSettings,
 } from '../controllers/customReport.controller';
 
 const router = Router();
@@ -38,5 +40,19 @@ router.get(
 router.get('/customReportDesignData/:customReportId', authenticateToken, getCustomReportDesignDetailsBasedOnReportId);
 router.get('/reportDetails/:reportRequestId', authenticateToken, getReportRequestDetails);
 router.get('/reportData/:dataSourceId', authenticateToken, getCustomReportDataBasedOnDataSourcedIdAndVersionValueRange);
+
+router.get(
+  '/listSettings',
+  authenticateToken,
+  roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
+  getCustomReportSettings
+);
+
+router.post(
+  '/updateSettings/:customReportId',
+  authenticateToken,
+  roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
+  updateCustomReportSettings
+);
 
 export default router;

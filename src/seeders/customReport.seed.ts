@@ -4,7 +4,7 @@ function getCustomReportToBeSeed({ entityDataSourceMap, organizationId, customRe
   return [
     {
       _id: customReportMap.monthlyip.reportId,
-      reportName: 'Monthly Ip',
+      reportName: 'Monthly IP',
       reportCode: 'monthlyip',
       functionName: 'generateMonthlyIpReport',
       sampleFilePath: 'reports/sample/sample-monthly-ip-report.xlsx',
@@ -954,8 +954,9 @@ function getCustomReportToBeSeed({ entityDataSourceMap, organizationId, customRe
           ],
         },
       },
-      headers: {
-        global: {
+      filters: [
+        {
+          sheetCode: 'global',
           section: 'global',
           attribute: 'SBU',
           columns: [
@@ -990,7 +991,43 @@ function getCustomReportToBeSeed({ entityDataSourceMap, organizationId, customRe
             },
           ],
         },
-      },
+        {
+          sheetCode: 'stc',
+          section: 'stc',
+          attribute: 'SBU',
+          columns: [
+            {
+              reportHeader: 'Corp T&I',
+              attributeValues: ['SBU T&I', 'T&I'],
+            },
+            {
+              reportHeader: 'Agri-Nutrients',
+              attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
+            },
+            {
+              reportHeader: 'Chemicals',
+              attributeValues: ['SBU Chemicals', 'Chemicals'],
+            },
+            {
+              reportHeader: 'Polymers',
+              attributeValues: [
+                'SBU Polymers',
+                'SBU Temp Polymers Transfer (from Spec)',
+                'SBU PNJ Saudi Aramco-SABIC',
+                'Polymers',
+              ],
+            },
+            {
+              reportHeader: 'Specialties',
+              attributeValues: ['SBU SHPP', 'SHPP'],
+            },
+            {
+              reportHeader: 'Strategy & Transformation',
+              attributeValues: ['SBU Strategy & Transformation', 'Strategy & Transformation'],
+            },
+          ],
+        },
+      ],
       organizationId,
       __v: 0,
       intermediateReportId: customReportMap.monthlyip.intermediateReportId,
@@ -998,7 +1035,7 @@ function getCustomReportToBeSeed({ entityDataSourceMap, organizationId, customRe
     },
     {
       _id: customReportMap.supplementalip.reportId,
-      reportName: 'Supplemental Ip',
+      reportName: 'Supplemental IP',
       reportCode: 'supplementalip',
       functionName: 'generateSupplementalIpReport',
       sampleFilePath: 'reports/sample/sample-supplemental-report.xlsx',
@@ -2745,8 +2782,9 @@ function getCustomReportToBeSeed({ entityDataSourceMap, organizationId, customRe
           ],
         },
       },
-      headers: {
-        finalAgreementTypes: {
+      filters: [
+        {
+          sheetCode: 'agreements',
           section: 'finalAgreementTypes',
           attribute: 'SBU',
           columns: [
@@ -2775,9 +2813,12 @@ function getCustomReportToBeSeed({ entityDataSourceMap, organizationId, customRe
               reportHeader: 'T&I',
               attributeValues: ['SBU T&I', 'T&I'],
             },
+            { reportHeader: 'Metals', attributeValues: ['SBU Metals'] },
+            { reportHeader: 'Scientific Design', attributeValues: ['SBU Scientific Design', 'Scientific Design'] },
           ],
         },
-        agreementTypes: {
+        {
+          sheetCode: 'agreements',
           section: 'agreementTypes',
           attribute: 'SBU',
           columns: [
@@ -2806,9 +2847,12 @@ function getCustomReportToBeSeed({ entityDataSourceMap, organizationId, customRe
               reportHeader: 'T&I',
               attributeValues: ['SBU T&I', 'T&I'],
             },
+            { reportHeader: 'Metals', attributeValues: ['SBU Metals'] },
+            { reportHeader: 'Scientific Design', attributeValues: ['SBU Scientific Design', 'Scientific Design'] },
           ],
         },
-        patentvaluecoveragenew: {
+        {
+          sheetCode: 'patentvaluecoveragenew',
           section: 'patentvaluecoveragenew',
           attribute: 'SBU',
           columns: [
@@ -2841,9 +2885,11 @@ function getCustomReportToBeSeed({ entityDataSourceMap, organizationId, customRe
               reportHeader: 'Strategy & Transformation',
               attributeValues: ['SBU Strategy & Transformation', 'Strategy & Transformation'],
             },
+            { reportHeader: 'Metals', attributeValues: ['SBU Metals'] },
+            { reportHeader: 'Scientific Design', attributeValues: ['SBU Scientific Design', 'Scientific Design'] },
           ],
         },
-      },
+      ],
       organizationId,
       __v: 0,
       isVisible: true,
@@ -15249,13 +15295,6 @@ function getCustomReportToBeSeed({ entityDataSourceMap, organizationId, customRe
           ],
         },
       },
-      headers: {
-        currentyearnewappfiled: {
-          section: 'currentyearnewappfiled',
-          attribute: 'currentyearnewappfiled',
-          columns: [],
-        },
-      },
       isVisible: false,
       organizationId,
       __v: 0,
@@ -15283,4 +15322,240 @@ export async function seedCustomReports({ organizationId, entityDataSourceMap, c
       console.info(`New custom report with custom report id ${customReport._id} already exists.`);
     }
   }
+
+  await CustomReportModel.updateMany({ reportName: 'Monthly Ip' }, { $set: { reportName: 'Monthly IP' } });
+  await CustomReportModel.updateMany({ reportName: 'Supplemental Ip' }, { $set: { reportName: 'Supplemental IP' } });
+  await CustomReportModel.updateMany(
+    { reportName: 'Intermediate Monthly Ip' },
+    { $set: { reportName: 'Intermediate Monthly IP' } }
+  );
+
+  await CustomReportModel.updateMany(
+    {},
+    {
+      $set: {
+        'dataSourceIds.$[elem].fileDetails': [
+          { name: 'All Disclosures', isRequired: true },
+          { name: 'All Disclosures_SHPP', isRequired: false },
+        ],
+      },
+    },
+    {
+      arrayFilters: [{ 'elem.code': 'disclosure' }],
+    }
+  );
+  await CustomReportModel.updateMany(
+    {},
+    {
+      $set: {
+        'dataSourceIds.$[elem].fileDetails': [
+          { name: 'Complete Portfolio', isRequired: true },
+          { name: 'Complete Portfolio_SHPP', isRequired: false },
+        ],
+      },
+    },
+    {
+      arrayFilters: [{ 'elem.code': 'portfolio' }],
+    }
+  );
+
+  await CustomReportModel.updateMany(
+    { reportCode: 'monthlyip', filters: { $exists: false } },
+    {
+      $set: {
+        filters: [
+          {
+            sheetCode: 'global',
+            section: 'global',
+            attribute: 'SBU',
+            columns: [
+              {
+                reportHeader: 'Corp T&I',
+                attributeValues: ['SBU T&I', 'T&I'],
+              },
+              {
+                reportHeader: 'Agri-Nutrients',
+                attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
+              },
+              {
+                reportHeader: 'Chemicals',
+                attributeValues: ['SBU Chemicals', 'Chemicals'],
+              },
+              {
+                reportHeader: 'Polymers',
+                attributeValues: [
+                  'SBU Polymers',
+                  'SBU Temp Polymers Transfer (from Spec)',
+                  'SBU PNJ Saudi Aramco-SABIC',
+                  'Polymers',
+                ],
+              },
+              {
+                reportHeader: 'Specialties',
+                attributeValues: ['SBU SHPP', 'SHPP'],
+              },
+              {
+                reportHeader: 'Strategy & Transformation',
+                attributeValues: ['SBU Strategy & Transformation', 'Strategy & Transformation'],
+              },
+            ],
+          },
+          {
+            sheetCode: 'stc',
+            section: 'stc',
+            attribute: 'SBU',
+            columns: [
+              {
+                reportHeader: 'Corp T&I',
+                attributeValues: ['SBU T&I', 'T&I'],
+              },
+              {
+                reportHeader: 'Agri-Nutrients',
+                attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
+              },
+              {
+                reportHeader: 'Chemicals',
+                attributeValues: ['SBU Chemicals', 'Chemicals'],
+              },
+              {
+                reportHeader: 'Polymers',
+                attributeValues: [
+                  'SBU Polymers',
+                  'SBU Temp Polymers Transfer (from Spec)',
+                  'SBU PNJ Saudi Aramco-SABIC',
+                  'Polymers',
+                ],
+              },
+              {
+                reportHeader: 'Specialties',
+                attributeValues: ['SBU SHPP', 'SHPP'],
+              },
+              {
+                reportHeader: 'Strategy & Transformation',
+                attributeValues: ['SBU Strategy & Transformation', 'Strategy & Transformation'],
+              },
+            ],
+          },
+        ],
+      },
+    }
+  );
+
+  await CustomReportModel.updateMany(
+    { reportCode: 'supplementalip', filters: { $exists: false } },
+    {
+      $set: {
+        filters: [
+          {
+            sheetCode: 'agreements',
+            section: 'finalAgreementTypes',
+            attribute: 'SBU',
+            columns: [
+              {
+                reportHeader: 'Agri-Nutrients',
+                attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
+              },
+              {
+                reportHeader: 'Chemicals',
+                attributeValues: ['SBU Chemicals', 'Chemicals'],
+              },
+              {
+                reportHeader: 'Polymers',
+                attributeValues: [
+                  'SBU Polymers',
+                  'SBU Temp Polymers Transfer (from Spec)',
+                  'SBU PNJ Saudi Aramco-SABIC',
+                  'Polymers',
+                ],
+              },
+              {
+                reportHeader: 'SHPP',
+                attributeValues: ['SBU SHPP', 'SHPP'],
+              },
+              {
+                reportHeader: 'T&I',
+                attributeValues: ['SBU T&I', 'T&I'],
+              },
+              { reportHeader: 'Metals', attributeValues: ['SBU Metals'] },
+              { reportHeader: 'Scientific Design', attributeValues: ['SBU Scientific Design', 'Scientific Design'] },
+            ],
+          },
+          {
+            sheetCode: 'agreements',
+            section: 'agreementTypes',
+            attribute: 'SBU',
+            columns: [
+              {
+                reportHeader: 'Agri-Nutrients',
+                attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
+              },
+              {
+                reportHeader: 'Chemicals',
+                attributeValues: ['SBU Chemicals', 'Chemicals'],
+              },
+              {
+                reportHeader: 'Polymers',
+                attributeValues: [
+                  'SBU Polymers',
+                  'SBU Temp Polymers Transfer (from Spec)',
+                  'SBU PNJ Saudi Aramco-SABIC',
+                  'Polymers',
+                ],
+              },
+              {
+                reportHeader: 'SHPP',
+                attributeValues: ['SBU SHPP', 'SHPP'],
+              },
+              {
+                reportHeader: 'T&I',
+                attributeValues: ['SBU T&I', 'T&I'],
+              },
+              { reportHeader: 'Metals', attributeValues: ['SBU Metals'] },
+              { reportHeader: 'Scientific Design', attributeValues: ['SBU Scientific Design', 'Scientific Design'] },
+            ],
+          },
+          {
+            sheetCode: 'patentvaluecoveragenew',
+            section: 'patentvaluecoveragenew',
+            attribute: 'SBU',
+            columns: [
+              {
+                reportHeader: 'Corp T&I',
+                attributeValues: ['SBU T&I', 'T&I'],
+              },
+              {
+                reportHeader: 'Agri-Nutrients',
+                attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
+              },
+              {
+                reportHeader: 'Chemicals',
+                attributeValues: ['SBU Chemicals', 'Chemicals'],
+              },
+              {
+                reportHeader: 'Polymers',
+                attributeValues: [
+                  'SBU Polymers',
+                  'SBU Temp Polymers Transfer (from Spec)',
+                  'SBU PNJ Saudi Aramco-SABIC',
+                  'Polymers',
+                ],
+              },
+              {
+                reportHeader: 'Specialties',
+                attributeValues: ['SBU SHPP', 'SHPP'],
+              },
+              {
+                reportHeader: 'Strategy & Transformation',
+                attributeValues: ['SBU Strategy & Transformation', 'Strategy & Transformation'],
+              },
+              { reportHeader: 'Metals', attributeValues: ['SBU Metals'] },
+              { reportHeader: 'Scientific Design', attributeValues: ['SBU Scientific Design', 'Scientific Design'] },
+            ],
+          },
+        ],
+      },
+    }
+  );
+
+  await CustomReportModel.collection.updateMany({ headers: { $exists: true } }, { $unset: { headers: '' } });
 }

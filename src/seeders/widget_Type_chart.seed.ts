@@ -171,6 +171,48 @@ export async function seedChart(payload) {
         type: 'multiselect' as const,
       },
     ],
+    tabular: [
+      {
+        fieldName: 'dimensions',
+        display: true,
+        required: true,
+        multiple: true,
+        label: 'Dimensions',
+        type: 'multiselect' as const,
+      },
+      {
+        fieldName: 'groupBy',
+        display: true,
+        required: true,
+        multiple: true,
+        label: 'Group By',
+        type: 'multiselect' as const,
+      },
+      {
+        fieldName: 'size',
+        display: false,
+        required: false,
+        multiple: false,
+        label: 'Size',
+        type: 'select' as const,
+      },
+      {
+        fieldName: 'aggregation',
+        display: true,
+        required: true,
+        multiple: false,
+        label: 'Aggregation',
+        type: 'select' as const,
+      },
+      {
+        fieldName: 'conditions',
+        display: true,
+        required: false,
+        multiple: true,
+        label: 'Conditions',
+        type: 'multiselect' as const,
+      },
+    ],
   };
 
   const chartData = [
@@ -277,6 +319,14 @@ export async function seedChart(payload) {
       chartType: 'scatter',
       code: 'scatter-1',
       fieldConfig: fieldConfig.bubble,
+    },
+    {
+      id: payload.tabularChartId,
+      name: 'Tabular',
+      description: 'test tabular description',
+      chartType: 'tabular',
+      code: 'tabular-1',
+      fieldConfig: fieldConfig.tabular,
     },
   ];
 

@@ -17,6 +17,7 @@ import {
   getCurrentYearNewApplicationFiled,
   getFormattedDataToProcessReportHeaders,
 } from '../../database/services/monthlyipReport.services';
+import { ICustomReport } from '../../database/models/customReport';
 
 export const generateSupplementalIpReport = async ({
   reportRequestPayload,
@@ -49,7 +50,7 @@ export const generateSupplementalIpReport = async ({
   supplementalIpNewCoverageDataSourceId,
   customReportModel,
   isRowData,
-  headers,
+  customReportDetails,
   userId,
   orgCode,
   organizationId,
@@ -84,7 +85,7 @@ export const generateSupplementalIpReport = async ({
   supplementalIpNewCoverageDataSourceId: string;
   customReportModel: CustomReportModelAccessReturnType;
   isRowData?: boolean;
-  headers: ReportHeaders;
+  customReportDetails: ICustomReport;
   userId: string;
   orgCode: string;
   organizationId: string;
@@ -106,11 +107,18 @@ export const generateSupplementalIpReport = async ({
       isRowData,
     });
 
+    const finalAgreementSBUHeadersFilter = customReportDetails.filters.find(
+      (filter) => filter.sheetCode === 'agreements' && filter.section === 'finalAgreementTypes'
+    );
+    const finalAgreementSBUHeaders = finalAgreementSBUHeadersFilter?.['columns']
+      ? finalAgreementSBUHeadersFilter?.['columns']
+      : [];
+
     const proceessedFinalAgreement = processReportHeaders({
       data: isRowData ? [] : currentYearAgreementSigned?.finalAgreementResult,
       headers: [
         { reportHeader: 'Final AgreementType', attributeValues: ['Final AgreementType'] },
-        ...headers['finalAgreementTypes']['columns'],
+        ...finalAgreementSBUHeaders,
         { reportHeader: 'Total', attributeValues: ['Total'] },
       ],
     });
@@ -126,11 +134,17 @@ export const generateSupplementalIpReport = async ({
       orgCode,
     });
 
+    const agreementTypesSBUHeadersFilter = customReportDetails.filters.find(
+      (filter) => filter.sheetCode === 'agreements' && filter.section === 'agreementTypes'
+    );
+    const agreementTypesSBUHeaders = agreementTypesSBUHeadersFilter?.['columns']
+      ? agreementTypesSBUHeadersFilter?.['columns']
+      : [];
     const proceessedOtherAgreement = processReportHeaders({
       data: isRowData ? [] : currentYearAgreementSigned?.otherAgreementResult,
       headers: [
         { reportHeader: 'AgreementType', attributeValues: ['AgreementType'] },
-        ...headers['agreementTypes']['columns'],
+        ...agreementTypesSBUHeaders,
         { reportHeader: 'Total', attributeValues: ['Total'] },
       ],
     });
@@ -433,15 +447,22 @@ export const generateSupplementalIpReport = async ({
     //   allAccoladeMappingSheetData: allAccoladeMappingSheet,
     // });
 
+    const patentValueCoverageNewSBUHeadersFilter = customReportDetails.filters.find(
+      (filter) => filter.sheetCode === 'patentvaluecoveragenew' && filter.section === 'patentvaluecoveragenew'
+    );
+    const patentValueCoverageNewSBUHeaders = patentValueCoverageNewSBUHeadersFilter?.['columns']
+      ? patentValueCoverageNewSBUHeadersFilter?.['columns']
+      : [];
+    const patentValueCoverageNewSBUHeadersAll = patentValueCoverageNewSBUHeaders.flatMap(
+      (item) => item.attributeValues
+    );
     const newPatentValueCoverageRawData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
       customReportModel,
       isRowData: true,
-      isSupplementalReport: true,
+      sbuHeaders: patentValueCoverageNewSBUHeadersAll,
     });
-
-    const sbuHeaders = headers['patentvaluecoveragenew']['columns'];
 
     const newPatentValueCoverage: any[] = [];
     const total = {
@@ -452,7 +473,7 @@ export const generateSupplementalIpReport = async ({
       NOOFACCOLADEPROJECTSCOVERED: 0,
     };
 
-    for (const sbuHeader of sbuHeaders) {
+    for (const sbuHeader of patentValueCoverageNewSBUHeaders) {
       const { reportHeader, attributeValues } = sbuHeader;
 
       // Filter cases matching current SBU group
@@ -520,12 +541,16 @@ export const generateSupplementalIpReport = async ({
       organizationId,
       orgCode,
     });
-
+    const reportSettingDetails = customReportDetails.reportSettings;
+    const sheetCodeNameMap = reportSettingDetails.reduce((acc, { sheetCode, sheetName }) => {
+      acc[sheetCode] = sheetName;
+      return acc;
+    }, {});
     await reportRequestService.updateReportRequest(requestedReportId, {
       status: 'completed',
       dataSourceVersion: [
         {
-          sheetName: 'Agreements',
+          sheetName: sheetCodeNameMap['agreements'],
           sheetCode: 'agreements',
           tabName: 'Agreements:Final',
           mappingFuctionName: '',
@@ -536,7 +561,7 @@ export const generateSupplementalIpReport = async ({
           dataSourceId: supplementalIpAgreementsFinalAgreementTypeDataSourceId,
         },
         {
-          sheetName: 'Agreements',
+          sheetName: sheetCodeNameMap['agreements'],
           sheetCode: 'agreements',
           tabName: 'Agreements:Other',
           mappingFuctionName: '',
@@ -547,7 +572,7 @@ export const generateSupplementalIpReport = async ({
           dataSourceId: supplementalIpAgreementsOthersDataSourceId,
         },
         {
-          sheetName: 'BANGALORE IP GROUP',
+          sheetName: sheetCodeNameMap['bangaloreipgroup'],
           sheetCode: 'bangaloreipgroup',
           tabName: 'BANGALORE IP GROUP:Status',
           mappingFuctionName: '',
@@ -558,7 +583,7 @@ export const generateSupplementalIpReport = async ({
           dataSourceId: supplementalIpBangaloreIpGroupCurrentStatusDataSourceId,
         },
         {
-          sheetName: 'BANGALORE IP GROUP',
+          sheetName: sheetCodeNameMap['bangaloreipgroup'],
           sheetCode: 'bangaloreipgroup',
           tabName: 'BANGALORE IP GROUP:SBU',
           mappingFuctionName: '',
@@ -569,7 +594,7 @@ export const generateSupplementalIpReport = async ({
           dataSourceId: supplementalIpBangaloreIpGroupSbuDataSourceId,
         },
         {
-          sheetName: 'BANGALORE IP GROUP',
+          sheetName: sheetCodeNameMap['bangaloreipgroup'],
           sheetCode: 'bangaloreipgroup',
           tabName: 'BANGALORE IP GROUP:Workscope',
           mappingFuctionName: '',
@@ -580,7 +605,7 @@ export const generateSupplementalIpReport = async ({
           dataSourceId: supplementalIpBangaloreIpGroupWorkScopeDataSourceId,
         },
         {
-          sheetName: 'BANGALORE IP GROUP',
+          sheetName: sheetCodeNameMap['bangaloreipgroup'],
           sheetCode: 'bangaloreipgroup',
           tabName: 'BANGALORE IP GROUP:Work Product',
           mappingFuctionName: '',
@@ -591,7 +616,7 @@ export const generateSupplementalIpReport = async ({
           dataSourceId: supplementalIpBangaloreIpGroupWorkProductDataSourceId,
         },
         {
-          sheetName: 'Accolade Mapping Sheet',
+          sheetName: sheetCodeNameMap['accolademappingsheet'],
           sheetCode: 'accolademappingsheet',
           tabName: 'Accolade Mapping Sheet',
           mappingFuctionName: 'transformSupplementalIpAccoladeMappingSheet',
@@ -602,7 +627,7 @@ export const generateSupplementalIpReport = async ({
           dataSourceId: supplementalIpAccoladeMappingSheetDataSourceId,
         },
         {
-          sheetName: 'PATENT VALUE COVERAGE-ACTIVE',
+          sheetName: sheetCodeNameMap['patentvaluecoverageactive'],
           sheetCode: 'patentvaluecoverageactive',
           tabName: 'PATENT VALUE COVERAGE-ACTIVE',
           mappingFuctionName: 'transformSupplementalIpPatentValueCoverageActive',
@@ -613,7 +638,7 @@ export const generateSupplementalIpReport = async ({
           dataSourceId: supplementalIpPatentValueCoverageActiveDataSourceId,
         },
         {
-          sheetName: 'PATENT VALUE COVERAGE-NEW',
+          sheetName: sheetCodeNameMap['patentvaluecoveragenew'],
           sheetCode: 'patentvaluecoveragenew',
           tabName: 'PATENT VALUE COVERAGE-NEW',
           mappingFuctionName: 'transformSupplementalIPatentValueCoverageNew',
@@ -624,7 +649,7 @@ export const generateSupplementalIpReport = async ({
           dataSourceId: supplementalIpNewCoverageDataSourceId,
         },
         {
-          sheetName: 'Strategic Reporting Class',
+          sheetName: sheetCodeNameMap['strategicreportingclass'],
           sheetCode: 'strategicreportingclass',
           tabName: 'Strategic Reporting Class',
           mappingFuctionName: 'transformSupplementalIpStrategicReportingClass',
@@ -635,7 +660,7 @@ export const generateSupplementalIpReport = async ({
           dataSourceId: supplementalIpStrategicReportingClassDataSourceId,
         },
         {
-          sheetName: 'New Coverage',
+          sheetName: sheetCodeNameMap['newcoverage'],
           sheetCode: 'newcoverage',
           tabName: 'New Coverage',
           mappingFuctionName: 'transformSupplementalIpNewCoverage',
