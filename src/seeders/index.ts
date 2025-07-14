@@ -14,6 +14,8 @@ import { seedEntities } from './entities.seed';
 import { seedDataSource } from './dataSource.seed';
 import { seedCustomReports } from './customReport.seed';
 import { seedProducts } from './product.seed';
+import { seedRolesAndPermissions } from './seedRoleAndPermission';
+import { seedPermissions } from './permission.seed';
 
 const payload = {
   reportivixSuperAdminUserId: new mongoose.Types.ObjectId('66b34cbbd40e24fca2e3e312'),
@@ -558,6 +560,9 @@ export async function seedDatabase() {
 
     await seedProducts(payload);
 
+    await seedPermissions();
+
+    await seedRolesAndPermissions({ organizationId: String(payload.reportivixOrganizationId) });
     console.info('\n====> Seeding Entities Reportivix <====');
     await seedEntities({
       organizationId: payload.reportivixOrganizationId,

@@ -2,6 +2,7 @@ import { Schema, model, Document, Types } from 'mongoose';
 
 export interface IPermission extends Document {
   name: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'; // You can extend this if needed
   resource: string;
   productId: Types.ObjectId;
   extraOptions?: Record<string, any>;
@@ -17,12 +18,18 @@ const permissionSchema = new Schema<IPermission>(
       type: String,
       required: true,
     },
+    method: {
+      type: String,
+      required: true,
+      enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // extend if needed
+    },
     resource: {
       type: String,
       required: true,
     },
     extraOptions: {
       type: Object,
+      default: {},
     },
     status: {
       type: String,
@@ -38,6 +45,9 @@ const permissionSchema = new Schema<IPermission>(
     timestamps: true,
   }
 );
+
+// Add compound unique index on method + resource
+permissionSchema.index({ method: 1, resource: 1 }, { unique: true });
 
 // Export model
 const Permission = model<IPermission>('permission', permissionSchema);
