@@ -13,17 +13,19 @@ import {
   updateUserStatus,
 } from '../controllers/user.controller';
 import { RoleId } from '../../enums/role.enum';
+import { createUser } from '../controllers/auth.controller';
 
 const router = Router();
+
+router.post('/create', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), createUser);
+
+router.get('/list', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), getUserList);
 
 router.get('/getCurrentUser', authenticateToken, getUserById);
 
 router.post('/update', authenticateToken, updateUser);
 
 router.post('/change-password', authenticateToken, changePassword);
-
-// Admin
-router.get('/list', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), getUserList);
 
 router.get('/:userId', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), adminGetUserById);
 

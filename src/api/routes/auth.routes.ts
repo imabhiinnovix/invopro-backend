@@ -9,8 +9,6 @@ const router = Router();
 
 router.post('/login', login);
 
-router.post('/create-user', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), createUser);
-
 // send-otp
 router.post('/send-otp', sendOtp);
 

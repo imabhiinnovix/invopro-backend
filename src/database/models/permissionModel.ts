@@ -1,8 +1,9 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 
 export interface IPermission extends Document {
   name: string;
   resource: string;
+  productId: Types.ObjectId;
   extraOptions?: Record<string, any>;
   status: 'active' | 'inactive';
   createdAt: Date;
@@ -27,6 +28,10 @@ const permissionSchema = new Schema<IPermission>(
       type: String,
       enum: ['active', 'inactive'],
       default: 'active',
+    },
+    productId: {
+      type: Schema.Types.ObjectId,
+      ref: 'product',
     },
   },
   {
