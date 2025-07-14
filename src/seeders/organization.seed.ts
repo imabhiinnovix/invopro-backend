@@ -12,10 +12,8 @@ export async function seedOrganizations(payload) {
       name: 'reportivix',
       owner: payload.reportivixAdminUserId,
       isMaster: true,
-      licenseExpiresAt: new Date('2025-12-31'),
       code: 'reportivix',
       status: 'active',
-      totalLicenses: 10,
     });
 
     await newOrganization.save();
@@ -31,19 +29,11 @@ export async function seedOrganizations(payload) {
       name: 'sabic',
       owner: payload.reportivixSuperAdminUserId,
       isMaster: true,
-      licenseExpiresAt: new Date('2025-12-31'),
       code: 'sabic',
       status: 'active',
-      totalLicenses: 10,
     });
 
     await newOrganization.save();
     console.info('Sabic Organization created successfully.');
   }
-
-  const updateLicenseExpiresAt = await Organization.updateMany(
-    { licenseExpiresAt: { $exists: false } },
-    { $set: { licenseExpiresAt: new Date('2025-12-31') } }
-  );
-  console.info(`Updated ${updateLicenseExpiresAt.modifiedCount} organizations with licenseExpiresAt.`);
 }

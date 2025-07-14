@@ -111,20 +111,20 @@ export const checkUserStatus = async (
     roleId: { $ne: RoleId.SUPER_ADMIN },
   });
 
-  switch (status) {
-    case 'active':
-      if (activeUserCount >= organization.totalLicenses) {
-        return { success: false, message: 'License limit reached. Please contact the support team.' };
-      }
-      break;
-    case 'inactive':
-      if (activeUserCount < 1) {
-        return { success: false, message: 'No active licenses to revoke.' };
-      }
-      break;
-    default:
-      return { success: false, message: 'Invalid status value provided.' };
-  }
+  // switch (status) {
+  //   case 'active':
+  //     if (activeUserCount >= organization.totalLicenses) {
+  //       return { success: false, message: 'License limit reached. Please contact the support team.' };
+  //     }
+  //     break;
+  //   case 'inactive':
+  //     if (activeUserCount < 1) {
+  //       return { success: false, message: 'No active licenses to revoke.' };
+  //     }
+  //     break;
+  //   default:
+  //     return { success: false, message: 'Invalid status value provided.' };
+  // }
 
   return { success: true };
 };

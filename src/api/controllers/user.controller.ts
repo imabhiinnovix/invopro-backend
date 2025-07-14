@@ -141,11 +141,11 @@ export const updateUserStatus = async (req: Request, res: Response, next: NextFu
         message: `User status is already ${status}`,
       });
     }
-
-    const statusCheck = await userService.checkUserStatus(status, user.organizationId.toString());
-    if (!statusCheck.success) {
-      return res.status(400).json({ success: false, message: statusCheck.message });
-    }
+    //TODO
+    // const statusCheck = await userService.checkUserStatus(status, user.organizationId.toString());
+    // if (!statusCheck.success) {
+    //   return res.status(400).json({ success: false, message: statusCheck.message });
+    // }
 
     await userService.updateUser(userId, { status });
     res.status(200).json({ success: true, message: 'User status updated successfully' });

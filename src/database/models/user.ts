@@ -1,49 +1,79 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
-enum UserRole {
-  SUPER_ADMIN = 'super admin',
-  ADMIN = 'admin',
-  USER = 'user',
-}
-
 export interface IUser extends Document {
   _id: Types.ObjectId;
-  email?: string;
-  password?: string;
-  firstName?: string;
-  lastName?: string;
-  status?: string;
-  role?: string;
-  roleId?: string;
-  lastSearchHistoryId: Types.ObjectId;
   organizationId: Types.ObjectId;
-  lastLogin?: Date;
+  email: string;
+  password: string;
+  roleId?: Types.ObjectId;
+  firstName: string;
+  lastName?: string;
+  mobile?: number;
+  isVerified: boolean;
+  status: 'active' | 'inactive';
+  productIds?: Types.ObjectId[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const userSchema = new Schema<IUser>(
   {
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
-    status: { type: String, default: 'inactive' }, // 1. active, 2. inactive
-    role: {
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      required: false,
+      ref: 'organization',
+    },
+    email: {
+      type: String,
+      unique: true,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
+    password: {
       type: String,
       required: true,
-      enum: Object.values(UserRole),
-      default: UserRole.USER,
+      minlength: 7,
+      trim: true,
+      select: false,
     },
     roleId: {
-      type: Number,
-      required: true,
-      default: 3, // 1 for Super Admin, 2 for Admin, 3 for User
+      type: Schema.Types.ObjectId,
+      required: false,
+      ref: 'user_role',
     },
-    organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
-    lastLogin: { type: Date, default: null }, // New field to track last login time
+    firstName: {
+      type: String,
+      required: true,
+    },
+    lastName: {
+      type: String,
+      required: false,
+    },
+    mobile: {
+      type: Number,
+      required: false,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    status: {
+      type: String,
+      enum: ['active', 'inactive'],
+      default: 'active',
+    },
+    productIds: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'product',
+      },
+    ],
   },
   {
     timestamps: true,
-  },
+  }
 );
 
-export default model<IUser>('User', userSchema);
+const User = model<IUser>('user', userSchema);
+export default User;

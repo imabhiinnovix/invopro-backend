@@ -1,0 +1,37 @@
+import Product from '../database/models/product';
+
+export async function seedProducts(payload) {
+  const predefinedProducts = [
+    {
+      _id: payload.reportivixProductId,
+      name: 'ReportiVix',
+      description: '',
+      code: 'reportivix',
+    },
+    {
+      _id: payload.notivixProductId,
+      name: 'NotiVix',
+      description: '',
+      code: 'notivix',
+    },
+  ];
+
+  for (const product of predefinedProducts) {
+    const existing = await Product.findById(product._id);
+
+    if (!existing) {
+      const newProduct = new Product({
+        _id: product._id,
+        name: product.name,
+        description: product.description,
+        code: product.code,
+        status: 'active',
+      });
+
+      await newProduct.save();
+      console.info(`✅ Product "${product.name}" created successfully.`);
+    } else {
+      console.info(`ℹ️ Product "${product.name}" already exists.`);
+    }
+  }
+}

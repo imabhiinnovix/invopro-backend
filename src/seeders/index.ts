@@ -13,6 +13,7 @@ import { seedDashboard } from './dashboard.seed';
 import { seedEntities } from './entities.seed';
 import { seedDataSource } from './dataSource.seed';
 import { seedCustomReports } from './customReport.seed';
+import { seedProducts } from './product.seed';
 
 const payload = {
   reportivixSuperAdminUserId: new mongoose.Types.ObjectId('66b34cbbd40e24fca2e3e312'),
@@ -24,6 +25,9 @@ const payload = {
   //organization
   reportivixOrganizationId: new mongoose.Types.ObjectId('66de96d3548d06560e2931cb'),
   sabicOrganizationId: new mongoose.Types.ObjectId('67caac1ec4f70d4fdbdb7294'),
+
+  reportivixProductId: new mongoose.Types.ObjectId('6870c9e335f4e90221de9ece'),
+  notivixProductId: new mongoose.Types.ObjectId('6870c9e335f4e90221de9ed1'),
 
   pieChartId: new mongoose.Types.ObjectId('67e5011c966d261de673d1f1'),
   lineChartId: new mongoose.Types.ObjectId('67e68fd541db187651d5e6b8'),
@@ -552,6 +556,8 @@ export async function seedDatabase() {
     console.info('\n====> Seeding organizations <====');
     await seedOrganizations(payload);
 
+    await seedProducts(payload);
+
     console.info('\n====> Seeding Entities Reportivix <====');
     await seedEntities({
       organizationId: payload.reportivixOrganizationId,
@@ -607,8 +613,8 @@ export async function seedDatabase() {
     console.info('\n====> Seeding Operators <====');
     await seedOperators();
 
-    console.info('\n====> Seeding Widget Theme <====');
-    await seedWidgetTheme(payload);
+    // console.info('\n====> Seeding Widget Theme <====');
+    // await seedWidgetTheme(payload);
 
     // console.info('\n====> Seeding Dashboard Widget <====');
     // await seedDashboardWidget();

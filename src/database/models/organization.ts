@@ -8,12 +8,10 @@ interface IOrganization extends Document {
   owner: Types.ObjectId;
   isMaster: boolean;
   status: string;
-  totalLicenses: number;
-  licenseExpiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
-  domain:string;
-  code:string;
+  domain: string;
+  code: string;
 }
 
 // Define the Organization Schema
@@ -22,12 +20,14 @@ const organizationSchema = new Schema<IOrganization>(
     name: { type: String, required: true },
     description: { type: String },
     owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    domain:{ type: String },
-    code: { type: String, required: true,unique:true },
+    domain: { type: String },
+    code: { type: String, required: true, unique: true },
     isMaster: { type: Boolean, default: false },
-    status: { type: String, default: 'active' }, // 1. active, 2. inactive
-    totalLicenses: { type: Number, default: 0 }, // Total licenses assigned
-    licenseExpiresAt: { type: Date, required: true }, // Expiry date for licenses
+    status: {
+      type: String,
+      enum: ['active', 'inactive'],
+      default: 'active',
+    },
   },
   {
     timestamps: true,
