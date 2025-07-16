@@ -44,6 +44,13 @@ export const getDataSourceVersionBasedOnDataSourceIdAndVersionValueAndVersionNam
   }
 };
 
+export async function getCurrentDataSourceVersion(dataSourceId: string) {
+  return await DataSourceVersion.findOne({
+    dataSourceId,
+    isCurrent: true,
+  }).sort({ createdAt: -1 }).exec();
+}
+
 export const getDataSourceVersionList = async ({
   query,
   select = '',

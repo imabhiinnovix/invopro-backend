@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import createDefaultDataSourceVersionModel from '../models/defaultDataSourceVersionModel';
+import createDefaultImportLogDataSourceVersionModel from '../models/defaultImportLogDataSourceVersionModel';
+import createDefaultDataSourceVersionModel from '../models/defaultImportLogDataSourceVersionModel';
 import { Model, Document, AnyBulkWriteOperation } from 'mongoose';
 
 export const updateDataSourceVersionValue = async (
@@ -18,18 +19,10 @@ export const updateDataSourceVersionValue = async (
 
     for (const rule of uniqueKeys) {
       const condition: Record<string, any> = {};
-
       for (const key of rule) {
-        const val = row.rowData?.[key];
-        if (val !== undefined && val !== null && `${val}`.trim() !== '') {
-          condition[`rowData.${key}`] = val;
-          break; // fallback: use first non-empty key in rule
-        }
+        condition[`rowData.${key}`] = row.rowData?.[key];
       }
-
-      if (Object.keys(condition).length > 0) {
-        filters.push(condition);
-      }
+      filters.push(condition);
     }
 
     const finalQuery = filters.length === 1 ? filters[0] : { $or: filters };
@@ -66,9 +59,9 @@ export const createEmptyCollection = async (schemaName: string) => {
   }
 };
 
-export const createDataSourceVersionValue = async (schemaName: string, createDataSourceVersionValue: any) => {
+export const createImportLogDataSourceVersionValue = async (schemaName: string, createDataSourceVersionValue: any) => {
   try {
-    const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
+    const DataSourceVersionValue = createDefaultImportLogDataSourceVersionModel(schemaName);
 
     const dataSourceVersionValue = await DataSourceVersionValue.insertMany(createDataSourceVersionValue);
 

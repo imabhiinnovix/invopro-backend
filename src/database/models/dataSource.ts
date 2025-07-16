@@ -11,7 +11,7 @@ interface IDataSource extends Document {
   createdBy?: Types.ObjectId;
   isActive: boolean;
   canEditInline: boolean;
-  uniqueAttributeName: string[];
+  uniqueAttributeRules: string[][];
   isVisible: boolean;
 }
 
@@ -27,7 +27,10 @@ const dataSourceSchema = new Schema<IDataSource>(
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     canEditInline: { type: Boolean, default: false },
-    uniqueAttributeName: { type: [String] },
+    uniqueAttributeRules: {
+      type: [[String]], // Array of arrays of strings
+      default: [],
+    },
     isVisible: { type: Boolean, default: true },
   },
   {
