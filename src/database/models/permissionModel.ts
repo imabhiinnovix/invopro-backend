@@ -1,12 +1,14 @@
 import { Schema, model, Document, Types } from 'mongoose';
+import DataSource from './dataSource';
 
 export interface IPermission extends Document {
   name: string;
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'; // You can extend this if needed
-  resource: string;
+  resourceId: string;
   productId: Types.ObjectId;
   extraOptions?: Record<string, any>;
   status: 'active' | 'inactive';
+  resourceType: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,7 +25,11 @@ const permissionSchema = new Schema<IPermission>(
       required: true,
       enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // extend if needed
     },
-    resource: {
+    resourceId: {
+      type: String,
+      required: true,
+    },
+    resourceType: {
       type: String,
       required: true,
     },

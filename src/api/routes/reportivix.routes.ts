@@ -21,10 +21,6 @@ import nlQueryRoutes from './nlQuery.routes';
 
 const router = Router();
 
-router.use('/auth', authRoutes);
-router.use('/users', userRoutes);
-router.use('/organizations', organizationRoutes);
-router.use('/support', supportRoutes);
 router.use('/entities', entityRoutes);
 router.use('/dataSource', dataSourceRoutes);
 router.use('/attributeOptions', attributeRoutes);
