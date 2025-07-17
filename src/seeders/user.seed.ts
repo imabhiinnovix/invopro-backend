@@ -1,4 +1,5 @@
-import User from '../database/models/user';
+import User from '../database/models/common/user';
+import UserRole from '../database/models/common/userRole';
 import { hashPassword } from '../utils/bcrypt.utils';
 
 export async function seedUsers(payload) {
@@ -8,6 +9,13 @@ export async function seedUsers(payload) {
 
   // Check if the Super Admin User already exists
   const existingSuperAdminUser = await User.findById(payload.reportivixSuperAdminUserId);
+  let superAdminRole: any = await UserRole.find({ name: 'Super Admin' });
+  superAdminRole = superAdminRole[0];
+
+  let adminRole: any = await UserRole.find({ name: 'Admin' });
+  adminRole = adminRole[0];
+  let userRole: any = await UserRole.find({ name: 'User' });
+  userRole = userRole[0];
 
   if (!existingSuperAdminUser) {
     const superAdminUser = new User({
@@ -17,7 +25,7 @@ export async function seedUsers(payload) {
       firstName: 'Super Admin',
       lastName: 'User',
       role: 'super admin',
-      roleId: 1,
+      roleIds: [superAdminRole._id!],
       organizationId: payload.reportivixOrganizationId,
       lastLogin: null,
       status: 'active',
@@ -40,7 +48,7 @@ export async function seedUsers(payload) {
       firstName: 'Admin',
       lastName: 'User',
       role: 'admin',
-      roleId: 2,
+      roleIds: [adminRole._id],
       organizationId: payload.reportivixOrganizationId,
       lastLogin: null,
       status: 'active',
@@ -63,7 +71,7 @@ export async function seedUsers(payload) {
       firstName: 'Test',
       lastName: 'User',
       role: 'user',
-      roleId: 3,
+      roleIds: [userRole._id],
       organizationId: payload.reportivixOrganizationId,
       lastLogin: null,
       status: 'active',
@@ -87,7 +95,7 @@ export async function seedUsers(payload) {
       firstName: 'Sabic',
       lastName: 'Admin',
       role: 'admin',
-      roleId: 2,
+      roleIds: [adminRole._id],
       organizationId: payload.sabicOrganizationId,
       lastLogin: null,
       status: 'active',
@@ -108,7 +116,7 @@ export async function seedUsers(payload) {
       firstName: 'Mahua',
       lastName: 'Dutta',
       role: 'admin',
-      roleId: 2,
+      roleIds: [adminRole._id],
       organizationId: payload.sabicOrganizationId,
       lastLogin: null,
       status: 'active',

@@ -1,4 +1,4 @@
-import Organization from '../database/models/organization';
+import Organization from '../database/models/common/organization';
 // import User from '../database/models/user';
 
 export async function seedOrganizations(payload) {

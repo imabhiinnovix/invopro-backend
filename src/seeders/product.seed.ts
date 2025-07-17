@@ -1,4 +1,4 @@
-import Product from '../database/models/product';
+import Product from '../database/models/common/product';
 
 export async function seedProducts(payload) {
   const predefinedProducts = [

@@ -6,18 +6,18 @@ import {
   getNewCoverage,
   getNewPatentValueCoverage,
   getStrategicReportingClass,
-} from '../../database/services/supplementalipReport.services';
+} from '../../database/services/common/supplementalipReport.services';
 import { createExcelSheetFile, createUpdateExcelTable } from '../../utils/excel.utils';
-import * as reportRequestService from '../../database/services/reportRequest.services';
-import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
+import * as reportRequestService from '../../database/services/reportivix/reportRequest.services';
+import { CustomReportModelAccessReturnType } from '../../database/models/reportivix/customReportModels';
 import { ReportHeaders } from '../../utils/common.type';
 import { processReportHeaders } from '../../utils/common.report';
-import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/dataSourceVersion.controller';
+import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/reportivix/dataSourceVersion.controller';
 import {
   getCurrentYearNewApplicationFiled,
   getFormattedDataToProcessReportHeaders,
-} from '../../database/services/monthlyipReport.services';
-import { ICustomReport } from '../../database/models/customReport';
+} from '../../database/services/reportivix/monthlyipReport.services';
+import { ICustomReport } from '../../database/models/reportivix/customReport';
 
 export const generateSupplementalIpReport = async ({
   reportRequestPayload,

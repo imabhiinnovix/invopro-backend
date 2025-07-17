@@ -1,28 +1,34 @@
-import Permission from '../database/models/permissionModel'; // Your Mongoose model
+import Permission from '../database/models/common/permissionModel'; // Your Mongoose model
 
 const permissions = [
   { name: 'Create User', method: 'POST', resourceId: '/common/user/create', extraOptions: {}, resourceType: 'User' },
   { name: 'List User', method: 'GET', resourceId: '/common/user/list', extraOptions: {}, resourceType: 'User' },
-  { name: 'Get User', method: 'GET', resource: '/common/user/:userId', resourceType: 'User' },
+  { name: 'Get User', method: 'GET', resourceId: '/common/user/:userId', resourceType: 'User' },
   {
     name: 'Get Current User',
     method: 'GET',
-    resource: '/common/user/getCurrentUser',
+    resourceId: '/common/user/getCurrentUser',
     extraOptions: {},
     resourceType: 'User',
   },
-  { name: 'Update Self User', method: 'PUT', resource: '/common/user/update', extraOptions: {}, resourceType: 'User' },
+  {
+    name: 'Update Self User',
+    method: 'PUT',
+    resourceId: '/common/user/update',
+    extraOptions: {},
+    resourceType: 'User',
+  },
   {
     name: 'Update User',
     method: 'PUT',
-    resource: '/common/user/update/:userId',
+    resourceId: '/common/user/update/:userId',
     extraOptions: {},
     resourceType: 'User',
   },
   {
     name: 'Delete User',
     method: 'DELETE',
-    resource: '/common/user/delete/:userId',
+    resourceId: '/common/user/delete/:userId',
     extraOptions: {},
     resourceType: 'User',
   },
@@ -30,9 +36,9 @@ const permissions = [
 
 export async function seedPermissions() {
   for (const perm of permissions) {
-    const { method, resource } = perm;
+    const { method, resourceId } = perm;
 
-    const existing = await Permission.findOne({ method, resource });
+    const existing = await Permission.findOne({ method, resourceId });
 
     if (!existing) {
       const newPermission = new Permission({

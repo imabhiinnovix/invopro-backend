@@ -1,4 +1,4 @@
-import Operator from '../database/models/operator';
+import Operator from '../database/models/reportivix/operator';
 import { validatorOperatorData } from '../utils/operators';
 
 export async function seedOperators() {

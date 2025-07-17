@@ -1,4 +1,4 @@
-import WidgetTheme from '../database/models/widgetTheme';
+import WidgetTheme from '../database/models/reportivix/widgetTheme';
 
 export async function seedWidgetTheme(payload) {
   try {

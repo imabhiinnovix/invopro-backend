@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import WidgetType from '../database/models/widgetType';
+import WidgetType from '../database/models/reportivix/widgetType';
 
 export async function seedChart(payload) {
   const fieldConfig = {

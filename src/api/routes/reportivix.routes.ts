@@ -1,22 +1,18 @@
 import { Router } from 'express';
 
-import authRoutes from './auth.routes';
-import userRoutes from './user.routes';
-import organizationRoutes from './organization.routes';
-import supportRoutes from './support.routes';
-import entityRoutes from './entity.routes';
-import attributeRoutes from './attributeOption.routes';
-import fileRoutes from './file.routes';
-import dataSourceRoutes from './dataSource.routes';
-import customReports from './customReport.routes';
-import dataSourceVersion from './dataSourceVersion.routes';
-import dataImportErrorRoutes from './dataImportError.routes';
-import dashBoardRoutes from './dashboard.routes';
-import widgetTypeRoutes from './widgetType.routes';
-import operatorRoutes from './operator.routes';
-import widgetThemeRoutes from './widgetTheme.routes';
-import dashboardShareRoutes from './dashboardShare.routes';
-import nlQueryRoutes from './nlQuery.routes';
+import entityRoutes from './reportivix/entity.routes';
+import attributeRoutes from './reportivix/attributeOption.routes';
+import fileRoutes from './reportivix/file.routes';
+import dataSourceRoutes from './reportivix/dataSource.routes';
+import customReports from './reportivix/customReport.routes';
+import dataSourceVersion from './reportivix/dataSourceVersion.routes';
+import dataImportErrorRoutes from './reportivix/dataImportError.routes';
+import dashBoardRoutes from './reportivix/dashboard.routes';
+import widgetTypeRoutes from './reportivix/widgetType.routes';
+import operatorRoutes from './reportivix/operator.routes';
+import widgetThemeRoutes from './reportivix/widgetTheme.routes';
+import dashboardShareRoutes from './reportivix/dashboardShare.routes';
+import nlQueryRoutes from './reportivix/nlQuery.routes';
 // import widgetAppearanceRoutes from './WidgetAppearance';
 
 const router = Router();

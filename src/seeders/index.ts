@@ -16,6 +16,7 @@ import { seedCustomReports } from './customReport.seed';
 import { seedProducts } from './product.seed';
 import { seedRolesAndPermissions } from './seedRoleAndPermission';
 import { seedPermissions } from './permission.seed';
+import { hardcodedSeedOrganizationProductSubscriptions } from './organizationHasProduct.seed';
 
 const payload = {
   reportivixSuperAdminUserId: new mongoose.Types.ObjectId('66b34cbbd40e24fca2e3e312'),
@@ -551,73 +552,74 @@ export async function seedDatabase() {
     const conn = await mongoose.connect(config.MONGO_URI!);
     console.info(`MongoDB Connected: ${conn.connection.host}`);
 
-    // Seed individual collections
-    console.info('\n====> Seeding users <====');
-    await seedUsers(payload);
+    // await seedOrganizations(payload);
 
-    console.info('\n====> Seeding organizations <====');
-    await seedOrganizations(payload);
+    // await seedProducts(payload);
 
-    await seedProducts(payload);
+    // await seedPermissions();
 
-    await seedPermissions();
+    // await seedRolesAndPermissions({ organizationId: String(payload.reportivixOrganizationId) });
 
-    await seedRolesAndPermissions({ organizationId: String(payload.reportivixOrganizationId) });
-    console.info('\n====> Seeding Entities Reportivix <====');
-    await seedEntities({
-      organizationId: payload.reportivixOrganizationId,
-      createdBy: payload.reportivixSuperAdminUserId,
-      updatedBy: payload.reportivixSuperAdminUserId,
-      entityDataSourceMap: entityDataSourceMapReportivix,
-    });
+    // await seedUsers(payload);
 
-    console.info('\n====> Seeding Data source Reportivix <====');
-    await seedDataSource({
-      organizationId: payload.reportivixOrganizationId,
-      createdBy: payload.reportivixSuperAdminUserId,
-      updatedBy: payload.reportivixSuperAdminUserId,
-      entityDataSourceMap: entityDataSourceMapReportivix,
-    });
+    // console.info('\n====> Seeding organizations <====');
 
-    console.info('\n====> Seeding Custom Report Reportivx<====');
-    await seedCustomReports({
-      organizationId: payload.reportivixOrganizationId,
-      entityDataSourceMap: entityDataSourceMapReportivix,
-      customReportMap: customReportMapReportivix,
-    });
+    // console.info('\n====> Seeding Entities Reportivix <====');
+    // await seedEntities({
+    //   organizationId: payload.reportivixOrganizationId,
+    //   createdBy: payload.reportivixSuperAdminUserId,
+    //   updatedBy: payload.reportivixSuperAdminUserId,
+    //   entityDataSourceMap: entityDataSourceMapReportivix,
+    // });
 
-    console.info('\n====> Seeding Entities Sabic <====');
-    await seedEntities({
-      organizationId: payload.sabicOrganizationId,
-      createdBy: payload.sabicAdminUserId,
-      updatedBy: payload.sabicAdminUserId,
-      entityDataSourceMap: entityDataSourceMapSabic,
-    });
+    // console.info('\n====> Seeding Data source Reportivix <====');
+    // await seedDataSource({
+    //   organizationId: payload.reportivixOrganizationId,
+    //   createdBy: payload.reportivixSuperAdminUserId,
+    //   updatedBy: payload.reportivixSuperAdminUserId,
+    //   entityDataSourceMap: entityDataSourceMapReportivix,
+    // });
 
-    console.info('\n====> Seeding Data source Sabic <====');
-    await seedDataSource({
-      organizationId: payload.sabicOrganizationId,
-      createdBy: payload.sabicAdminUserId,
-      updatedBy: payload.sabicAdminUserId,
-      entityDataSourceMap: entityDataSourceMapSabic,
-    });
+    // console.info('\n====> Seeding Custom Report Reportivx<====');
+    // await seedCustomReports({
+    //   organizationId: payload.reportivixOrganizationId,
+    //   entityDataSourceMap: entityDataSourceMapReportivix,
+    //   customReportMap: customReportMapReportivix,
+    // });
 
-    console.info('\n====> Seeding Custom Report Sabic<====');
-    await seedCustomReports({
-      organizationId: payload.sabicOrganizationId,
-      entityDataSourceMap: entityDataSourceMapSabic,
-      customReportMap: customReportMapSabic,
-    });
+    // console.info('\n====> Seeding Entities Sabic <====');
+    // await seedEntities({
+    //   organizationId: payload.sabicOrganizationId,
+    //   createdBy: payload.sabicAdminUserId,
+    //   updatedBy: payload.sabicAdminUserId,
+    //   entityDataSourceMap: entityDataSourceMapSabic,
+    // });
 
-    console.info('\n====> Seeding Dashboard <====');
-    await seedDashboard();
+    // console.info('\n====> Seeding Data source Sabic <====');
+    // await seedDataSource({
+    //   organizationId: payload.sabicOrganizationId,
+    //   createdBy: payload.sabicAdminUserId,
+    //   updatedBy: payload.sabicAdminUserId,
+    //   entityDataSourceMap: entityDataSourceMapSabic,
+    // });
 
-    console.info('\n====> Seeding Chart <====');
-    await seedChart(payload);
+    // console.info('\n====> Seeding Custom Report Sabic<====');
+    // await seedCustomReports({
+    //   organizationId: payload.sabicOrganizationId,
+    //   entityDataSourceMap: entityDataSourceMapSabic,
+    //   customReportMap: customReportMapSabic,
+    // });
 
-    console.info('\n====> Seeding Operators <====');
-    await seedOperators();
+    // console.info('\n====> Seeding Dashboard <====');
+    // await seedDashboard();
 
+    // console.info('\n====> Seeding Chart <====');
+    // await seedChart(payload);
+
+    // console.info('\n====> Seeding Operators <====');
+    // await seedOperators();
+
+    await hardcodedSeedOrganizationProductSubscriptions();
     // console.info('\n====> Seeding Widget Theme <====');
     // await seedWidgetTheme(payload);
 

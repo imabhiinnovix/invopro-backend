@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
-import Permission from '../database/models/permissionModel'; // adjust path if needed
-import UserRole from '../database/models/userRole';
-import RoleHasPermission from '../database/models/roleHasPermissionModel';
+import Permission from '../database/models/common/permissionModel'; // adjust path if needed
+import UserRole from '../database/models/common/userRole';
+import RoleHasPermission from '../database/models/common/roleHasPermissionModel';
 
 const defaultPermissionsUser = [
   'POST:/doc/type/create',
@@ -135,17 +135,17 @@ export async function seedRolesAndPermissions(payload: SeedPayload) {
       console.log(`ℹ️ Role "${roleName}" already exists.`);
     }
 
-    // Resolve permissionIds from method:resource
+    // Resolve permissionIds from method:resourceId
     for (const methodResource of permissionsList) {
-      const [method, resource] = methodResource.split(':');
+      const [method, resourceId] = methodResource.split(':');
 
       const permissionDoc = await Permission.findOne({
         method,
-        resource,
+        resourceId,
       });
 
       if (!permissionDoc) {
-        console.warn(`⚠️ Permission not found: ${method}:${resource}`);
+        console.warn(`⚠️ Permission not found: ${method}:${resourceId}`);
         continue;
       }
 
@@ -162,9 +162,9 @@ export async function seedRolesAndPermissions(payload: SeedPayload) {
           status: 'active',
         }).save();
 
-        console.log(`✅ Permission assigned to ${roleName}: ${method}:${resource}`);
+        console.log(`✅ Permission assigned to ${roleName}: ${method}:${resourceId}`);
       } else {
-        console.log(`ℹ️ Permission already assigned to ${roleName}: ${method}:${resource}`);
+        console.log(`ℹ️ Permission already assigned to ${roleName}: ${method}:${resourceId}`);
       }
     }
   }

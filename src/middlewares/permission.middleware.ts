@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { JwtPayload } from 'jsonwebtoken';
 
 import { verifyToken } from '../utils/token.utils';
-import { checkPermission } from '../database/services/permissionService';
+import { checkPermission } from '../database/services/common/permissionService';
 
 // Declare the augmented module
 declare module 'express' {

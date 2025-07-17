@@ -1,4 +1,4 @@
-import CustomReportModel from '../database/models/customReport';
+import CustomReportModel from '../database/models/reportivix/customReport';
 
 function getCustomReportToBeSeed({ entityDataSourceMap, organizationId, customReportMap }) {
   return [

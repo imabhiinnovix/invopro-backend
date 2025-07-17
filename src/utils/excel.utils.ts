@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { DataItem } from '../database/services/monthlyipReport.services';
+import { DataItem } from '../database/services/reportivix/monthlyipReport.services';
 import * as xlsx from 'xlsx';
 
 interface KeywordPosition {
