@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { RoleId } from '../../../enums/role.enum';
 import User from '../../models/common/user';
-import * as organizationService from '../../database/services/organization.service';
+import * as organizationService from './organization.service';
 export const getAllUsers = async ({ query, select = '', page, limit, sort = { createdAt: -1 }, populate }: any) => {
   try {
     let usersQuery = User.find(query)

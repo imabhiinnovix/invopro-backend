@@ -6,7 +6,7 @@ import Dashboard from '../../models/reportivix/dashboard';
 import DashboardWidget from '../../models/reportivix/dashboardWidget';
 import createDefaultDataSourceVersionModel from '../../models/reportivix/defaultDataSourceVersionModel';
 
-import * as DashboardWidgetService from '../services/dashboardWidget.services';
+import * as DashboardWidgetService from './dashboardWidget.services';
 
 export const createDashboard = async (dashboardData: any) => {
   try {

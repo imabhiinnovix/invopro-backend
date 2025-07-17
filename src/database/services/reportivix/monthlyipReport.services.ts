@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { DateTime } from 'luxon';
 import { CustomReportModelAccessReturnType } from '../../models/reportivix/customReportModels';
-import * as dataSourceVersionServices from '../../database/services/dataSourceVersion.services';
+import * as dataSourceVersionServices from './dataSourceVersion.services';
 import { processReportHeaders } from '../../../utils/common.report';
 
 const ObjectId = mongoose.Types.ObjectId;

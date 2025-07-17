@@ -1,14 +1,14 @@
 import { Router } from 'express';
 
-import { RoleId } from '../../enums/role.enum';
-import { roleAuthorization } from '../../middlewares/role.middleware';
-import { authenticateToken } from '../../middlewares/authenticate.middleware';
+import { RoleId } from '../../../enums/role.enum';
+import { roleAuthorization } from '../../../middlewares/role.middleware';
+import { authenticateToken } from '../../../middlewares/authenticate.middleware';
 import {
+  updateAttribute,
   createAttribute,
   getAttributeOptionById,
   listAttribute,
-  updateAttribute,
-} from '../controllers/attributeOptions.controller';
+} from '../../controllers/reportivix/attributeOptions.controller';
 
 const router = Router();
 
