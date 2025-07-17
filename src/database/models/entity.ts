@@ -5,7 +5,7 @@ import config from '../../config';
 // Define the Reference Entity Setting interface
 export interface IReferenceEntitySetting {
   refEntityId: Types.ObjectId;
-  refEntityField?: string;
+  refEntityField?: Types.ObjectId;
   relationType: 'one_to_one' | 'many_to_one';
 }
 
@@ -42,8 +42,7 @@ const referenceEntitySettingSchema = new Schema<IReferenceEntitySetting>(
       required: true,
     },
     refEntityField: {
-      type: String,
-      default: '_id',
+      type: Schema.Types.ObjectId,
     },
     relationType: {
       type: String,

@@ -15,7 +15,7 @@ import { DateTime } from 'luxon';
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { entityId, name, code, versionType, description } = req.body;
+    const { entityId, name, code, versionType, description, uniqueAttributeRules } = req.body;
     const { organizationId, userId, orgCode } = req.user;
 
     const dataSourceData = await dataSourceService.findDataSourceByCodeAndOrganization(code, organizationId);
@@ -37,6 +37,7 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       createdBy: userId,
       isActive: true,
       description,
+      uniqueAttributeRules,
     });
 
     const cacheData = await cacheService.findCacheDataByCodeAndOrganization('chart', organizationId);
@@ -56,7 +57,7 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
 
 export const updateDataSource = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, versionType, description } = req.body;
+    const { name, versionType, description, uniqueAttributeRules } = req.body;
     const { userId } = req.user;
 
     await dataSourceService.updateDataSource(req.params.dataSourceId, {
@@ -64,6 +65,7 @@ export const updateDataSource = async (req: Request, res: Response, next: NextFu
       versionType,
       updatedBy: userId,
       description,
+      uniqueAttributeRules,
     });
     res.status(201).json({
       success: true,
@@ -127,52 +129,63 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
     const { search, paginate = false, canEditInline = false } = req.query;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
-
     const { organizationId } = req.user;
 
     const query: any = { organizationId, isVisible: true };
     if (search) query.name = { $regex: search, $options: 'i' };
+    if (canEditInline) query['canEditInline'] = true;
 
-    if (canEditInline) {
-      query['canEditInline'] = true;
-    }
-    let result: any = {};
-    if (paginate) {
-      result = await dataSourceService.getDataSourceList({
-        query,
-        page,
-        limit,
-        populate: [
-          {
-            path: 'createdBy',
-            select: 'firstName lastName', // Specify the fields to populate
-          },
-          {
-            path: 'updatedBy',
-            select: 'firstName lastName', // Specify the fields to populate
-          },
-          {
-            path: 'entityId',
-            select: 'name attributes canEditInline', // Specify the fields to populate
-          },
-        ],
-      });
-    } else {
-      result = await dataSourceService.getDataSourceList({
-        query,
-      });
-    }
+    const populate = paginate
+      ? [
+          { path: 'createdBy', select: 'firstName lastName' },
+          { path: 'updatedBy', select: 'firstName lastName' },
+          { path: 'entityId', select: 'name attributes canEditInline' },
+        ]
+      : [{ path: 'entityId', select: 'name attributes' }];
+
+    // Always returns { data: [], totalCount: number }
+    const result = await dataSourceService.getDataSourceList({
+      query,
+      page,
+      limit,
+      populate,
+    });
+
+    const data = Array.isArray(result.data)
+      ? result.data.map((ds: any) => {
+          const attributeMap = new Map<string, string>();
+          if (ds.entityId?.attributes?.length) {
+            for (const attr of ds.entityId.attributes) {
+              attributeMap.set(String(attr._id), attr.name);
+            }
+          }
+
+          ds.uniqueAttributeRules = Array.isArray(ds.uniqueAttributeRules)
+            ? ds.uniqueAttributeRules.map((ruleGroup: any[]) =>
+                Array.isArray(ruleGroup)
+                  ? ruleGroup.map((attrId: Types.ObjectId) => ({
+                      _id: attrId,
+                      name: attributeMap.get(String(attrId)) || 'Unknown',
+                    }))
+                  : []
+              )
+            : [];
+
+          return ds;
+        })
+      : [];
 
     res.status(200).json({
       success: true,
       message: 'Data Source Fetched Successfully',
-      data: result.data,
-      totalCount: result.totalCount,
+      data,
+      totalCount: result.totalCount || 0,
     });
   } catch (err) {
     next(err);
   }
 };
+
 
 export const getDataSourceById = async (req: Request, res: Response, next: NextFunction) => {
   try {

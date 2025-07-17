@@ -18,6 +18,7 @@ import { DateTime } from 'luxon';
 import mongoose from 'mongoose';
 import { version } from 'os';
 import { getEntityAttribute, getModelForEntity } from '../../utils/entity.utils';
+import { Types } from 'mongoose';
 const ObjectId = mongoose.Types.ObjectId;
 
 async function validateAndConvert({
@@ -111,11 +112,19 @@ async function validateFileData({
   entityId: any;
   dataSourceVersionId: string;
   versionValue: string;
-  uniqueAttributeRules?: string[][];
+  uniqueAttributeRules?: Types.ObjectId[][];
 }) {
   const errors: any[] = [];
   const newRowData: any[] = [];
   const seenCompositeKeys = new Set<string>();
+
+
+  // Create a quick lookup map from ObjectId to attribute name
+  const attributeIdToNameMap = attributes.reduce((acc, attr) => {
+    acc[attr._id.toString()] = attr.name;
+    return acc;
+  }, {} as Record<string, string>);
+
   for (const [index, row] of fileData.entries()) {
     const newRow = { dataSourceId, entityId, dataSourceVersionId, versionValue, rowData: {},isErrorLog : 0 };
 
@@ -209,15 +218,19 @@ async function validateFileData({
           }
         }
       }
-    // Unique Rule Check (including fallback inside each rule)
+  }
+  // Unique Rule Check (including fallback inside each rule)
     if (Array.isArray(uniqueAttributeRules) && uniqueAttributeRules.length > 0) {
       const compositeKeyParts: string[] = [];
 
       for (const rule of uniqueAttributeRules) {
         let selectedVal = '';
 
-        for (const key of rule) {
-          const val = newRow.rowData[key];
+        for (const attrId of rule) {
+          const attrName = attributeIdToNameMap[attrId.toString()];
+          if (!attrName) continue;
+
+          const val = newRow.rowData[attrName];
           if (val !== undefined && val !== null && `${val}`.trim() !== '') {
             selectedVal = `${val}`.toLowerCase(); // normalize for comparison
             break; // fallback logic: take first non-empty
@@ -235,9 +248,6 @@ async function validateFileData({
           dataSourceId,
           dataSourceVersionId,
           rowNumber: index + 1,
-          fileAttributeName: fileKey,
-          fileAttributeValue: value,
-          attributeName: attrName,
           errorType: 'Duplicate Error',
           errorCode: '403',
           errorMessage: `Error: Row ${index + 1} - Duplicate combination found for unique keys: ${compositeKey}.`,
@@ -247,7 +257,6 @@ async function validateFileData({
         seenCompositeKeys.add(compositeKey);
       }
     }
-  }
 
     newRowData.push(newRow);
   }
@@ -358,6 +367,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
                   await dataSourceVersionValueService.updateDataSourceVersionValue(
                     schemaName,
                     validatedData.newRowData,
+                    attributes,
                     dataSourceDetails.uniqueAttributeRules || []
                   );
                 }else{

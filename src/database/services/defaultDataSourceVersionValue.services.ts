@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import createDefaultDataSourceVersionModel from '../models/defaultDataSourceVersionModel';
-import { Model, Document, AnyBulkWriteOperation } from 'mongoose';
+import { Model, Document, AnyBulkWriteOperation, Types } from 'mongoose';
 
 export const updateDataSourceVersionValue = async (
   schemaName: string,
   data: any[],
-  uniqueKeys: string[][]
+  attributes: any[],
+  uniqueKeys: Types.ObjectId[][]
 ) => {
   const Model = createDefaultDataSourceVersionModel(schemaName) as Model<Document>;
 
@@ -14,15 +15,22 @@ export const updateDataSourceVersionValue = async (
   }
 
   const bulkOps: AnyBulkWriteOperation<Document>[] = data.map((row) => {
-    const filters: Record<string, any>[] = [];
+  const filters: Record<string, any>[] = [];
+     // Create a quick lookup map from ObjectId to attribute name
+  const attributeIdToNameMap = attributes.reduce((acc, attr) => {
+    acc[attr._id.toString()] = attr.name;
+    return acc;
+  }, {} as Record<string, string>);
 
     for (const rule of uniqueKeys) {
       const condition: Record<string, any> = {};
 
-      for (const key of rule) {
-        const val = row.rowData?.[key];
+      for (const attrId of rule) {
+        const attrName = attributeIdToNameMap[attrId.toString()];
+        if (!attrName) continue;
+        const val = row.rowData?.[attrName];
         if (val !== undefined && val !== null && `${val}`.trim() !== '') {
-          condition[`rowData.${key}`] = val;
+          condition[`rowData.${attrName}`] = val;
           break; // fallback: use first non-empty key in rule
         }
       }

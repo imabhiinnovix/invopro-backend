@@ -20,31 +20,87 @@ export const updateEntity = async (entityId: string, entityData: any) => {
   }
 };
 
-export const getEntityList = async ({ query, select = '', page, limit, sort = { updatedAt: -1 }, populate }: any) => {
+export const getEntityList = async ({
+  query,
+  select = '',
+  page,
+  limit,
+  sort = { updatedAt: -1 },
+  populate
+}: any) => {
   try {
-    // Remove the await keyword here
-    let usersQuery: any = Entity.find(query)
-      .select(select)
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .sort(sort);
+    let usersQuery = Entity.find(query).select(select).sort(sort);
 
-    if (populate && Array.isArray(populate)) {
+    if (page && limit) {
+      usersQuery = usersQuery.skip((page - 1) * limit).limit(limit);
+    }
+
+    if (Array.isArray(populate)) {
       populate.forEach((field) => {
         usersQuery = usersQuery.populate(field);
       });
     }
 
-    // Now await the final query execution
-    const entities = await usersQuery.exec();
+    const entities = await usersQuery.lean().exec();
+
+    const enhancedEntities = await Promise.all(
+      entities.map(async (entity: any) => {
+        if (!Array.isArray(entity.attributes)) return entity;
+
+        const updatedAttributes = await Promise.all(
+  (entity.attributes as any[]).map(async (attr: any) => {
+    const { referenceEntitySetting } = attr;
+
+    if (
+      referenceEntitySetting?.refEntityId &&
+      referenceEntitySetting?.refEntityField
+    ) {
+      const refEntity = await Entity.findById(referenceEntitySetting.refEntityId)
+        .select('name attributes._id attributes.name')
+        .lean();
+
+      if (refEntity) {
+        const matchedField = (refEntity.attributes as any[])?.find(
+          (a: any) =>
+            a._id?.toString() === referenceEntitySetting.refEntityField.toString()
+        );
+
+        attr.referenceEntitySetting = {
+          refEntityId: {
+            _id: refEntity._id,
+            name: refEntity.name
+          },
+          refEntityField: matchedField
+            ? {
+                _id: matchedField._id,
+                name: matchedField.name
+              }
+            : referenceEntitySetting.refEntityField,
+          relationType: referenceEntitySetting.relationType
+        };
+      }
+    }
+
+    return attr;
+  })
+);
+
+
+        return {
+          ...entity,
+          attributes: updatedAttributes
+        };
+      })
+    );
 
     const totalCount = await Entity.countDocuments(query);
 
-    return { data: entities, totalCount };
+    return { data: enhancedEntities, totalCount };
   } catch (err) {
     throw err;
   }
 };
+
 
 export const getEntity = async (query: any) => {
   try {
