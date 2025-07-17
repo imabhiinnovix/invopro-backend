@@ -1,6 +1,6 @@
-import organizationProductSubscription from '../../models/reportivix/organizationProductSubscription';
+import organizationProductSubscription from '../../models/common/organizationProductSubscription';
 
-export const getOrganizationProducts = async ({
+export const getOrganizationProductsSubscription = async ({
   query,
   page = 1,
   limit = 20,
@@ -27,6 +27,34 @@ export const getOrganizationProducts = async ({
       data,
       totalCount,
     };
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const createOrganizationProductSubscription = async (organizationSubscriptionData: any) => {
+  try {
+    const organizationProductSubscriptionResp = new organizationProductSubscription(organizationSubscriptionData);
+    await organizationProductSubscriptionResp.save();
+    return organizationProductSubscriptionResp;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const createManyOrganizationProductSubscription = async (organizationSubscriptionData: any[]) => {
+  try {
+    const result = await organizationProductSubscription.insertMany(organizationSubscriptionData);
+    return result;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const deleteManyOrganizationProductSubscription = async (organizationId) => {
+  try {
+    const result = await organizationProductSubscription.deleteMany({ organizationId });
+    return result;
   } catch (err) {
     throw err;
   }

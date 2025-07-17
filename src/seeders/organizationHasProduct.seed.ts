@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { OrganizationProductSubscription } from '../database/models/reportivix/organizationProductSubscription';
+import { OrganizationProductSubscription } from '../database/models/common/organizationProductSubscription';
 import Product from '../database/models/common/product';
 
 export async function hardcodedSeedOrganizationProductSubscriptions() {

@@ -2,12 +2,14 @@
 import { Request, Response, NextFunction } from 'express';
 import * as organizationService from '../../../database/services/common/organization.service';
 import * as widgetThemeService from '../../../database/services/reportivix/widgetTheme.service';
+import * as organizationProductSubscription from '../../../database/services/common/organizationProductSubscription.services';
 
 export const createOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, description, domain, code } = req.body;
+    const { name, description, domain, code, productSubscriptions } = req.body;
     const { userId } = req.user;
 
+    // 1. Create the organization
     const organization = await organizationService.createOrganization({
       name,
       description,
@@ -16,29 +18,40 @@ export const createOrganization = async (req: Request, res: Response, next: Next
       code,
     });
 
-    // create org by default theme
-    let widgetTheme: any = await widgetThemeService.findWidgetTheme({
-      isDefault: true,
-    });
+    if ((productSubscriptions && Array.isArray(productSubscriptions)) || productSubscriptions.length > 0) {
+      const productDetails: any = [];
+      for (const subscription of productSubscriptions) {
+        const { productId, totalLicenses, licenseExpiresAt } = subscription;
 
-    widgetTheme = await widgetTheme?.toJSON();
+        productDetails.push({
+          organizationId: organization._id,
+          productId,
+          totalLicenses,
+          licenseExpiresAt,
+        });
+      }
+      await organizationProductSubscription.createManyOrganizationProductSubscription(productDetails);
+    }
+
+    // 3. Apply default widget theme
+    let widgetTheme: any = await widgetThemeService.findWidgetTheme({ isDefault: true });
+    widgetTheme = widgetTheme?.toJSON();
 
     await widgetThemeService.createWidgetTheme({
       ...widgetTheme,
       _id: undefined,
-      organizationId: organization?._id,
+      organizationId: organization._id,
     });
 
     res.status(201).json({
       success: true,
-      message: 'Organization created successfully',
+      message: 'Organization created successfully with product subscriptions',
       data: organization,
     });
   } catch (err) {
     next(err);
   }
 };
-
 export const getOrganizationById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { organizationId } = req.params;
@@ -54,19 +67,33 @@ export const getOrganizationById = async (req: Request, res: Response, next: Nex
     next(err);
   }
 };
-
 export const updateOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, description, domain } = req.body;
+    const { name, description, domain, productSubscriptions } = req.body;
+    const organizationId = req.params.organizationId;
 
-    await organizationService.updateOrganization(req.params.organizationId, {
+    // 1. Update organization
+    await organizationService.updateOrganization(organizationId, {
       ...(name && { name }),
       ...(description && { description }),
       ...(domain && { domain }),
     });
+
+    // 2. Delete previous product subscriptions
+    await organizationProductSubscription.deleteManyOrganizationProductSubscription(organizationId);
+
+    // 3. Insert new product subscriptions (if provided)
+    if (Array.isArray(productSubscriptions) && productSubscriptions.length > 0) {
+      const subscriptionsToInsert = productSubscriptions.map((sub) => ({
+        ...sub,
+        organizationId,
+      }));
+      await organizationProductSubscription.createManyOrganizationProductSubscription(subscriptionsToInsert);
+    }
+
     res.status(200).json({
       success: true,
-      message: 'Organization updated successfully',
+      message: 'Organization and product subscriptions updated successfully',
     });
   } catch (err) {
     next(err);
