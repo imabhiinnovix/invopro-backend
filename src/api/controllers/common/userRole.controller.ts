@@ -1,6 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
 import * as userRoleService from '../../../database/services/common/userRole.service';
 
+export const getUserRoleList = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { organizationId } = req.user;
+    await userRoleService.getUserRoleList({ organizationId });
+
+    res.status(200).json({
+      success: true,
+      message: 'User role created successfully.',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const createUserRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userId, organizationId } = req.user;
