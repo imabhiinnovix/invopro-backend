@@ -828,59 +828,79 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
   next: NextFunction
 ) => {
   try {
-    const { dataSourceId, versionValue, page, limit } = req.query as {
+    const { dataSourceId, versionValue, page, limit, sort, filters } = req.query as {
       dataSourceId: string;
       versionValue: string;
-      page: string;
-      limit: string;
+      page?: string;
+      limit?: string;
+      sort?: string;
+      filters?: string;
     };
 
     const pageNumber = page ? parseInt(page, 10) : 1;
     const limitNumber = limit ? parseInt(limit, 10) : 10;
-    const { orgCode } = req?.user;
+    const { orgCode } = req.user;
+
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
-    if (dataSourceDetails) {
-      const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
-        query: { dataSourceId: dataSourceId, versionValue: versionValue, isCurrent: true },
-      });
+    if (!dataSourceDetails) {
+      return res.status(404).json({ success: false, message: 'Data source not found.' });
+    }
 
-      if (dataSourceVersionDetails && dataSourceVersionDetails.data && dataSourceVersionDetails.data.length > 0) {
-        const dataSourceVersionDetail = dataSourceVersionDetails.data[0];
-        const dataSourceVersionId = dataSourceVersionDetail._id;
-        const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
-          orgCode: orgCode,
-          versionCode: dataSourceDetails.code,
-        });
+    const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
+      query: { dataSourceId, versionValue, isCurrent: true },
+    });
 
-        const query = { dataSourceVersionId: dataSourceVersionId };
-
-        const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
-          schemaName,
-          query,
-          page: pageNumber,
-          limit: limitNumber,
-        });
-        return res.status(200).json({
-          success: true,
-          message: 'Version data has been successfully retrieved.',
-          data: dataSourceVersionData.data,
-          totalCount: dataSourceVersionData.totalCount,
-        });
-      }
+    if (!dataSourceVersionDetails?.data?.length) {
       return res.status(200).json({
         success: true,
         message: 'Version data has been successfully retrieved.',
         data: [],
         totalCount: 0,
       });
-    } else {
-      return res.status(404).json({ success: false, message: 'Data source not found.' });
     }
+
+    const dataSourceVersionId = dataSourceVersionDetails.data[0]._id;
+    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSourceDetails.code,
+    });
+
+    const parsedSort = sort ? JSON.parse(sort) : {};
+    const parsedFilters = filters ? JSON.parse(filters) : {};
+
+    const query = { dataSourceVersionId };
+
+    const result = await dataSourceVersionValueService.getDataSourceVersionValueV1({
+      schemaName,
+      query,
+      select:'',
+      page: pageNumber,
+      limit: limitNumber,
+      sort: parsedSort,
+      filters: parsedFilters,
+      entityId: dataSourceDetails.entityId
+    });
+    const data = result?.data ?? [];
+    const totalCount = result?.totalCount ?? 0;
+
+    return res.status(200).json({
+      success: true,
+      message: 'Version data has been successfully retrieved.',
+      data,
+      totalCount,
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(totalCount / limitNumber),
+        totalRecords: totalCount,
+      },
+    });
   } catch (e) {
-    console.log('Error in getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue.', e);
+    console.log('Error in getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue:', e);
     next(e);
   }
 };
+
 
 export const getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue = async (
   req: Request,
