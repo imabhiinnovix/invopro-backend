@@ -7,6 +7,36 @@ import * as userService from '../../../database/services/common/user.service';
 import { comparePassword, hashPassword } from '../../../utils/bcrypt.utils';
 import { Role, RoleId } from '../../../enums/role.enum';
 import { IUser } from '../../../database/models/common/user';
+import * as authService from '../../../database/services/common/user.service';
+
+export const createUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, password, firstName, lastName, roleIds, status } = req.body;
+    const { userId, organizationId } = req.user;
+
+    const existingUser = await authService.findUserByEmail(email.toLowerCase());
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'User already exists' });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    const user: IUser = await authService.createUser({
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      firstName,
+      lastName,
+      organizationId,
+      status: 'active',
+      // ...(roleId && { role: Role.Labels[roleId] || Role.Labels[Role.Id.USER] }),
+      // ...(roleId && { roleId }),
+    });
+
+    res.status(201).json({ success: true, message: 'User created successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
 
 export const getUserList = async (req: Request, res: Response, next: NextFunction) => {
   try {

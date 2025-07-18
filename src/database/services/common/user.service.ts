@@ -2,6 +2,8 @@
 import { RoleId } from '../../../enums/role.enum';
 import User from '../../models/common/user';
 import * as organizationService from './organization.service';
+import { PopulateOptions } from 'mongoose';
+
 export const getAllUsers = async ({ query, select = '', page, limit, sort = { createdAt: -1 }, populate }: any) => {
   try {
     let usersQuery = User.find(query)
@@ -36,13 +38,17 @@ export const createUser = async (userData: any) => {
   }
 };
 
-export const findUserByEmail = async (email: string) => {
+export const findUserByEmail = async (email: string, populateFields: (string | PopulateOptions)[] = []) => {
   try {
-    const user = await User.findOne({ email })
-      .populate('organizationId', 'id name code status')
-      .populate('roleIds')
-      .populate('organizationProductSubscriptionIds');
+    let query = User.findOne({ email });
 
+    // Normalize and apply population
+    populateFields.forEach((field) => {
+      const pop: PopulateOptions = typeof field === 'string' ? { path: field } : field;
+      query = query.populate(pop);
+    });
+
+    const user = await query;
     return user;
   } catch (err) {
     throw err;

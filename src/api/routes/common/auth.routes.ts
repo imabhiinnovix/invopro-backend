@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { login, createUser, sendOtp, verifyOtp, resetPassword } from '../../controllers/common/auth.controller';
+import { login, sendOtp, verifyOtp, resetPassword } from '../../controllers/common/auth.controller';
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
 import { roleAuthorization } from '../../../middlewares/role.middleware';
 import { RoleId } from '../../../enums/role.enum';

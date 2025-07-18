@@ -13,11 +13,11 @@ import {
   updateUserStatus,
 } from '../../controllers/common/user.controller';
 import { RoleId } from '../../../enums/role.enum';
-import { createUser } from '../../controllers/common/auth.controller';
+// import { createUser } from '../../controllers/common/auth.controller';
 
 const router = Router();
 
-router.post('/create', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), createUser);
+// router.post('/create', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), createUser);
 
 router.get('/list', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), getUserList);
 

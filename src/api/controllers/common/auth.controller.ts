@@ -2,8 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 
 import config from '../../../config';
-import * as authService from '../../../database/services/common/user.service';
-import * as userService from '../../../database/services/common/user.service';
+
 import * as organizationService from '../../../database/services/common/organization.service';
 import { IUser } from '../../../database/models/common/user';
 import * as otpService from '../../../database/services/common/otp.service';
@@ -11,6 +10,7 @@ import { generateToken } from '../../../utils/token.utils';
 import { comparePassword, hashPassword } from '../../../utils/bcrypt.utils';
 import { Role } from '../../../enums/role.enum';
 import { sendEmail } from '../../../utils/mail.util';
+import * as authService from '../../../database/services/common/user.service';
 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -22,7 +22,11 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     }
 
     // Find the user and populate the organization details
-    const user: any = await authService.findUserByEmail(email.toLowerCase());
+    const user: any = await authService.findUserByEmail(email.toLowerCase(), [
+      { path: 'organizationId', select: 'id name code status' },
+      'roleIds',
+      'organizationProductSubscriptionIds',
+    ]);
 
     if (!user) {
       return res.status(400).json({ success: false, message: 'Invalid credentials' });
@@ -53,24 +57,30 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
           message: 'Your organization is currently inactive. Please contact support for further help.',
         });
       }
-
-      // const currentDate = new Date();
-      // Check if the organization license is expired
-      // if (organization.licenseExpiresAt && organization.licenseExpiresAt < currentDate) {
-      //   // Update the organization status to "inactive"
-      //   await organizationService.updateOrganization(organization._id, { status: 'inactive' });
-      //   return res.status(400).json({
-      //     success: false,
-      //     message: 'Your organization license has expired. Please contact support for renewal.',
-      //   });
-      // }
     }
+
+    const now = new Date();
+    const validSubscriptions = (user.organizationProductSubscriptionIds || []).filter(
+      (sub: any) => sub.status === 'active' && (!sub.licenseExpiresAt || new Date(sub.licenseExpiresAt) > now)
+    );
+
+    if (validSubscriptions.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'All your assigned products are either expired or inactive. Please contact support for further help.',
+      });
+    }
+
+    const roleIds = (user.roleIds || []).map((role: any) => String(role._id));
+    const productIds = validSubscriptions.map((sub: any) => String(sub.productId));
 
     // Generate JWT token
     const token = generateToken({
       userId: String(user._id),
       organizationId: String(user.organizationId?._id),
       orgCode: user.organizationId?.code,
+      roleIds,
+      productIds,
     });
 
     // Send response
@@ -79,40 +89,6 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       message: 'Login successful',
       data: { token },
     });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const createUser = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { email, password, firstName, lastName, organizationId, roleId } = req.body;
-
-    const existingUser = await authService.findUserByEmail(email.toLowerCase());
-    if (existingUser) {
-      return res.status(400).json({ success: false, message: 'User already exists' });
-    }
-
-    // Check user status before creating a new user
-    const statusCheck = await userService.checkUserStatus('active', organizationId);
-    if (!statusCheck.success) {
-      return res.status(400).json({ success: false, message: statusCheck.message });
-    }
-
-    const hashedPassword = await hashPassword(password);
-
-    const user: IUser = await authService.createUser({
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      firstName,
-      lastName,
-      organizationId,
-      status: 'active',
-      ...(roleId && { role: Role.Labels[roleId] || Role.Labels[Role.Id.USER] }),
-      ...(roleId && { roleId }),
-    });
-
-    res.status(201).json({ success: true, message: 'User created successfully' });
   } catch (err) {
     next(err);
   }
