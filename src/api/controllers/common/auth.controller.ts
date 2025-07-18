@@ -25,7 +25,10 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const user: any = await authService.findUserByEmail(email.toLowerCase(), [
       { path: 'organizationId', select: 'id name code status' },
       'roleIds',
-      'organizationProductSubscriptionIds',
+      {
+        path: 'organizationProductSubscriptionIds',
+        populate: { path: 'productId', select: 'name code status' }, // 👈 nested population
+      },
     ]);
 
     if (!user) {
@@ -72,15 +75,25 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     }
 
     const roleIds = (user.roleIds || []).map((role: any) => String(role._id));
-    const productIds = validSubscriptions.map((sub: any) => String(sub.productId));
+    const productLicenses: Record<string, string | null> = {};
 
+    validSubscriptions.forEach((sub: any) => {
+      if (sub.productId && sub.productId.code) {
+        productLicenses[sub.productId.code] = sub.licenseExpiresAt
+          ? new Date(sub.licenseExpiresAt).toISOString()
+          : null;
+      }
+    });
+
+    const isSuperUser = (user.roleIds || []).some((role: any) => role.isSuperUser === true);
     // Generate JWT token
     const token = generateToken({
       userId: String(user._id),
       organizationId: String(user.organizationId?._id),
       orgCode: user.organizationId?.code,
       roleIds,
-      productIds,
+      ...productLicenses,
+      isSuperUser,
     });
 
     // Send response

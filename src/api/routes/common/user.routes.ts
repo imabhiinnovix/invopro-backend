@@ -19,7 +19,7 @@ const router = Router();
 
 // router.post('/create', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), createUser);
 
-router.get('/list', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), getUserList);
+router.get('/list', authenticateToken, getUserList);
 
 router.get('/getCurrentUser', authenticateToken, getUserById);
 

@@ -40,19 +40,21 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 
 export const getUserList = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search }: any = req.query;
+    const { search, organizationId }: any = req.query;
+    const { userId, isSuperUser } = req.user;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
     const query: any = {};
     if (search) query.name = { $regex: search, $options: 'i' };
 
-    if (RoleId.ADMIN === req.user.roleId) {
+    if (organizationId && isSuperUser) {
+      query.organizationId = new Types.ObjectId(organizationId);
+    } else {
       query.organizationId = new Types.ObjectId(req.user.organizationId);
-      query.roleId = { $ne: RoleId.SUPER_ADMIN };
     }
 
-    const { data, totalCount } = await userService.userAggregate({
+    const { data, totalCount } = await userService.getAllUsers({
       query,
       page,
       limit,
