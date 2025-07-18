@@ -35,7 +35,6 @@ const userSchema = new Schema<IUser>(
       required: true,
       minlength: 7,
       trim: true,
-      select: false,
     },
     roleIds: [
       {

@@ -23,7 +23,6 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
     // Find the user and populate the organization details
     const user: any = await authService.findUserByEmail(email.toLowerCase());
-    console.log(user);
 
     if (!user) {
       return res.status(400).json({ success: false, message: 'Invalid credentials' });
@@ -31,53 +30,47 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
     // Check if password matches
     const isPasswordMatch = await comparePassword(password, user.password);
+
     if (!isPasswordMatch) {
       return res.status(400).json({ success: false, message: 'Invalid credentials' });
     }
 
-    // Check user and organization status for non-super admins
-    if (user.roleId !== Role.Id.SUPER_ADMIN) {
-      // Check if user account is inactive
-      if (user.status === 'inactive') {
+    // Check if user account is inactive
+    if (user.status === 'inactive') {
+      return res.status(400).json({
+        success: false,
+        message: 'Your account is currently inactive. Please contact support for further help.',
+      });
+    }
+
+    // Check if organization is inactive or expired
+    const organization = user.organizationId;
+    if (organization) {
+      // If organization is already inactive
+      if (organization.status === 'inactive') {
         return res.status(400).json({
           success: false,
-          message: 'Your account is currently inactive. Please contact support for further help.',
+          message: 'Your organization is currently inactive. Please contact support for further help.',
         });
       }
 
-      // Check if organization is inactive or expired
-      const organization = user.organizationId;
-      if (organization) {
-        // If organization is already inactive
-        if (organization.status === 'inactive') {
-          return res.status(400).json({
-            success: false,
-            message: 'Your organization is currently inactive. Please contact support for further help.',
-          });
-        }
-
-        const currentDate = new Date();
-        // Check if the organization license is expired
-        if (organization.licenseExpiresAt && organization.licenseExpiresAt < currentDate) {
-          // Update the organization status to "inactive"
-          await organizationService.updateOrganization(organization._id, { status: 'inactive' });
-          return res.status(400).json({
-            success: false,
-            message: 'Your organization license has expired. Please contact support for renewal.',
-          });
-        }
-      }
+      // const currentDate = new Date();
+      // Check if the organization license is expired
+      // if (organization.licenseExpiresAt && organization.licenseExpiresAt < currentDate) {
+      //   // Update the organization status to "inactive"
+      //   await organizationService.updateOrganization(organization._id, { status: 'inactive' });
+      //   return res.status(400).json({
+      //     success: false,
+      //     message: 'Your organization license has expired. Please contact support for renewal.',
+      //   });
+      // }
     }
-
-    // Update last login timestamp for the user
-    await userService.updateUser(user._id, { lastLogin: new Date() });
 
     // Generate JWT token
     const token = generateToken({
-      userId: user._id,
-      organizationId: user.organizationId?._id,
+      userId: String(user._id),
+      organizationId: String(user.organizationId?._id),
       orgCode: user.organizationId?.code,
-      roleId: user.roleId,
     });
 
     // Send response

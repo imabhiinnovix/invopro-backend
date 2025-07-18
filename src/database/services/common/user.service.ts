@@ -40,8 +40,8 @@ export const findUserByEmail = async (email: string) => {
   try {
     const user = await User.findOne({ email })
       .populate('organizationId', 'id name code status')
-      .populate('organizationProductSubscriptionIds')
-      .populate('roleIds');
+      .populate('roleIds')
+      .populate('organizationProductSubscriptionIds');
 
     return user;
   } catch (err) {
