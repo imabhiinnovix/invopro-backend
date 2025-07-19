@@ -1,9 +1,7 @@
 import Permission from '../database/models/common/permissionModel'; // Your Mongoose model
 
 const permissions = [
-  { name: 'Create User', method: 'POST', resourceId: '/common/user/create', extraOptions: {}, resourceType: 'User' },
   { name: 'List User', method: 'GET', resourceId: '/common/user/list', extraOptions: {}, resourceType: 'User' },
-  { name: 'Get User', method: 'GET', resourceId: '/common/user/:userId', resourceType: 'User' },
   {
     name: 'Get Current User',
     method: 'GET',
@@ -11,6 +9,8 @@ const permissions = [
     extraOptions: {},
     resourceType: 'User',
   },
+  { name: 'Get User', method: 'GET', resourceId: '/common/user/:userId', resourceType: 'User' },
+  { name: 'Create User', method: 'POST', resourceId: '/common/user/create', extraOptions: {}, resourceType: 'User' },
   {
     name: 'Update Self User',
     method: 'PUT',

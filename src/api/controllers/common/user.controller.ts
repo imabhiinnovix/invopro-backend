@@ -11,7 +11,7 @@ import * as authService from '../../../database/services/common/user.service';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, password, firstName, lastName, roleIds, status } = req.body;
+    const { email, password, firstName, lastName, roleIds } = req.body;
     const { userId, organizationId } = req.user;
 
     const existingUser = await authService.findUserByEmail(email.toLowerCase());
@@ -28,8 +28,6 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       lastName,
       organizationId,
       status: 'active',
-      // ...(roleId && { role: Role.Labels[roleId] || Role.Labels[Role.Id.USER] }),
-      // ...(roleId && { roleId }),
     });
 
     res.status(201).json({ success: true, message: 'User created successfully' });
@@ -75,7 +73,14 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
   try {
     const { userId } = req.user;
 
-    const user = await userService.findUserById(userId);
+    const user = await userService.findUserById(userId, [
+      { path: 'organizationId', select: 'id name code status' },
+      'roleIds',
+      {
+        path: 'organizationProductSubscriptionIds',
+        populate: { path: 'productId', select: 'name code status' }, // 👈 nested population
+      },
+    ]);
     res.status(200).json({
       success: true,
       message: 'User fetched successfully',
@@ -89,8 +94,21 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
 export const adminGetUserById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userId } = req.params;
+    const { organizationId, isSuperUser } = req.user;
+    const query = { _id: userId };
+    if (!isSuperUser) {
+      query['organizationId'] = organizationId;
+    }
 
-    const user = await userService.findUserById(userId);
+    const user = await userService.findOne(new Types.ObjectId(userId), [
+      { path: 'organizationId', select: 'id name code status' },
+      'roleIds',
+      {
+        path: 'organizationProductSubscriptionIds',
+        populate: { path: 'productId', select: 'name code status' }, // 👈 nested population
+      },
+    ]);
+
     res.status(200).json({
       success: true,
       message: 'User fetched successfully',
@@ -101,131 +119,131 @@ export const adminGetUserById = async (req: Request, res: Response, next: NextFu
   }
 };
 
-export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { userId } = req.user;
+// export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const { userId } = req.user;
 
-    const { firstName, lastName, password } = req.body;
+//     const { firstName, lastName, password } = req.body;
 
-    const user = (await userService.findUserById(userId)).toJSON();
+//     const user = (await userService.findUserById(userId)).toJSON();
 
-    const updateUser: any = {
-      ...(firstName && { firstName }),
-      ...(lastName && { lastName }),
-      ...(password && { password: await hashPassword(password) }),
-    };
+//     const updateUser: any = {
+//       ...(firstName && { firstName }),
+//       ...(lastName && { lastName }),
+//       ...(password && { password: await hashPassword(password) }),
+//     };
 
-    await userService.updateUser(userId, updateUser);
-    res.status(200).json({ success: true, message: 'User updated successfully' });
-  } catch (err) {
-    next(err);
-  }
-};
+//     await userService.updateUser(userId, updateUser);
+//     res.status(200).json({ success: true, message: 'User updated successfully' });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
 
-export const adminUpdateUser = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { userId } = req.params;
+// export const adminUpdateUser = async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const { userId } = req.params;
 
-    const { email, firstName, lastName, roleId, password, organizationId } = req.body;
+//     const { email, firstName, lastName, roleId, password, organizationId } = req.body;
 
-    const user = (await userService.findUserById(userId)).toJSON();
+//     const user = (await userService.findUserById(userId)).toJSON();
 
-    const updateUser = {
-      ...(email && { email }),
-      ...(firstName && { firstName }),
-      ...(lastName && { lastName }),
-      ...(password && { password: await hashPassword(password) }),
-      ...(roleId && { role: Role.Labels[roleId] }),
-      ...(roleId && { roleId }),
-      ...(organizationId && { organizationId }),
-    };
+//     const updateUser = {
+//       ...(email && { email }),
+//       ...(firstName && { firstName }),
+//       ...(lastName && { lastName }),
+//       ...(password && { password: await hashPassword(password) }),
+//       ...(roleId && { role: Role.Labels[roleId] }),
+//       ...(roleId && { roleId }),
+//       ...(organizationId && { organizationId }),
+//     };
 
-    await userService.updateUser(userId, updateUser);
-    res.status(200).json({ success: true, message: 'User updated successfully' });
-  } catch (err) {
-    next(err);
-  }
-};
+//     await userService.updateUser(userId, updateUser);
+//     res.status(200).json({ success: true, message: 'User updated successfully' });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
 
-export const updateUserStatus = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { userId } = req.params;
-    const { status } = req.body;
-    const { roleId, organizationId, userId: currentUserId } = req.user;
+// export const updateUserStatus = async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const { userId } = req.params;
+//     const { status } = req.body;
+//     const { roleId, organizationId, userId: currentUserId } = req.user;
 
-    if (userId === currentUserId) {
-      return res.status(400).json({ success: false, message: 'Cannot update your own status' });
-    }
+//     if (userId === currentUserId) {
+//       return res.status(400).json({ success: false, message: 'Cannot update your own status' });
+//     }
 
-    const query: any = { _id: userId };
-    if (roleId === RoleId.ADMIN) {
-      query.organizationId = organizationId;
-    }
+//     const query: any = { _id: userId };
+//     if (roleId === RoleId.ADMIN) {
+//       query.organizationId = organizationId;
+//     }
 
-    const user = await userService.findOne({ query });
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
+//     const user = await userService.findOne({ query });
+//     if (!user) {
+//       return res.status(404).json({ success: false, message: 'User not found' });
+//     }
 
-    if (user.status === status) {
-      return res.status(400).json({
-        success: false,
-        message: `User status is already ${status}`,
-      });
-    }
-    //TODO
-    // const statusCheck = await userService.checkUserStatus(status, user.organizationId.toString());
-    // if (!statusCheck.success) {
-    //   return res.status(400).json({ success: false, message: statusCheck.message });
-    // }
+//     if (user.status === status) {
+//       return res.status(400).json({
+//         success: false,
+//         message: `User status is already ${status}`,
+//       });
+//     }
+//     //TODO
+//     // const statusCheck = await userService.checkUserStatus(status, user.organizationId.toString());
+//     // if (!statusCheck.success) {
+//     //   return res.status(400).json({ success: false, message: statusCheck.message });
+//     // }
 
-    await userService.updateUser(userId, { status });
-    res.status(200).json({ success: true, message: 'User status updated successfully' });
-  } catch (err) {
-    next(err);
-  }
-};
+//     await userService.updateUser(userId, { status });
+//     res.status(200).json({ success: true, message: 'User status updated successfully' });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
 
-export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { userId } = req.params;
+// export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const { userId } = req.params;
 
-    const user: IUser = await userService.findUserById(userId);
+//     const user: IUser = await userService.findUserById(userId);
 
-    if (user && [Role.Id.SUPER_ADMIN].includes(Number(user.roleIds))) {
-      return res.status(400).json({ success: false, message: 'Super Admin cannot be deleted' });
-    }
+//     if (user && [Role.Id.SUPER_ADMIN].includes(Number(user.roleIds))) {
+//       return res.status(400).json({ success: false, message: 'Super Admin cannot be deleted' });
+//     }
 
-    await userService.deleteUser(userId);
-    res.status(200).json({ success: true, message: 'User deleted successfully' });
-  } catch (err) {
-    next(err);
-  }
-};
+//     await userService.deleteUser(userId);
+//     res.status(200).json({ success: true, message: 'User deleted successfully' });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
 
-export const changePassword = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { oldPassword, newPassword } = req.body;
-    const userId = req.user.userId;
+// export const changePassword = async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const { oldPassword, newPassword } = req.body;
+//     const userId = req.user.userId;
 
-    const user: any = (await userService.findUserById(userId)).toJSON();
+//     const user: any = (await userService.findUserById(userId)).toJSON();
 
-    const isPasswordMatch = await comparePassword(oldPassword, user?.password);
+//     const isPasswordMatch = await comparePassword(oldPassword, user?.password);
 
-    if (!isPasswordMatch)
-      return res.status(400).json({
-        success: false,
-        message: 'Current password is invalid',
-      });
+//     if (!isPasswordMatch)
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Current password is invalid',
+//       });
 
-    const hashedNewPassword = await hashPassword(newPassword);
+//     const hashedNewPassword = await hashPassword(newPassword);
 
-    user.password = hashedNewPassword;
-    await user.save();
+//     user.password = hashedNewPassword;
+//     await user.save();
 
-    return res.status(200).json({ success: true, message: 'Password changed successfully' });
-  } catch (error) {
-    console.error('Error changing password:', error);
-    next(error);
-  }
-};
+//     return res.status(200).json({ success: true, message: 'Password changed successfully' });
+//   } catch (error) {
+//     console.error('Error changing password:', error);
+//     next(error);
+//   }
+// };

@@ -5,12 +5,13 @@ import { roleAuthorization } from '../../../middlewares/role.middleware';
 import {
   getUserList,
   getUserById,
-  updateUser,
-  deleteUser,
-  changePassword,
   adminGetUserById,
-  adminUpdateUser,
-  updateUserStatus,
+  // updateUser,
+  // deleteUser,
+  // changePassword,
+  // adminGetUserById,
+  // adminUpdateUser,
+  // updateUserStatus,
 } from '../../controllers/common/user.controller';
 import { RoleId } from '../../../enums/role.enum';
 import { permissionMiddleware } from '../../../middlewares/permission.middleware';
@@ -22,28 +23,28 @@ const router = Router();
 
 router.get('/list', authenticateToken, permissionMiddleware(), getUserList);
 
-router.get('/getCurrentUser', authenticateToken, getUserById);
+router.get('/getCurrentUser', authenticateToken, permissionMiddleware(), getUserById);
 
-router.post('/update', authenticateToken, updateUser);
+router.get('/:userId', authenticateToken, permissionMiddleware(), adminGetUserById);
 
-router.post('/change-password', authenticateToken, changePassword);
+// router.post('/update', authenticateToken, updateUser);
 
-router.get('/:userId', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), adminGetUserById);
+// router.post('/change-password', authenticateToken, changePassword);
 
-router.post(
-  '/updateStatus/:userId',
-  authenticateToken,
-  roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
-  updateUserStatus
-);
+// router.post(
+//   '/updateStatus/:userId',
+//   authenticateToken,
+//   roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
+//   updateUserStatus
+// );
 
-router.post(
-  '/update/:userId',
-  authenticateToken,
-  roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
-  adminUpdateUser
-);
+// router.post(
+//   '/update/:userId',
+//   authenticateToken,
+//   roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
+//   adminUpdateUser
+// );
 
-router.post('/delete/:userId', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), deleteUser);
+// router.post('/delete/:userId', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), deleteUser);
 
 export default router;

@@ -55,29 +55,38 @@ export const findUserByEmail = async (email: string, populateFields: (string | P
   }
 };
 
-export const findOne = async ({ query }) => {
+export const findOne = async (userQuery, populateFields: (string | PopulateOptions)[] = []) => {
   try {
-    const user = await User.findOne(query);
+    let query = User.findOne(userQuery).select('-password');
+    // Normalize and apply population
+    populateFields.forEach((field) => {
+      const pop: PopulateOptions = typeof field === 'string' ? { path: field } : field;
+      query = query.populate(pop);
+    });
 
+    const user = await query;
     return user;
   } catch (err) {
     throw err;
   }
 };
 
-export const findUserById = async (id: string) => {
+export const findUserById = async (id: string, populateFields: (string | PopulateOptions)[] = []) => {
   try {
-    const user = await User.findById(id).populate('organizationId', 'id name');
-    if (!user) {
-      throw new Error('User not found');
-    }
+    let query = User.findById(id).select('-password');
 
+    // Normalize and apply population
+    populateFields.forEach((field) => {
+      const pop: PopulateOptions = typeof field === 'string' ? { path: field } : field;
+      query = query.populate(pop);
+    });
+
+    const user = await query;
     return user;
   } catch (err) {
     throw err;
   }
 };
-
 export const updateUser = async (id: string, userData: any) => {
   try {
     const user = await User.findByIdAndUpdate(id, userData, { new: true });

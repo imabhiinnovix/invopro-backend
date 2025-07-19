@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import Product from '../database/models/common/product';
+import OrganizationProductSubscription from '../database/models/common/organizationProductSubscription';
 
 export async function hardcodedSeedOrganizationProductSubscriptions() {
   const organizationIds = [

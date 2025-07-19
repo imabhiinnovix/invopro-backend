@@ -3,50 +3,7 @@ import Permission from '../database/models/common/permissionModel'; // adjust pa
 import UserRole from '../database/models/common/userRole';
 import RoleHasPermission from '../database/models/common/roleHasPermissionModel';
 
-const defaultPermissionsUser = [
-  'POST:/doc/type/create',
-  'GET:/doc/type/list',
-  'GET:/doc/type/list-priority',
-  'GET:/doc/type/:id',
-  'PUT:/doc/type/update/:id',
-  'PUT:/doc/type/update-priority',
-  'DELETE:/doc/type/delete',
-  'GET:/doc/type/list/meta',
-  'POST:/doc/category/create',
-  'GET:/doc/category/list',
-  'GET:/doc/category/:id',
-  'PUT:/doc/category/update/:id',
-  'DELETE:/doc/category/delete',
-  'POST:/job/create',
-  'GET:/job/list',
-  'GET:/job/list-meta',
-  'GET:/job/docs/:jobId',
-  'PUT:/job/reference-file/:jobId',
-  'GET:/job/get-reference/:jobId',
-  'GET:/job/download-excel/:jobId',
-  'GET:/job/matched-reference/:jobId',
-  'GET:/job/:jobId',
-  'POST:/job/create-text-conversion',
-  'GET:/validator/operators',
-  'POST:/validator/process-excel',
-  'POST:/validator/create',
-  'GET:/validator/list',
-  'GET:/validator/:id',
-  'PUT:/validator/update/:id',
-  'POST:/validator/validate-file/:validatorId',
-  'GET:/validator/validate-file-download/:validationId',
-  'DELETE:/validator/delete/:validatorId',
-  'POST:/doc/type/duplicate',
-  'GET:/user/getCurrentUser',
-  'POST:/attribute/create',
-  'PUT:/attribute/update/:id',
-  'GET:/attribute/search',
-  'GET:/attribute/list',
-  'DELETE:/attribute/delete',
-  'GET:/attribute/:id',
-  'PUT:/doc/update-attribute/:docId',
-  'GET:/doc/list-update-history/:docId',
-];
+const defaultPermissionsUser = ['GET:/common/user/getCurrentUser'];
 
 const defaultPermissionsAdmin = [
   ...defaultPermissionsUser,
@@ -137,7 +94,8 @@ export async function seedRolesAndPermissions(payload: SeedPayload) {
 
     // Resolve permissionIds from method:resourceId
     for (const methodResource of permissionsList) {
-      const [method, resourceId] = methodResource.split(':');
+      const [method, ...rest] = methodResource.split(':');
+      const resourceId = rest.join(':');
 
       const permissionDoc = await Permission.findOne({
         method,
