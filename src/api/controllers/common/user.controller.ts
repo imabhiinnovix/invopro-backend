@@ -8,34 +8,112 @@ import { comparePassword, hashPassword } from '../../../utils/bcrypt.utils';
 import { Role, RoleId } from '../../../enums/role.enum';
 import { IUser } from '../../../database/models/common/user';
 import * as authService from '../../../database/services/common/user.service';
+import * as organizationProductSubscriptionService from '../../../database/services/common/organizationProductSubscription.services';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, password, firstName, lastName, roleIds } = req.body;
-    const { userId, organizationId } = req.user;
+    let { email, password, moblie, organizationId, firstName, lastName, roleIds, organizationProductSubscriptionIds } =
+      req.body;
+    const { isSuperUser } = req.user;
+    let createUserOrganizationId = req.user.organizationId;
+    if (isSuperUser && organizationId) {
+      createUserOrganizationId = organizationId;
+    }
 
+    // Step 1: Check for existing user
     const existingUser = await authService.findUserByEmail(email.toLowerCase());
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'User already exists' });
     }
 
+    const subscriptionIds = organizationProductSubscriptionIds.map((id) => new Types.ObjectId(id));
+    if (subscriptionIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'User must be assigned to at least one product subscription.',
+      });
+    } else {
+      // Step 2.1: Fetch active users with these subscriptions
+      const activeUsers = await userService.findUser({
+        createUserOrganizationId,
+        status: 'active',
+        organizationProductSubscriptionIds: { $in: organizationProductSubscriptionIds },
+      });
+
+      // Step 2.2: Build a usage count map
+      const usageMap: Record<string, number> = {};
+      for (const id of organizationProductSubscriptionIds) {
+        usageMap[id] = activeUsers.filter((user) =>
+          user?.organizationProductSubscriptionIds?.map(String).includes(String(id))
+        ).length;
+      }
+
+      // Step 2.3: Fetch subscriptions and validate
+      const subscriptions: any = await organizationProductSubscriptionService.findOrganizationProductSubscription(
+        {
+          _id: { $in: organizationProductSubscriptionIds },
+          createUserOrganizationId,
+        },
+        ['productId']
+      );
+
+      const now = new Date();
+      const overLimitProducts: string[] = [];
+      const expiredProducts: string[] = [];
+      const inactiveProducts: string[] = [];
+
+      for (const sub of subscriptions) {
+        const subId = sub._id.toString();
+        const productName = sub.productId?.name || 'Unknown Product';
+        const currentCount = usageMap[subId] || 0;
+
+        if (sub.status !== 'active') {
+          inactiveProducts.push(productName);
+        }
+
+        if (sub.licenseExpiresAt < now) {
+          expiredProducts.push(productName);
+        }
+
+        if (currentCount + 1 > sub.totalLicenses) {
+          overLimitProducts.push(productName);
+        }
+      }
+
+      if (inactiveProducts.length || expiredProducts.length || overLimitProducts.length) {
+        const messageParts: string[] = [];
+
+        if (inactiveProducts.length) messageParts.push(`Inactive products: ${inactiveProducts.join(', ')}`);
+        if (expiredProducts.length) messageParts.push(`Expired licenses: ${expiredProducts.join(', ')}`);
+        if (overLimitProducts.length) messageParts.push(`License limit exceeded for: ${overLimitProducts.join(', ')}`);
+
+        return res.status(400).json({
+          success: false,
+          message: `User creation failed: ${messageParts.join(' | ')}`,
+        });
+      }
+    }
+
+    // Step 3: Create user
     const hashedPassword = await hashPassword(password);
 
-    const user: IUser = await authService.createUser({
+    await authService.createUser({
       email: email.toLowerCase(),
       password: hashedPassword,
       firstName,
       lastName,
-      organizationId,
+      roleIds,
+      moblie,
+      organizationId: createUserOrganizationId,
       status: 'active',
+      organizationProductSubscriptionIds,
     });
 
-    res.status(201).json({ success: true, message: 'User created successfully' });
+    return res.status(201).json({ success: true, message: 'User created successfully' });
   } catch (err) {
     next(err);
   }
 };
-
 export const getUserList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { search, organizationId }: any = req.query;

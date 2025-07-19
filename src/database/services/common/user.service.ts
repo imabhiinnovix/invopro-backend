@@ -38,6 +38,17 @@ export const createUser = async (userData: any) => {
   }
 };
 
+export const findUser = async (userQuery, populateFields: (string | PopulateOptions)[] = []) => {
+  let query = User.find(userQuery);
+  populateFields.forEach((field) => {
+    const pop: PopulateOptions = typeof field === 'string' ? { path: field } : field;
+    query = query.populate(pop);
+  });
+
+  const user = await query;
+  return user;
+};
+
 export const findUserByEmail = async (email: string, populateFields: (string | PopulateOptions)[] = []) => {
   try {
     let query = User.findOne({ email });

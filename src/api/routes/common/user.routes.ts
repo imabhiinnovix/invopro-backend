@@ -6,6 +6,7 @@ import {
   getUserList,
   getUserById,
   adminGetUserById,
+  createUser,
   // updateUser,
   // deleteUser,
   // changePassword,
@@ -19,7 +20,7 @@ import { permissionMiddleware } from '../../../middlewares/permission.middleware
 
 const router = Router();
 
-// router.post('/create', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), createUser);
+router.post('/create', authenticateToken, createUser);
 
 router.get('/list', authenticateToken, permissionMiddleware(), getUserList);
 

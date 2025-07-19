@@ -1,3 +1,4 @@
+import { PopulateOptions } from 'mongoose';
 import organizationProductSubscription from '../../models/common/organizationProductSubscription';
 
 export const getOrganizationProductsSubscription = async ({
@@ -58,4 +59,18 @@ export const deleteManyOrganizationProductSubscription = async (organizationId) 
   } catch (err) {
     throw err;
   }
+};
+
+export const findOrganizationProductSubscription = async (
+  organizationProductSubscriptionQuery,
+  populateFields: (string | PopulateOptions)[] = []
+) => {
+  let query = organizationProductSubscription.find(organizationProductSubscriptionQuery);
+  populateFields.forEach((field) => {
+    const pop: PopulateOptions = typeof field === 'string' ? { path: field } : field;
+    query = query.populate(pop);
+  });
+
+  const organizationProductSubscriptionDetails = await query;
+  return organizationProductSubscriptionDetails;
 };
