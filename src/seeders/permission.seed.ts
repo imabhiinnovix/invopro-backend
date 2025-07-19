@@ -39,6 +39,13 @@ const permissions = [
     extraOptions: {},
     resourceType: 'User',
   },
+  {
+    name: 'List Permission',
+    method: 'GET',
+    resourceId: '/common/permission/list',
+    extraOptions: {},
+    resourceType: 'Permission',
+  },
 ];
 
 export async function seedPermissions() {

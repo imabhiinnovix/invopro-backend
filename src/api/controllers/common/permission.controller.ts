@@ -10,7 +10,7 @@ export const getPermissionList = async (req: Request, res: Response, next: NextF
     const query: any = {};
     if (search) query.name = { $regex: search, $options: 'i' };
 
-    const { data, totalCount } = await permissionService.getPermissionList({});
+    const { data, totalCount } = await permissionService.getPermissionList({ page, limit });
 
     res.status(200).json({
       success: true,

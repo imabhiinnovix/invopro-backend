@@ -16,7 +16,7 @@ const defaultPermissionsAdmin = [
   'GET:/common/user/:userId',
   'PUT:/common/user/update/:userId',
   'DELETE:/common/user/delete/:userId',
-  'GET:/common/role/list',
+  'GET:/common/permission/list',
 ];
 
 const defaultPermissionsSuperAdmin = [
