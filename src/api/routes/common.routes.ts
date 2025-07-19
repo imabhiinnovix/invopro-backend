@@ -16,7 +16,7 @@ router.use('/user', userRoutes);
 router.use('/organization', organizationRoutes);
 router.use('/support', supportRoutes);
 router.use('/permission', permissionRoutes);
-router.use('/userRole', userRoleRoutes);
+router.use('/role', userRoleRoutes);
 router.use('/product', organizationProductSubscriptionRoutes);
 router.use('/organizationProduct', productRoutes);
 

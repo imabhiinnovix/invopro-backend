@@ -124,13 +124,24 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 };
 export const getUserList = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search, organizationId }: any = req.query;
+    const { email, firstName, lastName, organizationId }: any = req.query;
     const { userId, isSuperUser } = req.user;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
     const query: any = {};
-    if (search) query.name = { $regex: search, $options: 'i' };
+
+    if (typeof email === 'string' && email.trim()) {
+      query.email = { $regex: email.trim(), $options: 'i' };
+    }
+
+    if (typeof firstName === 'string' && firstName.trim()) {
+      query.firstName = { $regex: firstName.trim(), $options: 'i' };
+    }
+
+    if (typeof lastName === 'string' && lastName.trim()) {
+      query.lastName = { $regex: lastName.trim(), $options: 'i' };
+    }
 
     if (organizationId && isSuperUser) {
       query.organizationId = new Types.ObjectId(organizationId);
