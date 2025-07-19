@@ -12,17 +12,35 @@ interface CustomRequest extends Request {
   organizationId: string;
 }
 
-export const checkPermission = async (req: any): Promise<boolean> => {
+export const checkPermission = async (req: Request) => {
+  const roleIds = req.user.roleIds;
+  const organizationId = req.user.organizationId;
+  console.log(req.user);
+
+  const checkPermissionResponse = {
+    isAccess: false,
+    message: 'Access Denied: You do not have permission to access this route.',
+  };
+  if (!Array.isArray(roleIds) || roleIds.length === 0) return checkPermissionResponse;
+
+  // ✅ 2. Construct permission key
+  const method = req.method.toUpperCase();
   const baseUrl = req.baseUrl;
-  const routePath = req.route?.path || ''; // fallback in case it's undefined
+  const routePath = req.route?.path || '';
   const baseUrlWithoutPrefix = baseUrl.replace(process.env.BASE_API_ROUTE || '', '');
-  const roleId = req.roleId;
-  const organizationId = req.organizationId;
+  const resourceId = `${baseUrlWithoutPrefix}${routePath}`;
+  const resourceKey = `${method}:${resourceId}`;
 
-  const resource = `${req.method}:${baseUrlWithoutPrefix}${routePath}`;
-  const permissions = await getPermissionsByRole(roleId, organizationId);
+  // ✅ 3. Check permission by role
+  for (const roleId of roleIds) {
+    const permissions = await getPermissionsByRole(roleId, organizationId);
 
-  return resource in permissions;
+    if (permissions[resourceKey]) {
+      return { isAccess: true, message: 'User has Permission' };
+    }
+  }
+
+  return checkPermissionResponse;
 };
 
 export const getPermissionsByRole = async (roleId: string, organizationId: string): Promise<PermissionMap> => {

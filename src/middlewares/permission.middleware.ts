@@ -11,29 +11,48 @@ declare module 'express' {
   }
 }
 
-export const permission = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const isAccess = await checkPermission(req);
-    // Get the JWT token from the request header
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+export const checkProductPermissionMiddleware = (productKey: string) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Example logic: attach productKey to request
+      if (!req.user[productKey] || new Date(req.user[productKey]) < new Date()) {
+        return res.status(403).json({
+          success: false,
+          message: `Access denied: Your account does not have an active license for this product. Please contact support.`,
+        });
+      }
 
-    if (token == null) return res.status(401).json({ success: false, message: 'Authentication token is missing' });
+      next();
+    } catch (error: any) {
+      console.error('Product check error:', error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to check product',
+      });
+    }
+  };
+};
 
-    // Verify the token
-    const user = await verifyToken(token);
+export const permissionMiddleware = () => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      console.log('Inside permissionMiddleware ');
+      const permissionResp = await checkPermission(req);
 
-    if (!user || !user.organizationId) return res.status(403).json({ success: false, message: 'Access denied' });
-
-    req.user = user;
-    next();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    console.error('Error:', error);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-      error: 'Internal server error',
-    });
-  }
+      if (permissionResp.isAccess) {
+        return next();
+      } else {
+        return res.status(403).json({
+          success: false,
+          message: permissionResp.message,
+        });
+      }
+    } catch (error: any) {
+      console.error('Permission check error:', error);
+      return res.status(error.status || 500).json({
+        success: false,
+        message: error.message || 'Internal server error',
+      });
+    }
+  };
 };

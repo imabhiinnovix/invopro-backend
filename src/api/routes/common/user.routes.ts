@@ -13,13 +13,14 @@ import {
   updateUserStatus,
 } from '../../controllers/common/user.controller';
 import { RoleId } from '../../../enums/role.enum';
+import { permissionMiddleware } from '../../../middlewares/permission.middleware';
 // import { createUser } from '../../controllers/common/auth.controller';
 
 const router = Router();
 
 // router.post('/create', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), createUser);
 
-router.get('/list', authenticateToken, getUserList);
+router.get('/list', authenticateToken, permissionMiddleware(), getUserList);
 
 router.get('/getCurrentUser', authenticateToken, getUserById);
 

@@ -47,6 +47,7 @@ const ENV = {
     'tabular',
   ],
   FIELD_TYPE_ENUM: ['number', 'text', 'date', 'boolean', 'richtext', 'url', 'option', 'multioption', 'user'],
+  BASE_API_ROUTE: process.env.BASE_API_ROUTE || '',
 };
 
 export default ENV;
