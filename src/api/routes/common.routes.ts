@@ -12,8 +12,8 @@ import productRoutes from './common/product.routes';
 const router = Router();
 
 router.use('/auth', authRoutes);
-router.use('/users', userRoutes);
-router.use('/organizations', organizationRoutes);
+router.use('/user', userRoutes);
+router.use('/organization', organizationRoutes);
 router.use('/support', supportRoutes);
 router.use('/permission', permissionRoutes);
 router.use('/userRole', userRoleRoutes);

@@ -15,7 +15,6 @@ interface CustomRequest extends Request {
 export const checkPermission = async (req: Request) => {
   const roleIds = req.user.roleIds;
   const organizationId = req.user.organizationId;
-  console.log(req.user);
 
   const checkPermissionResponse = {
     isAccess: false,
@@ -31,10 +30,13 @@ export const checkPermission = async (req: Request) => {
   const resourceId = `${baseUrlWithoutPrefix}${routePath}`;
   const resourceKey = `${method}:${resourceId}`;
 
+  console.log(resourceKey);
+
   // ✅ 3. Check permission by role
   for (const roleId of roleIds) {
     const permissions = await getPermissionsByRole(roleId, organizationId);
 
+    console.log(roleId, permissions);
     if (permissions[resourceKey]) {
       return { isAccess: true, message: 'User has Permission' };
     }
@@ -48,6 +50,7 @@ export const getPermissionsByRole = async (roleId: string, organizationId: strin
   let permissions: PermissionMap | null = null;
 
   const cached = await cacheService.get(permissionsKey);
+  console.log(cached, 'cached');
 
   if (cached) {
     permissions = JSON.parse(cached);
@@ -59,43 +62,49 @@ export const getPermissionsByRole = async (roleId: string, organizationId: strin
   return permissions || {};
 };
 
-const getAccessibleRoutesByRole = async (roleId: string): Promise<PermissionMap> => {
+const getAccessibleRoutesByRole = async (roleId) => {
   try {
+    // Validate roleId
     if (!roleId) {
       throw new Error('Role ID is required');
     }
 
+    // Perform aggregation
     const accessibleRoutes = await roleHasPermissionModel.aggregate([
       {
-        $match: {
-          roleId: new mongoose.Types.ObjectId(roleId),
-          status: 1,
-        },
+        $match: { roleId: new mongoose.Types.ObjectId(roleId), status: 'active' }, // Match the role ID
       },
       {
         $lookup: {
-          from: 'permissions',
-          localField: 'permissionId',
-          foreignField: '_id',
-          as: 'permissionDetails',
+          from: 'permissions', // Collection name for permissionModel
+          localField: 'permissionId', // Field in roleHasPermissionModel
+          foreignField: '_id', // Field in permissionModel
+          as: 'permissionDetails', // Output array
         },
       },
       {
-        $unwind: '$permissionDetails',
+        $unwind: '$permissionDetails', // Unwind the permissionDetails array
+      },
+      {
+        $match: {
+          'permissionDetails.status': 'active',
+        },
       },
       {
         $project: {
-          _id: 0,
-          resource: '$permissionDetails.resource',
-          name: '$permissionDetails.name',
+          _id: 0, // Exclude the default _id field
+          resourceId: '$permissionDetails.resourceId', // Include the resource field
+          method: '$permissionDetails.method',
+          name: '$permissionDetails.name', // Include the name field
         },
       },
     ]);
 
+    console.log(accessibleRoutes, 'accessibleRoutes');
+
     return accessibleRoutes.reduce<PermissionMap>((result, route) => {
-      if (route.resource && route.name) {
-        result[route.resource] = route.name;
-      }
+      const resourceKey = `${route.method}:${route.resourceId}`;
+      result[resourceKey] = route.name;
       return result;
     }, {});
   } catch (error) {
