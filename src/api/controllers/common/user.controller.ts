@@ -9,6 +9,8 @@ import { Role, RoleId } from '../../../enums/role.enum';
 import { IUser } from '../../../database/models/common/user';
 import * as authService from '../../../database/services/common/user.service';
 import * as organizationProductSubscriptionService from '../../../database/services/common/organizationProductSubscription.services';
+import { read, stat } from 'fs';
+import { arraysAreEqual } from '../../../utils/common.utils';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -198,131 +200,189 @@ export const adminGetUserById = async (req: Request, res: Response, next: NextFu
   }
 };
 
-// export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const { userId } = req.user;
+export const updateCurrentUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.user;
 
-//     const { firstName, lastName, password } = req.body;
+    const { firstName, lastName, mobile } = req.body;
 
-//     const user = (await userService.findUserById(userId)).toJSON();
+    const updateUser: any = {
+      ...(firstName && { firstName }),
+      ...(lastName && { lastName }),
+      ...(mobile && { mobile }),
+    };
 
-//     const updateUser: any = {
-//       ...(firstName && { firstName }),
-//       ...(lastName && { lastName }),
-//       ...(password && { password: await hashPassword(password) }),
-//     };
+    await userService.updateUser(userId, updateUser);
+    res.status(200).json({ success: true, message: 'User updated successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
 
-//     await userService.updateUser(userId, updateUser);
-//     res.status(200).json({ success: true, message: 'User updated successfully' });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
+export const adminUpdateUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.params.userId;
+    const {
+      email,
+      firstName,
+      lastName,
+      moblie,
+      roleIds,
+      status,
+      organizationProductSubscriptionIds,
+      organizationId: bodyOrgId,
+    } = req.body;
 
-// export const adminUpdateUser = async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const { userId } = req.params;
+    if (status && !['active', 'inactive'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid User Status.`,
+      });
+    }
+    const { isSuperUser } = req.user;
+    let organizationId = req.user.organizationId;
 
-//     const { email, firstName, lastName, roleId, password, organizationId } = req.body;
+    // If super user and orgId is passed in body
+    if (isSuperUser && bodyOrgId) {
+      organizationId = bodyOrgId;
+    }
 
-//     const user = (await userService.findUserById(userId)).toJSON();
+    const userQuery = { _id: new Types.ObjectId(userId), organizationId: new Types.ObjectId(userId) };
+    // Step 1: Fetch existing user
+    const existingUser = await userService.findOne(userQuery);
 
-//     const updateUser = {
-//       ...(email && { email }),
-//       ...(firstName && { firstName }),
-//       ...(lastName && { lastName }),
-//       ...(password && { password: await hashPassword(password) }),
-//       ...(roleId && { role: Role.Labels[roleId] }),
-//       ...(roleId && { roleId }),
-//       ...(organizationId && { organizationId }),
-//     };
+    if (!existingUser) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
-//     await userService.updateUser(userId, updateUser);
-//     res.status(200).json({ success: true, message: 'User updated successfully' });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
+    const oldStatus = existingUser.status;
+    const newStatus = status || oldStatus;
+    const newSubscriptionIds: string[] =
+      organizationProductSubscriptionIds ?? existingUser.organizationProductSubscriptionIds?.map(String) ?? [];
 
-// export const updateUserStatus = async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const { userId } = req.params;
-//     const { status } = req.body;
-//     const { roleId, organizationId, userId: currentUserId } = req.user;
+    if (newStatus === 'active') {
+      const subscriptionIds = newSubscriptionIds.map((id) => new Types.ObjectId(id));
 
-//     if (userId === currentUserId) {
-//       return res.status(400).json({ success: false, message: 'Cannot update your own status' });
-//     }
+      // Find active users excluding current
+      const activeUsers = await userService.findUser({
+        _id: { $ne: userId },
+        organizationId,
+        status: 'active',
+        organizationProductSubscriptionIds: { $in: subscriptionIds },
+      });
 
-//     const query: any = { _id: userId };
-//     if (roleId === RoleId.ADMIN) {
-//       query.organizationId = organizationId;
-//     }
+      // Build usage map
+      const usageMap: Record<string, number> = {};
+      for (const id of newSubscriptionIds) {
+        usageMap[id] = activeUsers.filter((user) =>
+          user?.organizationProductSubscriptionIds?.map(String).includes(String(id))
+        ).length;
+      }
 
-//     const user = await userService.findOne({ query });
-//     if (!user) {
-//       return res.status(404).json({ success: false, message: 'User not found' });
-//     }
+      // Fetch and validate subscriptions
+      const subscriptions: any[] = await organizationProductSubscriptionService.findOrganizationProductSubscription(
+        { _id: { $in: subscriptionIds }, organizationId },
+        ['productId']
+      );
 
-//     if (user.status === status) {
-//       return res.status(400).json({
-//         success: false,
-//         message: `User status is already ${status}`,
-//       });
-//     }
-//     //TODO
-//     // const statusCheck = await userService.checkUserStatus(status, user.organizationId.toString());
-//     // if (!statusCheck.success) {
-//     //   return res.status(400).json({ success: false, message: statusCheck.message });
-//     // }
+      const now = new Date();
+      const overLimitProducts: string[] = [];
+      const expiredProducts: string[] = [];
+      const inactiveProducts: string[] = [];
 
-//     await userService.updateUser(userId, { status });
-//     res.status(200).json({ success: true, message: 'User status updated successfully' });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
+      for (const sub of subscriptions) {
+        const subId = sub._id.toString();
+        const productName = sub.productId?.name || 'Unknown Product';
+        const currentCount = usageMap[subId] || 0;
 
-// export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const { userId } = req.params;
+        if (sub.status !== 'active') inactiveProducts.push(productName);
+        if (sub.licenseExpiresAt < now) expiredProducts.push(productName);
+        if (currentCount + 1 > sub.totalLicenses) overLimitProducts.push(productName);
+      }
 
-//     const user: IUser = await userService.findUserById(userId);
+      if (inactiveProducts.length || expiredProducts.length || overLimitProducts.length) {
+        const messageParts: string[] = [];
 
-//     if (user && [Role.Id.SUPER_ADMIN].includes(Number(user.roleIds))) {
-//       return res.status(400).json({ success: false, message: 'Super Admin cannot be deleted' });
-//     }
+        if (inactiveProducts.length) messageParts.push(`Inactive products: ${inactiveProducts.join(', ')}`);
+        if (expiredProducts.length) messageParts.push(`Expired licenses: ${expiredProducts.join(', ')}`);
+        if (overLimitProducts.length) messageParts.push(`License limit exceeded for: ${overLimitProducts.join(', ')}`);
 
-//     await userService.deleteUser(userId);
-//     res.status(200).json({ success: true, message: 'User deleted successfully' });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
+        return res.status(400).json({
+          success: false,
+          message: `User update failed: ${messageParts.join(' | ')}`,
+        });
+      }
+    }
 
-// export const changePassword = async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const { oldPassword, newPassword } = req.body;
-//     const userId = req.user.userId;
+    // Step 2: Build update object
+    const updateData: any = {};
+    if (email) updateData.email = email.toLowerCase();
+    if (firstName) updateData.firstName = firstName;
+    if (lastName) updateData.lastName = lastName;
+    if (moblie) updateData.moblie = moblie;
+    if (roleIds) updateData.roleIds = roleIds;
+    if (status) updateData.status = status;
+    if (organizationProductSubscriptionIds)
+      updateData.organizationProductSubscriptionIds = organizationProductSubscriptionIds;
 
-//     const user: any = (await userService.findUserById(userId)).toJSON();
+    // Step 3: Update user
+    await userService.updateUser(userId, updateData);
 
-//     const isPasswordMatch = await comparePassword(oldPassword, user?.password);
+    return res.status(200).json({ success: true, message: 'User updated successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
 
-//     if (!isPasswordMatch)
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Current password is invalid',
-//       });
+export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.params;
+    const { isSuperUser } = req.user;
+    let organizationId = req.user.organizationId;
+    const { organizationId: bodyOrgId } = req.body;
 
-//     const hashedNewPassword = await hashPassword(newPassword);
+    if (isSuperUser && bodyOrgId) {
+      organizationId = bodyOrgId;
+    }
+    const user = await userService.findOne({
+      _id: new Types.ObjectId(userId),
+      organizationId: new Types.ObjectId(organizationId),
+    });
 
-//     user.password = hashedNewPassword;
-//     await user.save();
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
-//     return res.status(200).json({ success: true, message: 'Password changed successfully' });
-//   } catch (error) {
-//     console.error('Error changing password:', error);
-//     next(error);
-//   }
-// };
+    await userService.deleteUser(userId);
+    res.status(200).json({ success: true, message: 'User deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const changePassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const userId = req.user.userId;
+
+    const user: any = await userService.findUserById(userId);
+
+    const isPasswordMatch = await comparePassword(oldPassword, user?.password);
+
+    if (!isPasswordMatch)
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is invalid',
+      });
+
+    const hashedNewPassword = await hashPassword(newPassword);
+
+    user.password = hashedNewPassword;
+    await user.save();
+
+    return res.status(200).json({ success: true, message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    next(error);
+  }
+};

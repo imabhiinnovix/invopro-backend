@@ -7,12 +7,10 @@ import {
   getUserById,
   adminGetUserById,
   createUser,
-  // updateUser,
-  // deleteUser,
-  // changePassword,
-  // adminGetUserById,
-  // adminUpdateUser,
-  // updateUserStatus,
+  updateCurrentUser,
+  deleteUser,
+  changePassword,
+  adminUpdateUser,
 } from '../../controllers/common/user.controller';
 import { RoleId } from '../../../enums/role.enum';
 import { permissionMiddleware } from '../../../middlewares/permission.middleware';
@@ -23,28 +21,16 @@ router.post('/create', authenticateToken, permissionMiddleware(), createUser);
 
 router.get('/list', authenticateToken, permissionMiddleware(), getUserList);
 
-router.get('/getCurrentUser', authenticateToken, permissionMiddleware(), getUserById);
+router.get('/get-current-user', authenticateToken, permissionMiddleware(), getUserById);
 
 router.get('/:userId', authenticateToken, permissionMiddleware(), adminGetUserById);
 
-// router.post('/update', authenticateToken, updateUser);
+router.post('/update-current-user', authenticateToken, permissionMiddleware(), updateCurrentUser);
 
-// router.post('/change-password', authenticateToken, changePassword);
+router.post('/change-password', authenticateToken, permissionMiddleware(), changePassword);
 
-// router.post(
-//   '/updateStatus/:userId',
-//   authenticateToken,
-//   roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
-//   updateUserStatus
-// );
+router.post('/update/:userId', authenticateToken, permissionMiddleware(), adminUpdateUser);
 
-// router.post(
-//   '/update/:userId',
-//   authenticateToken,
-//   roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
-//   adminUpdateUser
-// );
-
-// router.post('/delete/:userId', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), deleteUser);
+router.post('/delete/:userId', authenticateToken, permissionMiddleware(), deleteUser);
 
 export default router;
