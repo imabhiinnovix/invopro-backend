@@ -82,10 +82,16 @@ export const findOne = async (userQuery, populateFields: (string | PopulateOptio
   }
 };
 
-export const findUserById = async (id: string, populateFields: (string | PopulateOptions)[] = []) => {
+export const findUserById = async (
+  id: string,
+  populateFields: (string | PopulateOptions)[] = [],
+  passwordRequired: boolean = false
+) => {
   try {
-    let query = User.findById(id).select('-password');
-
+    let query: any = User.findById(id);
+    if (!passwordRequired) {
+      query = query.select('-password');
+    }
     // Normalize and apply population
     populateFields.forEach((field) => {
       const pop: PopulateOptions = typeof field === 'string' ? { path: field } : field;
@@ -122,38 +128,4 @@ export const userCount = async (query) => {
   } catch (err) {
     throw err;
   }
-};
-
-export const checkUserStatus = async (
-  status: string,
-  organizationId: string
-): Promise<{ success: boolean; message?: string }> => {
-  const organization = await organizationService.getOrganizationById(organizationId);
-
-  if (!organization) {
-    return { success: false, message: 'Organization not found' };
-  }
-
-  const activeUserCount = await userCount({
-    status: 'active',
-    organizationId,
-    roleId: { $ne: RoleId.SUPER_ADMIN },
-  });
-
-  // switch (status) {
-  //   case 'active':
-  //     if (activeUserCount >= organization.totalLicenses) {
-  //       return { success: false, message: 'License limit reached. Please contact the support team.' };
-  //     }
-  //     break;
-  //   case 'inactive':
-  //     if (activeUserCount < 1) {
-  //       return { success: false, message: 'No active licenses to revoke.' };
-  //     }
-  //     break;
-  //   default:
-  //     return { success: false, message: 'Invalid status value provided.' };
-  // }
-
-  return { success: true };
 };

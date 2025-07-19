@@ -5,17 +5,21 @@ import { Types } from 'mongoose';
 import * as userService from '../../../database/services/common/user.service';
 
 import { comparePassword, hashPassword } from '../../../utils/bcrypt.utils';
-import { Role, RoleId } from '../../../enums/role.enum';
-import { IUser } from '../../../database/models/common/user';
+
 import * as authService from '../../../database/services/common/user.service';
 import * as organizationProductSubscriptionService from '../../../database/services/common/organizationProductSubscription.services';
-import { read, stat } from 'fs';
-import { arraysAreEqual } from '../../../utils/common.utils';
+import { validateUserInput } from '../../../utils/validation.utils';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     let { email, password, moblie, organizationId, firstName, lastName, roleIds, organizationProductSubscriptionIds } =
       req.body;
+
+    const validationResult = validateUserInput({ email, password, firstName, isUpdate: false });
+
+    if (!validationResult.valid) {
+      return res.status(400).json({ success: false, message: validationResult.message });
+    }
     const { isSuperUser } = req.user;
     let createUserOrganizationId = req.user.organizationId;
     if (isSuperUser && organizationId) {
@@ -205,6 +209,11 @@ export const updateCurrentUser = async (req: Request, res: Response, next: NextF
     const { userId } = req.user;
 
     const { firstName, lastName, mobile } = req.body;
+    const validationResult = validateUserInput({ firstName, isUpdate: true });
+
+    if (!validationResult.valid) {
+      return res.status(400).json({ success: false, message: validationResult.message });
+    }
 
     const updateUser: any = {
       ...(firstName && { firstName }),
@@ -221,17 +230,24 @@ export const updateCurrentUser = async (req: Request, res: Response, next: NextF
 
 export const adminUpdateUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.params.userId;
+    const { userId } = req.params;
+
     const {
-      email,
       firstName,
       lastName,
       moblie,
       roleIds,
       status,
+      password,
       organizationProductSubscriptionIds,
       organizationId: bodyOrgId,
     } = req.body;
+
+    const validationResult = validateUserInput({ firstName, password, isUpdate: true });
+
+    if (!validationResult.valid) {
+      return res.status(400).json({ success: false, message: validationResult.message });
+    }
 
     if (status && !['active', 'inactive'].includes(status)) {
       return res.status(400).json({
@@ -247,7 +263,7 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
       organizationId = bodyOrgId;
     }
 
-    const userQuery = { _id: new Types.ObjectId(userId), organizationId: new Types.ObjectId(userId) };
+    const userQuery = { _id: new Types.ObjectId(userId), organizationId: new Types.ObjectId(organizationId) };
     // Step 1: Fetch existing user
     const existingUser = await userService.findOne(userQuery);
 
@@ -316,12 +332,13 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
 
     // Step 2: Build update object
     const updateData: any = {};
-    if (email) updateData.email = email.toLowerCase();
+
     if (firstName) updateData.firstName = firstName;
     if (lastName) updateData.lastName = lastName;
     if (moblie) updateData.moblie = moblie;
     if (roleIds) updateData.roleIds = roleIds;
     if (status) updateData.status = status;
+    if (password) updateData.password = await hashPassword(password);
     if (organizationProductSubscriptionIds)
       updateData.organizationProductSubscriptionIds = organizationProductSubscriptionIds;
 
@@ -363,9 +380,17 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
 export const changePassword = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) {
+      return res.status(404).json({ success: false, message: 'Password is required.' });
+    }
+    const validationResult = validateUserInput({ password: newPassword, isUpdate: true });
+
+    if (!validationResult.valid) {
+      return res.status(400).json({ success: false, message: validationResult.message });
+    }
     const userId = req.user.userId;
 
-    const user: any = await userService.findUserById(userId);
+    const user: any = await userService.findUserById(userId, [], true);
 
     const isPasswordMatch = await comparePassword(oldPassword, user?.password);
 

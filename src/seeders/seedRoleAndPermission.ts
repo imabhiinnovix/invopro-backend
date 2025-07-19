@@ -3,7 +3,11 @@ import Permission from '../database/models/common/permissionModel'; // adjust pa
 import UserRole from '../database/models/common/userRole';
 import RoleHasPermission from '../database/models/common/roleHasPermissionModel';
 
-const defaultPermissionsUser = ['GET:/common/user/get-current-user', 'PUT:/common/user/update-current-user'];
+const defaultPermissionsUser = [
+  'GET:/common/user/get-current-user',
+  'PUT:/common/user/update-current-user',
+  'PUT:/common/user/change-password',
+];
 
 const defaultPermissionsAdmin = [
   ...defaultPermissionsUser,
