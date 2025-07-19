@@ -106,6 +106,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       moblie,
       organizationId: createUserOrganizationId,
       status: 'active',
+      isVerified: true,
       organizationProductSubscriptionIds,
     });
 

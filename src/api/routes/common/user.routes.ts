@@ -16,11 +16,10 @@ import {
 } from '../../controllers/common/user.controller';
 import { RoleId } from '../../../enums/role.enum';
 import { permissionMiddleware } from '../../../middlewares/permission.middleware';
-// import { createUser } from '../../controllers/common/auth.controller';
 
 const router = Router();
 
-router.post('/create', authenticateToken, createUser);
+router.post('/create', authenticateToken, permissionMiddleware(), createUser);
 
 router.get('/list', authenticateToken, permissionMiddleware(), getUserList);
 
