@@ -25,12 +25,12 @@ router.get('/get-current-user', authenticateToken, permissionMiddleware(), getUs
 
 router.get('/:userId', authenticateToken, permissionMiddleware(), adminGetUserById);
 
-router.post('/update-current-user', authenticateToken, permissionMiddleware(), updateCurrentUser);
+router.put('/update-current-user', authenticateToken, permissionMiddleware(), updateCurrentUser);
 
-router.post('/change-password', authenticateToken, permissionMiddleware(), changePassword);
+router.put('/change-password', authenticateToken, permissionMiddleware(), changePassword);
 
-router.post('/update/:userId', authenticateToken, permissionMiddleware(), adminUpdateUser);
+router.put('/update/:userId', authenticateToken, permissionMiddleware(), adminUpdateUser);
 
-router.post('/delete/:userId', authenticateToken, permissionMiddleware(), deleteUser);
+router.delete('/delete/:userId', authenticateToken, permissionMiddleware(), deleteUser);
 
 export default router;
