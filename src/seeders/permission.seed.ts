@@ -46,6 +46,41 @@ const permissions = [
     extraOptions: {},
     resourceType: 'Permission',
   },
+  {
+    name: 'List Role',
+    method: 'GET',
+    resourceId: '/common/role/list',
+    extraOptions: {},
+    resourceType: 'Role',
+  },
+  {
+    name: 'List Role Permission',
+    method: 'GET',
+    resourceId: '/common/role/:roleId',
+    extraOptions: {},
+    resourceType: 'Role',
+  },
+  {
+    name: 'Create Role',
+    method: 'POST',
+    resourceId: '/common/role',
+    extraOptions: {},
+    resourceType: 'Role',
+  },
+  {
+    name: 'Update Role',
+    method: 'PUT',
+    resourceId: '/common/role/update/:roleId',
+    extraOptions: {},
+    resourceType: 'Role',
+  },
+  {
+    name: 'Delete Role',
+    method: 'DELETE',
+    resourceId: '/common/role/delete/:roleId',
+    extraOptions: {},
+    resourceType: 'Role',
+  },
 ];
 
 export async function seedPermissions() {

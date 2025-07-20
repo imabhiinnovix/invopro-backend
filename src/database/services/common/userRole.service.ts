@@ -36,6 +36,37 @@ export const getUserRoleList = async ({
   }
 };
 
+export const getPermissionDetailsBasedOnRoleId = async ({
+  query,
+  page = 1,
+  limit = 20,
+  sort = { createdAt: -1 },
+  populate = [],
+}: any) => {
+  try {
+    let queryBuilder = RoleHasPermission.find(query)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort(sort);
+
+    if (populate.length) {
+      populate.forEach((field) => {
+        queryBuilder = queryBuilder.populate(field);
+      });
+    }
+
+    const data = await queryBuilder.exec();
+    const totalCount = await RoleHasPermission.countDocuments(query);
+
+    return {
+      data,
+      totalCount,
+    };
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const createUserRole = async ({
   organizationId,
   name,
@@ -49,27 +80,21 @@ export const createUserRole = async ({
   permissionIds: string[];
   userId: string;
 }) => {
-  const session = await UserRole.startSession();
-  session.startTransaction();
-
   try {
     // 1. Create the role
-    const [newRole] = await UserRole.create(
-      [
-        {
-          organizationId,
-          name,
-          isSuperUser,
-          createdBy: userId,
-        },
-      ],
-      { session }
-    );
+    const [newRole] = await UserRole.create([
+      {
+        organizationId,
+        name,
+        isSuperUser,
+        createdBy: userId,
+      },
+    ]);
 
     // 2. Validate the permission IDs
     const validPermissions = await Permission.find({
       _id: { $in: permissionIds },
-    }).session(session);
+    });
 
     if (validPermissions.length !== permissionIds.length) {
       throw new Error('Some permissionIds are invalid.');
@@ -81,15 +106,10 @@ export const createUserRole = async ({
       permissionId: permId,
     }));
 
-    await RoleHasPermission.insertMany(rolePermissionDocs, { session });
-
-    await session.commitTransaction();
-    session.endSession();
+    await RoleHasPermission.insertMany(rolePermissionDocs);
 
     return newRole;
   } catch (err) {
-    await session.abortTransaction();
-    session.endSession();
     throw err;
   }
 };
@@ -97,27 +117,20 @@ export const createUserRole = async ({
 export const updateRole = async ({
   roleId,
   name,
-  isSuperUser,
   permissionIds,
   userId,
 }: {
   roleId: string;
   name?: string;
-  isSuperUser?: boolean;
   permissionIds?: string[];
   userId: string;
 }) => {
-  const session = await UserRole.startSession();
-  session.startTransaction();
-
   try {
     // 1. Update role fields
     const updateData: any = { updatedBy: userId };
     if (name !== undefined) updateData.name = name;
 
-    // if (isSuperUser !== undefined) updateData.isSuperUser = isSuperUser;
-
-    const updatedRole = await UserRole.findByIdAndUpdate(roleId, updateData, { new: true, session });
+    const updatedRole = await UserRole.findByIdAndUpdate(roleId, updateData, { new: true });
 
     if (!updatedRole) throw new Error('Role not found');
 
@@ -126,14 +139,14 @@ export const updateRole = async ({
       // Validate
       const validPermissions = await Permission.find({
         _id: { $in: permissionIds },
-      }).session(session);
+      });
 
       if (validPermissions.length !== permissionIds.length) {
         throw new Error('Some permissionIds are invalid.');
       }
 
       // Remove existing role-permission mappings
-      await RoleHasPermission.deleteMany({ roleId }).session(session);
+      await RoleHasPermission.deleteMany({ roleId });
 
       // Insert new mappings
       const rolePermissionDocs = permissionIds.map((permId) => ({
@@ -141,47 +154,34 @@ export const updateRole = async ({
         permissionId: permId,
       }));
 
-      await RoleHasPermission.insertMany(rolePermissionDocs, { session });
+      await RoleHasPermission.insertMany(rolePermissionDocs);
     }
-
-    await session.commitTransaction();
-    session.endSession();
 
     return updatedRole;
   } catch (err) {
-    await session.abortTransaction();
-    session.endSession();
     throw err;
   }
 };
 
 export const deleteRole = async (roleId: any) => {
-  const session = await UserRole.startSession();
-  session.startTransaction();
-
   try {
     // 1. Remove the role from all users
-    await User.updateMany({ roleIds: roleId }, { $pull: { roleIds: roleId } }, { session });
+    await User.updateMany({ roleIds: roleId }, { $pull: { roleIds: roleId } });
 
     // 2. Delete all role-permission mappings
-    await RoleHasPermission.deleteMany({ roleId }, { session });
+    await RoleHasPermission.deleteMany({ roleId });
 
     // 3. Delete the role itself
-    const deletedRole = await UserRole.findByIdAndDelete(roleId).session(session);
+    const deletedRole = await UserRole.findByIdAndDelete(roleId);
     if (!deletedRole) {
       throw new Error('Role not found');
     }
-
-    await session.commitTransaction();
-    session.endSession();
 
     return {
       success: true,
       message: 'Role and all related data deleted successfully.',
     };
   } catch (err) {
-    await session.abortTransaction();
-    session.endSession();
     throw err;
   }
 };

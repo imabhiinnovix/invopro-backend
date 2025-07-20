@@ -17,20 +17,15 @@ const defaultPermissionsAdmin = [
   'PUT:/common/user/update/:userId',
   'DELETE:/common/user/delete/:userId',
   'GET:/common/permission/list',
-];
-
-const defaultPermissionsSuperAdmin = [
-  ...defaultPermissionsAdmin,
-  'POST:/role/create',
-  'GET:/role/:id',
-  'DELETE:/role/delete',
-  'PUT:/role/update/:id',
-  'GET:/doc/doc-type-export',
-  'POST:/doc/doc-type-import',
+  'GET:/common/role/list',
+  'GET:/common/role/:roleId',
+  'POST:/common/role',
+  'PUT:/common/role/update/:roleId',
+  'DELETE:/common/role/delete/:roleId',
 ];
 
 const defaultPermissionsPrimarySuperAdmin = [
-  ...defaultPermissionsSuperAdmin,
+  ...defaultPermissionsAdmin,
   'POST:/organization/create',
   'GET:/organization/list',
   'GET:/organization/:id',

@@ -6,15 +6,18 @@ import { RoleId } from '../../../enums/role.enum';
 import {
   createUserRole,
   deleteUserRole,
+  getRolePermissionList,
   getUserRoleList,
   updateUserRole,
 } from '../../controllers/common/userRole.controller';
+import { permissionMiddleware } from '../../../middlewares/permission.middleware';
 
 const router = Router();
 
-router.get('/list', authenticateToken, getUserRoleList);
-router.put('/create', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN]), createUserRole);
-router.post('/update', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN]), updateUserRole);
-router.delete('/delete/:roleId', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN]), deleteUserRole);
+router.get('/list', authenticateToken, permissionMiddleware(), getUserRoleList);
+router.get('/:roleId', authenticateToken, permissionMiddleware(), getRolePermissionList);
+router.post('/create', authenticateToken, permissionMiddleware(), createUserRole);
+router.put('/update/:roleId', authenticateToken, permissionMiddleware(), updateUserRole);
+router.delete('/delete/:roleId', authenticateToken, permissionMiddleware(), deleteUserRole);
 
 export default router;

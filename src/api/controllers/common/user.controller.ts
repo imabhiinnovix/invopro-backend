@@ -9,7 +9,6 @@ import { comparePassword, hashPassword } from '../../../utils/bcrypt.utils';
 import * as authService from '../../../database/services/common/user.service';
 import * as organizationProductSubscriptionService from '../../../database/services/common/organizationProductSubscription.services';
 import { validateUserInput } from '../../../utils/validation.utils';
-import { populate } from 'dotenv';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
