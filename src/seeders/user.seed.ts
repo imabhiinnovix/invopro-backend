@@ -1,130 +1,104 @@
 import User from '../database/models/common/user';
 import UserRole from '../database/models/common/userRole';
+import Organization from '../database/models/common/organization';
+import OrganizationProductSubscription from '../database/models/common/organizationProductSubscription';
 import { hashPassword } from '../utils/bcrypt.utils';
+import { Types } from 'mongoose';
 
-export async function seedUsers(payload) {
-  const reportivixHashedSuperAdminPassword = await hashPassword('superadmin@1234');
-  const reportivixHashedAdminPassword = await hashPassword('admin@1234');
-  const reportivixHashedTestPassword = await hashPassword('test@1234');
+interface UserSeedData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  type: 'superadmin' | 'admin' | 'user';
+  customId?: Types.ObjectId; // optional _id
+}
 
-  // Check if the Super Admin User already exists
-  const existingSuperAdminUser = await User.findById(payload.reportivixSuperAdminUserId);
-  let superAdminRole: any = await UserRole.find({ name: 'Super Admin' });
-  superAdminRole = superAdminRole[0];
+interface OrganizationSeedPayload {
+  organizationId: Types.ObjectId;
+  isMaster: boolean;
+  users: UserSeedData[];
+}
 
-  let adminRole: any = await UserRole.find({ name: 'Admin' });
-  adminRole = adminRole[0];
-  let userRole: any = await UserRole.find({ name: 'User' });
-  userRole = userRole[0];
+export async function seedUsers(payload: OrganizationSeedPayload[]) {
+  const roleMap = new Map<string, any>(); // Cache roles
 
-  if (!existingSuperAdminUser) {
-    const superAdminUser = new User({
-      _id: payload.reportivixSuperAdminUserId,
-      email: 'superadmin@reportivix.com',
-      password: reportivixHashedSuperAdminPassword,
-      firstName: 'Super Admin',
-      lastName: 'User',
-      role: 'super admin',
-      roleIds: [superAdminRole._id!],
-      organizationId: payload.reportivixOrganizationId,
-      lastLogin: null,
+  for (const org of payload) {
+    const orgId = org.organizationId;
+
+    // Fetch all product subscriptions for the org
+    const subscriptions = await OrganizationProductSubscription.find({
+      organizationId: orgId,
       status: 'active',
-      createdAt: new Date('2024-08-07'),
-      updatedAt: new Date('2024-08-07'),
     });
 
-    await superAdminUser.save();
-    console.info('Super Admin created successfully.');
+    const subscriptionIds = subscriptions.map((sub) => sub._id);
+
+    // Create roles for this organization
+    const rolesToCreate = org.isMaster ? ['Super Admin', 'Admin', 'User'] : ['Admin', 'User'];
+
+    for (const roleName of rolesToCreate) {
+      let existingRole = await UserRole.findOne({ name: roleName, organizationId: orgId });
+      if (!existingRole) {
+        existingRole = new UserRole({
+          name: roleName,
+          organizationId: orgId,
+          isSuperUser: roleName === 'Super Admin',
+          status: 'active',
+        });
+        await existingRole.save();
+        console.info(`✅ Role "${roleName}" created for Org ${orgId}`);
+      } else {
+        console.info(`ℹ️ Role "${roleName}" already exists for Org ${orgId}`);
+      }
+      roleMap.set(`${orgId}_${roleName}`, existingRole);
+    }
+
+    // Create users
+    for (const user of org.users) {
+      const existingUser = await User.findOne({ email: user.email });
+      if (existingUser) {
+        console.info(`ℹ️ User already exists: ${user.email}`);
+        continue;
+      }
+
+      const hashedPassword = await hashPassword(user.password);
+
+      const roleKey = `${orgId}_${getRoleName(user.type)}`;
+      const userRole = roleMap.get(roleKey);
+      if (!userRole) {
+        console.warn(`⚠️ Role not found for ${roleKey}`);
+        continue;
+      }
+
+      const newUser = new User({
+        _id: user.customId ? new Types.ObjectId(user.customId) : undefined,
+        email: user.email,
+        password: hashedPassword,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roleIds: [userRole._id],
+        organizationId: orgId,
+        organizationProductSubscriptionIds: subscriptionIds,
+        status: 'active',
+        isVerified: true,
+      });
+
+      await newUser.save();
+      console.info(`✅ Created user: ${user.email}`);
+    }
   }
+}
 
-  // Check if the Admin User already exists
-  const existingAdminUser = await User.findById(payload.reportivixAdminUserId);
-
-  if (!existingAdminUser) {
-    const adminUser = new User({
-      _id: payload.reportivixAdminUserId,
-      email: 'admin@reportivix.com',
-      password: reportivixHashedAdminPassword,
-      firstName: 'Admin',
-      lastName: 'User',
-      role: 'admin',
-      roleIds: [adminRole._id],
-      organizationId: payload.reportivixOrganizationId,
-      lastLogin: null,
-      status: 'active',
-      createdAt: new Date('2024-08-08'),
-      updatedAt: new Date('2024-08-08'),
-    });
-
-    await adminUser.save();
-    console.info('Admin created successfully.');
-  }
-
-  // Check if the Test User already exists
-  const existingTestUser = await User.findById(payload.reportivixTestUserId);
-
-  if (!existingTestUser) {
-    const testUser = new User({
-      _id: payload.reportivixTestUserId,
-      email: 'test@reportivix.com',
-      password: reportivixHashedTestPassword,
-      firstName: 'Test',
-      lastName: 'User',
-      role: 'user',
-      roleIds: [userRole._id],
-      organizationId: payload.reportivixOrganizationId,
-      lastLogin: null,
-      status: 'active',
-      createdAt: new Date('2024-08-09'),
-      updatedAt: new Date('2024-08-09'),
-    });
-
-    await testUser.save();
-    console.info('Test User created successfully.');
-  }
-
-  //sabic user
-  // Check if the Admin User already exists
-  const existingSabicAdminUser = await User.findById(payload.sabicAdminUserId);
-  const sabicHashedAdminPassword = await hashPassword('Sabic@1234');
-  if (!existingSabicAdminUser) {
-    const sabicAdminUser = new User({
-      _id: payload.sabicAdminUserId,
-      email: 'cs.sabic@innovix-labs.com',
-      password: sabicHashedAdminPassword,
-      firstName: 'Sabic',
-      lastName: 'Admin',
-      role: 'admin',
-      roleIds: [adminRole._id],
-      organizationId: payload.sabicOrganizationId,
-      lastLogin: null,
-      status: 'active',
-      createdAt: new Date('2024-08-08'),
-      updatedAt: new Date('2024-08-08'),
-    });
-
-    await sabicAdminUser.save();
-    console.info('Sabic Admin created successfully.');
-  }
-  const existingSabicAdminMahuaUser = await User.findById(payload.mahuaAdminUserId);
-  const sabicHashedAdminMahuaPassword = await hashPassword('Sabic@1234');
-  if (!existingSabicAdminMahuaUser) {
-    const sabicMahuaAdminUser = new User({
-      _id: payload.mahuaAdminUserId,
-      email: 'mahua.dutta@sabic.com',
-      password: sabicHashedAdminMahuaPassword,
-      firstName: 'Mahua',
-      lastName: 'Dutta',
-      role: 'admin',
-      roleIds: [adminRole._id],
-      organizationId: payload.sabicOrganizationId,
-      lastLogin: null,
-      status: 'active',
-      createdAt: new Date('2024-08-08'),
-      updatedAt: new Date('2024-08-08'),
-    });
-
-    await sabicMahuaAdminUser.save();
-    console.info('Sabic Mahua Admin created successfully.');
+// Helper
+function getRoleName(type: 'superadmin' | 'admin' | 'user'): string {
+  switch (type) {
+    case 'superadmin':
+      return 'Super Admin';
+    case 'admin':
+      return 'Admin';
+    case 'user':
+    default:
+      return 'User';
   }
 }

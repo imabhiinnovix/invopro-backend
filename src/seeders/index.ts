@@ -16,7 +16,7 @@ import { seedCustomReports } from './customReport.seed';
 import { seedProducts } from './product.seed';
 import { seedRolesAndPermissions } from './seedRoleAndPermission';
 import { seedPermissions } from './permission.seed';
-import { hardcodedSeedOrganizationProductSubscriptions } from './organizationHasProduct.seed';
+import { createProductSubscription } from './organizationHasProduct.seed';
 
 const payload = {
   reportivixSuperAdminUserId: new mongoose.Types.ObjectId('66b34cbbd40e24fca2e3e312'),
@@ -552,15 +552,98 @@ export async function seedDatabase() {
     const conn = await mongoose.connect(config.MONGO_URI!);
     console.info(`MongoDB Connected: ${conn.connection.host}`);
 
-    await seedOrganizations(payload);
+    await seedOrganizations([
+      {
+        _id: payload.reportivixOrganizationId,
+        name: 'ReportiVix',
+        owner: payload.reportivixSuperAdminUserId,
+        code: 'reportivix',
+        isMaster: true,
+      },
+      {
+        _id: payload.sabicOrganizationId,
+        name: 'SABIC',
+        owner: payload.sabicAdminUserId,
+        code: 'sabic',
+      },
+    ]);
 
     await seedProducts(payload);
 
     await seedPermissions();
 
-    await seedRolesAndPermissions({ organizationId: String(payload.reportivixOrganizationId) });
+    await createProductSubscription([
+      {
+        organizationId: payload.reportivixOrganizationId,
+        productIds: [payload.reportivixProductId, payload.notivixProductId],
+        status: 'active',
+        totalLicenses: 10,
+        durationInMonths: 12,
+      },
+      {
+        organizationId: payload.sabicOrganizationId,
+        productIds: [payload.reportivixProductId, payload.notivixProductId],
+        status: 'active',
+        totalLicenses: 10,
+        durationInMonths: 12,
+      },
+    ]);
 
-    await seedUsers(payload);
+    await seedRolesAndPermissions({ organizationId: [payload.reportivixOrganizationId, payload.sabicOrganizationId] });
+    await seedUsers([
+      {
+        organizationId: payload.reportivixOrganizationId,
+        isMaster: true,
+        users: [
+          {
+            email: 'superadmin@reportivix.com',
+            password: 'superadmin@1234',
+            firstName: 'Super',
+            lastName: 'Admin',
+            type: 'superadmin',
+            customId: payload.reportivixSuperAdminUserId,
+          },
+          {
+            email: 'admin@reportivix.com',
+            password: 'admin@1234',
+            firstName: 'Admin',
+            lastName: 'User',
+            type: 'admin',
+            customId: payload.reportivixAdminUserId,
+          },
+          {
+            email: 'test@reportivix.com',
+            password: 'test@1234',
+            firstName: 'Test',
+            lastName: 'User',
+            type: 'user',
+            customId: payload.reportivixTestUserId,
+          },
+        ],
+      },
+      {
+        organizationId: payload.sabicOrganizationId,
+        isMaster: false,
+        users: [
+          {
+            email: 'admin@sabic.com',
+            password: 'Sabic@1234',
+            firstName: 'Sabic',
+            lastName: 'Admin',
+            type: 'admin',
+            customId: payload.sabicAdminUserId,
+          },
+          {
+            email: 'mahua.dutta@sabic.com',
+            password: 'Sabic@1234',
+            firstName: 'Mahua',
+            lastName: 'Dutta',
+            type: 'admin',
+            customId: payload.mahuaAdminUserId,
+          },
+        ],
+      },
+    ]);
 
     console.info('\n====> Seeding organizations <====');
 
@@ -619,7 +702,6 @@ export async function seedDatabase() {
     console.info('\n====> Seeding Operators <====');
     await seedOperators();
 
-    await hardcodedSeedOrganizationProductSubscriptions();
     // console.info('\n====> Seeding Widget Theme <====');
     // await seedWidgetTheme(payload);
 

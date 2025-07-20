@@ -1,49 +1,44 @@
 import { Types } from 'mongoose';
-import Product from '../database/models/common/product';
 import OrganizationProductSubscription from '../database/models/common/organizationProductSubscription';
 
-export async function hardcodedSeedOrganizationProductSubscriptions() {
-  const organizationIds = [
-    new Types.ObjectId('66de96d3548d06560e2931cb'),
-    new Types.ObjectId('64d229e76e4d3f1d2f9f3e8c'),
-  ];
+interface ProductSubscriptionPayload {
+  organizationId: Types.ObjectId;
+  productIds: Types.ObjectId[];
+  totalLicenses: number;
+  durationInMonths?: number;
+  status?: 'active' | 'inactive';
+}
 
-  const productCodes = ['reportivix', 'notivix'];
-  const products = await Product.find({ code: { $in: productCodes } });
+export async function createProductSubscription(payloads: ProductSubscriptionPayload[]) {
+  for (const payload of payloads) {
+    const { organizationId, productIds, totalLicenses, durationInMonths = 12, status = 'active' } = payload;
 
-  const productMap = new Map(products.map((p) => [p.code, p._id]));
+    for (const productIdStr of productIds) {
+      const productId = new Types.ObjectId(productIdStr);
 
-  const licenseDurationInMonths = 12;
-  const totalLicenses = 20;
-
-  for (const orgId of organizationIds) {
-    for (const productName of productCodes) {
-      const productId = productMap.get(productName);
-      if (!productId) {
-        console.warn(`Product "${productName}" not found.`);
-        continue;
-      }
-
+      // Check if the subscription already exists
       const exists = await OrganizationProductSubscription.findOne({
-        organizationId: orgId,
+        organizationId: new Types.ObjectId(organizationId),
         productId,
       });
 
-      if (!exists) {
-        const licenseExpiresAt = new Date();
-        licenseExpiresAt.setMonth(licenseExpiresAt.getMonth() + licenseDurationInMonths);
-        await OrganizationProductSubscription.create({
-          organizationId: orgId,
-          productId,
-          status: 'active',
-          totalLicenses,
-          licenseExpiresAt: licenseExpiresAt,
-        });
-
-        console.info(`Seeded: Org ${orgId} with product ${productName}`);
-      } else {
-        console.info(`Already exists: Org ${orgId} with product ${productName}`);
+      if (exists) {
+        console.info(`ℹ️ Already exists: Org ${organizationId} with product ${productIdStr}`);
+        continue;
       }
+
+      const licenseExpiresAt = new Date();
+      licenseExpiresAt.setMonth(licenseExpiresAt.getMonth() + durationInMonths);
+
+      await OrganizationProductSubscription.create({
+        organizationId: new Types.ObjectId(organizationId),
+        productId,
+        totalLicenses,
+        licenseExpiresAt,
+        status,
+      });
+
+      console.info(`✅ Seeded: Org ${organizationId} with product ${productIdStr}`);
     }
   }
 }

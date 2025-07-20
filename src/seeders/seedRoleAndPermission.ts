@@ -1,7 +1,8 @@
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import Permission from '../database/models/common/permissionModel'; // adjust path if needed
 import UserRole from '../database/models/common/userRole';
 import RoleHasPermission from '../database/models/common/roleHasPermissionModel';
+import Organization from '../database/models/common/organization';
 
 const defaultPermissionsUser = [
   'GET:/common/user/get-current-user',
@@ -55,70 +56,79 @@ const defaultRolesAndPermissions = [
 ];
 
 interface SeedPayload {
-  organizationId: string;
+  organizationId: Types.ObjectId[];
 }
 
 export async function seedRolesAndPermissions(payload: SeedPayload) {
   const { organizationId } = payload;
 
-  if (!organizationId) {
-    throw new Error('organizationId is required to seed roles and permissions');
+  if (!organizationId || !Array.isArray(organizationId)) {
+    throw new Error('organizationId array is required to seed roles and permissions');
   }
 
-  for (const roleItem of defaultRolesAndPermissions) {
-    const { roleName, isSuperUser, permissionsList } = roleItem;
+  for (const orgId of organizationId) {
+    const organization = await Organization.findById(orgId);
 
-    // Check if role exists
-    let role = await UserRole.findOne({
-      organizationId,
-      name: roleName,
-    });
-
-    if (!role) {
-      role = new UserRole({
-        organizationId,
-        name: roleName,
-        isSuperUser,
-        status: 'active',
-      });
-
-      await role.save();
-      console.log(`✅ Role "${roleName}" created.`);
-    } else {
-      console.log(`ℹ️ Role "${roleName}" already exists.`);
+    if (!organization) {
+      console.warn(`⚠️ Organization not found: ${orgId}`);
+      continue;
     }
 
-    // Resolve permissionIds from method:resourceId
-    for (const methodResource of permissionsList) {
-      const [method, ...rest] = methodResource.split(':');
-      const resourceId = rest.join(':');
+    for (const roleItem of defaultRolesAndPermissions) {
+      const { roleName, isSuperUser, permissionsList } = roleItem;
 
-      const permissionDoc = await Permission.findOne({
-        method,
-        resourceId,
-      });
-
-      if (!permissionDoc) {
-        console.warn(`⚠️ Permission not found: ${method}:${resourceId}`);
+      // ❌ Only allow Super Admin creation for master organizations
+      if (isSuperUser && !organization.isMaster) {
+        console.info(`⏭️ Skipping Super Admin role for non-master organization: ${organization.name}`);
         continue;
       }
 
-      // Check if role already has this permission
-      const existing = await RoleHasPermission.findOne({
-        roleId: role._id,
-        permissionId: permissionDoc._id,
+      let role = await UserRole.findOne({
+        organizationId: orgId,
+        name: roleName,
       });
 
-      if (!existing) {
-        await new RoleHasPermission({
+      if (!role) {
+        role = new UserRole({
+          organizationId: orgId,
+          name: roleName,
+          isSuperUser,
+          status: 'active',
+        });
+
+        await role.save();
+        console.log(`✅ Role "${roleName}" created for org "${organization.name}"`);
+      } else {
+        console.log(`ℹ️ Role "${roleName}" already exists for org "${organization.name}"`);
+      }
+
+      for (const methodResource of permissionsList) {
+        const [method, ...rest] = methodResource.split(':');
+        const resourceId = rest.join(':');
+
+        const permissionDoc = await Permission.findOne({ method, resourceId });
+
+        if (!permissionDoc) {
+          console.warn(`⚠️ Permission not found: ${method}:${resourceId}`);
+          continue;
+        }
+
+        const existing = await RoleHasPermission.findOne({
           roleId: role._id,
           permissionId: permissionDoc._id,
-          status: 'active',
-        }).save();
+        });
 
-        console.log(`✅ Permission assigned to ${roleName}: ${method}:${resourceId}`);
-      } else {
-        console.log(`ℹ️ Permission already assigned to ${roleName}: ${method}:${resourceId}`);
+        if (!existing) {
+          await new RoleHasPermission({
+            roleId: role._id,
+            permissionId: permissionDoc._id,
+            status: 'active',
+          }).save();
+
+          console.log(`✅ Permission assigned to ${roleName}: ${method}:${resourceId}`);
+        } else {
+          console.log(`ℹ️ Permission already assigned to ${roleName}: ${method}:${resourceId}`);
+        }
       }
     }
   }
