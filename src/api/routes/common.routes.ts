@@ -17,7 +17,7 @@ router.use('/organization', organizationRoutes);
 router.use('/support', supportRoutes);
 router.use('/permission', permissionRoutes);
 router.use('/role', userRoleRoutes);
-router.use('/product', organizationProductSubscriptionRoutes);
-router.use('/organizationProduct', productRoutes);
+router.use('/product', productRoutes);
+router.use('/product-subscription', organizationProductSubscriptionRoutes);
 
 export default router;

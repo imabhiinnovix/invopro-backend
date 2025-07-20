@@ -11,6 +11,7 @@ export interface IPermission extends Document {
   resourceType: string;
   createdAt: Date;
   updatedAt: Date;
+  isSuperUser: boolean;
 }
 
 // Define schema
@@ -45,6 +46,10 @@ const permissionSchema = new Schema<IPermission>(
     productId: {
       type: Schema.Types.ObjectId,
       ref: 'product',
+    },
+    isSuperUser: {
+      type: Boolean,
+      default: false,
     },
   },
   {

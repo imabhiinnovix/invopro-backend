@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { PopulateOptions } from 'mongoose';
 import Organization from '../../models/common/organization';
 
 export const createOrganization = async (organizationData: any) => {
@@ -23,6 +24,22 @@ export const getOrganizationById = async (organizationId: string) => {
   }
 };
 
+export const findOrganizationById = async (id: string, populateFields: (string | PopulateOptions)[] = []) => {
+  try {
+    let query: any = Organization.findById(id);
+
+    // Normalize and apply population
+    populateFields.forEach((field) => {
+      const pop: PopulateOptions = typeof field === 'string' ? { path: field } : field;
+      query = query.populate(pop);
+    });
+
+    const organization = await query;
+    return organization;
+  } catch (err) {
+    throw err;
+  }
+};
 export const updateOrganization = async (organizationId: string, organizationData: any) => {
   try {
     const organization = await Organization.findByIdAndUpdate(organizationId, organizationData, { new: true });

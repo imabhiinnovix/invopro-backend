@@ -19,23 +19,21 @@ const defaultPermissionsAdmin = [
   'GET:/common/permission/list',
   'GET:/common/role/list',
   'GET:/common/role/:roleId',
-  'POST:/common/role',
+  'POST:/common/role/create',
   'PUT:/common/role/update/:roleId',
   'DELETE:/common/role/delete/:roleId',
+  'GET:/common/product-subscription/list',
+  'GET:/common/organization/get-current-organization',
 ];
 
 const defaultPermissionsPrimarySuperAdmin = [
   ...defaultPermissionsAdmin,
-  'POST:/organization/create',
-  'GET:/organization/list',
-  'GET:/organization/:id',
-  'PUT:/organization/update/:id',
-  'DELETE:/organization/delete',
-  'POST:/user/permission/create',
-  'PUT:/user/permission/update/:id',
-  'DELETE:/user/permission/delete/:id',
-  'GET:/user/permission/list',
-  'GET:/user/permission/:roleId',
+  'GET:/common/product/list',
+  'POST:/common/organization/create',
+  'PUT:/common/organization/update/:organizationId',
+  'DELETE:/common/organization/delete/:organizationId',
+  'GET:/common/organization/list',
+  'GET:/common/organization/:organizationId',
 ];
 
 const defaultRolesAndPermissions = [

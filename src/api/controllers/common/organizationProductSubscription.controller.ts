@@ -4,8 +4,12 @@ import { Request, Response, NextFunction } from 'express';
 
 export const getOrganizationProductSubscription = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search, paginate = 'false' } = req.query;
-    const { userId, organizationId } = req.user;
+    const { search, organizationId: paramOrgId } = req.query;
+    let { userId, organizationId, isSuperUser } = req.user;
+
+    if (isSuperUser && paramOrgId) {
+      organizationId = paramOrgId;
+    }
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 

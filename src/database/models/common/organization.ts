@@ -19,7 +19,7 @@ const organizationSchema = new Schema<IOrganization>(
   {
     name: { type: String, required: true },
     description: { type: String },
-    owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    owner: { type: Schema.Types.ObjectId, ref: 'user', required: true },
     domain: { type: String },
     code: { type: String, required: true, unique: true },
     isMaster: { type: Boolean, default: false },

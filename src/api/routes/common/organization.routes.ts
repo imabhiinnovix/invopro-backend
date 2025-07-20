@@ -6,35 +6,23 @@ import {
   updateOrganization,
   deleteOrganization,
   getOrganizationList,
-  updateOrganizationStatus,
 } from '../../controllers/common/organization.controller';
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
-import { roleAuthorization } from '../../../middlewares/role.middleware';
-import { RoleId } from '../../../enums/role.enum';
+
+import { permissionMiddleware } from '../../../middlewares/permission.middleware';
 
 const router = Router();
 
-// Admin
-router.get('/list', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN]), getOrganizationList);
+router.get('/list', authenticateToken, permissionMiddleware(), getOrganizationList);
 
-router.get(
-  '/:organizationId',
-  authenticateToken,
-  roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
-  getOrganizationById
-);
+router.post('/create', authenticateToken, permissionMiddleware(), createOrganization);
 
-router.post('/create', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN]), createOrganization);
+router.put('/update/:organizationId', authenticateToken, permissionMiddleware(), updateOrganization);
 
-router.post('/update/:organizationId', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN]), updateOrganization);
+router.delete('/delete/:organizationId', authenticateToken, permissionMiddleware(), deleteOrganization);
 
-router.post(
-  '/updateStatus/:organizationId',
-  authenticateToken,
-  roleAuthorization([RoleId.SUPER_ADMIN]),
-  updateOrganizationStatus
-);
+router.get('/get-current-organization', authenticateToken, getOrganizationById);
 
-router.post('/delete/:organizationId', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN]), deleteOrganization);
+router.get('/:organizationId', authenticateToken, permissionMiddleware(), getOrganizationById);
 
 export default router;

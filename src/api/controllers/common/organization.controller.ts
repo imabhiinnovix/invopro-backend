@@ -3,17 +3,18 @@ import { Request, Response, NextFunction } from 'express';
 import * as organizationService from '../../../database/services/common/organization.service';
 import * as widgetThemeService from '../../../database/services/reportivix/widgetTheme.service';
 import * as organizationProductSubscription from '../../../database/services/common/organizationProductSubscription.services';
+import { populate } from 'dotenv';
+import { stat } from 'fs';
 
 export const createOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, description, domain, code, productSubscriptions } = req.body;
-    const { userId } = req.user;
+    const { name, description, domain, code, productSubscriptions, owner } = req.body;
 
     // 1. Create the organization
     const organization = await organizationService.createOrganization({
       name,
       description,
-      owner: userId,
+      owner,
       domain,
       code,
     });
@@ -54,9 +55,16 @@ export const createOrganization = async (req: Request, res: Response, next: Next
 };
 export const getOrganizationById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { organizationId } = req.params;
+    const { organizationId: paramOrgId } = req.params;
+    let { organizationId, isSuperUser } = req.user;
 
-    const data = await organizationService.getOrganizationById(organizationId);
+    if (isSuperUser && paramOrgId) {
+      organizationId = paramOrgId;
+    }
+
+    const data = await organizationService.findOrganizationById(organizationId, [
+      { path: 'owner', select: 'firstName lastName' },
+    ]);
 
     res.status(200).json({
       success: true,
@@ -69,7 +77,7 @@ export const getOrganizationById = async (req: Request, res: Response, next: Nex
 };
 export const updateOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, description, domain, productSubscriptions } = req.body;
+    const { name, description, domain, productSubscriptions, owner, status } = req.body;
     const organizationId = req.params.organizationId;
 
     // 1. Update organization
@@ -77,6 +85,8 @@ export const updateOrganization = async (req: Request, res: Response, next: Next
       ...(name && { name }),
       ...(description && { description }),
       ...(domain && { domain }),
+      ...(owner && { owner }),
+      ...(status && { status }),
     });
 
     // 2. Delete previous product subscriptions
@@ -100,32 +110,6 @@ export const updateOrganization = async (req: Request, res: Response, next: Next
   }
 };
 
-export const updateOrganizationStatus = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { organizationId } = req.params;
-    const { status } = req.body;
-
-    const organization = await organizationService.getOrganizationById(organizationId);
-
-    if (status === 'active') {
-      organization.status = 'active';
-    } else if (status === 'inactive') {
-      organization.status = 'inactive';
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid status value provided.',
-      });
-    }
-
-    await organization.save();
-
-    return res.status(200).json({ success: true, message: 'Organization status updated successfully' });
-  } catch (err) {
-    next(err);
-  }
-};
-
 export const deleteOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { organizationId } = req.params;
@@ -144,25 +128,19 @@ export const deleteOrganization = async (req: Request, res: Response, next: Next
 
 export const getOrganizationList = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search, paginate = 'false' } = req.query;
+    const { search } = req.query;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
     const query: any = {};
     if (search) query.name = { $regex: search, $options: 'i' };
 
-    let result: any = {};
-    if (paginate) {
-      result = await organizationService.getOrganizationList({
-        query,
-        page,
-        limit,
-      });
-    } else {
-      result = await organizationService.getOrganizationList({
-        query,
-      });
-    }
+    const result = await organizationService.getOrganizationList({
+      query,
+      page,
+      limit,
+      populate: [{ path: 'owner', select: 'firstName lastName' }],
+    });
 
     res.status(200).json({
       success: true,
