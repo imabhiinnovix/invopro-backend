@@ -73,3 +73,45 @@ export const createPermission = async (req: Request, res: Response, next: NextFu
     next(err);
   }
 };
+
+export const updatePermission = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { permissionId } = req.params;
+    const { name, method, resourceId, resourceType, status = 'active' } = req.body;
+    const { organizationId } = req.user;
+    const objResourceId = new Types.ObjectId(resourceId);
+    const error = validatePermissionInput({
+      name,
+      method,
+      resourceId: objResourceId,
+      resourceType,
+      status,
+      organizationId,
+    });
+    if (error) return res.status(400).json({ success: false, message: error });
+
+    const permission = await permissionService.updatePermission(permissionId, {
+      name,
+      method,
+      resourceId: objResourceId,
+      resourceType,
+      status,
+      organizationId: new Types.ObjectId(organizationId),
+    });
+    res.status(201).json({ success: true, data: permission });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deletePermission = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { permissionId } = req.params;
+    const { organizationId } = req.user;
+
+    await permissionService.deletePermission(permissionId, organizationId);
+    res.status(200).json({ success: true, message: 'Permission deleted successfully,' });
+  } catch (err) {
+    next(err);
+  }
+};

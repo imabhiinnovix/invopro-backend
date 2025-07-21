@@ -68,6 +68,22 @@ const permissions = [
     isSuperUser: false,
   },
   {
+    name: 'Update Permission',
+    method: 'PUT',
+    resourceId: '/common/permission/update/:permissionId',
+    extraOptions: {},
+    resourceType: 'Permission',
+    isSuperUser: false,
+  },
+  {
+    name: 'Delete Permission',
+    method: 'DELETE',
+    resourceId: '/common/permission/delete/:permissionId',
+    extraOptions: {},
+    resourceType: 'Permission',
+    isSuperUser: false,
+  },
+  {
     name: 'List Role',
     method: 'GET',
     resourceId: '/common/role/list',

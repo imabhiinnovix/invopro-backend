@@ -5,6 +5,7 @@ import * as widgetThemeService from '../../../database/services/reportivix/widge
 import * as organizationProductSubscription from '../../../database/services/common/organizationProductSubscription.services';
 import { populate } from 'dotenv';
 import { stat } from 'fs';
+import { Types } from 'mongoose';
 
 export const createOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -129,10 +130,17 @@ export const deleteOrganization = async (req: Request, res: Response, next: Next
 export const getOrganizationList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { search } = req.query;
+
+    let { organizationId, isSuperUser } = req.user;
+
+    const query: any = {};
+    if (!isSuperUser) {
+      query['_id'] = new Types.ObjectId(organizationId);
+    }
+
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
-    const query: any = {};
     if (search) query.name = { $regex: search, $options: 'i' };
 
     const result = await organizationService.getOrganizationList({
