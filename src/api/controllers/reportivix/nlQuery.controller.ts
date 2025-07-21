@@ -1,18 +1,18 @@
 import { createPartFromUri, createUserContent, GoogleGenAI } from '@google/genai';
 import e, { Request, Response, NextFunction } from 'express';
-import { getDataSourceListWithAggregation } from '../../../database/services/reportivix/dataSource.services';
+import { getDataSourceListWithAggregation } from '../../../database/services/common/dataSource.services';
 import mongoose from 'mongoose';
 import config from '../../../config';
 
-import * as dataSourceService from '../../../database/services/reportivix/dataSource.services';
-import * as operatorService from '../../../database/services/reportivix/operator.service';
-import * as widgetTypeService from '../../../database/services/reportivix/widgetType.service';
-import { getWidgetChartData } from './dashboard.controller';
+import * as dataSourceService from '../../../database/services/common/dataSource.services';
+import * as operatorService from '../../../database/services/common/operator.service';
+import * as widgetTypeService from '../../../database/services/common/widgetType.service';
+import { getWidgetChartData } from '../common/dashboard.controller';
 import * as cacheService from '../../../database/services/reportivix/aiCache.service';
-import * as fileService from '../../../database/services/reportivix/file.services';
+import * as fileService from '../../../database/services/common/file.services';
 import { DateTime } from 'luxon';
 import { handleFileUpload } from '../../../utils/gemni.helper';
-import { findEntityById } from '../../../database/services/reportivix/entity.services';
+import { findEntityById } from '../../../database/services/common/entity.services';
 const ObjectId = mongoose.Types.ObjectId;
 
 const genAI = new GoogleGenAI({ apiKey: config.GEMINI_API_KEY });

@@ -1,8 +1,8 @@
 import { Types, Model, Document } from 'mongoose';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from './common.utils';
 import createDefaultDataSourceVersionModel from '../database/models/defaultImportLogDataSourceVersionModel';
-import { getDataSourcePopulate } from '../database/services/reportivix/dataSource.services';
-import { findEntityById } from '../database/services/reportivix/entity.services';
+import { getDataSourcePopulate } from '../database/services/common/dataSource.services';
+import { findEntityById } from '../database/services/common/entity.services';
 
 const modelCache = new Map<string, Model<Document>>();
 /**

@@ -19,7 +19,7 @@ import {
 } from '../../database/services/reportivix/monthlyipReport.services';
 
 import { CustomReportModelAccessReturnType } from '../../database/models/reportivix/customReportModels';
-import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/reportivix/dataSourceVersion.controller';
+import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/common/dataSourceVersion.controller';
 import {
   processReportHeaders,
   transformDataByEntityMapping,

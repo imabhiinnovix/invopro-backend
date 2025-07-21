@@ -6,7 +6,7 @@ import {
   updateWidgetAppearance,
   deleteWidgetAppearance,
   getWidgetAppearanceById,
-} from '../../controllers/reportivix/widgetAppearance.controller';
+} from '../../controllers/common/widgetAppearance.controller';
 
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
 

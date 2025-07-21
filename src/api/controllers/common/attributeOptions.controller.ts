@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import * as attributeOptionService from '../../../database/services/reportivix/attributeOption.services';
+import * as attributeOptionService from '../../../database/services/common/attributeOption.services';
 
 export const createAttribute = async (req: Request, res: Response, next: NextFunction) => {
   try {

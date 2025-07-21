@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import * as dataImportErrorServices from '../../../database/services/reportivix/dataImportError.services';
+import * as dataImportErrorServices from '../../../database/services/common/dataImportError.services';
 
 export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
   req: Request,

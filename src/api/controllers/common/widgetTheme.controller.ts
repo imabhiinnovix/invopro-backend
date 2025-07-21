@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import * as widgetThemeService from '../../../database/services/reportivix/widgetTheme.service';
+import * as widgetThemeService from '../../../database/services/common/widgetTheme.service';
 
 export const createWidgetTheme = async (req: Request, res: Response, next: NextFunction) => {
   try {

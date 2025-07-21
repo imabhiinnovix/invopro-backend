@@ -10,7 +10,7 @@ import * as authService from '../../../database/services/common/user.service';
 import * as organizationProductSubscriptionService from '../../../database/services/common/organizationProductSubscription.services';
 import { validateUserInput } from '../../../utils/validation.utils';
 import * as roleHasPermissionService from '../../../database/services/common/roleHasPermission.services';
-import * as dataSourceService from '../../../database/services/reportivix/dataSource.services';
+import * as dataSourceService from '../../../database/services/common/dataSource.services';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {

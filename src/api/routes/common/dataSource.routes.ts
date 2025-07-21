@@ -10,7 +10,7 @@ import {
   getWidgetDataByFilter,
   listDataSource,
   updateDataSource,
-} from '../../controllers/reportivix/dataSource.controller';
+} from '../../controllers/common/dataSource.controller';
 
 const router = Router();
 

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 
 // import { Types } from 'mongoose';
 // import * as dashboardWidgetdService from '../../database/services/dashboardWidget.services';
-import * as widgetAppearanceService from '../../../database/services/reportivix/widgetAppearance.service';
+import * as widgetAppearanceService from '../../../database/services/common/widgetAppearance.service';
 
 export const getAllWidgetAppearance = async (req: Request, res: Response, next: NextFunction) => {
   try {

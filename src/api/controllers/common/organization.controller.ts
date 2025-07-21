@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from 'express';
 import * as organizationService from '../../../database/services/common/organization.service';
-import * as widgetThemeService from '../../../database/services/reportivix/widgetTheme.service';
+import * as widgetThemeService from '../../../database/services/common/widgetTheme.service';
 import * as organizationProductSubscription from '../../../database/services/common/organizationProductSubscription.services';
 import { populate } from 'dotenv';
 import { stat } from 'fs';

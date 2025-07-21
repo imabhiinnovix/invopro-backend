@@ -8,7 +8,7 @@ import {
   getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue,
   listAllAvailableDataSourceVersionValue,
   listDataSourceVersion,
-} from '../../controllers/reportivix/dataSourceVersion.controller';
+} from '../../controllers/common/dataSourceVersion.controller';
 
 const router = Router();
 

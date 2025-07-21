@@ -2,12 +2,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 
-import * as dataSourceService from '../../../database/services/reportivix/dataSource.services';
-import * as defaultDataSourceVersionValue from '../../../database/services/reportivix/defaultDataSourceVersionValue.services';
-import * as entityService from '../../../database/services/reportivix/entity.services';
+import * as dataSourceService from '../../../database/services/common/dataSource.services';
+import * as defaultDataSourceVersionValue from '../../../database/services/common/defaultDataSourceVersionValue.services';
+import * as entityService from '../../../database/services/common/entity.services';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
 import createDefaultDataSourceVersionModel from '../../../database/models/reportivix/defaultDataSourceVersionModel';
-import * as dataSourceVersionService from '../../../database/services/reportivix/dataSourceVersion.services';
+import * as dataSourceVersionService from '../../../database/services/common/dataSourceVersion.services';
 import { DataSourceVersion } from '../../../types/widget.types';
 import { processFieldConditions } from '../../../utils/conditionProcessor';
 import * as cacheService from '../../../database/services/reportivix/aiCache.service';
@@ -71,7 +71,6 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
   }
 };
 
-
 export const updateDataSource = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
@@ -105,7 +104,6 @@ export const updateDataSource = async (req: Request, res: Response, next: NextFu
     next(err);
   }
 };
-
 
 export const checkDataSourceCodeAvailableOrNot = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -216,7 +214,6 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
     next(err);
   }
 };
-
 
 export const getDataSourceById = async (req: Request, res: Response, next: NextFunction) => {
   try {

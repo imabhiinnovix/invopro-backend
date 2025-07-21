@@ -12,7 +12,7 @@ import * as reportRequestService from '../../database/services/reportivix/report
 import { CustomReportModelAccessReturnType } from '../../database/models/reportivix/customReportModels';
 import { ReportHeaders } from '../../utils/common.type';
 import { processReportHeaders } from '../../utils/common.report';
-import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/reportivix/dataSourceVersion.controller';
+import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/common/dataSourceVersion.controller';
 import {
   getCurrentYearNewApplicationFiled,
   getFormattedDataToProcessReportHeaders,

@@ -1,13 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import createDefaultImportLogDataSourceVersionModel from '../models/defaultImportLogDataSourceVersionModel';
-import createDefaultDataSourceVersionModel from '../models/defaultImportLogDataSourceVersionModel';
+import createDefaultImportLogDataSourceVersionModel from '../../models/defaultImportLogDataSourceVersionModel';
+import createDefaultDataSourceVersionModel from '../../models/defaultImportLogDataSourceVersionModel';
 import { Model, Document, AnyBulkWriteOperation } from 'mongoose';
 
-export const updateDataSourceVersionValue = async (
-  schemaName: string,
-  data: any[],
-  uniqueKeys: string[][]
-) => {
+export const updateDataSourceVersionValue = async (schemaName: string, data: any[], uniqueKeys: string[][]) => {
   const Model = createDefaultDataSourceVersionModel(schemaName) as Model<Document>;
 
   if (!Array.isArray(uniqueKeys) || uniqueKeys.length === 0) {

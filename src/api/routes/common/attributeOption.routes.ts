@@ -6,7 +6,7 @@ import {
   createAttribute,
   getAttributeOptionById,
   listAttribute,
-} from '../../controllers/reportivix/attributeOptions.controller';
+} from '../../controllers/common/attributeOptions.controller';
 
 const router = Router();
 

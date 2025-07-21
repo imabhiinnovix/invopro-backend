@@ -13,7 +13,7 @@ import {
   updateDashboard,
   updateWidget,
   selectDashboardTheme,
-} from '../../controllers/reportivix/dashboard.controller';
+} from '../../controllers/common/dashboard.controller';
 
 const router = Router();
 

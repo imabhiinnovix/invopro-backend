@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
-import { createShare, getUsers, deleteShare } from '../../controllers/reportivix/dashboardShare.controller';
+import { createShare, getUsers, deleteShare } from '../../controllers/common/dashboardShare.controller';
 
 const router = Router();
 

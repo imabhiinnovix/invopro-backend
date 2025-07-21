@@ -8,17 +8,17 @@ import permissionRoutes from './common/permission.routes';
 import userRoleRoutes from './common/userRole.routes';
 import organizationProductSubscriptionRoutes from './common/organizationProductSubscription.routes';
 import productRoutes from './common/product.routes';
-import dataSourceVersion from './reportivix/dataSourceVersion.routes';
-import dataImportErrorRoutes from './reportivix/dataImportError.routes';
-import dashBoardRoutes from './reportivix/dashboard.routes';
-import widgetTypeRoutes from './reportivix/widgetType.routes';
-import operatorRoutes from './reportivix/operator.routes';
-import widgetThemeRoutes from './reportivix/widgetTheme.routes';
-import dashboardShareRoutes from './reportivix/dashboardShare.routes';
-import entityRoutes from './reportivix/entity.routes';
-import attributeRoutes from './reportivix/attributeOption.routes';
-import fileRoutes from './reportivix/file.routes';
-import dataSourceRoutes from './reportivix/dataSource.routes';
+import dataSourceVersion from './common/dataSourceVersion.routes';
+import dataImportErrorRoutes from './common/dataImportError.routes';
+import dashBoardRoutes from './common/dashboard.routes';
+import widgetTypeRoutes from './common/widgetType.routes';
+import operatorRoutes from './common/operator.routes';
+import widgetThemeRoutes from './common/widgetTheme.routes';
+import dashboardShareRoutes from './common/dashboardShare.routes';
+import entityRoutes from './common/entity.routes';
+import attributeRoutes from './common/attributeOption.routes';
+import fileRoutes from './common/file.routes';
+import dataSourceRoutes from './common/dataSource.routes';
 
 const router = Router();
 

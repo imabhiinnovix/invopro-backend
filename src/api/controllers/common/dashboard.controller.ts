@@ -2,13 +2,13 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose, { Types } from 'mongoose';
 
-import * as dashboardService from '../../../database/services/reportivix/dashboard.services';
-import * as dashboardWidgetdService from '../../../database/services/reportivix/dashboardWidget.services';
-import * as dataSourceVersionService from '../../../database/services/reportivix/dataSourceVersion.services';
-import * as entityService from '../../../database/services/reportivix/entity.services';
-import * as dataSourceService from '../../../database/services/reportivix/dataSource.services';
-import * as widgetTypeService from '../../../database/services/reportivix/widgetType.service';
-import * as widgetThemeService from '../../../database/services/reportivix/widgetTheme.service';
+import * as dashboardService from '../../../database/services/common/dashboard.services';
+import * as dashboardWidgetdService from '../../../database/services/common/dashboardWidget.services';
+import * as dataSourceVersionService from '../../../database/services/common/dataSourceVersion.services';
+import * as entityService from '../../../database/services/common/entity.services';
+import * as dataSourceService from '../../../database/services/common/dataSource.services';
+import * as widgetTypeService from '../../../database/services/common/widgetType.service';
+import * as widgetThemeService from '../../../database/services/common/widgetTheme.service';
 // import * as widgetAppearanceService from '../../database/services/widgetAppearance.service';
 
 import { buildAggregationPipeline } from '../../../utils/aggregationPipeline';

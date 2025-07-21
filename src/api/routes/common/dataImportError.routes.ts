@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
-import { listDataSourceVersionErrorBasedOnDataSourceVersionId } from '../../controllers/reportivix/dataImportError.controller';
+import { listDataSourceVersionErrorBasedOnDataSourceVersionId } from '../../controllers/common/dataImportError.controller';
 
 const router = Router();
 

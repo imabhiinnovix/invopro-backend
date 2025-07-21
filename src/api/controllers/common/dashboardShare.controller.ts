@@ -2,8 +2,8 @@
 import { Request, Response, NextFunction } from 'express';
 
 import * as userService from '../../../database/services/common/user.service';
-import * as dashboardService from '../../../database/services/reportivix/dashboard.services';
-import * as dashboardShareService from '../../../database/services/reportivix/dashboardShare.service';
+import * as dashboardService from '../../../database/services/common/dashboard.services';
+import * as dashboardShareService from '../../../database/services/common/dashboardShare.service';
 
 export const createShare = async (req: Request, res: Response, next: NextFunction) => {
   try {

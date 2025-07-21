@@ -4,7 +4,7 @@ import {
   getOperatorById,
   getOperators,
   updateOperator,
-} from '../../controllers/reportivix/operator.controller';
+} from '../../controllers/common/operator.controller';
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
 
 const router = Router();

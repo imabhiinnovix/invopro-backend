@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import * as entityService from '../../../database/services/reportivix/entity.services';
+import * as entityService from '../../../database/services/common/entity.services';
 
 export const createEntity = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -99,7 +99,7 @@ export const getEntityById = async (req: Request, res: Response, next: NextFunct
   try {
     const entityData = await entityService.findEntityById(req.params.entityId);
     const entityFieldOptions = await entityService.getEntityFieldOptions(req.params.entityId);
-      // Convert to plain object with type assertion so TypeScript allows adding custom props
+    // Convert to plain object with type assertion so TypeScript allows adding custom props
     const entityObject = (entityData?.toObject ? entityData.toObject() : entityData) as any;
 
     // Append the custom field

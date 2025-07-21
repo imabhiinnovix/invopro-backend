@@ -1,8 +1,8 @@
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from './common.utils';
 import { generateExcelReport } from './excel.utils';
-import * as dataSourceVersionValueService from '../database/services/reportivix/defaultDataSourceVersionValue.services';
+import * as dataSourceVersionValueService from '../database/services/common/defaultDataSourceVersionValue.services';
 import * as reportRequestService from '../database/services/reportivix/reportRequest.services';
-import * as entityService from '../database/services/reportivix/entity.services';
+import * as entityService from '../database/services/common/entity.services';
 
 export function processReportHeaders({
   data,

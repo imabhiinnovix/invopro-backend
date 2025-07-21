@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from 'express';
 import { promises as fsPromises } from 'fs';
-import * as dataSourceVersionService from '../../../database/services/reportivix/dataSourceVersion.services';
-import * as dataSourceVersionValueService from '../../../database/services/reportivix/defaultDataSourceVersionValue.services';
-import * as importLogDataSourceVersionValueService from '../../../database/services/defaultImportLogDataSourceVersionValue.services';
-import * as dataSourceService from '../../../database/services/reportivix/dataSource.services';
-import * as attributeOptionService from '../../../database/services/reportivix/attributeOption.services';
-import * as dataImportErrorServices from '../../../database/services/reportivix/dataImportError.services';
+import * as dataSourceVersionService from '../../../database/services/common/dataSourceVersion.services';
+import * as dataSourceVersionValueService from '../../../database/services/common/defaultDataSourceVersionValue.services';
+import * as importLogDataSourceVersionValueService from '../../../database/services/common/defaultImportLogDataSourceVersionValue.services';
+import * as dataSourceService from '../../../database/services/common/dataSource.services';
+import * as attributeOptionService from '../../../database/services/common/attributeOption.services';
+import * as dataImportErrorServices from '../../../database/services/common/dataImportError.services';
 import {
   getImportLogSchemaNameBasedOnVersionCodeAndOrgCode,
   getSchemaNameBasedOnVersionCodeAndOrgCode,
@@ -16,7 +16,7 @@ import path from 'path';
 import { excelDateToJSDate, readExcelFile } from '../../../utils/excel.utils';
 import { debounceManager } from '../../../utils/debounce.utils';
 import * as customReportServices from '../../../database/services/reportivix/customReport.services';
-import { generateCustomReportsFunction } from './customReport.controller';
+import { generateCustomReportsFunction } from '../reportivix/customReport.controller';
 import * as reportRequestService from '../../../database/services/reportivix/reportRequest.services';
 import { DateTime } from 'luxon';
 import mongoose from 'mongoose';

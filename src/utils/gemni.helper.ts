@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import config from '../config';
 import path from 'path';
-import * as fileService from '../database/services/reportivix/file.services';
+import * as fileService from '../database/services/common/file.services';
 
 interface FileDocument {
   _id: string;

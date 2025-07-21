@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextFunction, Request, Response } from 'express';
-import * as widgetTypeService from '../../../database/services/reportivix/widgetType.service';
+import * as widgetTypeService from '../../../database/services/common/widgetType.service';
 import config from '../../../config';
 
 export const createWidget = async (req: Request, res: Response, next: NextFunction) => {

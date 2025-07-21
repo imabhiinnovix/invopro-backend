@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from 'express';
 
-import * as operatorService from '../../../database/services/reportivix/operator.service';
+import * as operatorService from '../../../database/services/common/operator.service';
 
 export const createOperator = async (req: Request, res: Response, next: NextFunction) => {
   try {

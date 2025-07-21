@@ -6,7 +6,7 @@ import {
   deleteWidgetType,
   getWidgetTypeById,
   getWidgets,
-} from '../../controllers/reportivix/widgetType.controller';
+} from '../../controllers/common/widgetType.controller';
 import { roleAuthorization } from '../../../middlewares/role.middleware';
 import { RoleId } from '../../../enums/role.enum';
 

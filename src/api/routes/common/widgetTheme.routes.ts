@@ -7,7 +7,7 @@ import {
   deleteWidgetTheme,
   duplicateWidgetTheme,
   // selectThemeForDashboard,
-} from '../../controllers/reportivix/widgetTheme.controller';
+} from '../../controllers/common/widgetTheme.controller';
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
 
 const router = Router();

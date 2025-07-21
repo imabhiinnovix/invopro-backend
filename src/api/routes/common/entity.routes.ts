@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
-import { createEntity, getEntityById, listEntity, updateEntity } from '../../controllers/reportivix/entity.controller';
+import { createEntity, getEntityById, listEntity, updateEntity } from '../../controllers/common/entity.controller';
 
 const router = Router();
 

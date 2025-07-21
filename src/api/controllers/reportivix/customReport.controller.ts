@@ -1,22 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
 
 import * as customReportServices from '../../../database/services/reportivix/customReport.services';
-import * as dataSourceVersionServices from '../../../database/services/reportivix/dataSourceVersion.services';
+import * as dataSourceVersionServices from '../../../database/services/common/dataSourceVersion.services';
 import * as reportRequestService from '../../../database/services/reportivix/reportRequest.services';
-import * as dataSourceService from '../../../database/services/reportivix/dataSource.services';
+import * as dataSourceService from '../../../database/services/common/dataSource.services';
 
 import { DateTime } from 'luxon';
 import { generateMonthlyIpReport } from '../../../functions/reports/monthlyip';
 import path from 'path';
 
-import * as dataSourceVersionService from '../../../database/services/reportivix/dataSourceVersion.services';
+import * as dataSourceVersionService from '../../../database/services/common/dataSourceVersion.services';
 import { generateSupplementalIpReport } from '../../../functions/reports/supplementalip';
 import { CustomReportModelAccess } from '../../../database/models/reportivix/customReportModels';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
-import * as dataSourceVersionValueService from '../../../database/services/reportivix/defaultDataSourceVersionValue.services';
+import * as dataSourceVersionValueService from '../../../database/services/common/defaultDataSourceVersionValue.services';
 import mongoose from 'mongoose';
 import { generateCustomReportBasedOnReportRequestId, transformFunctionsMap } from '../../../utils/common.report';
-import * as entityService from '../../../database/services/reportivix/entity.services';
+import * as entityService from '../../../database/services/common/entity.services';
 
 const ObjectId = mongoose.Types.ObjectId;
 
