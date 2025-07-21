@@ -1,7 +1,5 @@
 import { Router } from 'express';
 
-import { RoleId } from '../../../enums/role.enum';
-import { roleAuthorization } from '../../../middlewares/role.middleware';
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
 import {
   runNaturalLanguageAggregation,
@@ -10,17 +8,7 @@ import {
 
 const router = Router();
 
-router.get(
-  '/getData',
-  authenticateToken,
-  roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
-  runNaturalLanguageAggregation
-);
-router.get(
-  '/insights',
-  authenticateToken,
-  roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
-  runNaturalLanguageInsights
-);
+router.get('/getData', authenticateToken, runNaturalLanguageAggregation);
+router.get('/insights', authenticateToken, runNaturalLanguageInsights);
 
 export default router;

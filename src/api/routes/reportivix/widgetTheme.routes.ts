@@ -9,8 +9,6 @@ import {
   // selectThemeForDashboard,
 } from '../../controllers/reportivix/widgetTheme.controller';
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
-import { roleAuthorization } from '../../../middlewares/role.middleware';
-import { RoleId } from '../../../enums/role.enum';
 
 const router = Router();
 
@@ -18,27 +16,12 @@ const router = Router();
 router.get('/list', authenticateToken, getAllWidgetThemes);
 router.get('/:widgetThemeId', authenticateToken, getWidgetThemeById);
 
-router.post('/create', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), createWidgetTheme);
-router.post(
-  '/duplicate/:widgetThemeId',
-  authenticateToken,
-  roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
-  duplicateWidgetTheme
-);
+router.post('/create', authenticateToken, createWidgetTheme);
+router.post('/duplicate/:widgetThemeId', authenticateToken, duplicateWidgetTheme);
 
-router.post(
-  '/update/:widgetThemeId',
-  authenticateToken,
-  roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
-  updateWidgetTheme
-);
+router.post('/update/:widgetThemeId', authenticateToken, updateWidgetTheme);
 
-router.post(
-  '/delete/:widgetThemeId',
-  authenticateToken,
-  roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
-  deleteWidgetTheme
-);
+router.post('/delete/:widgetThemeId', authenticateToken, deleteWidgetTheme);
 
 // Theme selection route (all authenticated users)
 // router.post('/select', authenticateToken, selectThemeForDashboard);

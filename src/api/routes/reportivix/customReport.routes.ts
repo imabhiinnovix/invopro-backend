@@ -1,7 +1,5 @@
 import { Router } from 'express';
 
-import { RoleId } from '../../../enums/role.enum';
-import { roleAuthorization } from '../../../middlewares/role.middleware';
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
 import {
   downloadReport,
@@ -41,18 +39,8 @@ router.get('/customReportDesignData/:customReportId', authenticateToken, getCust
 router.get('/reportDetails/:reportRequestId', authenticateToken, getReportRequestDetails);
 router.get('/reportData/:dataSourceId', authenticateToken, getCustomReportDataBasedOnDataSourcedIdAndVersionValueRange);
 
-router.get(
-  '/listSettings',
-  authenticateToken,
-  roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
-  getCustomReportSettings
-);
+router.get('/listSettings', authenticateToken, getCustomReportSettings);
 
-router.post(
-  '/updateSettings/:customReportId',
-  authenticateToken,
-  roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
-  updateCustomReportSettings
-);
+router.post('/updateSettings/:customReportId', authenticateToken, updateCustomReportSettings);
 
 export default router;

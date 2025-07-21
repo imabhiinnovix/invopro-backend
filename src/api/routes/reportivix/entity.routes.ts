@@ -1,15 +1,13 @@
 import { Router } from 'express';
 
-import { RoleId } from '../../../enums/role.enum';
-import { roleAuthorization } from '../../../middlewares/role.middleware';
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
 import { createEntity, getEntityById, listEntity, updateEntity } from '../../controllers/reportivix/entity.controller';
 
 const router = Router();
 
-router.post('/create', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), createEntity);
-router.put('/update/:entityId', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), updateEntity);
+router.post('/create', authenticateToken, createEntity);
+router.put('/update/:entityId', authenticateToken, updateEntity);
 router.get('/list', authenticateToken, listEntity);
-router.get('/:entityId', authenticateToken, roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]), getEntityById);
+router.get('/:entityId', authenticateToken, getEntityById);
 
 export default router;
