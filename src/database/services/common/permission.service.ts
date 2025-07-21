@@ -35,14 +35,33 @@ export const getPermissionList = async ({
 };
 
 export const createPermission = async (data: any) => {
-  const exists = await Permission.findOne({
-    method: data.method,
-    resourceId: data.resourceId,
-    organizationId: data.organizationId,
+  const orgId = data.organizationId;
+
+  const existing = await Permission.findOne({
+    $or: [
+      {
+        method: data.method,
+        resourceId: data.resourceId,
+        organizationId: orgId,
+      },
+      {
+        name: data.name,
+        $or: [{ organizationId: orgId }, { organizationId: { $exists: false } }],
+      },
+    ],
   });
-  if (exists) {
-    throw new Error('Permission with this method and resource already exists.');
+
+  if (existing) {
+    // Decide whether it's a method/resourceId conflict or name conflict
+    if (existing.method === data.method && existing.resourceId === data.resourceId) {
+      throw new Error('Permission with this method and resource already exists.');
+    }
+
+    if (existing.name === data.name) {
+      throw new Error('Permission name already exists.');
+    }
   }
+
   const permission = new Permission(data);
   return await permission.save();
 };
@@ -51,27 +70,40 @@ export const updatePermission = async (id: string, data: any) => {
   const existing = await Permission.findById(id);
   if (!existing) throw new Error('Permission not found.');
 
-  // If updating status only (inactive -> active), handle separately
-  const isReactivating =
-    existing.status === 'inactive' &&
-    data.status === 'active' &&
-    (existing.method !== data.method ||
-      existing.resourceId !== data.resourceId ||
-      !existing.organizationId.equals(data.organizationId));
+  const orgId = data.organizationId;
+  if (String(existing.organizationId) != orgId) {
+    throw new Error('You are not allowed to update the permission.');
+  }
 
+  // Check if name is changing and is already used
+  if (data.name && data.name !== existing.name) {
+    const nameConflict = await Permission.findOne({
+      _id: { $ne: id }, // exclude self
+      name: data.name,
+      organizationId: { $or: [{ organizationId: orgId }, { organizationId: { $exists: false } }] },
+    });
+
+    if (nameConflict) {
+      throw new Error('Permission name already exists.');
+    }
+  }
+
+  // Determine if key fields changed
   const isChangingKeyFields =
     existing.method !== data.method ||
     existing.resourceId !== data.resourceId ||
-    !existing.organizationId.equals(data.organizationId);
+    !existing.organizationId.equals(orgId);
 
-  // If method/resource/orgId are changing or reactivation is happening,
-  // ensure no other active permission with same method/resource/orgId exists
+  // Determine if we are reactivating a previously inactive permission
+  const isReactivating = existing.status === 'inactive' && data.status === 'active' && isChangingKeyFields;
+
+  // If changing key fields or reactivating, check for conflict
   if ((isChangingKeyFields || isReactivating) && data.status !== 'inactive') {
     const conflict = await Permission.findOne({
-      _id: { $ne: id }, // exclude self
+      _id: { $ne: id },
       method: data.method,
       resourceId: data.resourceId,
-      organizationId: data.organizationId,
+      organizationId: orgId,
       status: 'active',
     });
 
