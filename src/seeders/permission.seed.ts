@@ -60,6 +60,14 @@ const permissions = [
     isSuperUser: false,
   },
   {
+    name: 'Create Permission',
+    method: 'POST',
+    resourceId: '/common/permission/create',
+    extraOptions: {},
+    resourceType: 'Permission',
+    isSuperUser: false,
+  },
+  {
     name: 'List Role',
     method: 'GET',
     resourceId: '/common/role/list',

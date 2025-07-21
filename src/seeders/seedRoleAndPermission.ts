@@ -18,6 +18,7 @@ const defaultPermissionsAdmin = [
   'PUT:/common/user/update/:userId',
   'DELETE:/common/user/delete/:userId',
   'GET:/common/permission/list',
+  'POST:/common/permission/create',
   'GET:/common/role/list',
   'GET:/common/role/:roleId',
   'POST:/common/role/create',

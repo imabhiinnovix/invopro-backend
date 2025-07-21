@@ -10,6 +10,7 @@ import * as authService from '../../../database/services/common/user.service';
 import * as organizationProductSubscriptionService from '../../../database/services/common/organizationProductSubscription.services';
 import { validateUserInput } from '../../../utils/validation.utils';
 import * as roleHasPermissionService from '../../../database/services/common/roleHasPermission.services';
+import * as dataSourceService from '../../../database/services/reportivix/dataSource.services';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -186,7 +187,23 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
 
     user = user.toObject();
     const permissionDetails = await roleHasPermissionService.getPermissionsByRoleIds(roleIds);
-    user['permissionIds'] = permissionDetails;
+
+    const dataSourceIds = permissionDetails
+      .filter((p) => p.resourceType === 'Data Source')
+      .map((p) => new Types.ObjectId(p.resourceId));
+
+    const dataSourceMap = await dataSourceService.getDataSourcesByIds(dataSourceIds);
+    const enrichedPermissions = permissionDetails.map((p) => {
+      if (p.resourceType === 'Data Source') {
+        return {
+          ...p,
+          resourceId: dataSourceMap[p.resourceId] || null,
+        };
+      }
+      return p;
+    });
+
+    user['permissionIds'] = enrichedPermissions;
     res.status(200).json({
       success: true,
       message: 'User fetched successfully',

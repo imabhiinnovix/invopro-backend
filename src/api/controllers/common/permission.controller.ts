@@ -3,7 +3,7 @@ import * as permissionService from '../../../database/services/common/permission
 import { Types } from 'mongoose';
 const VALID_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
 const VALID_STATUS = ['active', 'inactive'];
-const VALID_RESOURCE_TYPES = ['Datasource'];
+const VALID_RESOURCE_TYPES = ['Data Source'];
 export const getPermissionList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { search }: any = req.query;
@@ -45,7 +45,7 @@ const validatePermissionInput = (data: any): string | null => {
   return null;
 };
 
-export const create = async (req: Request, res: Response, next: NextFunction) => {
+export const createPermission = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, method, resourceId, resourceType, status = 'active' } = req.body;
     const { organizationId } = req.user;
@@ -60,7 +60,14 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
     });
     if (error) return res.status(400).json({ success: false, message: error });
 
-    const permission = await permissionService.createPermission(req.body);
+    const permission = await permissionService.createPermission({
+      name,
+      method,
+      resourceId,
+      resourceType,
+      status,
+      organizationId,
+    });
     res.status(201).json({ success: true, data: permission });
   } catch (err) {
     next(err);
