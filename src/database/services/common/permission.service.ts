@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Types } from 'mongoose';
 import Permission from '../../models/common/permissionModel';
 
 export const getPermissionList = async ({

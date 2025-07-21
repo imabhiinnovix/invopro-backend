@@ -9,6 +9,7 @@ import { comparePassword, hashPassword } from '../../../utils/bcrypt.utils';
 import * as authService from '../../../database/services/common/user.service';
 import * as organizationProductSubscriptionService from '../../../database/services/common/organizationProductSubscription.services';
 import { validateUserInput } from '../../../utils/validation.utils';
+import * as roleHasPermissionService from '../../../database/services/common/roleHasPermission.services';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -170,7 +171,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
   try {
     const { userId } = req.user;
 
-    const user = await userService.findUserById(userId, [
+    let user = await userService.findUserById(userId, [
       { path: 'organizationId', select: 'id name code status' },
       'roleIds',
       {
@@ -178,6 +179,14 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
         populate: { path: 'productId', select: 'name code status' }, // 👈 nested population
       },
     ]);
+
+    const roleIds = Array.isArray(user.roleIds)
+      ? user.roleIds.map((role: any) => (typeof role === 'object' && role !== null ? role._id : role))
+      : [];
+
+    user = user.toObject();
+    const permissionDetails = await roleHasPermissionService.getPermissionsByRoleIds(roleIds);
+    user['permissionIds'] = permissionDetails;
     res.status(200).json({
       success: true,
       message: 'User fetched successfully',

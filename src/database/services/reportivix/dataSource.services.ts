@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Types } from 'mongoose';
 import DataSource from '../../models/reportivix/dataSource';
 
 export const createDataSourcce = async (dataSourceData: any) => {
@@ -134,4 +135,16 @@ export const findDataSourceById = async (id: string, populate = true) => {
   } catch (err) {
     throw err;
   }
+};
+
+export const getDataSourcesByIds = async (ids: Types.ObjectId[]) => {
+  const dataSources = await DataSource.find({ _id: { $in: ids } }).lean();
+
+  // Create a lookup map for fast access
+  const dataSourceMap: Record<string, any> = {};
+  for (const ds of dataSources) {
+    dataSourceMap[ds._id.toString()] = ds;
+  }
+
+  return dataSourceMap;
 };
