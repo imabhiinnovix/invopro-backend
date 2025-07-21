@@ -5,10 +5,11 @@ import {
   runNaturalLanguageAggregation,
   runNaturalLanguageInsights,
 } from '../../controllers/reportivix/nlQuery.controller';
+import { permissionMiddleware } from '../../../middlewares/permission.middleware';
 
 const router = Router();
 
-router.get('/getData', authenticateToken, runNaturalLanguageAggregation);
-router.get('/insights', authenticateToken, runNaturalLanguageInsights);
+router.get('/getData', authenticateToken, permissionMiddleware(), runNaturalLanguageAggregation);
+router.get('/insights', authenticateToken, permissionMiddleware(), runNaturalLanguageInsights);
 
 export default router;

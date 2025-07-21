@@ -14,33 +14,45 @@ import {
   getCustomReportSettings,
   updateCustomReportSettings,
 } from '../../controllers/reportivix/customReport.controller';
+import { permissionMiddleware } from '../../../middlewares/permission.middleware';
 
 const router = Router();
 
-router.get('/list', authenticateToken, listCustomReports);
-router.get('/listReportRequest', authenticateToken, listReportRequest);
-router.get('/getVersionValue', authenticateToken, getReportVersionValuesBasedOnReportIdAndVersionValue);
-
-router.post(
-  '/generate',
+router.get('/list', authenticateToken, permissionMiddleware(), listCustomReports);
+router.get('/listReportRequest', authenticateToken, permissionMiddleware(), listReportRequest);
+router.get(
+  '/getVersionValue',
   authenticateToken,
-  // roleAuthorization([RoleId.SUPER_ADMIN, RoleId.ADMIN]),
-  generateCustomReports
+  permissionMiddleware(),
+  getReportVersionValuesBasedOnReportIdAndVersionValue
 );
 
-router.get('/download/:reportRequestId', authenticateToken, downloadReport);
+router.post('/generate', authenticateToken, permissionMiddleware(), generateCustomReports);
+
+router.get('/download/:reportRequestId', authenticateToken, permissionMiddleware(), downloadReport);
 router.get(
   '/reportDataOnDataSourceVersionId/:dataSourceVersionId',
   authenticateToken,
+  permissionMiddleware(),
   getReportDataBasedOnDataSourceVersionId
 );
 
-router.get('/customReportDesignData/:customReportId', authenticateToken, getCustomReportDesignDetailsBasedOnReportId);
-router.get('/reportDetails/:reportRequestId', authenticateToken, getReportRequestDetails);
-router.get('/reportData/:dataSourceId', authenticateToken, getCustomReportDataBasedOnDataSourcedIdAndVersionValueRange);
+router.get(
+  '/customReportDesignData/:customReportId',
+  authenticateToken,
+  permissionMiddleware(),
+  getCustomReportDesignDetailsBasedOnReportId
+);
+router.get('/reportDetails/:reportRequestId', authenticateToken, permissionMiddleware(), getReportRequestDetails);
+router.get(
+  '/reportData/:dataSourceId',
+  authenticateToken,
+  permissionMiddleware(),
+  getCustomReportDataBasedOnDataSourcedIdAndVersionValueRange
+);
 
-router.get('/listSettings', authenticateToken, getCustomReportSettings);
+router.get('/listSettings', authenticateToken, permissionMiddleware(), getCustomReportSettings);
 
-router.post('/updateSettings/:customReportId', authenticateToken, updateCustomReportSettings);
+router.post('/updateSettings/:customReportId', authenticateToken, permissionMiddleware(), updateCustomReportSettings);
 
 export default router;

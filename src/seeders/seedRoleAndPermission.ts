@@ -38,6 +38,18 @@ const defaultPermissionsUser = [
   'GET:/common/dashboardShare/list/:dashboardId',
   'POST:/common/dashboardShare/create',
   'POST:/common/dashboardShare/:dashboardShareId',
+  'GET:/reportivix/customReports/list',
+  'GET:/reportivix/customReports/listReportRequest',
+  'GET:/reportivix/customReports/getVersionValue',
+  'POST:/reportivix/customReports/generate',
+  'GET:/reportivix/customReports/download/:reportRequestId',
+  'GET:/reportivix/customReports/reportDataOnDataSourceVersionId/:dataSourceVersionId',
+  'GET:/reportivix/customReports/customReportDesignData/:customReportId',
+  'GET:/reportivix/customReports/reportDetails/:reportRequestId',
+  'GET:/reportivix/customReports/reportData/:dataSourceId',
+  'GET:/reportivix/customReports/listSettings',
+  'GET:/reportivix/nlQuery/getData',
+  'GET:/reportivix/nlQuery/insights',
 ];
 
 const defaultPermissionsAdmin = [
@@ -77,6 +89,7 @@ const defaultPermissionsAdmin = [
   'POST:/common/widgetTheme/duplicate/:widgetThemeId',
   'POST:/common/widgetTheme/update/:widgetThemeId',
   'POST:/common/widgetTheme/delete/:widgetThemeId',
+  'POST:/reportivix/customReports/updateSettings/:customReportId',
 ];
 
 const defaultPermissionsPrimarySuperAdmin = [
