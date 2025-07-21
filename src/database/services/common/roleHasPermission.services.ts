@@ -47,7 +47,7 @@ export const getPermissionsByRoleIds = async (roleIds: Types.ObjectId[]) => {
     {
       $project: {
         _id: 0,
-        name: '$_id.method',
+        name: '$_id.name',
         method: '$_id.method',
         resourceId: '$_id.resourceId',
         resourceType: '$_id.resourceType',

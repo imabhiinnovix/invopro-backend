@@ -32,3 +32,31 @@ export const getPermissionList = async ({
     throw err;
   }
 };
+
+export const createPermission = async (data: any) => {
+  const exists = await Permission.findOne({
+    method: data.method,
+    resourceId: data.resourceId,
+  });
+  if (exists) {
+    throw new Error('Permission with this method and resource already exists.');
+  }
+  const permission = new Permission(data);
+  return await permission.save();
+};
+
+export const getAllPermissions = async () => {
+  return await Permission.find();
+};
+
+export const getPermissionById = async (id: string) => {
+  return await Permission.findById(id);
+};
+
+export const updatePermission = async (id: string, data: any) => {
+  return await Permission.findByIdAndUpdate(id, data, { new: true });
+};
+
+export const deletePermission = async (id: string) => {
+  return await Permission.findByIdAndDelete(id);
+};
