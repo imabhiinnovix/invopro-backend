@@ -3,10 +3,15 @@ import { Request, Response, NextFunction } from 'express';
 import { promises as fsPromises } from 'fs';
 import * as dataSourceVersionService from '../../../database/services/reportivix/dataSourceVersion.services';
 import * as dataSourceVersionValueService from '../../../database/services/reportivix/defaultDataSourceVersionValue.services';
+import * as importLogDataSourceVersionValueService from '../../../database/services/defaultImportLogDataSourceVersionValue.services';
 import * as dataSourceService from '../../../database/services/reportivix/dataSource.services';
 import * as attributeOptionService from '../../../database/services/reportivix/attributeOption.services';
 import * as dataImportErrorServices from '../../../database/services/reportivix/dataImportError.services';
-import { getSchemaNameBasedOnVersionCodeAndOrgCode, sleep } from '../../../utils/common.utils';
+import {
+  getImportLogSchemaNameBasedOnVersionCodeAndOrgCode,
+  getSchemaNameBasedOnVersionCodeAndOrgCode,
+  sleep,
+} from '../../../utils/common.utils';
 import path from 'path';
 import { excelDateToJSDate, readExcelFile } from '../../../utils/excel.utils';
 import { debounceManager } from '../../../utils/debounce.utils';
@@ -16,6 +21,8 @@ import * as reportRequestService from '../../../database/services/reportivix/rep
 import { DateTime } from 'luxon';
 import mongoose from 'mongoose';
 import { version } from 'os';
+import { getEntityAttribute, getModelForEntity } from '../../../utils/entity.utils';
+import { Types } from 'mongoose';
 const ObjectId = mongoose.Types.ObjectId;
 
 async function validateAndConvert({
@@ -89,6 +96,7 @@ async function validateAndConvert({
   }
   return { isValid: true, convertedValue: value };
 }
+
 async function validateFileData({
   fileData,
   attributes,
@@ -98,6 +106,7 @@ async function validateFileData({
   entityId,
   dataSourceVersionId,
   versionValue,
+  uniqueAttributeRules = [],
 }: {
   fileData: any[];
   attributes: any[];
@@ -107,38 +116,73 @@ async function validateFileData({
   entityId: any;
   dataSourceVersionId: string;
   versionValue: string;
+  uniqueAttributeRules?: Types.ObjectId[][];
 }) {
-  try {
-    const errors: any[] = [];
+  const errors: any[] = [];
+  const newRowData: any[] = [];
+  const seenCompositeKeys = new Set<string>();
 
-    const newRowData: any[] = [];
+  // Create a quick lookup map from ObjectId to attribute name
+  const attributeIdToNameMap = attributes.reduce(
+    (acc, attr) => {
+      acc[attr._id.toString()] = attr.name;
+      return acc;
+    },
+    {} as Record<string, string>
+  );
 
-    for (const [index, row] of fileData.entries()) {
-      const newRow = { dataSourceId, entityId, dataSourceVersionId, versionValue, rowData: {} };
+  for (const [index, row] of fileData.entries()) {
+    const newRow = { dataSourceId, entityId, dataSourceVersionId, versionValue, rowData: {}, isErrorLog: 0 };
 
-      for (const attr of attributes) {
-        const attrName = attr.name;
-        // const fileKeyArray = reversedMapping[attrName];
-        // if (fileKeyArray?.length === 1) {
-        const fileKey = mapping[attrName];
-        let value = row[fileKey];
-        if (typeof value === 'object' && value != null) {
-          value = value.text;
-        }
-        // Required field validation
-        if (attr.required === 'Mandatory' && (value === undefined || value === null || value === '')) {
-          errors.push({
-            entityId: entityId,
-            dataSourceId: dataSourceId,
-            dataSourceVersionId: dataSourceVersionId,
-            rowNumber: index + 1,
-            fileAttributeName: fileKey,
-            attributeName: attrName,
-            errorType: 'Not Found',
-            errorCode: '404',
-            errorMessage: `Error: Row ${index + 1} - The attribute "${attrName}" is required but is missing.`,
+    for (const attr of attributes) {
+      const attrName = attr.name;
+      const fileKey = mapping[attrName];
+      let value = row[fileKey];
+
+      if (typeof value === 'object' && value != null) {
+        value = value.text;
+      }
+      newRow.rowData[attrName] = value;
+      if (attr.required === 'Mandatory' && (value === undefined || value === null || value === '')) {
+        errors.push({
+          entityId: entityId,
+          dataSourceId: dataSourceId,
+          dataSourceVersionId: dataSourceVersionId,
+          rowNumber: index + 1,
+          fileAttributeName: fileKey,
+          attributeName: attrName,
+          errorType: 'Not Found',
+          errorCode: '404',
+          errorMessage: `Error: Row ${index + 1} - The attribute "${attrName}" is required but is missing.`,
+        });
+        newRow.isErrorLog = 1;
+      } else if (value !== undefined && value != null && value) {
+        if (attr.type === 'reference' && attr.referenceEntitySetting?.refEntityId) {
+          const refEntityId = attr.referenceEntitySetting.refEntityId;
+          const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
+          const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
+          const RefModel = await getModelForEntity(refEntityId);
+          const referencedDoc = await RefModel.findOne({
+            [`rowData.${refEntityField.name}`]: { $regex: `^${value}$`, $options: 'i' },
           });
-        } else if (value !== undefined && value != null && value) {
+          if (!referencedDoc) {
+            errors.push({
+              entityId: entityId,
+              dataSourceId: dataSourceId,
+              dataSourceVersionId: dataSourceVersionId,
+              rowNumber: index + 1,
+              fileAttributeName: fileKey,
+              fileAttributeValue: value,
+              attributeName: attrName,
+              errorType: 'Reference Error',
+              errorCode: '404',
+              errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value}, but it could not be resolved from the reference entity for the attribute ${attrName}.`,
+            });
+            newRow.isErrorLog = 1;
+          } else {
+            newRow.rowData[attrName] = referencedDoc._id;
+          }
+        } else {
           const { isValid, convertedValue, attributeOptionValue } = await validateAndConvert({
             value,
             type: attr.type,
@@ -174,23 +218,59 @@ async function validateFileData({
                 errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value} of type ${typeof value}, but a value of type ${attr.type} was expected for the settings attribute ${attrName}.`,
               });
             }
+            newRow.isErrorLog = 1;
           } else {
             newRow.rowData[attrName] = convertedValue;
           }
         }
       }
+    }
+    // Unique Rule Check (including fallback inside each rule)
+    if (Array.isArray(uniqueAttributeRules) && uniqueAttributeRules.length > 0) {
+      const compositeKeyParts: string[] = [];
 
-      newRowData.push(newRow);
+      for (const rule of uniqueAttributeRules) {
+        let selectedVal = '';
+
+        for (const attrId of rule) {
+          const attrName = attributeIdToNameMap[attrId.toString()];
+          if (!attrName) continue;
+
+          const val = newRow.rowData[attrName];
+          if (val !== undefined && val !== null && `${val}`.trim() !== '') {
+            selectedVal = `${val}`.toLowerCase(); // normalize for comparison
+            break; // fallback logic: take first non-empty
+          }
+        }
+
+        compositeKeyParts.push(selectedVal);
+      }
+
+      const compositeKey = compositeKeyParts.join('|');
+
+      if (seenCompositeKeys.has(compositeKey)) {
+        errors.push({
+          entityId,
+          dataSourceId,
+          dataSourceVersionId,
+          rowNumber: index + 1,
+          errorType: 'Duplicate Error',
+          errorCode: '403',
+          errorMessage: `Error: Row ${index + 1} - Duplicate combination found for unique keys: ${compositeKey}.`,
+        });
+        newRow.isErrorLog = 1;
+      } else {
+        seenCompositeKeys.add(compositeKey);
+      }
     }
 
-    return {
-      errors,
-      newRowData,
-    };
-  } catch (e) {
-    console.log('Error in validateFileData', e);
-    throw e;
+    newRowData.push(newRow);
   }
+
+  return {
+    errors,
+    newRowData,
+  };
 }
 
 export async function createDataSourceVersion(req: Request, res: Response, next: NextFunction) {
@@ -218,6 +298,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
 
       await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
       await fsPromises.rename(filePath, newFilePath);
+
       if (fileExtension && ['xlsx', 'xls'].includes(fileExtension)) {
         const existingVersionData =
           await dataSourceVersionService.getDataSourceVersionBasedOnDataSourceIdAndVersionValueAndVersionName(
@@ -256,6 +337,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
               const entityDetails = dataSourceDetails.entityId as any;
               const attributes = entityDetails?.attributes || [];
               const versionValueData = versionValue;
+
               const validatedData = await validateFileData({
                 fileData,
                 attributes,
@@ -265,24 +347,46 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
                 dataSourceId: dataSourceId,
                 dataSourceVersionId: dataSourceVersion._id as string,
                 entityId: dataSourceDetails.entityId._id,
+                uniqueAttributeRules: dataSourceDetails.uniqueAttributeRules,
               });
 
               if (validatedData.errors.length > 0) {
                 await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
                   status: 'failed',
                 });
-
+                const schemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+                  orgCode,
+                  versionCode: dataSourceDetails.code,
+                });
                 await dataImportErrorServices.createManyDataImportError(validatedData.errors);
+                await importLogDataSourceVersionValueService.createImportLogDataSourceVersionValue(
+                  schemaName,
+                  validatedData.newRowData
+                );
               } else {
                 const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
                   orgCode,
                   versionCode: dataSourceDetails.code,
                 });
-                await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, validatedData.newRowData);
+                if (dataSourceDetails.versionType == 'constant') {
+                  await dataSourceVersionValueService.updateDataSourceVersionValue(
+                    schemaName,
+                    validatedData.newRowData,
+                    attributes,
+                    dataSourceDetails.uniqueAttributeRules || []
+                  );
+                } else {
+                  await dataSourceVersionValueService.createDataSourceVersionValue(
+                    schemaName,
+                    validatedData.newRowData
+                  );
+                }
+
                 await dataSourceVersionService.updateDataSourceVersions({
                   query: { dataSourceId, versionValue },
                   updateFields: { isCurrent: false },
                 });
+
                 await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
                   status: 'completed',
                   isCurrent: true,
@@ -728,56 +832,75 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
   next: NextFunction
 ) => {
   try {
-    const { dataSourceId, versionValue, page, limit } = req.query as {
+    const { dataSourceId, versionValue, page, limit, sort, filters } = req.query as {
       dataSourceId: string;
       versionValue: string;
-      page: string;
-      limit: string;
+      page?: string;
+      limit?: string;
+      sort?: string;
+      filters?: string;
     };
 
     const pageNumber = page ? parseInt(page, 10) : 1;
     const limitNumber = limit ? parseInt(limit, 10) : 10;
-    const { orgCode } = req?.user;
+    const { orgCode } = req.user;
+
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
-    if (dataSourceDetails) {
-      const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
-        query: { dataSourceId: dataSourceId, versionValue: versionValue, isCurrent: true },
-      });
+    if (!dataSourceDetails) {
+      return res.status(404).json({ success: false, message: 'Data source not found.' });
+    }
 
-      if (dataSourceVersionDetails && dataSourceVersionDetails.data && dataSourceVersionDetails.data.length > 0) {
-        const dataSourceVersionDetail = dataSourceVersionDetails.data[0];
-        const dataSourceVersionId = dataSourceVersionDetail._id;
-        const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
-          orgCode: orgCode,
-          versionCode: dataSourceDetails.code,
-        });
+    const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
+      query: { dataSourceId, versionValue, isCurrent: true },
+    });
 
-        const query = { dataSourceVersionId: dataSourceVersionId };
-
-        const dataSourceVersionData = await dataSourceVersionValueService.getDataSourceVersionValue({
-          schemaName,
-          query,
-          page: pageNumber,
-          limit: limitNumber,
-        });
-        return res.status(200).json({
-          success: true,
-          message: 'Version data has been successfully retrieved.',
-          data: dataSourceVersionData.data,
-          totalCount: dataSourceVersionData.totalCount,
-        });
-      }
+    if (!dataSourceVersionDetails?.data?.length) {
       return res.status(200).json({
         success: true,
         message: 'Version data has been successfully retrieved.',
         data: [],
         totalCount: 0,
       });
-    } else {
-      return res.status(404).json({ success: false, message: 'Data source not found.' });
     }
+
+    const dataSourceVersionId = dataSourceVersionDetails.data[0]._id;
+    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSourceDetails.code,
+    });
+
+    const parsedSort = sort ? JSON.parse(sort) : {};
+    const parsedFilters = filters ? JSON.parse(filters) : {};
+
+    const query = { dataSourceVersionId };
+
+    const result = await dataSourceVersionValueService.getDataSourceVersionValueV1({
+      schemaName,
+      query,
+      select: '',
+      page: pageNumber,
+      limit: limitNumber,
+      sort: parsedSort,
+      filters: parsedFilters,
+      entityId: dataSourceDetails.entityId,
+    });
+    const data = result?.data ?? [];
+    const totalCount = result?.totalCount ?? 0;
+
+    return res.status(200).json({
+      success: true,
+      message: 'Version data has been successfully retrieved.',
+      data,
+      totalCount,
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(totalCount / limitNumber),
+        totalRecords: totalCount,
+      },
+    });
   } catch (e) {
-    console.log('Error in getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue.', e);
+    console.log('Error in getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue:', e);
     next(e);
   }
 };

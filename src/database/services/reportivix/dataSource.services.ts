@@ -129,6 +129,23 @@ export const getDataSource = async (query: any) => {
   }
 };
 
+export const getDataSourcePopulate = async (query: any, populate: any) => {
+  try {
+    let dataSourceQuery:any = DataSource.findOne(query);
+    if (populate && Array.isArray(populate)) {
+      populate.forEach((field) => {
+        dataSourceQuery = dataSourceQuery.populate(field);
+      });
+    }
+
+    // Now await the final query execution
+    const dataSource = await dataSourceQuery.lean().exec();
+    return dataSource;
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const findDataSourceById = async (id: string, populate = true) => {
   try {
     return await DataSource.findById(id).populate('entityId');
