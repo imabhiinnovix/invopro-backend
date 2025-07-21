@@ -6,12 +6,13 @@ import {
   updateOperator,
 } from '../../controllers/common/operator.controller';
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
+import { permissionMiddleware } from '../../../middlewares/permission.middleware';
 
 const router = Router();
 
-router.get('/get/:operatorId', authenticateToken, getOperatorById);
-router.post('/list', authenticateToken, getOperators);
-router.post('/update/:operatorId', authenticateToken, updateOperator);
-router.post('/create', authenticateToken, createOperator);
+router.get('/get/:operatorId', authenticateToken, permissionMiddleware(), getOperatorById);
+router.post('/list', authenticateToken, permissionMiddleware(), getOperators);
+router.post('/update/:operatorId', authenticateToken, permissionMiddleware(), updateOperator);
+router.post('/create', authenticateToken, permissionMiddleware(), createOperator);
 
 export default router;

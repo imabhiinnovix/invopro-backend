@@ -7,8 +7,6 @@ import {
   getWidgetTypeById,
   getWidgets,
 } from '../../controllers/common/widgetType.controller';
-import { roleAuthorization } from '../../../middlewares/role.middleware';
-import { RoleId } from '../../../enums/role.enum';
 
 const router = Router();
 

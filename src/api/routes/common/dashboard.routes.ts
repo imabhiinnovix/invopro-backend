@@ -14,22 +14,23 @@ import {
   updateWidget,
   selectDashboardTheme,
 } from '../../controllers/common/dashboard.controller';
+import { permissionMiddleware } from '../../../middlewares/permission.middleware';
 
 const router = Router();
 
-router.get('/list', authenticateToken, getDashboards);
-router.get('/get/:dashboardId', authenticateToken, getDashboardById);
-router.post('/create', authenticateToken, createDashboard);
-router.post('/update/:dashboardId', authenticateToken, updateDashboard);
-router.post('/delete/:dashboardId', authenticateToken, deleteDashboard);
-router.post('/selectTheme/:dashboardId', authenticateToken, selectDashboardTheme);
+router.get('/list', authenticateToken, permissionMiddleware(), getDashboards);
+router.get('/get/:dashboardId', authenticateToken, permissionMiddleware(), getDashboardById);
+router.post('/create', authenticateToken, permissionMiddleware(), createDashboard);
+router.post('/update/:dashboardId', authenticateToken, permissionMiddleware(), updateDashboard);
+router.post('/delete/:dashboardId', authenticateToken, permissionMiddleware(), deleteDashboard);
+router.post('/selectTheme/:dashboardId', authenticateToken, permissionMiddleware(), selectDashboardTheme);
 
 // Dashboard widget
-router.get('/widget/getWidgets/:dashboardId', authenticateToken, getDashboardWidgetList);
-router.post('/widget/getWidgetData', authenticateToken, getWidgetData);
-router.post('/widget/create', authenticateToken, createWidget);
-router.post('/widget/save', authenticateToken, saveDashboardWidgets);
-router.post('/widget/update/:dashboardWidgetId', authenticateToken, updateWidget);
-router.post('/widget/delete/:dashboardWidgetId', authenticateToken, deleteWidget);
+router.get('/widget/getWidgets/:dashboardId', authenticateToken, permissionMiddleware(), getDashboardWidgetList);
+router.post('/widget/getWidgetData', authenticateToken, permissionMiddleware(), getWidgetData);
+router.post('/widget/create', authenticateToken, permissionMiddleware(), createWidget);
+router.post('/widget/save', authenticateToken, permissionMiddleware(), saveDashboardWidgets);
+router.post('/widget/update/:dashboardWidgetId', authenticateToken, permissionMiddleware(), updateWidget);
+router.post('/widget/delete/:dashboardWidgetId', authenticateToken, permissionMiddleware(), deleteWidget);
 
 export default router;
