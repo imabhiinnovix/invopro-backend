@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Types } from 'mongoose';
 import Entity from '../models/entity';
 
 export const createEntity = async (entityData: any) => {
@@ -132,3 +133,49 @@ export const findEntityById = async (id: string) => {
     throw err;
   }
 };
+
+interface FieldOption {
+  label: string;
+  value: {
+    attributeId: Types.ObjectId;
+    refAttributeId?: Types.ObjectId;
+  };
+}
+
+export const getEntityFieldOptions = async (entityId: string): Promise<FieldOption[]> => {
+  const fieldOptions: FieldOption[] = [];
+
+  const entity = await Entity.findById(entityId).lean();
+  if (!entity || !Array.isArray(entity.attributes)) return fieldOptions;
+
+  for (const attr of entity.attributes) {
+    const attributeId = (attr as any)?._id;
+
+    if (attr.type !== 'reference') {
+      // Direct field
+      fieldOptions.push({
+        label: attr.name,
+        value: { attributeId },
+      });
+    } else if (attr.referenceEntitySetting?.refEntityId) {
+      const refEntityId = attr.referenceEntitySetting.refEntityId;
+      const refEntity = await Entity.findById(refEntityId).lean();
+      if (!refEntity || !Array.isArray(refEntity.attributes)) continue;
+
+      for (const refAttr of refEntity.attributes) {
+        const refAttributeId = (refAttr as any)?._id;
+        fieldOptions.push({
+          label: `${attr.name}.${refAttr.name}`,
+          value: {
+            attributeId,
+            refAttributeId: refAttributeId,
+          },
+        });
+      }
+    }
+  }
+
+  return fieldOptions;
+};
+
+

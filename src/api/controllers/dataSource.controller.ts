@@ -15,7 +15,18 @@ import { DateTime } from 'luxon';
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { entityId, name, code, versionType, description, uniqueAttributeRules } = req.body;
+    const {
+      entityId,
+      name,
+      code,
+      versionType,
+      description,
+      uniqueAttributeRules,
+      filterFields = [],
+      sortFields = [],
+      displayFields = [],
+    } = req.body;
+
     const { organizationId, userId, orgCode } = req.user;
 
     const dataSourceData = await dataSourceService.findDataSourceByCodeAndOrganization(code, organizationId);
@@ -28,6 +39,7 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       versionCode: code,
     });
     await defaultDataSourceVersionValue.createEmptyCollection(collectionName);
+
     const dataSource = await dataSourceService.createDataSourcce({
       entityId,
       name,
@@ -38,6 +50,9 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       isActive: true,
       description,
       uniqueAttributeRules,
+      filterFields,
+      sortFields,
+      displayFields,
     });
 
     const cacheData = await cacheService.findCacheDataByCodeAndOrganization('chart', organizationId);
@@ -45,6 +60,7 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       const nowISO = DateTime.now().minus({ days: 2 }).toISO();
       await cacheService.updateCacheData(cacheData._id.toString(), { updatedAt: nowISO });
     }
+
     res.status(201).json({
       success: true,
       message: 'Data Source Created Successfully',
@@ -55,9 +71,19 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
   }
 };
 
+
 export const updateDataSource = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, versionType, description, uniqueAttributeRules } = req.body;
+    const {
+      name,
+      versionType,
+      description,
+      uniqueAttributeRules,
+      filterFields = [],
+      sortFields = [],
+      displayFields = [],
+    } = req.body;
+
     const { userId } = req.user;
 
     await dataSourceService.updateDataSource(req.params.dataSourceId, {
@@ -66,7 +92,11 @@ export const updateDataSource = async (req: Request, res: Response, next: NextFu
       updatedBy: userId,
       description,
       uniqueAttributeRules,
+      filterFields,
+      sortFields,
+      displayFields,
     });
+
     res.status(201).json({
       success: true,
       message: 'Data Source updated Successfully',
@@ -75,6 +105,7 @@ export const updateDataSource = async (req: Request, res: Response, next: NextFu
     next(err);
   }
 };
+
 
 export const checkDataSourceCodeAvailableOrNot = async (req: Request, res: Response, next: NextFunction) => {
   try {

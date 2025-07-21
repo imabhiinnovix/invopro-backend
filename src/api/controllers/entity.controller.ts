@@ -98,10 +98,16 @@ export const listEntity = async (req: Request, res: Response, next: NextFunction
 export const getEntityById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const entityData = await entityService.findEntityById(req.params.entityId);
+    const entityFieldOptions = await entityService.getEntityFieldOptions(req.params.entityId);
+      // Convert to plain object with type assertion so TypeScript allows adding custom props
+    const entityObject = (entityData?.toObject ? entityData.toObject() : entityData) as any;
+
+    // Append the custom field
+    entityObject.entityFieldOptions = entityFieldOptions;
     res.status(200).json({
       success: true,
       message: 'Entity Data Fetched Successfully',
-      data: entityData,
+      data: entityObject,
     });
   } catch (err) {
     next(err);
