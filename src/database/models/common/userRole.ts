@@ -45,6 +45,7 @@ const userRoleSchema = new Schema<IUserRole>(
   }
 );
 
+userRoleSchema.index({ organizationId: 1, name: 1 }, { unique: true });
 // Export model
 const UserRole = model<IUserRole>('user_role', userRoleSchema);
 export default UserRole;
