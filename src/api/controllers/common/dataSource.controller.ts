@@ -12,7 +12,7 @@ import { DataSourceVersion } from '../../../types/widget.types';
 import { processFieldConditions } from '../../../utils/conditionProcessor';
 import * as cacheService from '../../../database/services/reportivix/aiCache.service';
 import { DateTime } from 'luxon';
-import Entity from '../../database/models/entity';
+import Entity from '../../../database/models/reportivix/entity';
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
