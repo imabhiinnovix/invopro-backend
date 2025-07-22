@@ -9,13 +9,14 @@ import { Types } from 'mongoose';
 
 export const createOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, description, domain, code, productSubscriptions, owner } = req.body;
+    const { name, description, domain, code, productSubscriptions } = req.body;
+    const { userId } = req.user;
 
     // 1. Create the organization
     const organization = await organizationService.createOrganization({
       name,
       description,
-      owner,
+      owner: userId,
       domain,
       code,
     });
