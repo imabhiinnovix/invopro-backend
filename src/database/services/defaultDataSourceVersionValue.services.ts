@@ -164,7 +164,7 @@ export const getDataSourceVersionValueV1 = async ({
       const [refField, subField] = key.split('.');
       const attr = attributesMap[refField];
 
-      if (attr?.type === 'reference' && attr.referenceEntitySetting?.refEntityId) {
+      if (attr.referenceEntitySetting?.refEntityId) {
         const refEntityId = attr.referenceEntitySetting.refEntityId;
         const localField = `rowData.${refField}`;
         const asField = `rowData.${refField}_resolved`;
@@ -248,7 +248,7 @@ export const getDataSourceVersionValueV1 = async ({
           const refResolved = rowData[resolvedKey];
           const attr = attributesMap[key];
 
-          if (attr?.type === 'reference' && attr.referenceEntitySetting?.refEntityField) {
+          if (attr.referenceEntitySetting?.refEntityField) {
             const refField = await getEntityAttribute(
               attr.referenceEntitySetting.refEntityId,
               attr.referenceEntitySetting.refEntityField

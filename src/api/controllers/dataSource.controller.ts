@@ -196,7 +196,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
                   continue;
                 }
 
-                if (attr.type === 'reference' && attr.referenceEntitySetting?.refEntityId && field.refAttributeId) {
+                if (attr.referenceEntitySetting?.refEntityId && field.refAttributeId) {
                   const refEntity = await Entity.findById(attr.referenceEntitySetting.refEntityId).lean();
                   const refAttr = refEntity?.attributes?.find(
                     (a: any) => String(a._id) === String(field.refAttributeId)

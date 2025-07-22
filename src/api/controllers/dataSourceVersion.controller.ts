@@ -151,7 +151,7 @@ async function validateFileData({
         });
         newRow.isErrorLog = 1;
       } else if (value !== undefined && value != null && value) {
-        if (attr.type === 'reference' && attr.referenceEntitySetting?.refEntityId) {
+        if (attr.referenceEntitySetting?.refEntityId) {
           const refEntityId = attr.referenceEntitySetting.refEntityId;
           const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
           const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
