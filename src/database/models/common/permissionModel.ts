@@ -43,7 +43,7 @@ const permissionSchema = new Schema<IPermission>(
     },
     resourceCode: {
       type: String,
-      required: true,
+      // required: true,
     },
     extraOptions: {
       type: Object,

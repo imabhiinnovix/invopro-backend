@@ -42,6 +42,7 @@ export const createPermission = async (data: any) => {
       {
         method: data.method,
         resourceId: data.resourceId,
+        dataSourceId: data.dataSourceId,
         organizationId: orgId,
       },
       {
@@ -92,7 +93,7 @@ export const updatePermission = async (id: string, data: any) => {
   const isChangingKeyFields =
     existing.method !== data.method ||
     existing.resourceId !== data.resourceId ||
-    !existing.organizationId.equals(orgId);
+    !existing.dataSourceId.equals(data.dataSourceId);
 
   // Determine if we are reactivating a previously inactive permission
   const isReactivating = existing.status === 'inactive' && data.status === 'active' && isChangingKeyFields;
@@ -104,11 +105,14 @@ export const updatePermission = async (id: string, data: any) => {
       method: data.method,
       resourceId: data.resourceId,
       organizationId: orgId,
+      dataSourceId: data.dataSourceId,
       status: 'active',
     });
 
     if (conflict) {
-      throw new Error('Another active permission with the same method, resourceId, and organization already exists.');
+      throw new Error(
+        'Another active permission with the same method, resourceId,datasourcId and organization already exists.'
+      );
     }
   }
 

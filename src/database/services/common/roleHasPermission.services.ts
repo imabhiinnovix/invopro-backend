@@ -40,8 +40,23 @@ export const getPermissionsByRoleIds = async (roleIds: Types.ObjectId[]) => {
           method: '$permission.method',
           resourceId: '$permission.resourceId',
           resourceType: '$permission.resourceType',
+          dataSourceId: '$permission.dataSourceId',
         },
         permissionId: { $first: '$permission._id' }, // any representative ID
+      },
+    },
+    {
+      $lookup: {
+        from: 'data_sources',
+        localField: '_id.dataSourceId',
+        foreignField: '_id',
+        as: 'dataSource',
+      },
+    },
+    {
+      $unwind: {
+        path: '$dataSource',
+        preserveNullAndEmptyArrays: true, // in case dataSourceId is null or doesn't match
       },
     },
     {
@@ -51,6 +66,7 @@ export const getPermissionsByRoleIds = async (roleIds: Types.ObjectId[]) => {
         method: '$_id.method',
         resourceId: '$_id.resourceId',
         resourceType: '$_id.resourceType',
+        dataSourceId: '$dataSource',
         permissionId: 1,
       },
     },
