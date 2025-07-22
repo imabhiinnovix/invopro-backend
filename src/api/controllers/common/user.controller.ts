@@ -188,22 +188,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
     user = user.toObject();
     const permissionDetails = await roleHasPermissionService.getPermissionsByRoleIds(roleIds);
 
-    const dataSourceIds = permissionDetails
-      .filter((p) => p.resourceType === 'Data Source')
-      .map((p) => new Types.ObjectId(p.resourceId));
-
-    const dataSourceMap = await dataSourceService.getDataSourcesByIds(dataSourceIds);
-    const enrichedPermissions = permissionDetails.map((p) => {
-      if (p.resourceType === 'Data Source') {
-        return {
-          ...p,
-          resourceId: dataSourceMap[p.resourceId] || null,
-        };
-      }
-      return p;
-    });
-
-    user['permissionIds'] = enrichedPermissions;
+    user['permissionIds'] = permissionDetails;
     res.status(200).json({
       success: true,
       message: 'User fetched successfully',
