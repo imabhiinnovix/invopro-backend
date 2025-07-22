@@ -13,6 +13,8 @@ export interface IPermission extends Document {
   updatedAt: Date;
   isSuperUser: boolean;
   organizationId: Types.ObjectId;
+  dataSourceId: Types.ObjectId;
+  resourceCode: string;
 }
 
 // Define schema
@@ -31,7 +33,15 @@ const permissionSchema = new Schema<IPermission>(
       type: String,
       required: true,
     },
+    dataSourceId: {
+      type: Schema.Types.ObjectId,
+      ref: 'data_source',
+    },
     resourceType: {
+      type: String,
+      required: true,
+    },
+    resourceCode: {
       type: String,
       required: true,
     },
