@@ -1,4 +1,4 @@
-import * as reportRequestService from '../../database/services/reportRequest.services';
+import * as reportRequestService from '../../database/services/reportivix/reportRequest.services';
 import {
   getAllProsecutionSavings,
   getAnnuitySavingsFromReductions,
@@ -16,10 +16,10 @@ import {
   percentageOfCurrentYearInventionDisclosureConvertedToFilings,
   processStaticData,
   processSTCData,
-} from '../../database/services/monthlyipReport.services';
+} from '../../database/services/reportivix/monthlyipReport.services';
 
-import { CustomReportModelAccessReturnType } from '../../database/models/customReportModels';
-import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/dataSourceVersion.controller';
+import { CustomReportModelAccessReturnType } from '../../database/models/reportivix/customReportModels';
+import { createUpdateCustomDataSourceVersionValueFunction } from '../../api/controllers/common/dataSourceVersion.controller';
 import {
   processReportHeaders,
   transformDataByEntityMapping,
@@ -28,7 +28,7 @@ import {
   transformMonthlySTCSBUData,
 } from '../../utils/common.report';
 import { ReportHeaders } from '../../utils/common.type';
-import { ICustomReport } from '../../database/models/customReport';
+import { ICustomReport } from '../../database/models/reportivix/customReport';
 
 export const generateMonthlyIpReport = async ({
   reportRequestPayload,

@@ -1,49 +1,33 @@
-import Organization from '../database/models/organization';
-// import User from '../database/models/user';
+import Organization from '../database/models/common/organization';
+import { Types } from 'mongoose';
 
-export async function seedOrganizations(payload) {
-  // Check if the organization already exists
-  const reportivixExistingOrganization = await Organization.findById(payload.reportivixOrganizationId);
+interface OrganizationSeedInput {
+  _id: Types.ObjectId;
+  name: string;
+  owner: Types.ObjectId;
+  code: string;
+  isMaster?: boolean;
+  status?: 'active' | 'inactive';
+}
 
-  if (!reportivixExistingOrganization) {
-    // If it doesn't exist, create a new organization
-    const newOrganization = new Organization({
-      _id: payload.reportivixOrganizationId,
-      name: 'reportivix',
-      owner: payload.reportivixAdminUserId,
-      isMaster: true,
-      licenseExpiresAt: new Date('2025-12-31'),
-      code: 'reportivix',
-      status: 'active',
-      totalLicenses: 10,
+export async function seedOrganizations(payload: OrganizationSeedInput[]) {
+  for (const org of payload) {
+    const existingOrg = await Organization.findById(org._id);
+    if (existingOrg) {
+      console.info(`ℹ️ Organization "${org.name}" already exists.`);
+      continue;
+    }
+
+    const newOrg = new Organization({
+      _id: org._id,
+      name: org.name,
+      owner: org.owner,
+      code: org.code,
+      isMaster: org.isMaster ?? false,
+      status: org.status ?? 'active',
     });
 
-    await newOrganization.save();
-    console.info('Reportivix Organization created successfully.');
+    await newOrg.save();
+    console.info(`✅ Organization "${org.name}" created successfully.`);
   }
-
-  const sabicExistingOrganization = await Organization.findById(payload.sabicOrganizationId);
-
-  if (!sabicExistingOrganization) {
-    // If it doesn't exist, create a new organization
-    const newOrganization = new Organization({
-      _id: payload.sabicOrganizationId,
-      name: 'sabic',
-      owner: payload.reportivixSuperAdminUserId,
-      isMaster: true,
-      licenseExpiresAt: new Date('2025-12-31'),
-      code: 'sabic',
-      status: 'active',
-      totalLicenses: 10,
-    });
-
-    await newOrganization.save();
-    console.info('Sabic Organization created successfully.');
-  }
-
-  const updateLicenseExpiresAt = await Organization.updateMany(
-    { licenseExpiresAt: { $exists: false } },
-    { $set: { licenseExpiresAt: new Date('2025-12-31') } }
-  );
-  console.info(`Updated ${updateLicenseExpiresAt.modifiedCount} organizations with licenseExpiresAt.`);
 }

@@ -13,6 +13,10 @@ import { seedDashboard } from './dashboard.seed';
 import { seedEntities } from './entities.seed';
 import { seedDataSource } from './dataSource.seed';
 import { seedCustomReports } from './customReport.seed';
+import { seedProducts } from './product.seed';
+import { seedRolesAndPermissions } from './seedRoleAndPermission';
+import { seedPermissions } from './permission.seed';
+import { createProductSubscription } from './organizationHasProduct.seed';
 
 const payload = {
   reportivixSuperAdminUserId: new mongoose.Types.ObjectId('66b34cbbd40e24fca2e3e312'),
@@ -24,6 +28,9 @@ const payload = {
   //organization
   reportivixOrganizationId: new mongoose.Types.ObjectId('66de96d3548d06560e2931cb'),
   sabicOrganizationId: new mongoose.Types.ObjectId('67caac1ec4f70d4fdbdb7294'),
+
+  reportivixProductId: new mongoose.Types.ObjectId('6870c9e335f4e90221de9ece'),
+  notivixProductId: new mongoose.Types.ObjectId('6870c9e335f4e90221de9ed1'),
 
   pieChartId: new mongoose.Types.ObjectId('67e5011c966d261de673d1f1'),
   lineChartId: new mongoose.Types.ObjectId('67e68fd541db187651d5e6b8'),
@@ -545,12 +552,100 @@ export async function seedDatabase() {
     const conn = await mongoose.connect(config.MONGO_URI!);
     console.info(`MongoDB Connected: ${conn.connection.host}`);
 
-    // Seed individual collections
-    console.info('\n====> Seeding users <====');
-    await seedUsers(payload);
+    await seedOrganizations([
+      {
+        _id: payload.reportivixOrganizationId,
+        name: 'ReportiVix',
+        owner: payload.reportivixSuperAdminUserId,
+        code: 'reportivix',
+        isMaster: true,
+      },
+      {
+        _id: payload.sabicOrganizationId,
+        name: 'SABIC',
+        owner: payload.sabicAdminUserId,
+        code: 'sabic',
+      },
+    ]);
+
+    await seedProducts(payload);
+
+    await seedPermissions();
+
+    await createProductSubscription([
+      {
+        organizationId: payload.reportivixOrganizationId,
+        productIds: [payload.reportivixProductId, payload.notivixProductId],
+        status: 'active',
+        totalLicenses: 10,
+        durationInMonths: 12,
+      },
+      {
+        organizationId: payload.sabicOrganizationId,
+        productIds: [payload.reportivixProductId, payload.notivixProductId],
+        status: 'active',
+        totalLicenses: 10,
+        durationInMonths: 12,
+      },
+    ]);
+
+    await seedRolesAndPermissions({ organizationId: [payload.reportivixOrganizationId, payload.sabicOrganizationId] });
+    await seedUsers([
+      {
+        organizationId: payload.reportivixOrganizationId,
+        isMaster: true,
+        users: [
+          {
+            email: 'superadmin@reportivix.com',
+            password: 'superadmin@1234',
+            firstName: 'Super',
+            lastName: 'Admin',
+            type: 'superadmin',
+            customId: payload.reportivixSuperAdminUserId,
+          },
+          {
+            email: 'admin@reportivix.com',
+            password: 'admin@1234',
+            firstName: 'Admin',
+            lastName: 'User',
+            type: 'admin',
+            customId: payload.reportivixAdminUserId,
+          },
+          {
+            email: 'test@reportivix.com',
+            password: 'test@1234',
+            firstName: 'Test',
+            lastName: 'User',
+            type: 'user',
+            customId: payload.reportivixTestUserId,
+          },
+        ],
+      },
+      {
+        organizationId: payload.sabicOrganizationId,
+        isMaster: false,
+        users: [
+          {
+            email: 'admin@sabic.com',
+            password: 'Sabic@1234',
+            firstName: 'Sabic',
+            lastName: 'Admin',
+            type: 'admin',
+            customId: payload.sabicAdminUserId,
+          },
+          {
+            email: 'mahua.dutta@sabic.com',
+            password: 'Sabic@1234',
+            firstName: 'Mahua',
+            lastName: 'Dutta',
+            type: 'admin',
+            customId: payload.mahuaAdminUserId,
+          },
+        ],
+      },
+    ]);
 
     console.info('\n====> Seeding organizations <====');
-    await seedOrganizations(payload);
 
     console.info('\n====> Seeding Entities Reportivix <====');
     await seedEntities({
@@ -607,8 +702,8 @@ export async function seedDatabase() {
     console.info('\n====> Seeding Operators <====');
     await seedOperators();
 
-    console.info('\n====> Seeding Widget Theme <====');
-    await seedWidgetTheme(payload);
+    // console.info('\n====> Seeding Widget Theme <====');
+    // await seedWidgetTheme(payload);
 
     // console.info('\n====> Seeding Dashboard Widget <====');
     // await seedDashboardWidget();

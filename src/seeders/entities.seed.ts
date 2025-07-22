@@ -1,4 +1,4 @@
-import Entity from '../database/models/entity';
+import Entity from '../database/models/reportivix/entity';
 import mongoose from 'mongoose';
 
 function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, updatedBy }) {
