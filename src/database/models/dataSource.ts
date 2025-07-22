@@ -22,7 +22,7 @@ interface IDataSource extends Document {
   canEditInline: boolean;
   uniqueAttributeRules: Types.ObjectId[][];
   isVisible: boolean;
-
+  isShowMenu: boolean;
   fieldSettings: IFieldSetting[];
 }
 
@@ -79,6 +79,7 @@ const dataSourceSchema = new Schema<IDataSource>(
       type: [fieldSettingSchema],
       default: [],
     },
+    isShowMenu: { type: Boolean, default: false },
   },
   {
     timestamps: true,

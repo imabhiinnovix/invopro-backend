@@ -846,8 +846,17 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
       return res.status(404).json({ success: false, message: 'Data source not found.' });
     }
 
+    const versionQuery: any = {
+      dataSourceId,
+      isCurrent: true, // Always filter for current version
+    };
+
+    if (versionValue) {
+      versionQuery.versionValue = versionValue; // Optional, narrows to specific version if provided
+    }
+
     const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
-      query: { dataSourceId, versionValue, isCurrent: true },
+      query: versionQuery,
     });
 
     if (!dataSourceVersionDetails?.data?.length) {

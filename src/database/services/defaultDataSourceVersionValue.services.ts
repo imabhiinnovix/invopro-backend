@@ -253,10 +253,9 @@ export const getDataSourceVersionValueV1 = async ({
               attr.referenceEntitySetting.refEntityId,
               attr.referenceEntitySetting.refEntityField
             );
-
             rowData[key] = {
               _id: refResolved?._id,
-              name: refResolved?.rowData?.[refField.name] || null,
+              name: refResolved?.rowData?.[refField?.name] || null,
               ...refResolved?.rowData
             };
           } else {

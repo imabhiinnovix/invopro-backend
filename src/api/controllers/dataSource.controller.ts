@@ -23,6 +23,7 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       versionType,
       description,
       uniqueAttributeRules,
+      isShowMenu,
       fieldSettings = [],
     } = req.body;
 
@@ -50,6 +51,7 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       isActive: true,
       description,
       uniqueAttributeRules,
+      isShowMenu,
       fieldSettings, // save directly
     });
 
@@ -78,6 +80,7 @@ export const updateDataSource = async (req: Request, res: Response, next: NextFu
       versionType,
       description,
       uniqueAttributeRules,
+      isShowMenu,
       fieldSettings = [],
     } = req.body;
 
@@ -89,6 +92,7 @@ export const updateDataSource = async (req: Request, res: Response, next: NextFu
       updatedBy: userId,
       description,
       uniqueAttributeRules,
+      isShowMenu,
       fieldSettings, // save directly
     });
 
@@ -193,6 +197,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
                 const attr = attributeMap.get(String(field.attributeId));
                 if (!attr) {
                   field.mappedAttributeName = 'Unknown';
+                  field.type = 'text';
                   continue;
                 }
 
@@ -204,8 +209,10 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
                   const parentName = attr.name || 'Unknown';
                   const refName = refAttr?.name || 'Unknown';
                   field.mappedAttributeName = `${parentName}.${refName}`;
+                  field.type = refAttr?.type || 'text';
                 } else {
                   field.mappedAttributeName = attr.name;
+                  field.type = attr?.type || 'text';
                 }
               }
             }
