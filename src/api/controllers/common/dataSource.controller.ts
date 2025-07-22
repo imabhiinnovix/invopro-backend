@@ -12,6 +12,7 @@ import { DataSourceVersion } from '../../../types/widget.types';
 import { processFieldConditions } from '../../../utils/conditionProcessor';
 import * as cacheService from '../../../database/services/reportivix/aiCache.service';
 import { DateTime } from 'luxon';
+import Entity from '../../database/models/entity';
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -22,9 +23,8 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       versionType,
       description,
       uniqueAttributeRules,
-      filterFields = [],
-      sortFields = [],
-      displayFields = [],
+      isShowMenu,
+      fieldSettings = [],
     } = req.body;
 
     const { organizationId, userId, orgCode } = req.user;
@@ -38,6 +38,7 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       orgCode,
       versionCode: code,
     });
+
     await defaultDataSourceVersionValue.createEmptyCollection(collectionName);
 
     const dataSource = await dataSourceService.createDataSourcce({
@@ -50,9 +51,8 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       isActive: true,
       description,
       uniqueAttributeRules,
-      filterFields,
-      sortFields,
-      displayFields,
+      isShowMenu,
+      fieldSettings, // save directly
     });
 
     const cacheData = await cacheService.findCacheDataByCodeAndOrganization('chart', organizationId);
@@ -71,6 +71,8 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
   }
 };
 
+
+
 export const updateDataSource = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
@@ -78,9 +80,8 @@ export const updateDataSource = async (req: Request, res: Response, next: NextFu
       versionType,
       description,
       uniqueAttributeRules,
-      filterFields = [],
-      sortFields = [],
-      displayFields = [],
+      isShowMenu,
+      fieldSettings = [],
     } = req.body;
 
     const { userId } = req.user;
@@ -91,9 +92,8 @@ export const updateDataSource = async (req: Request, res: Response, next: NextFu
       updatedBy: userId,
       description,
       uniqueAttributeRules,
-      filterFields,
-      sortFields,
-      displayFields,
+      isShowMenu,
+      fieldSettings, // save directly
     });
 
     res.status(201).json({
@@ -104,6 +104,8 @@ export const updateDataSource = async (req: Request, res: Response, next: NextFu
     next(err);
   }
 };
+
+
 
 export const checkDataSourceCodeAvailableOrNot = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -172,7 +174,6 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
         ]
       : [{ path: 'entityId', select: 'name attributes' }];
 
-    // Always returns { data: [], totalCount: number }
     const result = await dataSourceService.getDataSourceList({
       query,
       page,
@@ -181,27 +182,56 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
     });
 
     const data = Array.isArray(result.data)
-      ? result.data.map((ds: any) => {
-          const attributeMap = new Map<string, string>();
-          if (ds.entityId?.attributes?.length) {
-            for (const attr of ds.entityId.attributes) {
-              attributeMap.set(String(attr._id), attr.name);
+      ? await Promise.all(
+          result.data.map(async (ds: any) => {
+            const attributeMap = new Map<string, any>();
+            if (ds.entityId?.attributes?.length) {
+              for (const attr of ds.entityId.attributes) {
+                attributeMap.set(String(attr._id), attr);
+              }
             }
-          }
 
-          ds.uniqueAttributeRules = Array.isArray(ds.uniqueAttributeRules)
-            ? ds.uniqueAttributeRules.map((ruleGroup: any[]) =>
-                Array.isArray(ruleGroup)
-                  ? ruleGroup.map((attrId: Types.ObjectId) => ({
-                      _id: attrId,
-                      name: attributeMap.get(String(attrId)) || 'Unknown',
-                    }))
-                  : []
-              )
-            : [];
+            // Add mappedAttributeName to fieldSettings
+            if (Array.isArray(ds.fieldSettings)) {
+              for (const field of ds.fieldSettings) {
+                const attr = attributeMap.get(String(field.attributeId));
+                if (!attr) {
+                  field.mappedAttributeName = 'Unknown';
+                  field.type = 'text';
+                  continue;
+                }
 
-          return ds;
-        })
+                if (attr.referenceEntitySetting?.refEntityId && field.refAttributeId) {
+                  const refEntity = await Entity.findById(attr.referenceEntitySetting.refEntityId).lean();
+                  const refAttr = refEntity?.attributes?.find(
+                    (a: any) => String(a._id) === String(field.refAttributeId)
+                  );
+                  const parentName = attr.name || 'Unknown';
+                  const refName = refAttr?.name || 'Unknown';
+                  field.mappedAttributeName = `${parentName}.${refName}`;
+                  field.type = refAttr?.type || 'text';
+                } else {
+                  field.mappedAttributeName = attr.name;
+                  field.type = attr?.type || 'text';
+                }
+              }
+            }
+
+            // Optional: update uniqueAttributeRules as before
+            ds.uniqueAttributeRules = Array.isArray(ds.uniqueAttributeRules)
+              ? ds.uniqueAttributeRules.map((ruleGroup: any[]) =>
+                  Array.isArray(ruleGroup)
+                    ? ruleGroup.map((attrId: Types.ObjectId) => ({
+                        _id: attrId,
+                        name: attributeMap.get(String(attrId))?.name || 'Unknown',
+                      }))
+                    : []
+                )
+              : [];
+
+            return ds;
+          })
+        )
       : [];
 
     res.status(200).json({
@@ -214,6 +244,8 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
     next(err);
   }
 };
+
+
 
 export const getDataSourceById = async (req: Request, res: Response, next: NextFunction) => {
   try {

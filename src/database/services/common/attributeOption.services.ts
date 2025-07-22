@@ -74,3 +74,34 @@ export const findAttributeOptionById = async (id: string) => {
     throw err;
   }
 };
+
+
+interface GetAttributeOptionExecutionParams {
+  pipeline: any[];
+  page?: number;
+  limit?: number;
+  paginate?: boolean;
+  matchQuery?: Record<string, any>;
+}
+
+export const executeAttributeOptionQuery = async ({
+  pipeline,
+  page = 1,
+  limit = 10,
+  paginate = false,
+  matchQuery = {}
+}: GetAttributeOptionExecutionParams) => {
+  const fullPipeline = [...pipeline];
+
+  if (paginate) {
+    const skip = (page - 1) * limit;
+    fullPipeline.push({ $skip: skip }, { $limit: limit });
+  }
+
+  const [data, totalCount] = await Promise.all([
+    Attribute.aggregate(fullPipeline),
+    Attribute.countDocuments(matchQuery)
+  ]);
+
+  return { data, totalCount };
+};

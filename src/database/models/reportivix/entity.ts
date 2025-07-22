@@ -74,9 +74,7 @@ const attributeSchema = new Schema<IAttribute>(
     cleaner: { type: [String] },
     referenceEntitySetting: {
       type: referenceEntitySettingSchema,
-      required: function (this: IAttribute) {
-        return this.type === 'reference';
-      },
+      required: false
     },
   },
   { _id: true, toJSON: { getters: true }, toObject: { getters: true } }

@@ -63,52 +63,131 @@ export const listAttribute = async (req: Request, res: Response, next: NextFunct
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
-    const query: any = {};
-    if (search) query.attributeName = { $regex: search, $options: 'i' };
-
-    let result: any = {};
-    if (paginate) {
-      result = await attributeOptionService.getAttributeList({
-        query,
-        page,
-        limit,
-        populate: [
-          {
-            path: 'createdBy',
-            select: 'firstName lastName', // Specify the fields to populate
-          },
-          {
-            path: 'updatedBy',
-            select: 'firstName lastName', // Specify the fields to populate
-          },
-        ],
-      });
-    } else {
-      result = await attributeOptionService.getAttributeList({
-        query,
-        populate: [
-          {
-            path: 'createdBy',
-            select: 'firstName lastName', // Specify the fields to populate
-          },
-          {
-            path: 'updatedBy',
-            select: 'firstName lastName', // Specify the fields to populate
-          },
-        ],
-      });
+    const matchQuery: Record<string, any> = {};
+    if (search) {
+      matchQuery.attributeName = { $regex: search, $options: 'i' };
     }
+
+    const pipeline: any[] = [
+      { $match: matchQuery },
+      {
+        $lookup: {
+          from: 'entities',
+          let: { optionIdStr: { $toString: '$_id' }, orgId: '$organizationId' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$organizationId', '$$orgId'] } } },
+            { $unwind: '$attributes' },
+            {
+              $match: {
+                $expr: { $eq: ['$attributes.optionAttributeId', '$$optionIdStr'] }
+              }
+            },
+            {
+              $project: {
+                attributeId: '$attributes._id'
+              }
+            }
+          ],
+          as: 'attributeMeta'
+        }
+      },
+      {
+        $addFields: {
+          attributeId: {
+            $ifNull: [{ $arrayElemAt: ['$attributeMeta.attributeId', 0] }, null]
+          }
+        }
+      },
+      // Populate createdBy
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'createdByUser'
+        }
+      },
+      {
+        $addFields: {
+          createdBy: {
+            $cond: [
+              { $gt: [{ $size: '$createdByUser' }, 0] },
+              {
+                $let: {
+                  vars: { user: { $arrayElemAt: ['$createdByUser', 0] } },
+                  in: {
+                    _id: '$$user._id',
+                    firstName: '$$user.firstName',
+                    lastName: '$$user.lastName'
+                  }
+                }
+              },
+              null
+            ]
+          }
+        }
+      },
+      // Populate updatedBy
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'updatedBy',
+          foreignField: '_id',
+          as: 'updatedByUser'
+        }
+      },
+      {
+        $addFields: {
+          updatedBy: {
+            $cond: [
+              { $gt: [{ $size: '$updatedByUser' }, 0] },
+              {
+                $let: {
+                  vars: { user: { $arrayElemAt: ['$updatedByUser', 0] } },
+                  in: {
+                    _id: '$$user._id',
+                    firstName: '$$user.firstName',
+                    lastName: '$$user.lastName'
+                  }
+                }
+              },
+              '$$REMOVE'  // This removes the field if condition is false (i.e., no user)
+            ]
+          }
+        }
+      },
+
+      {
+        $project: {
+          attributeMeta: 0,
+          createdByUser: 0,
+          updatedByUser: 0,
+          __v: 0
+        }
+      }
+    ];
+
+
+    const { data, totalCount } = await attributeOptionService.executeAttributeOptionQuery({
+      pipeline,
+      paginate: paginate === 'true',
+      page,
+      limit,
+      matchQuery
+    });
 
     res.status(200).json({
       success: true,
       message: 'Attribute fetched successfully',
-      data: result.data,
-      totalCount: result.totalCount,
+      data,
+      totalCount
     });
   } catch (err) {
     next(err);
   }
 };
+
+
 
 export const getAttributeOptionById = async (req: Request, res: Response, next: NextFunction) => {
   try {

@@ -157,7 +157,7 @@ async function validateFileData({
         });
         newRow.isErrorLog = 1;
       } else if (value !== undefined && value != null && value) {
-        if (attr.type === 'reference' && attr.referenceEntitySetting?.refEntityId) {
+        if (attr.referenceEntitySetting?.refEntityId) {
           const refEntityId = attr.referenceEntitySetting.refEntityId;
           const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
           const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
@@ -850,8 +850,17 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
       return res.status(404).json({ success: false, message: 'Data source not found.' });
     }
 
+    const versionQuery: any = {
+      dataSourceId,
+      isCurrent: true, // Always filter for current version
+    };
+
+    if (versionValue) {
+      versionQuery.versionValue = versionValue; // Optional, narrows to specific version if provided
+    }
+
     const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
-      query: { dataSourceId, versionValue, isCurrent: true },
+      query: versionQuery,
     });
 
     if (!dataSourceVersionDetails?.data?.length) {

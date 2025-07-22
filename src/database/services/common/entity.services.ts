@@ -138,13 +138,7 @@ export const getEntityFieldOptions = async (entityId: string): Promise<FieldOpti
   for (const attr of entity.attributes) {
     const attributeId = (attr as any)?._id;
 
-    if (attr.type !== 'reference') {
-      // Direct field
-      fieldOptions.push({
-        label: attr.name,
-        value: { attributeId },
-      });
-    } else if (attr.referenceEntitySetting?.refEntityId) {
+    if (attr.referenceEntitySetting?.refEntityId) {
       const refEntityId = attr.referenceEntitySetting.refEntityId;
       const refEntity = await Entity.findById(refEntityId).lean();
       if (!refEntity || !Array.isArray(refEntity.attributes)) continue;
@@ -159,6 +153,11 @@ export const getEntityFieldOptions = async (entityId: string): Promise<FieldOpti
           },
         });
       }
+    }else{
+      fieldOptions.push({
+        label: attr.name,
+        value: { attributeId },
+      });
     }
   }
 

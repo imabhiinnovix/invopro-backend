@@ -1,9 +1,12 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
-// Field selection structure for filter/sort/display fields
-interface IFieldSelection {
+interface IFieldSetting {
   attributeId: Types.ObjectId;
   refAttributeId?: Types.ObjectId;
+  label?: string;
+  isFilterEnable?: boolean;
+  isSortingEnable?: boolean;
+  isDisplayEnable?: boolean;
 }
 
 interface IDataSource extends Document {
@@ -19,14 +22,12 @@ interface IDataSource extends Document {
   canEditInline: boolean;
   uniqueAttributeRules: Types.ObjectId[][];
   isVisible: boolean;
-
-  filterFields: IFieldSelection[];
-  sortFields: IFieldSelection[];
-  displayFields: IFieldSelection[];
+  isShowMenu: boolean;
+  fieldSettings: IFieldSetting[];
 }
 
-// Embedded sub-schema for a single field reference
-const fieldSelectionSchema = new Schema<IFieldSelection>(
+// Embedded sub-schema for field settings
+const fieldSettingSchema = new Schema<IFieldSetting>(
   {
     attributeId: {
       type: Schema.Types.ObjectId,
@@ -34,6 +35,21 @@ const fieldSelectionSchema = new Schema<IFieldSelection>(
     },
     refAttributeId: {
       type: Schema.Types.ObjectId,
+    },
+    label: {
+      type: String,
+    },
+    isFilterEnable: {
+      type: Boolean,
+      default: false,
+    },
+    isSortingEnable: {
+      type: Boolean,
+      default: false,
+    },
+    isDisplayEnable: {
+      type: Boolean,
+      default: false,
     },
   },
   { _id: false }
@@ -58,19 +74,12 @@ const dataSourceSchema = new Schema<IDataSource>(
     },
     isVisible: { type: Boolean, default: true },
 
-    // NEW: configurable UI behavior fields
-    filterFields: {
-      type: [fieldSelectionSchema],
+    // Replacing filterFields/sortFields/displayFields with unified fieldSettings
+    fieldSettings: {
+      type: [fieldSettingSchema],
       default: [],
     },
-    sortFields: {
-      type: [fieldSelectionSchema],
-      default: [],
-    },
-    displayFields: {
-      type: [fieldSelectionSchema],
-      default: [],
-    },
+    isShowMenu: { type: Boolean, default: false },
   },
   {
     timestamps: true,
@@ -87,7 +96,6 @@ dataSourceSchema.index(
   { unique: true, collation: { locale: 'en', strength: 2 } }
 );
 
-// Model
 const DataSource = model<IDataSource>('data_source', dataSourceSchema);
 
 export default DataSource;

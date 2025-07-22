@@ -2,7 +2,7 @@
 import createDefaultDataSourceVersionModel from '../../models/reportivix/defaultDataSourceVersionModel';
 import { Model, Document, AnyBulkWriteOperation, Types } from 'mongoose';
 import { findEntityById } from './entity.services';
-import { getEntityAttribute, getModelForEntity } from '../../../utils/entity.utils';
+import { getEntityAttribute, getModelForEntity } from '../../../utils/entity.utils'
 
 export const updateDataSourceVersionValue = async (
   schemaName: string,
@@ -17,15 +17,12 @@ export const updateDataSourceVersionValue = async (
   }
 
   const bulkOps: AnyBulkWriteOperation<Document>[] = data.map((row) => {
-    const filters: Record<string, any>[] = [];
-    // Create a quick lookup map from ObjectId to attribute name
-    const attributeIdToNameMap = attributes.reduce(
-      (acc, attr) => {
-        acc[attr._id.toString()] = attr.name;
-        return acc;
-      },
-      {} as Record<string, string>
-    );
+  const filters: Record<string, any>[] = [];
+     // Create a quick lookup map from ObjectId to attribute name
+  const attributeIdToNameMap = attributes.reduce((acc, attr) => {
+    acc[attr._id.toString()] = attr.name;
+    return acc;
+  }, {} as Record<string, string>);
 
     for (const rule of uniqueKeys) {
       const condition: Record<string, any> = {};
@@ -136,7 +133,7 @@ export const getDataSourceVersionValueV1 = async ({
   limit,
   sort = {},
   filters = {},
-  entityId = '',
+  entityId = ''
 }: {
   schemaName: string;
   query: any;
@@ -145,71 +142,70 @@ export const getDataSourceVersionValueV1 = async ({
   limit: number;
   sort?: Record<string, 1 | -1>;
   filters?: Record<string, any>;
-  entityId: any;
-}) => {
+  entityId:any
+})  => {
   try {
     const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
 
-    const aggregationPipeline: any[] = [{ $match: query }];
-    const entity: any = await findEntityById(entityId);
-    const attributesMap = entity.attributes.reduce(
-      (acc, attr) => {
-        acc[attr.name] = attr;
-        return acc;
-      },
-      {} as Record<string, any>
-    );
+    const aggregationPipeline: any[] = [
+      { $match: query }
+    ];
+  const entity:any = await findEntityById(entityId);
+  const attributesMap = entity.attributes.reduce((acc, attr) => {
+    acc[attr.name] = attr;
+    return acc;
+  }, {} as Record<string, any>);
 
-    const filterConditions: any[] = [];
+  const filterConditions: any[] = [];
 
-    // --- Step 1: Handle filters ---
-    for (const [key, val] of Object.entries(filters)) {
-      if (key.includes('.')) {
-        const [refField, subField] = key.split('.');
-        const attr = attributesMap[refField];
+  // --- Step 1: Handle filters ---
+  for (const [key, val] of Object.entries(filters)) {
+    if (key.includes('.')) {
+      const [refField, subField] = key.split('.');
+      const attr = attributesMap[refField];
 
-        if (attr?.type === 'reference' && attr.referenceEntitySetting?.refEntityId) {
-          const refEntityId = attr.referenceEntitySetting.refEntityId;
-          const localField = `rowData.${refField}`;
-          const asField = `rowData.${refField}_resolved`;
+      if (attr.referenceEntitySetting?.refEntityId) {
+        const refEntityId = attr.referenceEntitySetting.refEntityId;
+        const localField = `rowData.${refField}`;
+        const asField = `rowData.${refField}_resolved`;
 
-          // Lookup only once
-          if (!aggregationPipeline.some((p) => p.$lookup?.as === asField)) {
-            const refModel = await getModelForEntity(refEntityId);
-            aggregationPipeline.push({
-              $lookup: {
-                from: refModel.collection.name,
-                localField,
-                foreignField: '_id',
-                as: asField,
-              },
-            });
-            aggregationPipeline.push({
-              $unwind: {
-                path: `$${asField}`,
-                preserveNullAndEmptyArrays: true,
-              },
-            });
-          }
-
-          filterConditions.push({
-            [`${asField}.rowData.${subField}`]: Array.isArray(val) ? { $in: val } : val,
+        // Lookup only once
+        if (!aggregationPipeline.some(p => p.$lookup?.as === asField)) {
+          const refModel = await getModelForEntity(refEntityId);
+          aggregationPipeline.push({
+            $lookup: {
+              from: refModel.collection.name,
+              localField,
+              foreignField: '_id',
+              as: asField,
+            },
           });
-          continue;
+          aggregationPipeline.push({
+            $unwind: {
+              path: `$${asField}`,
+              preserveNullAndEmptyArrays: true,
+            },
+          });
         }
+
+        filterConditions.push({
+          [`${asField}.rowData.${subField}`]: Array.isArray(val) ? { $in: val } : val,
+        });
+        continue;
       }
-      // Regular top-level attribute filter
-      filterConditions.push({
-        [`rowData.${key}`]: Array.isArray(val) ? { $in: val } : val,
-      });
     }
-    if (filterConditions.length > 0) {
-      aggregationPipeline.push({
-        $match: {
-          $and: filterConditions,
-        },
-      });
-    }
+     // Regular top-level attribute filter
+    filterConditions.push({
+      [`rowData.${key}`]: Array.isArray(val) ? { $in: val } : val,
+    });
+  }
+  if (filterConditions.length > 0) {
+    aggregationPipeline.push({
+      $match: {
+        $and: filterConditions,
+      },
+    });
+  }
 
     // Apply sorting on rowData or other fields
     const finalSort: any = {};
@@ -221,7 +217,11 @@ export const getDataSourceVersionValueV1 = async ({
       finalSort.updatedAt = -1;
     }
 
-    aggregationPipeline.push({ $sort: finalSort }, { $skip: (page - 1) * limit }, { $limit: limit });
+    aggregationPipeline.push(
+      { $sort: finalSort },
+      { $skip: (page - 1) * limit },
+      { $limit: limit }
+    );
 
     // Add project if needed
     if (select) {
@@ -238,46 +238,47 @@ export const getDataSourceVersionValueV1 = async ({
     // Flatten _resolved fields into main fields
     const transformedData = await Promise.all(
       versionValueData.map(async (doc: any) => {
-        const newDoc = { ...doc };
-        const rowData: Record<string, any> = { ...doc.rowData };
+      const newDoc = { ...doc };
+      const rowData: Record<string, any> = { ...doc.rowData };
 
-        for (const key in rowData) {
-          const resolvedKey = `${key}_resolved`;
+      for (const key in rowData) {
+        const resolvedKey = `${key}_resolved`;
 
-          if (rowData.hasOwnProperty(resolvedKey)) {
-            const refResolved = rowData[resolvedKey];
-            const attr = attributesMap[key];
+        if (rowData.hasOwnProperty(resolvedKey)) {
+          const refResolved = rowData[resolvedKey];
+          const attr = attributesMap[key];
 
-            if (attr?.type === 'reference' && attr.referenceEntitySetting?.refEntityField) {
-              const refField = await getEntityAttribute(
-                attr.referenceEntitySetting.refEntityId,
-                attr.referenceEntitySetting.refEntityField
-              );
-
-              rowData[key] = {
-                _id: refResolved?._id,
-                name: refResolved?.rowData?.[refField.name] || null,
-                ...refResolved?.rowData,
-              };
-            } else {
-              rowData[key] = refResolved?.rowData || rowData[key];
-            }
-
-            delete rowData[resolvedKey];
+          if (attr.referenceEntitySetting?.refEntityField) {
+            const refField = await getEntityAttribute(
+              attr.referenceEntitySetting.refEntityId,
+              attr.referenceEntitySetting.refEntityField
+            );
+            rowData[key] = {
+              _id: refResolved?._id,
+              name: refResolved?.rowData?.[refField?.name] || null,
+              ...refResolved?.rowData
+            };
+          } else {
+            rowData[key] = refResolved?.rowData || rowData[key];
           }
-        }
 
-        newDoc.rowData = rowData;
-        return newDoc;
-      })
-    );
+          delete rowData[resolvedKey];
+        }
+      }
+
+      newDoc.rowData = rowData;
+      return newDoc;
+    })
+  );
+
+
 
     // Get total count via aggregation
     const countPipeline = [...aggregationPipeline];
 
     // Remove pagination & projection
     const stagesToRemove = ['$skip', '$limit', '$project'];
-    const filteredCountPipeline = countPipeline.filter((stage) => {
+    const filteredCountPipeline = countPipeline.filter(stage => {
       const key = Object.keys(stage)[0];
       return !stagesToRemove.includes(key);
     });
@@ -293,7 +294,8 @@ export const getDataSourceVersionValueV1 = async ({
       data: transformedData,
       totalCount,
     };
-  } catch (err) {
+  
+}catch (err) {
     throw err;
   }
 };
