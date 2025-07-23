@@ -1,4 +1,4 @@
-import DashboardWidget from '../database/models/reportivix/dashboardWidget';
+import DashboardWidget from '../database/models/common/dashboardWidget';
 
 export async function seedDashboardWidget() {
   // // widget Appearance

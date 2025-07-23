@@ -13,7 +13,7 @@ import * as widgetThemeService from '../../../database/services/common/widgetThe
 
 import { buildAggregationPipeline } from '../../../utils/aggregationPipeline';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
-import createDefaultDataSourceVersionModel from '../../../database/models/reportivix/defaultDataSourceVersionModel';
+import createDefaultDataSourceVersionModel from '../../../database/models/common/defaultDataSourceVersionModel';
 import { DataSourceVersion } from '../../../types/widget.types';
 import { DateTime } from 'luxon';
 

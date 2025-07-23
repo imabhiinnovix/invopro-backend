@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import File from '../../models/reportivix/file';
+import File from '../../models/common/file';
 
 export const createFile = async (fileData: any) => {
   try {

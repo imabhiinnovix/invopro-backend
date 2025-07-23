@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import DataSourceVersion from '../../models/reportivix/dataSourceVersion';
+import DataSourceVersion from '../../models/common/dataSourceVersion';
 
 export const createDataSourceVersion = async (createDataSourceVersionValue: any) => {
   try {
@@ -48,7 +48,9 @@ export async function getCurrentDataSourceVersion(dataSourceId: string) {
   return await DataSourceVersion.findOne({
     dataSourceId,
     isCurrent: true,
-  }).sort({ createdAt: -1 }).exec();
+  })
+    .sort({ createdAt: -1 })
+    .exec();
 }
 
 export const getDataSourceVersionList = async ({

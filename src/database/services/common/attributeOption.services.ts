@@ -1,4 +1,4 @@
-import Attribute from '../../models/reportivix/attributeOption';
+import Attribute from '../../models/common/attributeOption';
 
 export const createAttribute = async (attributeData: any) => {
   try {
@@ -75,7 +75,6 @@ export const findAttributeOptionById = async (id: string) => {
   }
 };
 
-
 interface GetAttributeOptionExecutionParams {
   pipeline: any[];
   page?: number;
@@ -89,7 +88,7 @@ export const executeAttributeOptionQuery = async ({
   page = 1,
   limit = 10,
   paginate = false,
-  matchQuery = {}
+  matchQuery = {},
 }: GetAttributeOptionExecutionParams) => {
   const fullPipeline = [...pipeline];
 
@@ -100,7 +99,7 @@ export const executeAttributeOptionQuery = async ({
 
   const [data, totalCount] = await Promise.all([
     Attribute.aggregate(fullPipeline),
-    Attribute.countDocuments(matchQuery)
+    Attribute.countDocuments(matchQuery),
   ]);
 
   return { data, totalCount };

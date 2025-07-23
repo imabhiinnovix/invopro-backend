@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { DateTime } from 'luxon';
-import createDefaultDataSourceVersionModel from '../../models/reportivix/defaultDataSourceVersionModel';
+import createDefaultDataSourceVersionModel from '../../models/common/defaultDataSourceVersionModel';
 import { CustomReportModelAccessReturnType } from '../../models/reportivix/customReportModels';
 const ObjectId = mongoose.Types.ObjectId;
 

@@ -6,13 +6,13 @@ import * as dataSourceService from '../../../database/services/common/dataSource
 import * as defaultDataSourceVersionValue from '../../../database/services/common/defaultDataSourceVersionValue.services';
 import * as entityService from '../../../database/services/common/entity.services';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
-import createDefaultDataSourceVersionModel from '../../../database/models/reportivix/defaultDataSourceVersionModel';
+import createDefaultDataSourceVersionModel from '../../../database/models/common/defaultDataSourceVersionModel';
 import * as dataSourceVersionService from '../../../database/services/common/dataSourceVersion.services';
 import { DataSourceVersion } from '../../../types/widget.types';
 import { processFieldConditions } from '../../../utils/conditionProcessor';
 import * as cacheService from '../../../database/services/reportivix/aiCache.service';
 import { DateTime } from 'luxon';
-import Entity from '../../../database/models/reportivix/entity';
+import Entity from '../../../database/models/common/entity';
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -71,18 +71,9 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
   }
 };
 
-
-
 export const updateDataSource = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const {
-      name,
-      versionType,
-      description,
-      uniqueAttributeRules,
-      isShowMenu,
-      fieldSettings = [],
-    } = req.body;
+    const { name, versionType, description, uniqueAttributeRules, isShowMenu, fieldSettings = [] } = req.body;
 
     const { userId } = req.user;
 
@@ -104,8 +95,6 @@ export const updateDataSource = async (req: Request, res: Response, next: NextFu
     next(err);
   }
 };
-
-
 
 export const checkDataSourceCodeAvailableOrNot = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -244,8 +233,6 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
     next(err);
   }
 };
-
-
 
 export const getDataSourceById = async (req: Request, res: Response, next: NextFunction) => {
   try {

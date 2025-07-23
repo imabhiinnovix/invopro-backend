@@ -1,5 +1,5 @@
 import { Schema, model, Document, Types } from 'mongoose';
-import DataSource from '../reportivix/dataSource';
+import DataSource from './dataSource';
 
 export interface IPermission extends Document {
   name: string;

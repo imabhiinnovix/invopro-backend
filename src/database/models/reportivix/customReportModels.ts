@@ -1,4 +1,4 @@
-import createDefaultDataSourceVersionModel from './defaultDataSourceVersionModel';
+import createDefaultDataSourceVersionModel from '../common/defaultDataSourceVersionModel';
 
 export type CustomReportModelAccessReturnType = {
   DataSourceVersionValuePortfolio: ReturnType<typeof createDefaultDataSourceVersionModel>;
