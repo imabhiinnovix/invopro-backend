@@ -65,8 +65,8 @@ const dataSourceSchema = new Schema<IDataSource>(
     code: { type: String, required: true },
     versionType: { type: String, required: true },
     isActive: { type: Boolean, required: true },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
-    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'user' },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'user' },
     canEditInline: { type: Boolean, default: false },
     uniqueAttributeRules: {
       type: [[Schema.Types.ObjectId]],
@@ -87,14 +87,8 @@ const dataSourceSchema = new Schema<IDataSource>(
 );
 
 // Indexes
-dataSourceSchema.index(
-  { code: 1, organizationId: 1 },
-  { unique: true, collation: { locale: 'en', strength: 2 } }
-);
-dataSourceSchema.index(
-  { name: 1, organizationId: 1 },
-  { unique: true, collation: { locale: 'en', strength: 2 } }
-);
+dataSourceSchema.index({ code: 1, organizationId: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
+dataSourceSchema.index({ name: 1, organizationId: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
 
 const DataSource = model<IDataSource>('data_source', dataSourceSchema);
 

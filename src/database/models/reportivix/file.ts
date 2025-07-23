@@ -18,7 +18,7 @@ export interface IFile extends Document {
 
 const fileSchema = new Schema<IFile>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'user', required: true },
     name: { type: String, required: true },
     mimeType: { type: String, required: true },
     type: { type: String, required: false },

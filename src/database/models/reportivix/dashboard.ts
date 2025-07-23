@@ -36,7 +36,7 @@ const settingsSchema = new Schema(
 
 const dashboardSchema = new Schema<IDashboard>(
   {
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'user' },
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
     widgetThemeId: { type: Schema.Types.ObjectId, ref: 'widget_theme' },
     name: { type: Schema.Types.String },

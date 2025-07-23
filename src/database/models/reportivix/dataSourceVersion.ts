@@ -48,8 +48,8 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
     fileSize: { type: String },
     isCurrent: { type: Boolean, required: true },
     isActive: { type: Boolean, required: true },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
-    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'user' },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'user' },
   },
   {
     timestamps: true,

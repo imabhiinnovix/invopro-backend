@@ -74,7 +74,7 @@ const attributeSchema = new Schema<IAttribute>(
     cleaner: { type: [String] },
     referenceEntitySetting: {
       type: referenceEntitySettingSchema,
-      required: false
+      required: false,
     },
   },
   { _id: true, toJSON: { getters: true }, toObject: { getters: true } }
@@ -87,8 +87,8 @@ const entitySchema = new Schema<IEntity>(
     description: { type: String },
     attributes: { type: [attributeSchema], default: [] },
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
-    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'user' },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'user' },
     isActive: { type: Boolean, required: true },
   },
   {
@@ -96,10 +96,7 @@ const entitySchema = new Schema<IEntity>(
   }
 );
 
-entitySchema.index(
-  { name: 1, organizationId: 1 },
-  { unique: true, collation: { locale: 'en', strength: 2 } }
-);
+entitySchema.index({ name: 1, organizationId: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
 
 // Create the entity model
 const Entity = model<IEntity>('Entity', entitySchema);

@@ -36,7 +36,7 @@ interface IDashboardWidget extends Document {
 const dashboardWidgetSchema = new Schema<IDashboardWidget>(
   {
     // widgetAppearanceId: { type: Schema.Types.ObjectId, ref: 'widget_appearance', required: false },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'user', required: true },
     dashboardId: { type: Schema.Types.ObjectId, ref: 'dashboard', required: true },
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
     widgetTypeId: { type: Schema.Types.ObjectId, ref: 'widget_type', required: true },

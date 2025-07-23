@@ -16,7 +16,7 @@ export interface ISupport extends Document {
 
 const supportSchema = new Schema<ISupport>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'user', required: true },
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
     name: {
       type: String,
