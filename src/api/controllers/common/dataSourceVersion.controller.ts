@@ -23,6 +23,7 @@ import mongoose from 'mongoose';
 import { version } from 'os';
 import { getEntityAttribute, getModelForEntity } from '../../../utils/entity.utils';
 import { Types } from 'mongoose';
+import { findEntityById } from '../../../database/services/common/entity.services';
 const ObjectId = mongoose.Types.ObjectId;
 
 async function validateAndConvert({
@@ -958,7 +959,30 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
     });
 
     const versionId = version._id;
-    const entityId = dataSourceDetails.entityId._id;
+    const entityId = dataSourceDetails.entityId;
+
+    // Use entityService to fetch entity and convert reference fields
+    const entity = await findEntityById(entityId);
+    if (!entity || !entity.attributes) {
+      return res.status(400).json({ success: false, message: 'Entity or attributes not found.' });
+    }
+
+    const refAttributes = entity.attributes
+      .filter(attr => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
+      .map(attr => attr.name);
+
+    for (const attr of refAttributes) {
+      if (rowData[attr]) {
+        try {
+          rowData[attr] = new Types.ObjectId(rowData[attr]);
+        } catch {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid ObjectId for reference field '${attr}'`,
+          });
+        }
+      }
+    }
 
     const newRow = {
       dataSourceId,
@@ -1024,6 +1048,29 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       return res.status(404).json({ success: false, message: 'Row not found for update.' });
     }
     
+    // Use entityService to fetch entity and convert reference fields
+    const entity = await findEntityById(dataSourceDetails.entityId);
+    if (!entity || !entity.attributes) {
+      return res.status(400).json({ success: false, message: 'Entity or attributes not found.' });
+    }
+
+    const refAttributes = entity.attributes
+      .filter(attr => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
+      .map(attr => attr.name);
+
+    for (const attr of refAttributes) {
+      if (rowData[attr]) {
+        try {
+          rowData[attr] = new Types.ObjectId(rowData[attr]);
+        } catch {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid ObjectId for reference field '${attr}'`,
+          });
+        }
+      }
+    }
+
     await dataSourceVersionValueService.updateOne(schemaName, { _id: rowId }, {
       rowData: rowData,
       updatedBy: userId,

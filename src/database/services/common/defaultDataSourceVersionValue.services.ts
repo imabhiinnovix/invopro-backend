@@ -125,6 +125,9 @@ export const getDataSourceVersionValue = async ({
   }
 };
 
+
+
+// Your actual function
 export const getDataSourceVersionValueV1 = async ({
   schemaName,
   query,
@@ -142,73 +145,70 @@ export const getDataSourceVersionValueV1 = async ({
   limit: number;
   sort?: Record<string, 1 | -1>;
   filters?: Record<string, any>;
-  entityId:any
-})  => {
+  entityId: any;
+}) => {
   try {
     const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
+    const entity:any = await findEntityById(entityId);
+    
+    // FIX: Properly typed map
+    const attributesMap: Record<string, any> = entity.attributes.reduce((acc, attr) => {
+      acc[attr.name] = attr;
+      return acc;
+    }, {} as Record<string, any>);
 
-    const aggregationPipeline: any[] = [
-      { $match: query }
-    ];
-  const entity:any = await findEntityById(entityId);
-  const attributesMap = entity.attributes.reduce((acc, attr) => {
-    acc[attr.name] = attr;
-    return acc;
-  }, {} as Record<string, any>);
+    const aggregationPipeline: any[] = [{ $match: query }];
 
-  const filterConditions: any[] = [];
-
-  // --- Step 1: Handle filters ---
-  for (const [key, val] of Object.entries(filters)) {
-    if (key.includes('.')) {
-      const [refField, subField] = key.split('.');
-      const attr = attributesMap[refField];
-
+    // Step 1: Lookups for all reference fields
+    for (const [attrName, attr] of Object.entries(attributesMap)) {
       if (attr.referenceEntitySetting?.refEntityId) {
         const refEntityId = attr.referenceEntitySetting.refEntityId;
-        const localField = `rowData.${refField}`;
-        const asField = `rowData.${refField}_resolved`;
+        const localField = `rowData.${attrName}`;
+        const asField = `rowData.${attrName}_resolved`;
 
-        // Lookup only once
-        if (!aggregationPipeline.some(p => p.$lookup?.as === asField)) {
-          const refModel = await getModelForEntity(refEntityId);
+        const refModel = await getModelForEntity(refEntityId);
+
+        if (!aggregationPipeline.some(stage => stage.$lookup?.as === asField)) {
           aggregationPipeline.push({
             $lookup: {
               from: refModel.collection.name,
               localField,
               foreignField: '_id',
-              as: asField,
-            },
+              as: asField
+            }
           });
           aggregationPipeline.push({
             $unwind: {
               path: `$${asField}`,
-              preserveNullAndEmptyArrays: true,
-            },
+              preserveNullAndEmptyArrays: true
+            }
           });
         }
-
-        filterConditions.push({
-          [`${asField}.rowData.${subField}`]: Array.isArray(val) ? { $in: val } : val,
-        });
-        continue;
       }
     }
-     // Regular top-level attribute filter
-    filterConditions.push({
-      [`rowData.${key}`]: Array.isArray(val) ? { $in: val } : val,
-    });
-  }
-  if (filterConditions.length > 0) {
-    aggregationPipeline.push({
-      $match: {
-        $and: filterConditions,
-      },
-    });
-  }
 
-    // Apply sorting on rowData or other fields
-    const finalSort: any = {};
+    // Step 2: Handle filters
+    const filterConditions: any[] = [];
+    for (const [key, val] of Object.entries(filters)) {
+      if (key.includes('.')) {
+        const [refField, subField] = key.split('.');
+        const asField = `rowData.${refField}_resolved`;
+        filterConditions.push({
+          [`${asField}.rowData.${subField}`]: Array.isArray(val) ? { $in: val } : val
+        });
+      } else {
+        filterConditions.push({
+          [`rowData.${key}`]: Array.isArray(val) ? { $in: val } : val
+        });
+      }
+    }
+
+    if (filterConditions.length > 0) {
+      aggregationPipeline.push({ $match: { $and: filterConditions } });
+    }
+
+    // Step 3: Sort
+    const finalSort: Record<string, 1 | -1> = {};
     if (sort && Object.keys(sort).length > 0) {
       for (const key in sort) {
         finalSort[`rowData.${key}`] = sort[key];
@@ -223,7 +223,7 @@ export const getDataSourceVersionValueV1 = async ({
       { $limit: limit }
     );
 
-    // Add project if needed
+    // Step 4: Projection
     if (select) {
       const projectionFields = select.split(' ').reduce((acc: any, field: string) => {
         acc[field] = 1;
@@ -232,73 +232,65 @@ export const getDataSourceVersionValueV1 = async ({
       aggregationPipeline.push({ $project: projectionFields });
     }
 
-    // Get paginated data
+    // Step 5: Execute
     const versionValueData = await DataSourceVersionValue.aggregate(aggregationPipeline).exec();
 
-    // Flatten _resolved fields into main fields
+    // Step 6: Transform
     const transformedData = await Promise.all(
       versionValueData.map(async (doc: any) => {
-      const newDoc = { ...doc };
-      const rowData: Record<string, any> = { ...doc.rowData };
+        const newDoc = { ...doc };
+        const rowData: Record<string, any> = { ...doc.rowData };
 
-      for (const key in rowData) {
-        const resolvedKey = `${key}_resolved`;
-
-        if (rowData.hasOwnProperty(resolvedKey)) {
-          const refResolved = rowData[resolvedKey];
+        for (const key in attributesMap) {
           const attr = attributesMap[key];
+          const resolvedKey = `${key}_resolved`;
 
-          if (attr.referenceEntitySetting?.refEntityField) {
-            const refField = await getEntityAttribute(
-              attr.referenceEntitySetting.refEntityId,
-              attr.referenceEntitySetting.refEntityField
-            );
-            rowData[key] = {
-              _id: refResolved?._id,
-              name: refResolved?.rowData?.[refField?.name] || null,
-              ...refResolved?.rowData
-            };
-          } else {
-            rowData[key] = refResolved?.rowData || rowData[key];
+          if (attr.referenceEntitySetting && doc.rowData?.hasOwnProperty(resolvedKey)) {
+            const refResolved = doc.rowData[resolvedKey];
+
+            if (attr.referenceEntitySetting.refEntityField) {
+              const refField = await getEntityAttribute(
+                attr.referenceEntitySetting.refEntityId,
+                attr.referenceEntitySetting.refEntityField
+              );
+              console.log('refField',refField,attr.referenceEntitySetting);
+              rowData[key] = {
+                _id: refResolved?._id,
+                name: refResolved?.rowData?.[refField?.name] || null,
+                ...refResolved?.rowData
+              };
+            } else {
+              rowData[key] = refResolved?.rowData || rowData[key];
+            }
+
+            delete rowData[resolvedKey];
           }
-
-          delete rowData[resolvedKey];
         }
-      }
 
-      newDoc.rowData = rowData;
-      return newDoc;
-    })
-  );
+        newDoc.rowData = rowData;
+        return newDoc;
+      })
+    );
 
+    // Step 7: Count
+    const countPipeline = aggregationPipeline.filter(
+      stage => !('$skip' in stage || '$limit' in stage || '$project' in stage)
+    );
+    countPipeline.push({ $count: 'totalCount' });
 
-
-    // Get total count via aggregation
-    const countPipeline = [...aggregationPipeline];
-
-    // Remove pagination & projection
-    const stagesToRemove = ['$skip', '$limit', '$project'];
-    const filteredCountPipeline = countPipeline.filter(stage => {
-      const key = Object.keys(stage)[0];
-      return !stagesToRemove.includes(key);
-    });
-
-    filteredCountPipeline.push({
-      $count: 'totalCount',
-    });
-
-    const countResult = await DataSourceVersionValue.aggregate(filteredCountPipeline).exec();
+    const countResult = await DataSourceVersionValue.aggregate(countPipeline).exec();
     const totalCount = countResult?.[0]?.totalCount || 0;
 
     return {
       data: transformedData,
-      totalCount,
+      totalCount
     };
-  
-}catch (err) {
+  } catch (err) {
     throw err;
   }
 };
+
+
 
 /**
  * Find a single version value row by filter (e.g. _id, dataSourceVersionId)

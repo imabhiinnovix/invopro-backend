@@ -111,7 +111,7 @@ export const findEntityByNameAndOrganization = async (name: string, organization
   }
 };
 
-export const findEntityById = async (id: string) => {
+export const findEntityById = async (id: any) => {
   try {
     const entityDetails = await Entity.findById(id);
 
