@@ -6623,6 +6623,36 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
       createdBy,
       isActive: true,
     },
+    {
+      _id: entityDataSourceMap.ipCounsel.entityId,
+      name: 'IP Counsel',
+      description: '',
+      attributes: [
+        {
+          name: 'AttorneyName',
+          mappingName: 'Attorney Name',
+          type: 'text',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: '',
+          cleaner: [],
+        },
+        {
+          name: 'FormalityOfficerFO',
+          mappingName: 'Formality Officer (FO)',
+          type: 'text',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: '',
+          cleaner: [],
+        },
+      ],
+      organizationId,
+      createdBy,
+      isActive: true,
+    },
   ];
 }
 export async function seedEntities({ organizationId, createdBy, updatedBy, entityDataSourceMap }) {
