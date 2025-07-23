@@ -6344,7 +6344,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
       __v: 0,
     },
     {
-      _id: entityDataSourceMap.caseList.entityId,
+      _id: entityDataSourceMap.case_list.entityId,
       name: 'Case List',
       description: '',
       attributes: [
@@ -6545,7 +6545,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
     },
     {
       name: 'Action Due',
-      _id: entityDataSourceMap.actionDue.entityId,
+      _id: entityDataSourceMap.action_due.entityId,
       description: '',
       attributes: [
         {
@@ -6624,7 +6624,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
       isActive: true,
     },
     {
-      _id: entityDataSourceMap.ipCounsel.entityId,
+      _id: entityDataSourceMap.ip_counsel.entityId,
       name: 'IP Counsel',
       description: '',
       attributes: [
@@ -6654,7 +6654,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
       isActive: true,
     },
     {
-      _id: entityDataSourceMap.formalityOfficers.entityId,
+      _id: entityDataSourceMap.formality_officers.entityId,
       name: 'Formality Officers',
       description: '',
       attributes: [

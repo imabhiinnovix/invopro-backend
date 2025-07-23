@@ -282,6 +282,22 @@ const entityDataSourceMapReportivix = {
     entityId: new mongoose.Types.ObjectId('67a3428622cb8a927a85e4a4'),
     dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08bed'),
   },
+  case_list: {
+    entityId: new mongoose.Types.ObjectId('6880a9d9c7f126fbdf3a991c'),
+    dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08bee'),
+  },
+  action_due: {
+    entityId: new mongoose.Types.ObjectId('6880b07573ff870ac0c67aa8'),
+    dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08bef'),
+  },
+  ip_counsel: {
+    entityId: new mongoose.Types.ObjectId('6880b3089d26880d15f48017'),
+    dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08beg'),
+  },
+  formality_officers: {
+    entityId: new mongoose.Types.ObjectId('6880b70e279a1a50d220e5ae'),
+    dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08beh'),
+  },
 };
 
 const customReportMapReportivix = {
@@ -530,6 +546,22 @@ const entityDataSourceMapSabic = {
   annuities_outstanding: {
     entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b8'),
     dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda34'),
+  },
+  case_list: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e113'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda35'),
+  },
+  action_due: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e110'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda36'),
+  },
+  ip_counsel: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e111'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda37'),
+  },
+  formality_officers: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e112'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda38'),
   },
 };
 
