@@ -6653,6 +6653,47 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
       createdBy,
       isActive: true,
     },
+    {
+      _id: entityDataSourceMap.formalityOfficers.entityId,
+      name: 'Formality Officers',
+      description: '',
+      attributes: [
+        {
+          name: 'FOName',
+          mappingName: 'FO Name',
+          type: 'text',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: '',
+          cleaner: [],
+        },
+        {
+          name: 'FOEmail',
+          mappingName: 'FO Email',
+          type: 'text',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: '',
+          cleaner: [],
+        },
+        {
+          name: 'ManagerName',
+          mappingName: 'Manager Name',
+          type: 'text',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: '',
+          cleaner: [],
+        },
+      ],
+      organizationId,
+      createdBy,
+      isActive: true,
+      __v: 0,
+    },
   ];
 }
 export async function seedEntities({ organizationId, createdBy, updatedBy, entityDataSourceMap }) {
