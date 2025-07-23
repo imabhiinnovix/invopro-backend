@@ -299,3 +299,35 @@ export const getDataSourceVersionValueV1 = async ({
     throw err;
   }
 };
+
+/**
+ * Find a single version value row by filter (e.g. _id, dataSourceVersionId)
+ */
+export const findOne = async (
+  schemaName: string,
+  filter: Record<string, any>
+): Promise<Record<string, any> | null> => {
+  const ModelClass = createDefaultDataSourceVersionModel(schemaName) as Model<Document>;
+  return ModelClass.findOne(filter).lean().exec();
+};
+
+/**
+ * Update a version value row by filter (e.g. _id)
+ */
+export const updateOne = async (
+  schemaName: string,
+  filter: Record<string, any>,
+  update: Record<string, any>,
+  options: any = {}
+) => {
+  const ModelClass = createDefaultDataSourceVersionModel(schemaName) as Model<Document>;
+  return ModelClass.updateOne(filter, update, options).exec();
+};
+
+export const deleteVersionValues = async (
+  schemaName: string,
+  filter: Record<string, any>,
+) => {
+  const Model = createDefaultDataSourceVersionModel(schemaName) as Model<Document>;
+  return await Model.deleteMany(filter);
+};
