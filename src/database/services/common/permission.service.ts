@@ -72,16 +72,16 @@ export const updatePermission = async (id: string, data: any) => {
   if (!existing) throw new Error('Permission not found.');
 
   const orgId = data.organizationId;
-  if (String(existing.organizationId) != orgId) {
+  if (String(existing.organizationId) !== String(orgId)) {
     throw new Error('You are not allowed to update the permission.');
   }
 
   // Check if name is changing and is already used
   if (data.name && data.name !== existing.name) {
     const nameConflict = await Permission.findOne({
-      _id: { $ne: id }, // exclude self
+      _id: { $ne: id },
       name: data.name,
-      organizationId: { $or: [{ organizationId: orgId }, { organizationId: { $exists: false } }] },
+      $or: [{ organizationId: orgId }, { organizationId: { $exists: false } }],
     });
 
     if (nameConflict) {
@@ -89,29 +89,27 @@ export const updatePermission = async (id: string, data: any) => {
     }
   }
 
-  // Determine if key fields changed
+  // Check if key fields are changing
   const isChangingKeyFields =
     existing.method !== data.method ||
     existing.resourceId !== data.resourceId ||
-    !existing.dataSourceId.equals(data.dataSourceId);
+    String(existing.dataSourceId || '') !== String(data.dataSourceId || '');
 
-  // Determine if we are reactivating a previously inactive permission
   const isReactivating = existing.status === 'inactive' && data.status === 'active' && isChangingKeyFields;
 
-  // If changing key fields or reactivating, check for conflict
   if ((isChangingKeyFields || isReactivating) && data.status !== 'inactive') {
     const conflict = await Permission.findOne({
       _id: { $ne: id },
       method: data.method,
       resourceId: data.resourceId,
-      organizationId: orgId,
       dataSourceId: data.dataSourceId,
+      organizationId: orgId,
       status: 'active',
     });
 
     if (conflict) {
       throw new Error(
-        'Another active permission with the same method, resourceId,datasourcId and organization already exists.'
+        'Another active permission with the same method, resourceId, dataSourceId, and organization already exists.'
       );
     }
   }
