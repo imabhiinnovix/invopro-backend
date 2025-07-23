@@ -1023,9 +1023,9 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     if (!existingRow) {
       return res.status(404).json({ success: false, message: 'Row not found for update.' });
     }
-
+    
     await dataSourceVersionValueService.updateOne(schemaName, { _id: rowId }, {
-      ...rowData,
+      rowData: rowData,
       updatedBy: userId,
     });
 

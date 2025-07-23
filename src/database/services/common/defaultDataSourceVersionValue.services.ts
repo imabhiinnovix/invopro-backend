@@ -308,7 +308,7 @@ export const findOne = async (
   filter: Record<string, any>
 ): Promise<Record<string, any> | null> => {
   const ModelClass = createDefaultDataSourceVersionModel(schemaName) as Model<Document>;
-  return ModelClass.findOne(filter).lean().exec();
+  return await ModelClass.findOne(filter).lean().exec();
 };
 
 /**
@@ -321,7 +321,7 @@ export const updateOne = async (
   options: any = {}
 ) => {
   const ModelClass = createDefaultDataSourceVersionModel(schemaName) as Model<Document>;
-  return ModelClass.updateOne(filter, update, options).exec();
+  return await ModelClass.updateOne(filter, update, options).exec();
 };
 
 export const deleteVersionValues = async (
