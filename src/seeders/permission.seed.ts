@@ -1,6 +1,6 @@
 import Permission from '../database/models/common/permissionModel'; // Your Mongoose model
 
-const permissions = [
+let permissions = [
   {
     name: 'List User',
     method: 'GET',
@@ -821,7 +821,8 @@ const permissions = [
   },
 ];
 
-export async function seedPermissions() {
+export async function seedPermissions(dynamicPerission: any[]) {
+  permissions = [...permissions, ...dynamicPerission];
   for (const perm of permissions) {
     const { method, resourceId } = perm;
 
