@@ -49,6 +49,10 @@ export const createPermission = async (data: any) => {
         name: data.name,
         $or: [{ organizationId: orgId }, { organizationId: { $exists: false } }],
       },
+      {
+        name: data.resourceCode,
+        $or: [{ organizationId: orgId }, { organizationId: { $exists: false } }],
+      },
     ],
   });
 
@@ -60,6 +64,9 @@ export const createPermission = async (data: any) => {
 
     if (existing.name === data.name) {
       throw new Error('Permission name already exists.');
+    }
+    if (existing.resourceCode === data.resourceCode) {
+      throw new Error('Resource code already exists.');
     }
   }
 
