@@ -291,13 +291,13 @@ const entityDataSourceMapReportivix = {
     dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08bef'),
   },
   ip_counsel: {
-    entityId: new mongoose.Types.ObjectId('6880b3089d26880d15f48017'),
-    dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08beg'),
+    entityId: new mongoose.Types.ObjectId('6880b07573ff870ac0c67aa9'),
+    dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08beb'),
   },
-  // formality_officers: {
-  //   entityId: new mongoose.Types.ObjectId('6880b70e279a1a50d220e5ae'),
-  //   dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08beh'),
-  // },
+  formality_officers: {
+    entityId: new mongoose.Types.ObjectId('6880b70e279a1a50d220e5ae'),
+    dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08b0e'),
+  },
 };
 
 const customReportMapReportivix = {
