@@ -679,21 +679,21 @@ export async function seedDatabase() {
 
     console.info('\n====> Seeding organizations <====');
 
-    // console.info('\n====> Seeding Entities Reportivix <====');
-    // await seedEntities({
-    //   organizationId: payload.reportivixOrganizationId,
-    //   createdBy: payload.reportivixSuperAdminUserId,
-    //   updatedBy: payload.reportivixSuperAdminUserId,
-    //   entityDataSourceMap: entityDataSourceMapReportivix,
-    // });
+    console.info('\n====> Seeding Entities Reportivix <====');
+    await seedEntities({
+      organizationId: payload.reportivixOrganizationId,
+      createdBy: payload.reportivixSuperAdminUserId,
+      updatedBy: payload.reportivixSuperAdminUserId,
+      entityDataSourceMap: entityDataSourceMapReportivix,
+    });
 
-    // console.info('\n====> Seeding Data source Reportivix <====');
-    // await seedDataSource({
-    //   organizationId: payload.reportivixOrganizationId,
-    //   createdBy: payload.reportivixSuperAdminUserId,
-    //   updatedBy: payload.reportivixSuperAdminUserId,
-    //   entityDataSourceMap: entityDataSourceMapReportivix,
-    // });
+    console.info('\n====> Seeding Data source Reportivix <====');
+    await seedDataSource({
+      organizationId: payload.reportivixOrganizationId,
+      createdBy: payload.reportivixSuperAdminUserId,
+      updatedBy: payload.reportivixSuperAdminUserId,
+      entityDataSourceMap: entityDataSourceMapReportivix,
+    });
 
     console.info('\n====> Seeding Custom Report Reportivx<====');
     await seedCustomReports({
