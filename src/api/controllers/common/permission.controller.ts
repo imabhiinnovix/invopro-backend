@@ -7,7 +7,7 @@ const VALID_STATUS = ['active', 'inactive'];
 const VALID_RESOURCE_TYPES = ['Data Source'];
 export const getPermissionList = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, resourceType, status, method, dataSourceId }: any = req.query;
+    const { search, name, resourceType, status, method, dataSourceId }: any = req.query;
     const { isSuperUser, organizationId } = req.user;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
@@ -15,7 +15,10 @@ export const getPermissionList = async (req: Request, res: Response, next: NextF
     const query: any = {
       $or: [{ organizationId: { $exists: false } }, { organizationId: new Types.ObjectId(organizationId) }],
     };
-    if (name) query.name = { $regex: name, $options: 'i' };
+    if (search) query.name = { $regex: name, $options: 'i' };
+    if (name) {
+      query.name = name;
+    }
     if (resourceType) {
       query.resourceType = resourceType;
     }
