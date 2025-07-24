@@ -15,7 +15,6 @@ export interface IPermission extends Document {
   organizationId: Types.ObjectId;
   dataSourceId: Types.ObjectId;
   resourceCode: string;
-  menuName: string;
 }
 
 // Define schema
@@ -25,7 +24,6 @@ const permissionSchema = new Schema<IPermission>(
       type: String,
       required: true,
     },
-    menuName: { type: String },
     method: {
       type: String,
       required: true,

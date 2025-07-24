@@ -821,7 +821,65 @@ let permissions = [
   },
 ];
 
-export async function seedPermissions(dynamicPerission: any[]) {
+function getDynamicPermission(
+  entities: {
+    name: string;
+    dataSourceId: string;
+    code: string;
+    organizationId: string;
+  }[]
+) {
+  const routes = [
+    {
+      action: 'Create',
+      method: 'POST',
+      resourceId: 'common/dataSourceVersion/versionData/create',
+      codeSuffix: 'create',
+    },
+    {
+      action: 'Update',
+      method: 'PUT',
+      resourceId: 'common/dataSourceVersion/versionData/update/:rowId',
+      codeSuffix: 'update',
+    },
+    {
+      action: 'Delete',
+      method: 'DELETE',
+      resourceId: 'common/dataSourceVersion/versionData/delete',
+      codeSuffix: 'delete',
+    },
+    {
+      action: 'View',
+      method: 'GET',
+      resourceId: 'common/dataSourceVersion/versionData',
+      codeSuffix: 'view',
+    },
+  ];
+
+  const permissions: any[] = [];
+
+  entities.forEach(({ name, dataSourceId, code, organizationId }) => {
+    routes.forEach(({ action, method, resourceId, codeSuffix }) => {
+      permissions.push({
+        name: `${name} ${action}`,
+        method,
+        resourceId,
+        dataSourceId,
+        resourceType: 'Data Source',
+        resourceCode: `data_source_${code}_${codeSuffix}`,
+        status: 'active',
+        isSuperUser: false,
+        organizationId,
+      });
+    });
+  });
+
+  return permissions;
+}
+
+export async function seedPermissions(perissionList: any[]) {
+  const dynamicPerission = getDynamicPermission(perissionList);
+  console.log(dynamicPerission);
   permissions = [...permissions, ...dynamicPerission];
   for (const perm of permissions) {
     const { method, resourceId } = perm;
