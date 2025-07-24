@@ -849,7 +849,7 @@ function getDynamicPermission(
       codeSuffix: 'delete',
     },
     {
-      action: 'View',
+      action: 'List',
       method: 'GET',
       resourceId: 'common/dataSourceVersion/versionData',
       codeSuffix: 'view',
