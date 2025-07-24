@@ -583,7 +583,7 @@ export async function seedDatabase() {
     // Connect to MongoDB
     const conn = await mongoose.connect(config.MONGO_URI!);
     console.info(`MongoDB Connected: ${conn.connection.host}`);
-
+    console.info('\n====> Seeding organizations <====');
     await seedOrganizations([
       {
         _id: payload.reportivixOrganizationId,
@@ -676,8 +676,6 @@ export async function seedDatabase() {
         ],
       },
     ]);
-
-    console.info('\n====> Seeding organizations <====');
 
     console.info('\n====> Seeding Entities Reportivix <====');
     await seedEntities({
