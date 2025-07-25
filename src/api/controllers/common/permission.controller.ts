@@ -88,6 +88,7 @@ export const createPermission = async (req: Request, res: Response, next: NextFu
     const permission = await permissionService.createPermission({
       name,
       method: actualMethod,
+      methodName: method.toLowerCase(),
       resourceId,
       resourceCode: `data_source_${code}_${action}`,
       resourceType: 'Data Source',
@@ -137,6 +138,7 @@ export const updatePermission = async (req: Request, res: Response, next: NextFu
     const permission = await permissionService.updatePermission(permissionId, {
       name,
       method: actualMethod,
+      methodName: method.toLowerCase(),
       resourceId,
       resourceCode: `data_source_${code}_${action}`,
       resourceType: 'Data Source',
