@@ -16,6 +16,7 @@ export interface IPermission extends Document {
   organizationId: Types.ObjectId;
   dataSourceId: Types.ObjectId;
   resourceCode: string;
+  methodName: 'create' | 'update' | 'delete' | 'list' | 'view';
 }
 
 // Define schema
@@ -29,6 +30,11 @@ const permissionSchema = new Schema<IPermission>(
       type: String,
       required: true,
       enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // extend if needed
+    },
+    methodName: {
+      type: String,
+      required: true,
+      enum: ['create', 'update', 'delete', 'list', 'view'], // extend if needed
     },
     resourceId: {
       type: String,

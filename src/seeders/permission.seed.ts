@@ -852,7 +852,7 @@ function getDynamicPermission(
       action: 'List',
       method: 'GET',
       resourceId: 'common/dataSourceVersion/versionData',
-      codeSuffix: 'view',
+      codeSuffix: 'list',
     },
   ];
 
