@@ -1,13 +1,13 @@
 import Permission from '../database/models/common/permissionModel'; // Your Mongoose model
 
-const permissions = [
+let permissions = [
   {
     name: 'List User',
     method: 'GET',
     resourceId: '/common/user/list',
     extraOptions: {},
     resourceType: 'User',
-    resourceCode: 'user_list',
+    resourceCode: 'user__list',
   },
   {
     name: 'Get Current User',
@@ -16,7 +16,7 @@ const permissions = [
     extraOptions: {},
     resourceType: 'User',
     isSuperUser: false,
-    resourceCode: 'user_get_current_user',
+    resourceCode: 'user__get_current_user',
   },
   {
     name: 'Get User',
@@ -24,7 +24,7 @@ const permissions = [
     resourceId: '/common/user/:userId',
     resourceType: 'User',
     isSuperUser: false,
-    resourceCode: 'user_get_user',
+    resourceCode: 'user__get_user',
   },
   {
     name: 'Create User',
@@ -32,7 +32,7 @@ const permissions = [
     resourceId: '/common/user/create',
     extraOptions: {},
     resourceType: 'User',
-    resourceCode: 'user_create',
+    resourceCode: 'user__create',
     isSuperUser: false,
   },
   {
@@ -41,7 +41,7 @@ const permissions = [
     resourceId: '/common/user/update-current-user',
     extraOptions: {},
     resourceType: 'User',
-    resourceCode: 'user_update_current_user',
+    resourceCode: 'user__update_current_user',
     isSuperUser: false,
   },
   {
@@ -50,7 +50,7 @@ const permissions = [
     resourceId: '/common/user/change-password',
     extraOptions: {},
     resourceType: 'User',
-    resourceCode: 'user_change_password',
+    resourceCode: 'user__change_password',
     isSuperUser: false,
   },
   {
@@ -59,7 +59,7 @@ const permissions = [
     resourceId: '/common/user/update/:userId',
     extraOptions: {},
     resourceType: 'User',
-    resourceCode: 'user_update',
+    resourceCode: 'user__update',
     isSuperUser: false,
   },
   {
@@ -68,7 +68,7 @@ const permissions = [
     resourceId: '/common/user/delete/:userId',
     extraOptions: {},
     resourceType: 'User',
-    resourceCode: 'user_delete',
+    resourceCode: 'user__delete',
     isSuperUser: false,
   },
   {
@@ -77,7 +77,7 @@ const permissions = [
     resourceId: '/common/permission/list',
     extraOptions: {},
     resourceType: 'Permission',
-    resourceCode: 'permission_list',
+    resourceCode: 'permission__list',
     isSuperUser: false,
   },
   {
@@ -86,7 +86,7 @@ const permissions = [
     resourceId: '/common/permission/create',
     extraOptions: {},
     resourceType: 'Permission',
-    resourceCode: 'permission_create',
+    resourceCode: 'permission__create',
     isSuperUser: false,
   },
   {
@@ -95,7 +95,7 @@ const permissions = [
     resourceId: '/common/permission/update/:permissionId',
     extraOptions: {},
     resourceType: 'Permission',
-    resourceCode: 'permission_update',
+    resourceCode: 'permission__update',
     isSuperUser: false,
   },
   {
@@ -104,7 +104,7 @@ const permissions = [
     resourceId: '/common/permission/delete/:permissionId',
     extraOptions: {},
     resourceType: 'Permission',
-    resourceCode: 'permission_delete',
+    resourceCode: 'permission__delete',
     isSuperUser: false,
   },
   {
@@ -113,7 +113,7 @@ const permissions = [
     resourceId: '/common/role/list',
     extraOptions: {},
     resourceType: 'Role',
-    resourceCode: 'role_list',
+    resourceCode: 'role__list',
     isSuperUser: false,
   },
   {
@@ -122,7 +122,7 @@ const permissions = [
     resourceId: '/common/role/:roleId',
     extraOptions: {},
     resourceType: 'Role',
-    resourceCode: 'role_permission_list',
+    resourceCode: 'role__permission_list',
     isSuperUser: false,
   },
   {
@@ -131,7 +131,7 @@ const permissions = [
     resourceId: '/common/role/create',
     extraOptions: {},
     resourceType: 'Role',
-    resourceCode: 'role_create',
+    resourceCode: 'role__create',
     isSuperUser: false,
   },
   {
@@ -140,7 +140,7 @@ const permissions = [
     resourceId: '/common/role/update/:roleId',
     extraOptions: {},
     resourceType: 'Role',
-    resourceCode: 'role_update',
+    resourceCode: 'role__update',
     isSuperUser: false,
   },
   {
@@ -149,7 +149,7 @@ const permissions = [
     resourceId: '/common/role/delete/:roleId',
     extraOptions: {},
     resourceType: 'Role',
-    resourceCode: 'role_delete',
+    resourceCode: 'role__delete',
     isSuperUser: false,
   },
   {
@@ -158,7 +158,7 @@ const permissions = [
     resourceId: '/common/product/list',
     extraOptions: {},
     resourceType: 'Product',
-    resourceCode: 'product_list',
+    resourceCode: 'product__list',
     isSuperUser: true,
   },
   {
@@ -167,7 +167,7 @@ const permissions = [
     resourceId: '/common/organization/create',
     extraOptions: {},
     resourceType: 'Organization',
-    resourceCode: 'organization_create',
+    resourceCode: 'organization__create',
     isSuperUser: true,
   },
   {
@@ -176,7 +176,7 @@ const permissions = [
     resourceId: '/common/organization/update/:organizationId',
     extraOptions: {},
     resourceType: 'Organization',
-    resourceCode: 'organization_update',
+    resourceCode: 'organization__update',
     isSuperUser: true,
   },
   {
@@ -185,7 +185,7 @@ const permissions = [
     resourceId: '/common/organization/delete/:organizationId',
     extraOptions: {},
     resourceType: 'Organization',
-    resourceCode: 'organization_delete',
+    resourceCode: 'organization__delete',
     isSuperUser: true,
   },
   {
@@ -194,7 +194,7 @@ const permissions = [
     resourceId: '/common/organization/list',
     extraOptions: {},
     resourceType: 'Organization',
-    resourceCode: 'organization_list',
+    resourceCode: 'organization__list',
     isSuperUser: true,
   },
   {
@@ -203,7 +203,7 @@ const permissions = [
     resourceId: '/common/organization/:organizationId',
     extraOptions: {},
     resourceType: 'Organization',
-    resourceCode: 'organization_get',
+    resourceCode: 'organization__get',
     isSuperUser: true,
   },
   {
@@ -212,7 +212,7 @@ const permissions = [
     resourceId: '/common/organization/get-current-organization',
     extraOptions: {},
     resourceType: 'Organization',
-    resourceCode: 'organization_get_current',
+    resourceCode: 'organization__get_current',
     isSuperUser: false,
   },
   {
@@ -221,7 +221,7 @@ const permissions = [
     resourceId: '/common/product-subscription/list',
     extraOptions: {},
     resourceType: 'Product Subscription',
-    resourceCode: 'productSubscription_list',
+    resourceCode: 'productSubscription__list',
     isSuperUser: true,
   },
   {
@@ -230,7 +230,7 @@ const permissions = [
     resourceId: '/common/entities/list',
     extraOptions: {},
     resourceType: 'Entities',
-    resourceCode: 'entities_list',
+    resourceCode: 'entities__list',
     isSuperUser: false,
   },
   {
@@ -239,7 +239,7 @@ const permissions = [
     resourceId: '/common/entities/:entityId',
     extraOptions: {},
     resourceType: 'Entities',
-    resourceCode: 'entities_get',
+    resourceCode: 'entities__get',
     isSuperUser: false,
   },
   {
@@ -248,7 +248,7 @@ const permissions = [
     resourceId: '/common/entities/update/:entityId',
     extraOptions: {},
     resourceType: 'Entities',
-    resourceCode: 'entities_update',
+    resourceCode: 'entities__update',
     isSuperUser: false,
   },
   {
@@ -257,7 +257,7 @@ const permissions = [
     resourceId: '/common/entities/create',
     extraOptions: {},
     resourceType: 'Entities',
-    resourceCode: 'entities_create',
+    resourceCode: 'entities__create',
     isSuperUser: false,
   },
   {
@@ -265,8 +265,8 @@ const permissions = [
     method: 'GET',
     resourceId: '/common/dataSource/code/:code',
     extraOptions: {},
-    resourceType: 'Data Source Static',
-    resourceCode: 'dataSourceStatic_check_code',
+    resourceType: 'Data Source',
+    resourceCode: 'dataSource__check_code',
     isSuperUser: false,
   },
   {
@@ -274,8 +274,8 @@ const permissions = [
     method: 'GET',
     resourceId: '/common/dataSource/name/:name',
     extraOptions: {},
-    resourceType: 'Data Source Static',
-    resourceCode: 'dataSourceStatic_check_name',
+    resourceType: 'Data Source',
+    resourceCode: 'dataSource__check_name',
     isSuperUser: false,
   },
   {
@@ -283,8 +283,8 @@ const permissions = [
     method: 'POST',
     resourceId: '/common/dataSource/create',
     extraOptions: {},
-    resourceType: 'Data Source Static',
-    resourceCode: 'dataSourceStatic_create',
+    resourceType: 'Data Source',
+    resourceCode: 'dataSource__create',
     isSuperUser: false,
   },
   {
@@ -292,8 +292,8 @@ const permissions = [
     method: 'PUT',
     resourceId: '/common/dataSource/update/:dataSourceId',
     extraOptions: {},
-    resourceType: 'Data Source Static',
-    resourceCode: 'dataSourceStatic_update',
+    resourceType: 'Data Source',
+    resourceCode: 'dataSource__update',
     isSuperUser: false,
   },
   {
@@ -301,8 +301,8 @@ const permissions = [
     method: 'GET',
     resourceId: '/common/dataSource/list',
     extraOptions: {},
-    resourceType: 'Data Source Static',
-    resourceCode: 'dataSourceStatic_list',
+    resourceType: 'Data Source',
+    resourceCode: 'dataSource__list',
     isSuperUser: false,
   },
   {
@@ -310,8 +310,8 @@ const permissions = [
     method: 'GET',
     resourceId: '/common/dataSource/dataSourceId/:dataSourceId',
     extraOptions: {},
-    resourceType: 'Data Source Static',
-    resourceCode: 'dataSourceStatic_get',
+    resourceType: 'Data Source',
+    resourceCode: 'dataSource__get',
     isSuperUser: false,
   },
   {
@@ -319,8 +319,8 @@ const permissions = [
     method: 'POST',
     resourceId: '/common/dataSource/getWidgetDataByFilter',
     extraOptions: {},
-    resourceType: 'Data Source Static',
-    resourceCode: 'dataSourceStatic_get_widget_data',
+    resourceType: 'Data Source',
+    resourceCode: 'dataSource__get_widget_data',
     isSuperUser: false,
   },
   {
@@ -329,7 +329,7 @@ const permissions = [
     resourceId: '/common/attributeOptions/create',
     extraOptions: {},
     resourceType: 'Attribute Option',
-    resourceCode: 'attributeOption_create',
+    resourceCode: 'attributeOption__create',
     isSuperUser: false,
   },
   {
@@ -338,7 +338,7 @@ const permissions = [
     resourceId: '/common/attributeOptions/update/:attributeId',
     extraOptions: {},
     resourceType: 'Attribute Option',
-    resourceCode: 'attributeOption_update',
+    resourceCode: 'attributeOption__update',
     isSuperUser: false,
   },
   {
@@ -347,7 +347,7 @@ const permissions = [
     resourceId: '/common/attributeOptions/list',
     extraOptions: {},
     resourceType: 'Attribute Option',
-    resourceCode: 'attributeOption_list',
+    resourceCode: 'attributeOption__list',
     isSuperUser: false,
   },
   {
@@ -356,7 +356,7 @@ const permissions = [
     resourceId: '/common/attributeOptions/get/:attributeId',
     extraOptions: {},
     resourceType: 'Attribute Option',
-    resourceCode: 'attributeOption_get',
+    resourceCode: 'attributeOption__get',
     isSuperUser: false,
   },
   {
@@ -365,7 +365,7 @@ const permissions = [
     resourceId: '/common/files/upload',
     extraOptions: {},
     resourceType: 'File Upload',
-    resourceCode: 'fileUpload_upload',
+    resourceCode: 'fileUpload__upload',
     isSuperUser: false,
   },
   {
@@ -374,7 +374,7 @@ const permissions = [
     resourceId: '/common/dataSourceVersion/list',
     extraOptions: {},
     resourceType: 'Data Source Version',
-    resourceCode: 'dataSourceVersion_list',
+    resourceCode: 'dataSourceVersion__list',
     isSuperUser: false,
   },
   {
@@ -384,7 +384,7 @@ const permissions = [
       '/common/dataSourceVersion/dataSourceId/:dataSourceId/versionValue/:versionValue/versionName/:versionName',
     extraOptions: {},
     resourceType: 'Data Source Version',
-    resourceCode: 'dataSourceVersion_check_name',
+    resourceCode: 'dataSourceVersion__check_name',
     isSuperUser: false,
   },
   {
@@ -393,7 +393,7 @@ const permissions = [
     resourceId: '/common/dataSourceVersion/create',
     extraOptions: {},
     resourceType: 'Data Source Version',
-    resourceCode: 'dataSourceVersion_create_update',
+    resourceCode: 'dataSourceVersion__create_update',
     isSuperUser: false,
   },
   {
@@ -402,7 +402,7 @@ const permissions = [
     resourceId: '/common/dataSourceVersion/versionData',
     extraOptions: {},
     resourceType: 'Data Source Version',
-    resourceCode: 'dataSourceVersion_get_data',
+    resourceCode: 'dataSourceVersion__get_data',
     isSuperUser: false,
   },
   {
@@ -411,7 +411,7 @@ const permissions = [
     resourceId: '/common/dataSourceVersion/listVersionData/:customReportId',
     extraOptions: {},
     resourceType: 'Data Source Version',
-    resourceCode: 'dataSourceVersion_get_latest_detail',
+    resourceCode: 'dataSourceVersion__get_latest_detail',
     isSuperUser: false,
   },
   {
@@ -420,7 +420,7 @@ const permissions = [
     resourceId: '/common/dataSourceVersion/listAllAvailableDataSourceVersionValue',
     extraOptions: {},
     resourceType: 'Data Source Version',
-    resourceCode: 'dataSourceVersion_list_all_available',
+    resourceCode: 'dataSourceVersion__list_all_available',
     isSuperUser: false,
   },
   {
@@ -429,7 +429,7 @@ const permissions = [
     resourceId: '/common/dataImportError/list',
     extraOptions: {},
     resourceType: 'Data Source Version',
-    resourceCode: 'dataSourceVersion_list_import_errors',
+    resourceCode: 'dataSourceVersion__list_import_errors',
     isSuperUser: false,
   },
   {
@@ -438,7 +438,7 @@ const permissions = [
     resourceId: '/common/dashboard/list',
     extraOptions: {},
     resourceType: 'Dashboard',
-    resourceCode: 'dashboard_list',
+    resourceCode: 'dashboard__list',
     isSuperUser: false,
   },
   {
@@ -447,7 +447,7 @@ const permissions = [
     resourceId: '/common/dashboard/get/:dashboardId',
     extraOptions: {},
     resourceType: 'Dashboard',
-    resourceCode: 'dashboard_get',
+    resourceCode: 'dashboard__get',
     isSuperUser: false,
   },
   {
@@ -456,7 +456,7 @@ const permissions = [
     resourceId: '/common/dashboard/create',
     extraOptions: {},
     resourceType: 'Dashboard',
-    resourceCode: 'dashboard_create',
+    resourceCode: 'dashboard__create',
     isSuperUser: false,
   },
   {
@@ -465,7 +465,7 @@ const permissions = [
     resourceId: '/common/dashboard/update/:dashboardId',
     extraOptions: {},
     resourceType: 'Dashboard',
-    resourceCode: 'dashboard_update',
+    resourceCode: 'dashboard__update',
     isSuperUser: false,
   },
   {
@@ -474,7 +474,7 @@ const permissions = [
     resourceId: '/common/dashboard/delete/:dashboardId',
     extraOptions: {},
     resourceType: 'Dashboard',
-    resourceCode: 'dashboard_delete',
+    resourceCode: 'dashboard__delete',
     isSuperUser: false,
   },
   {
@@ -483,7 +483,7 @@ const permissions = [
     resourceId: '/common/dashboard/selectTheme/:dashboardId',
     extraOptions: {},
     resourceType: 'Dashboard',
-    resourceCode: 'dashboard_select_theme',
+    resourceCode: 'dashboard__select_theme',
     isSuperUser: false,
   },
   {
@@ -492,7 +492,7 @@ const permissions = [
     resourceId: '/common/dashboard/widget/getWidgets/:dashboardId',
     extraOptions: {},
     resourceType: 'Dashboard',
-    resourceCode: 'dashboard_get_widgets',
+    resourceCode: 'dashboard__get_widgets',
     isSuperUser: false,
   },
   {
@@ -501,7 +501,7 @@ const permissions = [
     resourceId: '/common/dashboard/widget/getWidgetData',
     extraOptions: {},
     resourceType: 'Dashboard',
-    resourceCode: 'dashboard_get_widget_data',
+    resourceCode: 'dashboard__get_widget_data',
     isSuperUser: false,
   },
   {
@@ -510,7 +510,7 @@ const permissions = [
     resourceId: '/common/dashboard/widget/create',
     extraOptions: {},
     resourceType: 'Dashboard',
-    resourceCode: 'dashboard_create_widget',
+    resourceCode: 'dashboard__create_widget',
     isSuperUser: false,
   },
   {
@@ -519,7 +519,7 @@ const permissions = [
     resourceId: '/common/dashboard/widget/save',
     extraOptions: {},
     resourceType: 'Dashboard',
-    resourceCode: 'dashboard_save_widgets',
+    resourceCode: 'dashboard__save_widgets',
     isSuperUser: false,
   },
   {
@@ -528,7 +528,7 @@ const permissions = [
     resourceId: '/common/dashboard/widget/update/:dashboardWidgetId',
     extraOptions: {},
     resourceType: 'Dashboard',
-    resourceCode: 'dashboard_update_widget',
+    resourceCode: 'dashboard__update_widget',
     isSuperUser: false,
   },
   {
@@ -537,7 +537,7 @@ const permissions = [
     resourceId: '/common/dashboard/widget/delete/:dashboardWidgetId',
     extraOptions: {},
     resourceType: 'Dashboard',
-    resourceCode: 'dashboard_delete_widget',
+    resourceCode: 'dashboard__delete_widget',
     isSuperUser: false,
   },
   {
@@ -546,7 +546,7 @@ const permissions = [
     resourceId: '/common/widgetType/create',
     extraOptions: {},
     resourceType: 'Widget Type',
-    resourceCode: 'widgetType_create',
+    resourceCode: 'widgetType__create',
     isSuperUser: true,
   },
   {
@@ -555,7 +555,7 @@ const permissions = [
     resourceId: '/common/widgetType/update/:widgetTypeId',
     extraOptions: {},
     resourceType: 'Widget Type',
-    resourceCode: 'widgetType_update',
+    resourceCode: 'widgetType__update',
     isSuperUser: true,
   },
   {
@@ -564,7 +564,7 @@ const permissions = [
     resourceId: '/common/widgetType/delete/:widgetTypeId',
     extraOptions: {},
     resourceType: 'Widget Type',
-    resourceCode: 'widgetType_delete',
+    resourceCode: 'widgetType__delete',
     isSuperUser: true,
   },
   {
@@ -573,7 +573,7 @@ const permissions = [
     resourceId: '/common/widgetType/get/:widgetTypeId',
     extraOptions: {},
     resourceType: 'Widget Type',
-    resourceCode: 'widgetType_get',
+    resourceCode: 'widgetType__get',
     isSuperUser: false,
   },
   {
@@ -582,7 +582,7 @@ const permissions = [
     resourceId: '/common/widgetType/list',
     extraOptions: {},
     resourceType: 'Widget Type',
-    resourceCode: 'widgetType_list',
+    resourceCode: 'widgetType__list',
     isSuperUser: false,
   },
   {
@@ -591,7 +591,7 @@ const permissions = [
     resourceId: '/common/operator/get/:operatorId',
     extraOptions: {},
     resourceType: 'Operator',
-    resourceCode: 'operator_get',
+    resourceCode: 'operator__get',
     isSuperUser: false,
   },
   {
@@ -600,7 +600,7 @@ const permissions = [
     resourceId: '/common/operator/list',
     extraOptions: {},
     resourceType: 'Operator',
-    resourceCode: 'operator_list',
+    resourceCode: 'operator__list',
     isSuperUser: false,
   },
   {
@@ -609,7 +609,7 @@ const permissions = [
     resourceId: '/common/operator/update/:operatorId',
     extraOptions: {},
     resourceType: 'Operator',
-    resourceCode: 'operator_update',
+    resourceCode: 'operator__update',
     isSuperUser: true,
   },
   {
@@ -618,7 +618,7 @@ const permissions = [
     resourceId: '/common/operator/create',
     extraOptions: {},
     resourceType: 'Operator',
-    resourceCode: 'operator_create',
+    resourceCode: 'operator__create',
     isSuperUser: true,
   },
   {
@@ -626,8 +626,8 @@ const permissions = [
     method: 'GET',
     resourceId: '/common/widgetTheme/list',
     extraOptions: {},
-    resourceType: 'Widget Theme',
-    resourceCode: 'widgetTheme_list',
+    resourceType: 'get_data_by_version_idWidget Theme',
+    resourceCode: 'widgetTheme__list',
     isSuperUser: false,
   },
   {
@@ -636,7 +636,7 @@ const permissions = [
     resourceId: '/common/widgetTheme/:widgetThemeId',
     extraOptions: {},
     resourceType: 'Widget Theme',
-    resourceCode: 'widgetTheme_get',
+    resourceCode: 'widgetTheme__get',
     isSuperUser: false,
   },
   {
@@ -645,7 +645,7 @@ const permissions = [
     resourceId: '/common/widgetTheme/create',
     extraOptions: {},
     resourceType: 'Widget Theme',
-    resourceCode: 'widgetTheme_create',
+    resourceCode: 'widgetTheme__create',
     isSuperUser: false,
   },
   {
@@ -654,7 +654,7 @@ const permissions = [
     resourceId: '/common/widgetTheme/duplicate/:widgetThemeId',
     extraOptions: {},
     resourceType: 'Widget Theme',
-    resourceCode: 'widgetTheme_duplicate',
+    resourceCode: 'widgetTheme__duplicate',
     isSuperUser: false,
   },
   {
@@ -663,7 +663,7 @@ const permissions = [
     resourceId: '/common/widgetTheme/update/:widgetThemeId',
     extraOptions: {},
     resourceType: 'Widget Theme',
-    resourceCode: 'widgetTheme_update',
+    resourceCode: 'widgetTheme__update',
     isSuperUser: false,
   },
   {
@@ -672,7 +672,7 @@ const permissions = [
     resourceId: '/common/widgetTheme/delete/:widgetThemeId',
     extraOptions: {},
     resourceType: 'Widget Theme',
-    resourceCode: 'widgetTheme_delete',
+    resourceCode: 'widgetTheme__delete',
     isSuperUser: false,
   },
   {
@@ -681,7 +681,7 @@ const permissions = [
     resourceId: '/common/dashboardShare/list/:dashboardId',
     extraOptions: {},
     resourceType: 'Dashboard Share',
-    resourceCode: 'dashboardShare_list',
+    resourceCode: 'dashboardShare__list',
     isSuperUser: false,
   },
   {
@@ -690,7 +690,7 @@ const permissions = [
     resourceId: '/common/dashboardShare/create',
     extraOptions: {},
     resourceType: 'Dashboard Share',
-    resourceCode: 'dashboardShare_create',
+    resourceCode: 'dashboardShare__create',
     isSuperUser: false,
   },
   {
@@ -699,7 +699,7 @@ const permissions = [
     resourceId: '/common/dashboardShare/:dashboardShareId',
     extraOptions: {},
     resourceType: 'Dashboard Share',
-    resourceCode: 'dashboardShare_delete',
+    resourceCode: 'dashboardShare__delete',
     isSuperUser: false,
   },
   {
@@ -708,7 +708,7 @@ const permissions = [
     resourceId: '/reportivix/customReports/list',
     extraOptions: {},
     resourceType: 'Custom Report',
-    resourceCode: 'customReport_list',
+    resourceCode: 'customReport__list',
     isSuperUser: false,
   },
   {
@@ -717,7 +717,7 @@ const permissions = [
     resourceId: '/reportivix/customReports/listReportRequest',
     extraOptions: {},
     resourceType: 'Custom Report',
-    resourceCode: 'customReport_list_requests',
+    resourceCode: 'customReport__list_requests',
     isSuperUser: false,
   },
   {
@@ -726,7 +726,7 @@ const permissions = [
     resourceId: '/reportivix/customReports/getVersionValue',
     extraOptions: {},
     resourceType: 'Custom Report',
-    resourceCode: 'customReport_get_version_values',
+    resourceCode: 'customReport__get_version_values',
     isSuperUser: false,
   },
   {
@@ -735,7 +735,7 @@ const permissions = [
     resourceId: '/reportivix/customReports/generate',
     extraOptions: {},
     resourceType: 'Custom Report',
-    resourceCode: 'customReport_generate',
+    resourceCode: 'customReport__generate',
     isSuperUser: false,
   },
   {
@@ -744,7 +744,7 @@ const permissions = [
     resourceId: '/reportivix/customReports/download/:reportRequestId',
     extraOptions: {},
     resourceType: 'Custom Report',
-    resourceCode: 'customReport_download',
+    resourceCode: 'customReport__download',
     isSuperUser: false,
   },
   {
@@ -753,7 +753,7 @@ const permissions = [
     resourceId: '/reportivix/customReports/reportDataOnDataSourceVersionId/:dataSourceVersionId',
     extraOptions: {},
     resourceType: 'Custom Report',
-    resourceCode: 'customReport_get_data_by_version_id',
+    resourceCode: 'customReport__get_data_by_version_id',
     isSuperUser: false,
   },
   {
@@ -762,7 +762,7 @@ const permissions = [
     resourceId: '/reportivix/customReports/customReportDesignData/:customReportId',
     extraOptions: {},
     resourceType: 'Custom Report',
-    resourceCode: 'customReport_get_design_details',
+    resourceCode: 'customReport__get_design_details',
     isSuperUser: false,
   },
   {
@@ -771,7 +771,7 @@ const permissions = [
     resourceId: '/reportivix/customReports/reportDetails/:reportRequestId',
     extraOptions: {},
     resourceType: 'Custom Report',
-    resourceCode: 'customReport_get_request_details',
+    resourceCode: 'customReport__get_request_details',
     isSuperUser: false,
   },
   {
@@ -780,7 +780,7 @@ const permissions = [
     resourceId: '/reportivix/customReports/reportData/:dataSourceId',
     extraOptions: {},
     resourceType: 'Custom Report',
-    resourceCode: 'customReport_get_data_by_range',
+    resourceCode: 'customReport__get_data_by_range',
     isSuperUser: false,
   },
   {
@@ -789,7 +789,7 @@ const permissions = [
     resourceId: '/reportivix/customReports/listSettings',
     extraOptions: {},
     resourceType: 'Custom Report',
-    resourceCode: 'customReport_list_settings',
+    resourceCode: 'customReport__list_settings',
     isSuperUser: false,
   },
   {
@@ -798,16 +798,16 @@ const permissions = [
     resourceId: '/reportivix/customReports/updateSettings/:customReportId',
     extraOptions: {},
     resourceType: 'Custom Report',
-    resourceCode: 'customReport_update_settings',
+    resourceCode: 'customReport__update_settings',
     isSuperUser: false,
   },
   {
-    name: 'Run Natural Language Aggregation',
+    name: 'Run Natural Language Query',
     method: 'GET',
     resourceId: '/reportivix/nlQuery/getData',
     extraOptions: {},
     resourceType: 'NL Query',
-    resourceCode: 'nlQuery_get_data',
+    resourceCode: 'nlQuery__get_data',
     isSuperUser: false,
   },
   {
@@ -816,12 +816,71 @@ const permissions = [
     resourceId: '/reportivix/nlQuery/insights',
     extraOptions: {},
     resourceType: 'NL Query',
-    resourceCode: 'nlQuery_insights',
+    resourceCode: 'nlQuery__insights',
     isSuperUser: false,
   },
 ];
 
-export async function seedPermissions() {
+function getDynamicPermission(
+  entities: {
+    name: string;
+    dataSourceId: string;
+    code: string;
+    organizationId: string;
+  }[]
+) {
+  const routes = [
+    {
+      action: 'Create',
+      method: 'POST',
+      resourceId: 'common/dataSourceVersion/versionData/create',
+      codeSuffix: 'create',
+    },
+    {
+      action: 'Update',
+      method: 'PUT',
+      resourceId: 'common/dataSourceVersion/versionData/update/:rowId',
+      codeSuffix: 'update',
+    },
+    {
+      action: 'Delete',
+      method: 'DELETE',
+      resourceId: 'common/dataSourceVersion/versionData/delete',
+      codeSuffix: 'delete',
+    },
+    {
+      action: 'List',
+      method: 'GET',
+      resourceId: 'common/dataSourceVersion/versionData',
+      codeSuffix: 'view',
+    },
+  ];
+
+  const permissions: any[] = [];
+
+  entities.forEach(({ name, dataSourceId, code, organizationId }) => {
+    routes.forEach(({ action, method, resourceId, codeSuffix }) => {
+      permissions.push({
+        name: `${name} ${action}`,
+        method,
+        resourceId,
+        dataSourceId,
+        resourceType: 'Data Source',
+        resourceCode: `dataSource__${code}__${codeSuffix}`,
+        status: 'active',
+        isSuperUser: false,
+        organizationId,
+      });
+    });
+  });
+
+  return permissions;
+}
+
+export async function seedPermissions(perissionList: any[]) {
+  const dynamicPerission = getDynamicPermission(perissionList);
+  console.log(dynamicPerission);
+  permissions = [...permissions, ...dynamicPerission];
   for (const perm of permissions) {
     const { method, resourceId } = perm;
 

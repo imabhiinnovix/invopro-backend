@@ -56,23 +56,40 @@ export const getPermissionList = async (req: Request, res: Response, next: NextF
 
 export const createPermission = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, method, dataSourceId, status = 'active' } = req.body;
+    const { name, method, code, dataSourceId, status = 'active' } = req.body;
     const { organizationId } = req.user;
     let resourceId = '';
     let actualMethod = '';
-    if (method.toLowerCase() === 'get') {
-      resourceId = 'common/dataSource/dataSourceId/:dataSourceId';
-      actualMethod = 'GET';
-    } else if (method.toLowerCase() === 'update') {
-      resourceId = '/common/dataSource/update/:dataSourceId';
-      actualMethod = 'PUT';
-    } else {
-      res.status(400).json({ success: false, message: 'Invalid Method' });
+    let action = '';
+    switch (method.toLowerCase()) {
+      case 'create':
+        resourceId = 'common/dataSourceVersion/versionData/create';
+        actualMethod = 'POST';
+        action = 'create';
+        break;
+      case 'update':
+        resourceId = 'common/dataSource/update/:dataSourceId';
+        actualMethod = 'PUT';
+        action = 'update';
+        break;
+      case 'delete':
+        resourceId = 'common/dataSourceVersion/versionData/delete';
+        actualMethod = 'DELETE';
+        action = 'delete';
+        break;
+      case 'list':
+        resourceId = 'common/dataSourceVersion/versionData';
+        actualMethod = 'GET';
+        action = 'list';
+        break;
+      default:
+        return res.status(400).json({ success: false, message: 'Invalid method' });
     }
     const permission = await permissionService.createPermission({
       name,
       method: actualMethod,
       resourceId,
+      resourceCode: `data_source_${code}_${action}`,
       resourceType: 'Data Source',
       dataSourceId: new Types.ObjectId(dataSourceId),
       status,
@@ -87,24 +104,41 @@ export const createPermission = async (req: Request, res: Response, next: NextFu
 export const updatePermission = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { permissionId } = req.params;
-    const { name, method, dataSourceId, status = 'active' } = req.body;
+    const { name, method, code, dataSourceId, status = 'active' } = req.body;
     const { organizationId } = req.user;
     let resourceId = '';
     let actualMethod = '';
-    if (method.toLowerCase() === 'get') {
-      resourceId = 'common/dataSource/dataSourceId/:dataSourceId';
-      actualMethod = 'GET';
-    } else if (method.toLowerCase() === 'update') {
-      resourceId = '/common/dataSource/update/:dataSourceId';
-      actualMethod = 'PUT';
-    } else {
-      res.status(400).json({ success: false, message: 'Invalid Method' });
+    let action = '';
+    switch (method.toLowerCase()) {
+      case 'create':
+        resourceId = 'common/dataSourceVersion/versionData/create';
+        actualMethod = 'POST';
+        action = 'create';
+        break;
+      case 'update':
+        resourceId = 'common/dataSource/update/:dataSourceId';
+        actualMethod = 'PUT';
+        action = 'update';
+        break;
+      case 'delete':
+        resourceId = 'common/dataSourceVersion/versionData/delete';
+        actualMethod = 'DELETE';
+        action = 'delete';
+        break;
+      case 'list':
+        resourceId = 'common/dataSourceVersion/versionData';
+        actualMethod = 'GET';
+        action = 'list';
+        break;
+      default:
+        return res.status(400).json({ success: false, message: 'Invalid method' });
     }
 
     const permission = await permissionService.updatePermission(permissionId, {
       name,
       method: actualMethod,
       resourceId,
+      resourceCode: `data_source_${code}_${action}`,
       resourceType: 'Data Source',
       dataSourceId: new Types.ObjectId(dataSourceId),
       status,

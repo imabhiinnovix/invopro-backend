@@ -282,6 +282,22 @@ const entityDataSourceMapReportivix = {
     entityId: new mongoose.Types.ObjectId('67a3428622cb8a927a85e4a4'),
     dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08bed'),
   },
+  case_list: {
+    entityId: new mongoose.Types.ObjectId('6880a9d9c7f126fbdf3a991c'),
+    dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08bee'),
+  },
+  action_due: {
+    entityId: new mongoose.Types.ObjectId('6880b07573ff870ac0c67aa8'),
+    dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08bef'),
+  },
+  ip_counsel: {
+    entityId: new mongoose.Types.ObjectId('6880b07573ff870ac0c67aa9'),
+    dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08beb'),
+  },
+  formality_officers: {
+    entityId: new mongoose.Types.ObjectId('6880b70e279a1a50d220e5ae'),
+    dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08b0e'),
+  },
 };
 
 const customReportMapReportivix = {
@@ -531,6 +547,22 @@ const entityDataSourceMapSabic = {
     entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e1b8'),
     dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda34'),
   },
+  case_list: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e113'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda35'),
+  },
+  action_due: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e110'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda36'),
+  },
+  ip_counsel: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e111'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda37'),
+  },
+  formality_officers: {
+    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e112'),
+    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda38'),
+  },
 };
 
 const customReportMapSabic = {
@@ -551,7 +583,7 @@ export async function seedDatabase() {
     // Connect to MongoDB
     const conn = await mongoose.connect(config.MONGO_URI!);
     console.info(`MongoDB Connected: ${conn.connection.host}`);
-
+    console.info('\n====> Seeding organizations <====');
     await seedOrganizations([
       {
         _id: payload.reportivixOrganizationId,
@@ -570,7 +602,58 @@ export async function seedDatabase() {
 
     await seedProducts(payload);
 
-    await seedPermissions();
+    await seedPermissions([
+      {
+        name: 'Case List',
+        dataSourceId: entityDataSourceMapReportivix.case_list.dataSourceId,
+        resourceType: 'Data Source',
+        code: 'case_list',
+        organizationId: payload.reportivixOrganizationId,
+      },
+      {
+        name: 'Action Due',
+        dataSourceId: entityDataSourceMapReportivix.action_due.dataSourceId,
+        code: 'action_due',
+        organizationId: payload.reportivixOrganizationId,
+      },
+      {
+        name: 'IP Counsel',
+        dataSourceId: entityDataSourceMapReportivix.ip_counsel.dataSourceId,
+        code: 'ip_counsel',
+        organizationId: payload.reportivixOrganizationId,
+      },
+      {
+        name: 'Formality Officers',
+        dataSourceId: entityDataSourceMapReportivix.formality_officers.dataSourceId,
+        code: 'formality_officers',
+        organizationId: payload.reportivixOrganizationId,
+      },
+      {
+        name: 'Case List',
+        dataSourceId: entityDataSourceMapSabic.case_list.dataSourceId,
+        resourceType: 'Data Source',
+        code: 'case_list',
+        organizationId: payload.sabicOrganizationId,
+      },
+      {
+        name: 'Action Due',
+        dataSourceId: entityDataSourceMapSabic.action_due.dataSourceId,
+        code: 'action_due',
+        organizationId: payload.sabicOrganizationId,
+      },
+      {
+        name: 'IP Counsel',
+        dataSourceId: entityDataSourceMapSabic.ip_counsel.dataSourceId,
+        code: 'ip_counsel',
+        organizationId: payload.sabicOrganizationId,
+      },
+      {
+        name: 'Formality Officers',
+        dataSourceId: entityDataSourceMapSabic.formality_officers.dataSourceId,
+        code: 'formality_officers',
+        organizationId: payload.sabicOrganizationId,
+      },
+    ]);
 
     await createProductSubscription([
       {
@@ -644,8 +727,6 @@ export async function seedDatabase() {
         ],
       },
     ]);
-
-    console.info('\n====> Seeding organizations <====');
 
     console.info('\n====> Seeding Entities Reportivix <====');
     await seedEntities({

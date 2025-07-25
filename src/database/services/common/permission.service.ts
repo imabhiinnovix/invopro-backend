@@ -38,29 +38,12 @@ export const createPermission = async (data: any) => {
   const orgId = data.organizationId;
 
   const existing = await Permission.findOne({
-    $or: [
-      {
-        method: data.method,
-        resourceId: data.resourceId,
-        dataSourceId: data.dataSourceId,
-        organizationId: orgId,
-      },
-      {
-        name: data.name,
-        $or: [{ organizationId: orgId }, { organizationId: { $exists: false } }],
-      },
-    ],
+    resourceCode: data.resourceCode,
+    $or: [{ organizationId: orgId }, { organizationId: { $exists: false } }, { organizationId: null }],
   });
 
   if (existing) {
-    // Decide whether it's a method/resourceId conflict or name conflict
-    if (existing.method === data.method && existing.resourceId === data.resourceId) {
-      throw new Error('Permission with this method and resource already exists.');
-    }
-
-    if (existing.name === data.name) {
-      throw new Error('Permission name already exists.');
-    }
+    throw new Error('Resource code already exists.');
   }
 
   const permission = new Permission(data);
@@ -71,47 +54,15 @@ export const updatePermission = async (id: string, data: any) => {
   const existing = await Permission.findById(id);
   if (!existing) throw new Error('Permission not found.');
 
-  const orgId = data.organizationId;
-  if (String(existing.organizationId) !== String(orgId)) {
-    throw new Error('You are not allowed to update the permission.');
-  }
+  // Check for duplicate resourceCode (excluding current ID)
+  const duplicate = await Permission.findOne({
+    _id: { $ne: id }, // Exclude the current permission
+    resourceCode: data.resourceCode,
+    $or: [{ organizationId: data.organizationId }, { organizationId: { $exists: false } }, { organizationId: null }],
+  });
 
-  // Check if name is changing and is already used
-  if (data.name && data.name !== existing.name) {
-    const nameConflict = await Permission.findOne({
-      _id: { $ne: id },
-      name: data.name,
-      $or: [{ organizationId: orgId }, { organizationId: { $exists: false } }],
-    });
-
-    if (nameConflict) {
-      throw new Error('Permission name already exists.');
-    }
-  }
-
-  // Check if key fields are changing
-  const isChangingKeyFields =
-    existing.method !== data.method ||
-    existing.resourceId !== data.resourceId ||
-    String(existing.dataSourceId || '') !== String(data.dataSourceId || '');
-
-  const isReactivating = existing.status === 'inactive' && data.status === 'active' && isChangingKeyFields;
-
-  if ((isChangingKeyFields || isReactivating) && data.status !== 'inactive') {
-    const conflict = await Permission.findOne({
-      _id: { $ne: id },
-      method: data.method,
-      resourceId: data.resourceId,
-      dataSourceId: data.dataSourceId,
-      organizationId: orgId,
-      status: 'active',
-    });
-
-    if (conflict) {
-      throw new Error(
-        'Another active permission with the same method, resourceId, dataSourceId, and organization already exists.'
-      );
-    }
+  if (duplicate) {
+    throw new Error('Another permission with the same resourceCode already exists.');
   }
 
   const updated = await Permission.findByIdAndUpdate(id, data, { new: true });

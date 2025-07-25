@@ -12,10 +12,16 @@ interface OrganizationSeedInput {
 
 export async function seedOrganizations(payload: OrganizationSeedInput[]) {
   for (const org of payload) {
-    const existingOrg = await Organization.findById(org._id);
+    const existingOrg: any = await Organization.findById(org._id);
+
     if (existingOrg) {
-      console.info(`ℹ️ Organization "${org.name}" already exists.`);
-      continue;
+      if (existingOrg.get('licenseExpiresAt')) {
+        await Organization.findByIdAndDelete(org._id);
+        console.info(`🗑️ Deleted existing organization "${org.name}" with licenseExpiresAt.`);
+      } else {
+        console.info(`ℹ️ Organization "${org.name}" already exists (no licenseExpiresAt).`);
+        continue;
+      }
     }
 
     const newOrg = new Organization({
