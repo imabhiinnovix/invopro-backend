@@ -33,7 +33,6 @@ const permissionSchema = new Schema<IPermission>(
     },
     methodName: {
       type: String,
-      required: true,
       enum: ['create', 'update', 'delete', 'list', 'view'], // extend if needed
     },
     resourceId: {
