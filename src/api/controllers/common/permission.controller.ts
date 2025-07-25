@@ -1,27 +1,47 @@
 import { Request, Response, NextFunction } from 'express';
 import * as permissionService from '../../../database/services/common/permission.service';
 import { Types } from 'mongoose';
+import { populate } from 'dotenv';
 const VALID_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
 const VALID_STATUS = ['active', 'inactive'];
 const VALID_RESOURCE_TYPES = ['Data Source'];
 export const getPermissionList = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search }: any = req.query;
+    const { search, name, resourceType, status, method, dataSourceId }: any = req.query;
     const { isSuperUser, organizationId } = req.user;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
     const query: any = {
-      status: 'active',
       $or: [{ organizationId: { $exists: false } }, { organizationId: new Types.ObjectId(organizationId) }],
     };
-    if (search) query.name = { $regex: search, $options: 'i' };
+    if (search) query.name = { $regex: name, $options: 'i' };
+    if (name) {
+      query.name = name;
+    }
+    if (resourceType) {
+      query.resourceType = resourceType;
+    }
+    if (status) {
+      query.status = status;
+    }
+    if (method) {
+      query.method = method;
+    }
+    if (dataSourceId) {
+      query.dataSourceId = dataSourceId;
+    }
 
     if (!isSuperUser) {
       query['isSuperUser'] = false;
     }
 
-    const { data, totalCount } = await permissionService.getPermissionList({ query, page, limit });
+    const { data, totalCount } = await permissionService.getPermissionList({
+      query,
+      page,
+      limit,
+      populate: ['dataSourceId'],
+    });
 
     res.status(200).json({
       success: true,
