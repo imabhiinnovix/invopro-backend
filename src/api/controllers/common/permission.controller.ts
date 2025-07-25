@@ -84,7 +84,7 @@ export const createPermission = async (req: Request, res: Response, next: NextFu
 export const updatePermission = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { permissionId } = req.params;
-    const { name, method, dataSourceId, status = 'active' } = req.body;
+    const { name, method, code, dataSourceId, status = 'active' } = req.body;
     const { organizationId } = req.user;
     let resourceId = '';
     let actualMethod = '';
