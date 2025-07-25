@@ -1,5 +1,6 @@
 import { Schema, model, Document, Types } from 'mongoose';
 import DataSource from '../reportivix/dataSource';
+import Organization from './organization';
 
 export interface IPermission extends Document {
   name: string;
@@ -43,7 +44,7 @@ const permissionSchema = new Schema<IPermission>(
     },
     resourceCode: {
       type: String,
-      // required: true,
+      required: true,
     },
     extraOptions: {
       type: Object,
@@ -73,7 +74,7 @@ const permissionSchema = new Schema<IPermission>(
 );
 
 // Add compound unique index on method + resource
-// permissionSchema.index({ method: 1, resourceId: 1, dataSourceId: 1 }, { unique: true });
+permissionSchema.index({ resourceCode: 1, OrganizationId: 1 }, { unique: true });
 
 // Export model
 const Permission = model<IPermission>('permission', permissionSchema);
