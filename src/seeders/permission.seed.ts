@@ -846,6 +846,51 @@ const permissions = [
     resourceCode: 'nlQuery_insights',
     isSuperUser: false,
   },
+  {
+    name: 'Create Derived Field',
+    method: 'POST',
+    resourceId: '/common/derivedField/create',
+    extraOptions: {},
+    resourceType: 'Derived Field',
+    resourceCode: 'derived_field_create',
+    isSuperUser: false,
+  },
+  {
+    name: 'Update Derived Field',
+    method: 'PUT',
+    resourceId: '/common/derivedField/update/:id',
+    extraOptions: {},
+    resourceType: 'Derived Field',
+    resourceCode: 'derived_field_update',
+    isSuperUser: false,
+  },
+  {
+    name: 'Delete Derived Field',
+    method: 'DELETE',
+    resourceId: '/common/derivedField/delete/:id',
+    extraOptions: {},
+    resourceType: 'Derived Field',
+    resourceCode: 'derived_field_delete',
+    isSuperUser: false,
+  },
+  {
+    name: 'List Derived Fields',
+    method: 'GET',
+    resourceId: '/common/derivedField/list',
+    extraOptions: {},
+    resourceType: 'Derived Field',
+    resourceCode: 'derived_field_list',
+    isSuperUser: false,
+  },
+  {
+    name: 'Get Derived Field',
+    method: 'GET',
+    resourceId: '/common/derivedField/:id',
+    extraOptions: {},
+    resourceType: 'Derived Field',
+    resourceCode: 'derived_field_get',
+    isSuperUser: false,
+  }
 ];
 
 export async function seedPermissions() {

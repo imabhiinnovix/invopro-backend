@@ -2,7 +2,8 @@
 import createDefaultDataSourceVersionModel from '../../models/reportivix/defaultDataSourceVersionModel';
 import { Model, Document, AnyBulkWriteOperation, Types } from 'mongoose';
 import { findEntityById } from './entity.services';
-import { getEntityAttribute, getModelForEntity } from '../../../utils/entity.utils'
+import { getEntityAttribute, getModelForEntity, resolveFieldPath } from '../../../utils/entity.utils'
+import { getDerivedField } from './derivedField.services';
 
 export const updateDataSourceVersionValue = async (
   schemaName: string,
@@ -190,7 +191,58 @@ export const getDataSourceVersionValueV1 = async ({
     // Step 2: Handle filters
     const filterConditions: any[] = [];
     for (const [key, val] of Object.entries(filters)) {
-      if (key.includes('.')) {
+      if (key.startsWith('Derived.')) {
+        const derivedName = key.split('.')[1];
+        console.log('derivedName',derivedName);
+        const derivedField = await getDerivedField({
+          name: derivedName,
+          entityId: entityId
+        });
+
+        if (!derivedField) continue;
+
+        const matchedRules = derivedField.valueRules.filter(vr =>
+          Array.isArray(val) ? val.includes(vr.value) : vr.value === val
+        );
+
+        const derivedRuleConditions: any = [];
+
+        for (const rule of matchedRules) {
+          const conditionExpressions: any = [];
+
+          for (const cond of rule.conditions || []) {
+            const path = await resolveFieldPath(cond, entity.attributes);
+
+            if (!path) continue;
+
+            if (cond.operator === 'equals') {
+              conditionExpressions.push({ [path]: cond.matchValues[0] });
+            } else if (cond.operator === 'in') {
+              conditionExpressions.push({ [path]: { $in: cond.matchValues } });
+            } else if (cond.operator === 'not_in') {
+              conditionExpressions.push({ [path]: { $nin: cond.matchValues } });
+            } else if (cond.operator === 'exists') {
+              conditionExpressions.push({ [path]: { $exists: true, $ne: null } });
+            } else if (cond.operator === 'not_exists') {
+              conditionExpressions.push({ [path]: { $in: [null, undefined] } });
+            }
+          }
+
+          if (conditionExpressions.length > 0) {
+            derivedRuleConditions.push(
+              rule.conditionOperator === 'OR'
+                ? { $or: conditionExpressions }
+                : { $and: conditionExpressions }
+            );
+          }
+          // console.log('conditionExpressions',conditionExpressions);
+        }
+        // console.log('derivedRuleConditions',derivedRuleConditions);
+        if (derivedRuleConditions.length > 0) {
+          filterConditions.push({ $or: derivedRuleConditions });
+        }
+
+      } else if (key.includes('.')) {
         const [refField, subField] = key.split('.');
         const asField = `rowData.${refField}_resolved`;
         filterConditions.push({
@@ -202,7 +254,7 @@ export const getDataSourceVersionValueV1 = async ({
         });
       }
     }
-
+    // console.log('filterConditions',filterConditions);
     if (filterConditions.length > 0) {
       aggregationPipeline.push({ $match: { $and: filterConditions } });
     }
@@ -253,7 +305,6 @@ export const getDataSourceVersionValueV1 = async ({
                 attr.referenceEntitySetting.refEntityId,
                 attr.referenceEntitySetting.refEntityField
               );
-              console.log('refField',refField,attr.referenceEntitySetting);
               rowData[key] = {
                 _id: refResolved?._id,
                 name: refResolved?.rowData?.[refField?.name] || null,

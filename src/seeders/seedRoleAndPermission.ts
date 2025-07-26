@@ -93,6 +93,11 @@ const defaultPermissionsAdmin = [
   'POST:/common/widgetTheme/update/:widgetThemeId',
   'POST:/common/widgetTheme/delete/:widgetThemeId',
   'POST:/reportivix/customReports/updateSettings/:customReportId',
+  'POST:/common/derivedField/create',
+  'PUT:/common/derivedField/update/:id',
+  'DELETE:/common/derivedField/delete/:id',
+  'GET:/common/derivedField/list',
+  'GET:/common/derivedField/:id'
 ];
 
 const defaultPermissionsPrimarySuperAdmin = [

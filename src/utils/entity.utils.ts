@@ -43,3 +43,36 @@ export async function getEntityAttribute(entityId: string, attributeId: string) 
   const attribute = refEntity?.attributes?.find((attr) => attr._id.toString() === attributeId.toString());
   return attribute;
 }
+
+export async function resolveFieldPath(cond: any, entityAttributes: any[]): Promise<string> {
+  const attrMapById = Object.fromEntries(
+    entityAttributes.map(attr => [attr._id.toString(), attr])
+  );
+
+  const mainAttr = attrMapById[cond.fieldId?.toString()];
+  if (!mainAttr) return '';
+
+  // Handle reference field logic
+  if (mainAttr.referenceEntitySetting?.refEntityId && cond.refFieldId) {
+    const refEntityId = mainAttr.referenceEntitySetting.refEntityId;
+
+    const refEntity: any = await findEntityById(refEntityId);
+    if (!refEntity || !Array.isArray(refEntity.attributes)) return '';
+
+    const refAttrMap: Record<string, any> = refEntity.attributes.reduce((acc, attr) => {
+      acc[attr._id.toString()] = attr;
+      return acc;
+    }, {} as Record<string, any>);
+
+    const refAttr = refAttrMap[cond.refFieldId?.toString()];
+    if (!refAttr) return '';
+
+    // Use _resolved path for reference fields
+    return `rowData.${mainAttr.name}_resolved.rowData.${refAttr.name}`;
+  }
+
+  // For non-reference fields
+  return `rowData.${mainAttr.name}`;
+}
+
+

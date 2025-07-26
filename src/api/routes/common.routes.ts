@@ -19,6 +19,7 @@ import entityRoutes from './common/entity.routes';
 import attributeRoutes from './common/attributeOption.routes';
 import fileRoutes from './common/file.routes';
 import dataSourceRoutes from './common/dataSource.routes';
+import derivedFieldRoutes from './common/derivedField.routes';
 
 const router = Router();
 
@@ -42,5 +43,6 @@ router.use('/widgetType', widgetTypeRoutes);
 router.use('/operator', operatorRoutes);
 router.use('/widgetTheme', widgetThemeRoutes);
 router.use('/dashboardShare', dashboardShareRoutes);
+router.use('/derivedField', derivedFieldRoutes);
 
 export default router;
