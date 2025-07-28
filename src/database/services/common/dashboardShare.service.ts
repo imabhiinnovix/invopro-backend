@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import DashboardShare from '../../models/reportivix/dashboardShare';
-import Dashboard from '../../models/reportivix/dashboard';
+import DashboardShare from '../../models/common/dashboardShare';
+import Dashboard from '../../models/common/dashboard';
 import mongoose from 'mongoose';
 
 export const getDashboardShare = async (query: any) => {

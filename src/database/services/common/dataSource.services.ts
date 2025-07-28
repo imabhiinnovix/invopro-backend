@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Types } from 'mongoose';
-import DataSource from '../../models/reportivix/dataSource';
+import DataSource from '../../models/common/dataSource';
 
 export const createDataSourcce = async (dataSourceData: any) => {
   try {
@@ -131,7 +131,7 @@ export const getDataSource = async (query: any) => {
 
 export const getDataSourcePopulate = async (query: any, populate: any) => {
   try {
-    let dataSourceQuery:any = DataSource.findOne(query);
+    let dataSourceQuery: any = DataSource.findOne(query);
     if (populate && Array.isArray(populate)) {
       populate.forEach((field) => {
         dataSourceQuery = dataSourceQuery.populate(field);

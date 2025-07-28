@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import WidgetType from '../../models/reportivix/widgetType';
+import WidgetType from '../../models/common/widgetType';
 
 export const createWidgetType = async (data: any) => {
   try {

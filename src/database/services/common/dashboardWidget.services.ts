@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import DashboardWidget from '../../models/reportivix/dashboardWidget';
+import DashboardWidget from '../../models/common/dashboardWidget';
 
 export const createDashboardWidget = async (widgetData: any) => {
   try {

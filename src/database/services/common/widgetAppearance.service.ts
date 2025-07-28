@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import WidgetAppearance from '../../models/reportivix/widgetAppearance';
+import WidgetAppearance from '../../models/common/widgetAppearance';
 
 export const findAllWidgetAppearance = async ({ query, populate, page, limit, sort }: any) => {
   try {

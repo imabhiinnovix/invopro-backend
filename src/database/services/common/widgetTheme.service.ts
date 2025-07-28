@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Types } from 'mongoose';
-import WidgetTheme, { IWidgetTheme } from '../../models/reportivix/widgetTheme';
+import WidgetTheme, { IWidgetTheme } from '../../models/common/widgetTheme';
 
 export const createWidgetTheme = async (data: Partial<IWidgetTheme>) => {
   try {

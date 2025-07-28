@@ -2,9 +2,9 @@
 import { Settings } from 'luxon';
 import { buildAggregationPipeline } from '../../../utils/aggregationPipeline';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
-import Dashboard from '../../models/reportivix/dashboard';
-import DashboardWidget from '../../models/reportivix/dashboardWidget';
-import createDefaultDataSourceVersionModel from '../../models/reportivix/defaultDataSourceVersionModel';
+import Dashboard from '../../models/common/dashboard';
+import DashboardWidget from '../../models/common/dashboardWidget';
+import createDefaultDataSourceVersionModel from '../../models/common/defaultDataSourceVersionModel';
 
 import * as DashboardWidgetService from './dashboardWidget.services';
 

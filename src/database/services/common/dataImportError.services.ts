@@ -1,4 +1,4 @@
-import DataImportErrorModel from '../../models/reportivix/dataImportError';
+import DataImportErrorModel from '../../models/common/dataImportError';
 
 export const createManyDataImportError = async (value: any) => {
   try {

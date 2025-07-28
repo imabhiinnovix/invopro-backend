@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import createDefaultDataSourceVersionModel from '../../models/reportivix/defaultDataSourceVersionModel';
+import createDefaultDataSourceVersionModel from '../../models/common/defaultDataSourceVersionModel';
 import { Model, Document, AnyBulkWriteOperation, Types } from 'mongoose';
 import { findEntityById } from './entity.services';
 import { getEntityAttribute, getModelForEntity, resolveFieldPath } from '../../../utils/entity.utils'
@@ -18,12 +18,15 @@ export const updateDataSourceVersionValue = async (
   }
 
   const bulkOps: AnyBulkWriteOperation<Document>[] = data.map((row) => {
-  const filters: Record<string, any>[] = [];
-     // Create a quick lookup map from ObjectId to attribute name
-  const attributeIdToNameMap = attributes.reduce((acc, attr) => {
-    acc[attr._id.toString()] = attr.name;
-    return acc;
-  }, {} as Record<string, string>);
+    const filters: Record<string, any>[] = [];
+    // Create a quick lookup map from ObjectId to attribute name
+    const attributeIdToNameMap = attributes.reduce(
+      (acc, attr) => {
+        acc[attr._id.toString()] = attr.name;
+        return acc;
+      },
+      {} as Record<string, string>
+    );
 
     for (const rule of uniqueKeys) {
       const condition: Record<string, any> = {};
@@ -137,7 +140,7 @@ export const getDataSourceVersionValueV1 = async ({
   limit,
   sort = {},
   filters = {},
-  entityId = ''
+  entityId = '',
 }: {
   schemaName: string;
   query: any;
@@ -193,7 +196,6 @@ export const getDataSourceVersionValueV1 = async ({
     for (const [key, val] of Object.entries(filters)) {
       if (key.startsWith('Derived.')) {
         const derivedName = key.split('.')[1];
-        console.log('derivedName',derivedName);
         const derivedField = await getDerivedField({
           name: derivedName,
           entityId: entityId
@@ -269,11 +271,7 @@ export const getDataSourceVersionValueV1 = async ({
       finalSort.updatedAt = -1;
     }
 
-    aggregationPipeline.push(
-      { $sort: finalSort },
-      { $skip: (page - 1) * limit },
-      { $limit: limit }
-    );
+    aggregationPipeline.push({ $sort: finalSort }, { $skip: (page - 1) * limit }, { $limit: limit });
 
     // Step 4: Projection
     if (select) {

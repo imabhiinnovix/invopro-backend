@@ -1,6 +1,6 @@
 import { Types, Model, Document } from 'mongoose';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from './common.utils';
-import createDefaultDataSourceVersionModel from '../database/models/defaultImportLogDataSourceVersionModel';
+import createDefaultDataSourceVersionModel from '../database/models/common/defaultImportLogDataSourceVersionModel';
 import { getDataSourcePopulate } from '../database/services/common/dataSource.services';
 import { findEntityById } from '../database/services/common/entity.services';
 

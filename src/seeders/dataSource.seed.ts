@@ -1,4 +1,4 @@
-import DataSource from '../database/models/reportivix/dataSource';
+import DataSource from '../database/models/common/dataSource';
 
 function getDataSourceToBeSeed({ entityDataSourceMap, organizationId, createdBy, updatedBy }) {
   return [

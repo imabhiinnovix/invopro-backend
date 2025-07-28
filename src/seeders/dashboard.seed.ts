@@ -1,4 +1,4 @@
-import Dashboard from '../database/models/reportivix/dashboard';
+import Dashboard from '../database/models/common/dashboard';
 
 const defaultSettings = {
   columnsGrid: 2,

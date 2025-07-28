@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import Operator from '../../models/reportivix/operator';
+import Operator from '../../models/common/operator';
 
 export const create = async (data: any) => {
   try {

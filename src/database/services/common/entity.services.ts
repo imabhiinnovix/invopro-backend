@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Types } from 'mongoose';
-import Entity from '../../models/reportivix/entity';
+import Entity from '../../models/common/entity';
 import { getAllDerivedFields } from './derivedField.services';
 
 export const createEntity = async (entityData: any) => {
@@ -155,7 +155,7 @@ export const getEntityFieldOptions = async (entityId: string): Promise<FieldOpti
           },
         });
       }
-    }else{
+    } else {
       fieldOptions.push({
         label: attr.name,
         value: { attributeId },
