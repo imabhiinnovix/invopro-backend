@@ -489,7 +489,10 @@ export const getDataSourceVersionValueV2 = async ({
         path = `$rowData.${key}`;
       }
 
-      groupObject[key === dimension ? 'name' : key] = path;
+      // Replace dots with underscores for field names used in the group _id
+      const safeField = key === dimension ? 'name' : key.replace(/\./g, '_');
+
+      groupObject[safeField] = path;
     }
 
     const conditionsByField: Record<string, any[]> = {};
