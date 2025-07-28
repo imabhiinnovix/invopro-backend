@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Types } from 'mongoose';
 import Entity from '../../models/common/entity';
+import { getAllDerivedFields } from './derivedField.services';
 
 export const createEntity = async (entityData: any) => {
   try {
@@ -111,7 +112,7 @@ export const findEntityByNameAndOrganization = async (name: string, organization
   }
 };
 
-export const findEntityById = async (id: string) => {
+export const findEntityById = async (id: any) => {
   try {
     const entityDetails = await Entity.findById(id);
 
@@ -126,6 +127,7 @@ interface FieldOption {
   value: {
     attributeId: Types.ObjectId;
     refAttributeId?: Types.ObjectId;
+    isDerived?: boolean;
   };
 }
 
@@ -159,7 +161,20 @@ export const getEntityFieldOptions = async (entityId: string): Promise<FieldOpti
         value: { attributeId },
       });
     }
+
   }
+
+   // 2. Derived fields
+    const derivedFields: any = await getAllDerivedFields({ entityId });
+    for (const df of derivedFields) {
+      fieldOptions.push({
+        label: `${df.name}`,
+        value: {
+          attributeId: df._id,
+          isDerived: true,
+        },
+      });
+    }
 
   return fieldOptions;
 };

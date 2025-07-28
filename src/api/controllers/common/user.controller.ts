@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, query } from 'express';
 import { Types } from 'mongoose';
 
 import * as userService from '../../../database/services/common/user.service';
@@ -10,7 +10,8 @@ import * as authService from '../../../database/services/common/user.service';
 import * as organizationProductSubscriptionService from '../../../database/services/common/organizationProductSubscription.services';
 import { validateUserInput } from '../../../utils/validation.utils';
 import * as roleHasPermissionService from '../../../database/services/common/roleHasPermission.services';
-import * as dataSourceService from '../../../database/services/common/dataSource.services';
+import * as permissionService from '../../../database/services/common/permission.service';
+import { permission } from 'process';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -188,7 +189,31 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
     user = user.toObject();
     const permissionDetails = await roleHasPermissionService.getPermissionsByRoleIds(roleIds);
 
-    user['permissionIds'] = permissionDetails;
+    let allPermissionResult = await permissionService.getPermissionList({ query: {}, page: 1, limit: 0 });
+
+    const allowedMap: Record<string, any> = {};
+    permissionDetails.forEach((perm) => {
+      allowedMap[perm.permissionId.toString()] = perm;
+    });
+
+    const allPermissionsWithAccess = allPermissionResult.data.map((perm: any) => {
+      const matched = allowedMap[perm._id.toString()];
+
+      if (matched) {
+        return {
+          ...matched,
+          allowed: true,
+        };
+      } else {
+        return {
+          ...perm.toObject(),
+          permissionId: perm._id,
+          allowed: false,
+        };
+      }
+    });
+
+    user['permissionIds'] = allPermissionsWithAccess;
     res.status(200).json({
       success: true,
       message: 'User fetched successfully',

@@ -57,9 +57,15 @@ export async function seedUsers(payload: OrganizationSeedPayload[]) {
     // Create users
     for (const user of org.users) {
       const existingUser = await User.findOne({ email: user.email });
+
       if (existingUser) {
-        console.info(`ℹ️ User already exists: ${user.email}`);
-        continue;
+        if (existingUser.get('role')) {
+          await User.findByIdAndDelete(existingUser._id);
+          console.info(`🗑️ Deleted existing user "${existingUser.firstName}" with role.`);
+        } else {
+          console.info(`ℹ️ User "${existingUser.firstName}" already exists.`);
+          continue;
+        }
       }
 
       const hashedPassword = await hashPassword(user.password);

@@ -47,7 +47,7 @@ export interface IWidgetTheme extends Document {
 
 const widgetThemeSchema = new Schema<IWidgetTheme>(
   {
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'user', required: true },
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
 
     name: { type: String, required: true },

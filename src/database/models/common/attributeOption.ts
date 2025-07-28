@@ -16,8 +16,8 @@ const attributeSchema = new Schema<IAttribute>(
     attributeName: { type: String, required: true },
     attributeValue: { type: [String] },
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
-    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'user' },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'user' },
     isActive: { type: Boolean, required: true },
   },
   {

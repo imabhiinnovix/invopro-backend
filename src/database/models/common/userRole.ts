@@ -28,11 +28,11 @@ const userRoleSchema = new Schema<IUserRole>(
     },
     createdBy: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'user',
     },
     updatedBy: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'user',
     },
     status: {
       type: String,

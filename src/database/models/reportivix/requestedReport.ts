@@ -62,7 +62,7 @@ const reportRequestSchema = new Schema<IReportRequest>(
     fileType: { type: String },
     fileSize: { type: String },
     dataSourceVersion: { type: [dataSourceVersionSchema], default: [] },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'user' },
   },
   {
     timestamps: true,

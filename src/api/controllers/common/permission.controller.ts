@@ -1,27 +1,47 @@
 import { Request, Response, NextFunction } from 'express';
 import * as permissionService from '../../../database/services/common/permission.service';
 import { Types } from 'mongoose';
+import { populate } from 'dotenv';
 const VALID_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
 const VALID_STATUS = ['active', 'inactive'];
 const VALID_RESOURCE_TYPES = ['Data Source'];
 export const getPermissionList = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search }: any = req.query;
+    const { search, name, resourceType, status, method, dataSourceId }: any = req.query;
     const { isSuperUser, organizationId } = req.user;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
     const query: any = {
-      status: 'active',
       $or: [{ organizationId: { $exists: false } }, { organizationId: new Types.ObjectId(organizationId) }],
     };
-    if (search) query.name = { $regex: search, $options: 'i' };
+    if (search) query.name = { $regex: name, $options: 'i' };
+    if (name) {
+      query.name = name;
+    }
+    if (resourceType) {
+      query.resourceType = resourceType;
+    }
+    if (status) {
+      query.status = status;
+    }
+    if (method) {
+      query.method = method;
+    }
+    if (dataSourceId) {
+      query.dataSourceId = dataSourceId;
+    }
 
     if (!isSuperUser) {
       query['isSuperUser'] = false;
     }
 
-    const { data, totalCount } = await permissionService.getPermissionList({ query, page, limit });
+    const { data, totalCount } = await permissionService.getPermissionList({
+      query,
+      page,
+      limit,
+      populate: ['dataSourceId'],
+    });
 
     res.status(200).json({
       success: true,
@@ -36,23 +56,41 @@ export const getPermissionList = async (req: Request, res: Response, next: NextF
 
 export const createPermission = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, method, dataSourceId, status = 'active' } = req.body;
+    const { name, method, code, dataSourceId, status = 'active' } = req.body;
     const { organizationId } = req.user;
     let resourceId = '';
     let actualMethod = '';
-    if (method.toLowerCase() === 'get') {
-      resourceId = 'common/dataSource/dataSourceId/:dataSourceId';
-      actualMethod = 'GET';
-    } else if (method.toLowerCase() === 'update') {
-      resourceId = '/common/dataSource/update/:dataSourceId';
-      actualMethod = 'PUT';
-    } else {
-      res.status(400).json({ success: false, message: 'Invalid Method' });
+    let action = '';
+    switch (method.toLowerCase()) {
+      case 'create':
+        resourceId = 'common/dataSourceVersion/versionData/create';
+        actualMethod = 'POST';
+        action = 'create';
+        break;
+      case 'update':
+        resourceId = 'common/dataSource/update/:dataSourceId';
+        actualMethod = 'PUT';
+        action = 'update';
+        break;
+      case 'delete':
+        resourceId = 'common/dataSourceVersion/versionData/delete';
+        actualMethod = 'DELETE';
+        action = 'delete';
+        break;
+      case 'list':
+        resourceId = 'common/dataSourceVersion/versionData';
+        actualMethod = 'GET';
+        action = 'list';
+        break;
+      default:
+        return res.status(400).json({ success: false, message: 'Invalid method' });
     }
     const permission = await permissionService.createPermission({
       name,
       method: actualMethod,
+      methodName: method.toLowerCase(),
       resourceId,
+      resourceCode: `dataSource__${code}__${action}`,
       resourceType: 'Data Source',
       dataSourceId: new Types.ObjectId(dataSourceId),
       status,
@@ -67,24 +105,42 @@ export const createPermission = async (req: Request, res: Response, next: NextFu
 export const updatePermission = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { permissionId } = req.params;
-    const { name, method, dataSourceId, status = 'active' } = req.body;
+    const { name, method, code, dataSourceId, status = 'active' } = req.body;
     const { organizationId } = req.user;
     let resourceId = '';
     let actualMethod = '';
-    if (method.toLowerCase() === 'get') {
-      resourceId = 'common/dataSource/dataSourceId/:dataSourceId';
-      actualMethod = 'GET';
-    } else if (method.toLowerCase() === 'update') {
-      resourceId = '/common/dataSource/update/:dataSourceId';
-      actualMethod = 'PUT';
-    } else {
-      res.status(400).json({ success: false, message: 'Invalid Method' });
+    let action = '';
+    switch (method.toLowerCase()) {
+      case 'create':
+        resourceId = 'common/dataSourceVersion/versionData/create';
+        actualMethod = 'POST';
+        action = 'create';
+        break;
+      case 'update':
+        resourceId = 'common/dataSource/update/:dataSourceId';
+        actualMethod = 'PUT';
+        action = 'update';
+        break;
+      case 'delete':
+        resourceId = 'common/dataSourceVersion/versionData/delete';
+        actualMethod = 'DELETE';
+        action = 'delete';
+        break;
+      case 'list':
+        resourceId = 'common/dataSourceVersion/versionData';
+        actualMethod = 'GET';
+        action = 'list';
+        break;
+      default:
+        return res.status(400).json({ success: false, message: 'Invalid method' });
     }
 
     const permission = await permissionService.updatePermission(permissionId, {
       name,
       method: actualMethod,
+      methodName: method.toLowerCase(),
       resourceId,
+      resourceCode: `dataSource__${code}__${action}`,
       resourceType: 'Data Source',
       dataSourceId: new Types.ObjectId(dataSourceId),
       status,

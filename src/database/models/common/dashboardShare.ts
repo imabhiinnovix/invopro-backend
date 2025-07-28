@@ -22,8 +22,8 @@ export interface IDashboardShare extends Document {
 
 const dashboardShareSchema = new Schema<IDashboardShare>(
   {
-    sharedById: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    sharedWithId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    sharedById: { type: Schema.Types.ObjectId, ref: 'user', required: true },
+    sharedWithId: { type: Schema.Types.ObjectId, ref: 'user', required: true },
     dashboardId: { type: Schema.Types.ObjectId, ref: 'dashboard', required: true },
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
     permission: {

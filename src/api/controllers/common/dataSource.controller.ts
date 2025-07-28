@@ -13,6 +13,7 @@ import { processFieldConditions } from '../../../utils/conditionProcessor';
 import * as cacheService from '../../../database/services/reportivix/aiCache.service';
 import { DateTime } from 'luxon';
 import Entity from '../../../database/models/common/entity';
+import { findDerivedFieldById } from '../../../database/services/common/derivedField.services';
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -180,33 +181,45 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
               }
             }
 
-            // Add mappedAttributeName to fieldSettings
+            const derivedFields: any[] = [];
+
+            // Enhance fieldSettings with mapped name/type + check for derived fields
             if (Array.isArray(ds.fieldSettings)) {
               for (const field of ds.fieldSettings) {
-                const attr = attributeMap.get(String(field.attributeId));
-                if (!attr) {
-                  field.mappedAttributeName = 'Unknown';
-                  field.type = 'text';
-                  continue;
-                }
 
-                if (attr.referenceEntitySetting?.refEntityId && field.refAttributeId) {
-                  const refEntity = await Entity.findById(attr.referenceEntitySetting.refEntityId).lean();
-                  const refAttr = refEntity?.attributes?.find(
-                    (a: any) => String(a._id) === String(field.refAttributeId)
-                  );
-                  const parentName = attr.name || 'Unknown';
-                  const refName = refAttr?.name || 'Unknown';
-                  field.mappedAttributeName = `${parentName}.${refName}`;
-                  field.type = refAttr?.type || 'text';
-                } else {
-                  field.mappedAttributeName = attr.name;
-                  field.type = attr?.type || 'text';
+                // Derived field logic
+                if (field.isDerived && field.attributeId) {
+                  const derived = await findDerivedFieldById(field.attributeId);
+                  if (derived) {
+                      field.mappedAttributeName = `Derived.${derived.name}`;
+                      field.values = Array.isArray(derived.valueRules) ? derived.valueRules.map(vr => vr.value) : [];
+                  }
+                }else{
+                  const attr = attributeMap.get(String(field.attributeId));
+
+                  if (!attr) {
+                    field.mappedAttributeName = 'Unknown';
+                    field.type = 'text';
+                    continue;
+                  }
+
+                  if (attr.referenceEntitySetting?.refEntityId && field.refAttributeId) {
+                    const refEntity = await Entity.findById(attr.referenceEntitySetting.refEntityId).lean();
+                    const refAttr = refEntity?.attributes?.find(
+                      (a: any) => String(a._id) === String(field.refAttributeId)
+                    );
+                    const parentName = attr.name || 'Unknown';
+                    const refName = refAttr?.name || 'Unknown';
+                    field.mappedAttributeName = `${parentName}.${refName}`;
+                    field.type = refAttr?.type || 'text';
+                  } else {
+                    field.mappedAttributeName = attr.name;
+                    field.type = attr?.type || 'text';
+                  }
                 }
               }
             }
 
-            // Optional: update uniqueAttributeRules as before
             ds.uniqueAttributeRules = Array.isArray(ds.uniqueAttributeRules)
               ? ds.uniqueAttributeRules.map((ruleGroup: any[]) =>
                   Array.isArray(ruleGroup)
@@ -233,6 +246,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
     next(err);
   }
 };
+
 
 export const getDataSourceById = async (req: Request, res: Response, next: NextFunction) => {
   try {

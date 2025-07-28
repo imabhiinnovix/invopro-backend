@@ -14,7 +14,7 @@ export interface IOtp extends Document {
 
 const otpSchema = new Schema<IOtp>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'user', required: true },
     otp: { type: String, required: true },
     type: { type: String, enum: ['login', 'reset-password'], required: true, default: 'login' },
     isVerified: { type: Boolean, default: false },
