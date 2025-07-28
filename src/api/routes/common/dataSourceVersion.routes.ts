@@ -8,7 +8,7 @@ import {
   deleteMultipleRowsFromVersion,
   getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue,
   getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue,
-  getNotivixChartData,
+  getNewChartData,
   listAllAvailableDataSourceVersionValue,
   listDataSourceVersion,
   updateSingleRowVersionValue,
@@ -58,5 +58,5 @@ router.get(
   listAllAvailableDataSourceVersionValue
 );
 
-router.get('/chartData', authenticateToken, getNotivixChartData);
+router.get('/chartData', authenticateToken, getNewChartData);
 export default router;

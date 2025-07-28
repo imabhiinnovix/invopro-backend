@@ -4,6 +4,7 @@ import { Model, Document, AnyBulkWriteOperation, Types } from 'mongoose';
 import { findEntityById } from './entity.services';
 import { getEntityAttribute, getModelForEntity, resolveFieldPath } from '../../../utils/entity.utils';
 import { getDerivedField } from './derivedField.services';
+import { processFieldConditions } from '../../../utils/conditionProcessor';
 
 export const updateDataSourceVersionValue = async (
   schemaName: string,
@@ -342,12 +343,22 @@ export const getDataSourceVersionValueV2 = async ({
   query,
   filters = {},
   entityId = '',
+  dimension = '',
+  groupBy = [],
+  aggregation,
+  conditions,
+  widgetType,
 }: {
   schemaName: string;
   query: any;
   select?: string;
   filters?: Record<string, any>;
   entityId: any;
+  dimension?: string;
+  groupBy?: string[];
+  aggregation?: { type: string; attributeName: string };
+  conditions?: any[];
+  widgetType?: string;
 }) => {
   try {
     const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
@@ -460,6 +471,171 @@ export const getDataSourceVersionValueV2 = async ({
     // console.log('filterConditions',filterConditions);
     if (filterConditions.length > 0) {
       aggregationPipeline.push({ $match: { $and: filterConditions } });
+    }
+
+    // Step 3: Build group-by keys
+    const groupKeys = [...(groupBy || [])];
+    if (dimension) groupKeys.unshift(dimension);
+
+    const groupObject: Record<string, any> = {};
+
+    for (const key of groupKeys) {
+      let path: string;
+
+      if (key.includes('.')) {
+        const [refField, ...subFields] = key.split('.');
+        path = `$rowData.${refField}_resolved.rowData.${subFields.join('.')}`;
+      } else {
+        path = `$rowData.${key}`;
+      }
+
+      groupObject[key === dimension ? 'name' : key] = path;
+    }
+
+    const conditionsByField: Record<string, any[]> = {};
+
+    conditions?.forEach((condition) => {
+      const originalField = condition.field;
+
+      let resolvedFieldPath: string;
+
+      if (originalField.includes('.')) {
+        // Reference field
+        const [refField, ...subFields] = originalField.split('.');
+        resolvedFieldPath = `${refField}_resolved.rowData.${subFields.join('.')}`;
+      } else {
+        // Direct field
+        resolvedFieldPath = `${originalField}`;
+      }
+
+      // Overwrite field name with resolved path
+      const processedCondition = {
+        ...condition,
+        field: resolvedFieldPath,
+      };
+
+      if (!conditionsByField[resolvedFieldPath]) {
+        conditionsByField[resolvedFieldPath] = [];
+      }
+
+      conditionsByField[resolvedFieldPath].push(processedCondition);
+    });
+
+    const getFieldType = (fieldName: string) => {
+      const attribute = entity.attributes.find((attr: any) => attr.name === fieldName);
+      return attribute ? attribute.type : 'string';
+    };
+
+    // Process conditions using the common utility
+    const { matchConditions, dateConversions } = processFieldConditions(conditionsByField, getFieldType, {});
+    if (Object.keys(dateConversions).length > 0) {
+      aggregationPipeline.push({ $addFields: dateConversions });
+    }
+
+    // Add match conditions derived from widget.conditions
+    if (Object.keys(matchConditions).length > 0) {
+      aggregationPipeline.push({ $match: matchConditions });
+    }
+    let aggPath: string;
+    if (aggregation?.attributeName.includes('.')) {
+      const [refField, ...subFields] = aggregation.attributeName.split('.');
+      aggPath = `$rowData.${refField}_resolved.rowData.${subFields.join('.')}`;
+    } else {
+      aggPath = `$rowData.${aggregation?.attributeName}`;
+    }
+
+    let aggregationExpr;
+    switch (aggregation?.type) {
+      case 'Count':
+        aggregationExpr = { count: { $sum: 1 } };
+        break;
+      case 'Sum':
+        aggregationExpr = { total: { $sum: aggPath } };
+        break;
+      case 'Average':
+        aggregationExpr = { average: { $avg: aggPath } };
+        break;
+      default:
+        aggregationExpr = { count: { $sum: 1 } };
+    }
+
+    if (widgetType === 'number') {
+      aggregationPipeline.push(
+        { $addFields: { name: 'Total' } },
+        {
+          $group: {
+            _id: { name: '$name' },
+            data: aggregationExpr[Object.keys(aggregationExpr)[0]],
+          },
+        },
+        {
+          $replaceRoot: {
+            newRoot: {
+              $mergeObjects: ['$_id', { name: '$name', data: '$data' }],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            data: { $push: '$$ROOT' },
+            total: { $sum: '$data' },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            data: 1,
+            total: 1,
+          },
+        },
+        {
+          $replaceRoot: { newRoot: { data: '$data', total: '$total' } },
+        }
+      );
+    } else {
+      aggregationPipeline.push(
+        {
+          $group: {
+            _id: groupObject,
+            ...aggregationExpr,
+          },
+        },
+        {
+          $replaceRoot: {
+            newRoot: {
+              $mergeObjects: [
+                '$_id',
+                {
+                  data: `$${Object.keys(aggregationExpr)[0]}`,
+                },
+              ],
+            },
+          },
+        },
+        {
+          $match: {
+            name: { $ne: null },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            data: { $push: '$$ROOT' },
+            total: { $sum: '$data' },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            data: 1,
+            total: 1,
+          },
+        },
+        {
+          $replaceRoot: { newRoot: { data: '$data', total: '$total' } },
+        }
+      );
     }
 
     // Step 5: Execute

@@ -1254,12 +1254,16 @@ export const listAllAvailableDataSourceVersionValue = async (req: Request, res: 
   }
 };
 
-export const getNotivixChartData = async (req: Request, res: Response, next: NextFunction) => {
+export const getNewChartData = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { dataSourceId, filters, versionValue } = req.query as {
+    const { dataSourceId, filters, versionValue, dimension, groupBy, aggregation, conditions } = req.query as {
       dataSourceId: string;
       versionValue: string;
       filters?: string;
+      dimension: string;
+      groupBy?: string;
+      aggregation: string;
+      conditions?: string;
     };
 
     const { orgCode } = req.user;
@@ -1301,11 +1305,18 @@ export const getNotivixChartData = async (req: Request, res: Response, next: Nex
     const query = { dataSourceVersionId };
 
     const parsedFilters = filters ? JSON.parse(filters) : {};
+    const parsedGroupBy = groupBy ? JSON.parse(groupBy) : [];
+    const parsedAggregation = aggregation ? JSON.parse(aggregation) : {};
+    const parsedConditons = conditions ? JSON.parse(conditions) : [];
     const result = await dataSourceVersionValueService.getDataSourceVersionValueV2({
       schemaName,
       query,
       filters: parsedFilters,
       entityId: dataSourceDetails.entityId,
+      dimension,
+      groupBy: parsedGroupBy,
+      aggregation: parsedAggregation,
+      conditions: parsedConditons,
     });
     const data = result?.data ?? [];
 
