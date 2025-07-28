@@ -441,7 +441,28 @@ export const getDataSourceVersionValueV2 = async ({
             } else if (cond.operator === 'exists') {
               conditionExpressions.push({ [path]: { $exists: true, $ne: null } });
             } else if (cond.operator === 'not_exists') {
-              conditionExpressions.push({ [path]: { $in: [null, undefined] } });
+              conditionExpressions.push({
+                $or: [{ [path]: { $exists: false } }, { [path]: { $in: [null, undefined, ''] } }],
+              });
+            } else if (cond.operator === 'match_case_insensitive_array') {
+              const regexArray = (cond.matchValues || []).map((val: string) => ({
+                [path]: { $regex: `^${val}$`, $options: 'i' },
+              }));
+
+              if (regexArray.length > 0) {
+                conditionExpressions.push({ $or: regexArray });
+              }
+            } else if (cond.operator === 'not_match_case_insensitive_array') {
+              const regexArray = (cond.matchValues || []).map((val: string) => ({
+                [path]: { $regex: `^${val}$`, $options: 'i' },
+              }));
+
+              if (regexArray.length > 0) {
+                // Wrap each regex in $nor to negate it
+                conditionExpressions.push({
+                  $nor: regexArray,
+                });
+              }
             }
           }
 
