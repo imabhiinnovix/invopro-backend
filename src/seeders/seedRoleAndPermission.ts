@@ -22,6 +22,9 @@ const defaultPermissionsUser = [
   'GET:/common/dataSourceVersion/dataSourceId/:dataSourceId/versionValue/:versionValue/versionName/:versionName',
   'POST:/common/dataSourceVersion/create',
   'GET:/common/dataSourceVersion/versionData',
+  'POST:/common/dataSourceVersion/versionData/create',
+  'PUT:/common/dataSourceVersion/versionData/update/:rowId',
+  'DELETE:/common/dataSourceVersion/versionData/delete',
   'GET:/common/dataSourceVersion/listVersionData/:customReportId',
   'GET:/common/dataSourceVersion/listAllAvailableDataSourceVersionValue',
   'GET:/common/dataImportError/list',
@@ -90,6 +93,11 @@ const defaultPermissionsAdmin = [
   'POST:/common/widgetTheme/update/:widgetThemeId',
   'POST:/common/widgetTheme/delete/:widgetThemeId',
   'POST:/reportivix/customReports/updateSettings/:customReportId',
+  'POST:/common/derivedField/create',
+  'PUT:/common/derivedField/update/:id',
+  'DELETE:/common/derivedField/delete/:id',
+  'GET:/common/derivedField/list',
+  'GET:/common/derivedField/:id'
 ];
 
 const defaultPermissionsPrimarySuperAdmin = [

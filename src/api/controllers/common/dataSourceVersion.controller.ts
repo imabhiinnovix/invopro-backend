@@ -23,6 +23,7 @@ import mongoose from 'mongoose';
 import { version } from 'os';
 import { getEntityAttribute, getModelForEntity } from '../../../utils/entity.utils';
 import { Types } from 'mongoose';
+import { findEntityById } from '../../../database/services/common/entity.services';
 const ObjectId = mongoose.Types.ObjectId;
 
 async function validateAndConvert({
@@ -913,6 +914,232 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     next(e);
   }
 };
+
+export const createSingleRowVersionValue = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dataSourceId, versionValue, rowData } = req.body;
+    const { userId, organizationId, orgCode } = req.user;
+
+    if (!dataSourceId || !rowData) {
+      return res.status(400).json({ success: false, message: 'Missing required fields.' });
+    }
+
+    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+    if (!dataSourceDetails) {
+      return res.status(404).json({ success: false, message: 'Data source not found.' });
+    }
+
+    const versionQuery: any = {
+      dataSourceId,
+      isCurrent: true,
+      ...(versionValue && { versionValue }),
+    };
+
+    let version = await dataSourceVersionService.getDataSourceVersion({ query: versionQuery });
+
+    if (!version) {
+      // Fallback to current YYYY-MM if version not provided
+      const now = new Date();
+      const fallbackVersionValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      const newVersionValue = versionValue || fallbackVersionValue;
+
+      version = await dataSourceVersionService.createDataSourceVersion({
+        dataSourceId,
+        versionValue: newVersionValue,
+        isCurrent: true,
+        createdBy: userId,
+        organizationId,
+      });
+    }
+
+    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSourceDetails.code,
+    });
+
+    const versionId = version._id;
+    const entityId = dataSourceDetails.entityId;
+
+    // Use entityService to fetch entity and convert reference fields
+    const entity = await findEntityById(entityId);
+    if (!entity || !entity.attributes) {
+      return res.status(400).json({ success: false, message: 'Entity or attributes not found.' });
+    }
+
+    const refAttributes = entity.attributes
+      .filter(attr => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
+      .map(attr => attr.name);
+
+    for (const attr of refAttributes) {
+      if (rowData[attr]) {
+        try {
+          rowData[attr] = new Types.ObjectId(rowData[attr]);
+        } catch {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid ObjectId for reference field '${attr}'`,
+          });
+        }
+      }
+    }
+
+    const newRow = {
+      dataSourceId,
+      versionValue: version.versionValue,
+      entityId,
+      dataSourceVersionId: versionId,
+      rowData,
+      createdBy: userId,
+    };
+
+    await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, [newRow]);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Row created successfully.',
+    });
+  } catch (e) {
+    console.error('Error in createSingleRowVersionValue', e);
+    next(e);
+  }
+};
+
+
+export const updateSingleRowVersionValue = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dataSourceId, versionValue, rowData } = req.body;
+    const { userId, organizationId, orgCode } = req.user;
+    const { rowId } = req.params;
+
+    if (!dataSourceId || !rowData || !rowId) {
+      return res.status(400).json({ success: false, message: 'Missing required fields.' });
+    }
+
+    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+    if (!dataSourceDetails) {
+      return res.status(404).json({ success: false, message: 'Data source not found.' });
+    }
+
+    const versionQuery: any = {
+      dataSourceId,
+      isCurrent: true,
+      ...(versionValue && { versionValue }),
+    };
+
+    const version = await dataSourceVersionService.getDataSourceVersion({ query: versionQuery });
+    if (!version) {
+      return res.status(404).json({ success: false, message: 'Version not found.' });
+    }
+
+    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSourceDetails.code,
+    });
+
+    const versionId = version._id;
+
+    const existingRow = await dataSourceVersionValueService.findOne(schemaName, {
+      _id: rowId,
+      dataSourceVersionId: versionId,
+    });
+
+    if (!existingRow) {
+      return res.status(404).json({ success: false, message: 'Row not found for update.' });
+    }
+    
+    // Use entityService to fetch entity and convert reference fields
+    const entity = await findEntityById(dataSourceDetails.entityId);
+    if (!entity || !entity.attributes) {
+      return res.status(400).json({ success: false, message: 'Entity or attributes not found.' });
+    }
+
+    const refAttributes = entity.attributes
+      .filter(attr => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
+      .map(attr => attr.name);
+
+    for (const attr of refAttributes) {
+      if (rowData[attr]) {
+        try {
+          rowData[attr] = new Types.ObjectId(rowData[attr]);
+        } catch {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid ObjectId for reference field '${attr}'`,
+          });
+        }
+      }
+    }
+
+    await dataSourceVersionValueService.updateOne(schemaName, { _id: rowId }, {
+      rowData: rowData,
+      updatedBy: userId,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Row updated successfully.',
+    });
+  } catch (e) {
+    console.error('Error in updateSingleRowVersionValue', e);
+    next(e);
+  }
+};
+
+
+
+export const deleteMultipleRowsFromVersion = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dataSourceId, versionValue, ids } = req.body;
+    const { orgCode } = req.user;
+
+    if (!dataSourceId || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, message: 'Missing or invalid input.' });
+    }
+
+    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+    if (!dataSourceDetails) {
+      return res.status(404).json({ success: false, message: 'Data source not found.' });
+    }
+
+    const versionQuery:any = {
+      dataSourceId,
+      isCurrent: true,
+    };
+
+    if (versionValue) {
+      versionQuery.versionValue = versionValue;
+    }
+
+    const versionDetails = await dataSourceVersionService.getDataSourceVersion({
+      query: versionQuery,
+    });
+
+    if (!versionDetails) {
+      return res.status(404).json({ success: false, message: 'Version not found.' });
+    }
+
+    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSourceDetails.code,
+    });
+
+    await dataSourceVersionValueService.deleteVersionValues(schemaName, {
+      _id: { $in: ids.map((id: string) => new Types.ObjectId(id)) },
+      dataSourceVersionId: versionDetails._id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Rows deleted successfully.',
+    });
+  } catch (e) {
+    console.log('Error in deleteMultipleRowsFromVersion', e);
+    next(e);
+  }
+};
+
+
 
 export const getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue = async (
   req: Request,
