@@ -633,7 +633,7 @@ export const getDataSourceVersionValueV2 = async ({
           },
         },
         {
-          $replaceRoot: { newRoot: { data: '$data', total: '$total' } },
+          $replaceRoot: { newRoot: { widgetData: '$data', totalCount: '$total' } },
         }
       );
     }
@@ -641,9 +641,7 @@ export const getDataSourceVersionValueV2 = async ({
     // Step 5: Execute
     const versionValueData = await DataSourceVersionValue.aggregate(aggregationPipeline).exec();
 
-    return {
-      data: versionValueData,
-    };
+    return versionValueData && versionValueData.length > 0 ? versionValueData[0] : [];
   } catch (err) {
     throw err;
   }

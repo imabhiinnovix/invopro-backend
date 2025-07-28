@@ -1256,15 +1256,17 @@ export const listAllAvailableDataSourceVersionValue = async (req: Request, res: 
 
 export const getNewChartData = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { dataSourceId, filters, versionValue, dimension, groupBy, aggregation, conditions } = req.query as {
-      dataSourceId: string;
-      versionValue: string;
-      filters?: string;
-      dimension: string;
-      groupBy?: string;
-      aggregation: string;
-      conditions?: string;
-    };
+    const { dataSourceId, filters, versionValue, dimension, groupBy, aggregation, conditions, widgetType } =
+      req.query as {
+        dataSourceId: string;
+        versionValue: string;
+        filters?: string;
+        dimension: string;
+        groupBy?: string;
+        aggregation: string;
+        conditions?: string;
+        widgetType?: string;
+      };
 
     const { orgCode } = req.user;
 
@@ -1317,8 +1319,9 @@ export const getNewChartData = async (req: Request, res: Response, next: NextFun
       groupBy: parsedGroupBy,
       aggregation: parsedAggregation,
       conditions: parsedConditons,
+      widgetType,
     });
-    const data = result?.data ?? [];
+    const data = result ?? [];
 
     return res.status(200).json({
       success: true,
