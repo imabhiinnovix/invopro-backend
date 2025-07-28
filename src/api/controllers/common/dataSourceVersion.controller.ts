@@ -968,8 +968,8 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
     }
 
     const refAttributes = entity.attributes
-      .filter(attr => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
-      .map(attr => attr.name);
+      .filter((attr) => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
+      .map((attr) => attr.name);
 
     for (const attr of refAttributes) {
       if (rowData[attr]) {
@@ -1004,7 +1004,6 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
     next(e);
   }
 };
-
 
 export const updateSingleRowVersionValue = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -1047,7 +1046,7 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     if (!existingRow) {
       return res.status(404).json({ success: false, message: 'Row not found for update.' });
     }
-    
+
     // Use entityService to fetch entity and convert reference fields
     const entity = await findEntityById(dataSourceDetails.entityId);
     if (!entity || !entity.attributes) {
@@ -1055,8 +1054,8 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     }
 
     const refAttributes = entity.attributes
-      .filter(attr => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
-      .map(attr => attr.name);
+      .filter((attr) => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
+      .map((attr) => attr.name);
 
     for (const attr of refAttributes) {
       if (rowData[attr]) {
@@ -1071,10 +1070,14 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       }
     }
 
-    await dataSourceVersionValueService.updateOne(schemaName, { _id: rowId }, {
-      rowData: rowData,
-      updatedBy: userId,
-    });
+    await dataSourceVersionValueService.updateOne(
+      schemaName,
+      { _id: rowId },
+      {
+        rowData: rowData,
+        updatedBy: userId,
+      }
+    );
 
     return res.status(200).json({
       success: true,
@@ -1085,8 +1088,6 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     next(e);
   }
 };
-
-
 
 export const deleteMultipleRowsFromVersion = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -1102,7 +1103,7 @@ export const deleteMultipleRowsFromVersion = async (req: Request, res: Response,
       return res.status(404).json({ success: false, message: 'Data source not found.' });
     }
 
-    const versionQuery:any = {
+    const versionQuery: any = {
       dataSourceId,
       isCurrent: true,
     };
@@ -1138,8 +1139,6 @@ export const deleteMultipleRowsFromVersion = async (req: Request, res: Response,
     next(e);
   }
 };
-
-
 
 export const getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue = async (
   req: Request,
@@ -1251,6 +1250,72 @@ export const listAllAvailableDataSourceVersionValue = async (req: Request, res: 
     });
   } catch (e) {
     console.log('Error in listAllAvailableDataSourceVersionValue.', e);
+    next(e);
+  }
+};
+
+export const getNotivixChartData = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dataSourceId, filters, versionValue } = req.query as {
+      dataSourceId: string;
+      versionValue: string;
+      filters?: string;
+    };
+
+    const { orgCode } = req.user;
+
+    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+    if (!dataSourceDetails) {
+      return res.status(404).json({ success: false, message: 'Data source not found.' });
+    }
+
+    const versionQuery: any = {
+      dataSourceId: new Types.ObjectId(dataSourceId),
+      isCurrent: true, // Always filter for current version
+    };
+
+    if (versionValue) {
+      versionQuery.versionValue = versionValue; // Optional, narrows to specific version if provided
+    }
+
+    const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
+      query: versionQuery,
+    });
+    console.log('dataSourceVersionDetails', dataSourceVersionDetails, versionQuery);
+
+    if (!dataSourceVersionDetails?.data?.length) {
+      return res.status(200).json({
+        success: true,
+        message: 'Version data has been successfully retrieved.',
+        data: [],
+        totalCount: 0,
+      });
+    }
+
+    const dataSourceVersionId = dataSourceVersionDetails.data[0]._id;
+    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSourceDetails.code,
+    });
+
+    const query = { dataSourceVersionId };
+
+    const parsedFilters = filters ? JSON.parse(filters) : {};
+    const result = await dataSourceVersionValueService.getDataSourceVersionValueV2({
+      schemaName,
+      query,
+      filters: parsedFilters,
+      entityId: dataSourceDetails.entityId,
+    });
+    const data = result?.data ?? [];
+
+    return res.status(200).json({
+      success: true,
+      message: 'Chart data has been successfully retrieved.',
+      data,
+    });
+  } catch (e) {
+    console.log('Error in getNotivixChartData:', e);
     next(e);
   }
 };
