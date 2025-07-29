@@ -25,7 +25,6 @@ export async function handleFileUpload({ userId }: { userId: string }) {
     config: { mimeType: 'text/plain' },
   });
 
-  console.log(disclosureFile, 'disclosureFile');
   const annuityFile = await genAI.files.upload({
     file: path.join('reports/sample/AnnuitiesDueList.csv'),
     config: { mimeType: 'text/plain' },

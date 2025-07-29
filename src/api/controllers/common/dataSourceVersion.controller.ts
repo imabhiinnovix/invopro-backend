@@ -577,7 +577,6 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
 
                     const { originalname, path: filePath, size, mimetype } = file;
 
-                    console.log('originalname', originalname);
                     const fileName = originalname;
                     const fileExtension = fileName.split('.').pop();
                     const newFilePath = path.join(

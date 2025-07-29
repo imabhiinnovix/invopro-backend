@@ -30,13 +30,10 @@ export const checkPermission = async (req: Request) => {
   const resourceId = `${baseUrlWithoutPrefix}${routePath}`;
   const resourceKey = `${method}:${resourceId}`;
 
-  console.log(resourceKey);
-
   // ✅ 3. Check permission by role
   for (const roleId of roleIds) {
     const permissions = await getPermissionsByRole(roleId, organizationId);
 
-    console.log(roleId, permissions);
     if (permissions[resourceKey]) {
       return { isAccess: true, message: 'User has Permission' };
     }
