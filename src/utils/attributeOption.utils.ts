@@ -13,7 +13,7 @@ export async function autoPopulateAttributeOption({
 }: {
   filePath: string;
   startRow?: number;
-  entityId: string;
+  entityId: any;
   attributesDetails: any[];
   attributMapping: Record<string, any>;
   userId: string;
@@ -29,8 +29,6 @@ export async function autoPopulateAttributeOption({
       columnNames,
       startRow,
     });
-
-    const updatedAttributes = [...attributesDetails]; // make modifiable copy
 
     for (const attribute of targetAttributes) {
       const attributeName = attribute.name;
@@ -54,23 +52,15 @@ export async function autoPopulateAttributeOption({
           createdBy: userId,
           isActive: true,
         });
-
-        console.log('created', created, created._id);
-        // Update local attribute with new option ID
-        const attrIndex = updatedAttributes.findIndex((a) => a.name === attributeName);
-        if (attrIndex !== -1) {
-          updatedAttributes[attrIndex].optionAttributeId = created._id;
-        }
+        const newEntityDetails = await entityService.updateEntityAttributeOptionId({
+          entityId,
+          attributeName,
+          attributeType: attribute.type,
+          optionAttributeId: created._id,
+        });
+        console.log('newEntityDetails', newEntityDetails);
       }
     }
-    console.log('updatedAttributes', updatedAttributes);
-    // 🔄 Single entity update
-    const updatedEntityDetails = await entityService.updateEntity(entityId, {
-      attributes: updatedAttributes,
-    });
-
-    console.log('updatedEntityDetails', updatedEntityDetails);
-    return updatedEntityDetails?.attributes;
   } catch (e) {
     console.error('Error while auto populating attribute options:', e);
     throw e;

@@ -341,7 +341,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
               const versionValueData = versionValue;
               attributes = await autoPopulateAttributeOption({
                 filePath: newFilePath,
-                entityId: dataSourceDetails?.entityId?.toString() || '',
+                entityId: dataSourceDetails?.entityId || '',
                 attributesDetails: attributes,
                 attributMapping: jsonMapping,
                 userId,

@@ -47,7 +47,6 @@ export const getPermissionsByRole = async (roleId: string, organizationId: strin
   let permissions: PermissionMap | null = null;
 
   const cached = await cacheService.get(permissionsKey);
-  console.log(cached, 'cached');
 
   if (cached) {
     permissions = JSON.parse(cached);
