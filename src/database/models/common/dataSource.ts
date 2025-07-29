@@ -7,7 +7,7 @@ interface IFieldSetting {
   isFilterEnable?: boolean;
   isSortingEnable?: boolean;
   isDisplayEnable?: boolean;
-  isDashboarddMenu: boolean;
+  isDashboardFilter: boolean;
 }
 
 interface IDataSource extends Document {
@@ -44,7 +44,7 @@ const fieldSettingSchema = new Schema<IFieldSetting>(
       type: Boolean,
       default: false,
     },
-    isDashboarddMenu: {
+    isDashboardFilter: {
       type: Boolean,
       default: true,
     },
