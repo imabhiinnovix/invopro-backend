@@ -286,6 +286,7 @@ export const getDataSourceVersionValueV1 = async ({
     const versionValueData = await DataSourceVersionValue.aggregate(aggregationPipeline).exec();
 
     // Step 6: Transform
+    // Step 6: Transform
     const transformedData = await Promise.all(
       versionValueData.map(async (doc: any) => {
         const newDoc = { ...doc };
@@ -295,23 +296,17 @@ export const getDataSourceVersionValueV1 = async ({
           const attr = attributesMap[key];
           const resolvedKey = `${key}_resolved`;
 
-          if (attr.referenceEntitySetting && doc.rowData?.hasOwnProperty(resolvedKey)) {
-            const refResolved = doc.rowData[resolvedKey];
+          if (attr.referenceEntitySetting && rowData.hasOwnProperty(resolvedKey)) {
+            const refResolved = rowData[resolvedKey];
 
-            if (attr.referenceEntitySetting.refEntityField) {
-              const refField = await getEntityAttribute(
-                attr.referenceEntitySetting.refEntityId,
-                attr.referenceEntitySetting.refEntityField
-              );
-              rowData[key] = {
-                _id: refResolved?._id,
-                name: refResolved?.rowData?.[refField?.name] || null,
-                ...refResolved?.rowData
-              };
-            } else {
-              rowData[key] = refResolved?.rowData || rowData[key];
+            if (refResolved && refResolved.rowData) {
+              const refRowData = refResolved.rowData;
+
+              for (const subKey in refRowData) {
+                rowData[`${key}.${subKey}`] = refRowData[subKey];
+              }
             }
-
+            delete rowData[key];
             delete rowData[resolvedKey];
           }
         }
@@ -320,6 +315,7 @@ export const getDataSourceVersionValueV1 = async ({
         return newDoc;
       })
     );
+
 
     // Step 7: Count
     const countPipeline = aggregationPipeline.filter(
