@@ -12,6 +12,7 @@ import { validateUserInput } from '../../../utils/validation.utils';
 import * as roleHasPermissionService from '../../../database/services/common/roleHasPermission.services';
 import * as permissionService from '../../../database/services/common/permission.service';
 import { permission } from 'process';
+import { populate } from 'dotenv';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -189,7 +190,12 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
     user = user.toObject();
     const permissionDetails = await roleHasPermissionService.getPermissionsByRoleIds(roleIds);
 
-    let allPermissionResult = await permissionService.getPermissionList({ query: {}, page: 1, limit: 0 });
+    let allPermissionResult = await permissionService.getPermissionList({
+      query: {},
+      page: 1,
+      limit: 0,
+      populate: ['dataSourceId'],
+    });
 
     const allowedMap: Record<string, any> = {};
     permissionDetails.forEach((perm) => {
