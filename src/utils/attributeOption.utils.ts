@@ -52,15 +52,17 @@ export async function autoPopulateAttributeOption({
           createdBy: userId,
           isActive: true,
         });
-        const newEntityDetails = await entityService.updateEntityAttributeOptionId({
+        await entityService.updateEntityAttributeOptionId({
           entityId,
           attributeName,
           attributeType: attribute.type,
           optionAttributeId: created._id,
         });
-        console.log('newEntityDetails', newEntityDetails);
       }
     }
+
+    const newEntityDetails = await entityService.findEntityById(entityId);
+    return newEntityDetails?.attributes;
   } catch (e) {
     console.error('Error while auto populating attribute options:', e);
     throw e;
