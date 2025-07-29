@@ -1,43 +1,76 @@
 import { extractUniqueColumnValuesByNamesFromXLSX } from './excel.utils';
+import * as attributeOptionService from '../database/services/common/attributeOption.services';
+import * as entityService from '../database/services/common/entity.services';
 
 export async function autoPopulateAttributeOption({
   filePath,
-  columnName, // not used here
   startRow = 2,
   entityId,
   attributesDetails,
   attributMapping,
+  userId,
+  organizationId,
 }: {
   filePath: string;
-  columnName: string;
-  startRow: number;
+  startRow?: number;
   entityId: string;
   attributesDetails: any[];
   attributMapping: Record<string, any>;
-}): Promise<Record<string, any[]>> {
+  userId: string;
+  organizationId: string;
+}) {
   try {
     const targetAttributes = attributesDetails.filter((attr) => ['option', 'multioption'].includes(attr.type));
 
-    const columnNames = targetAttributes.map((attr) => attributMapping[attr.name]);
+    const columnNames = targetAttributes.map((attr) => attributMapping[attr.name]).filter(Boolean);
+
     const columnToUniqueValues = await extractUniqueColumnValuesByNamesFromXLSX({
       filePath,
       columnNames,
       startRow,
     });
 
-    // Map back to attribute name using attributMapping
-    const result: Record<string, any[]> = {};
+    const updatedAttributes = [...attributesDetails]; // make modifiable copy
 
-    for (const attr of targetAttributes) {
-      const columnHeader = attributMapping[attr.name];
-      if (columnToUniqueValues[columnHeader]) {
-        result[attr.name] = columnToUniqueValues[columnHeader];
+    for (const attribute of targetAttributes) {
+      const attributeName = attribute.name;
+      const columnHeader = attributMapping[attributeName];
+      const uniqueValues = columnToUniqueValues[columnHeader];
+      const attributeOptionId = attribute.optionAttributeId;
+
+      if (!uniqueValues || uniqueValues.length === 0) continue;
+
+      if (attributeOptionId) {
+        // 🔁 Update existing option
+        await attributeOptionService.updateAttribute(attributeOptionId, {
+          attributeValue: uniqueValues,
+        });
+      } else {
+        // 🆕 Create new option
+        const created = await attributeOptionService.createAttribute({
+          attributeName,
+          attributeValue: uniqueValues,
+          organizationId,
+          createdBy: userId,
+          isActive: true,
+        });
+
+        // Update local attribute with new option ID
+        const attrIndex = updatedAttributes.findIndex((a) => a.name === attributeName);
+        if (attrIndex !== -1) {
+          updatedAttributes[attrIndex].optionAttributeId = created._id;
+        }
       }
     }
 
-    return result;
+    // 🔄 Single entity update
+    const updatedEntityDetails = await entityService.updateEntity(entityId, {
+      attributes: updatedAttributes,
+    });
+
+    return updatedEntityDetails?.attributes;
   } catch (e) {
-    console.error('Error while auto populating attribute options.', e);
+    console.error('Error while auto populating attribute options:', e);
     throw e;
   }
 }

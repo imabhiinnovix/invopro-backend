@@ -24,6 +24,7 @@ import { version } from 'os';
 import { getEntityAttribute, getModelForEntity } from '../../../utils/entity.utils';
 import { Types } from 'mongoose';
 import { findEntityById } from '../../../database/services/common/entity.services';
+import { autoPopulateAttributeOption } from '../../../utils/attributeOption.utils';
 const ObjectId = mongoose.Types.ObjectId;
 
 async function validateAndConvert({
@@ -336,9 +337,16 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
             try {
               const fileData = await readExcelFile(newFilePath);
               const entityDetails = dataSourceDetails.entityId as any;
-              const attributes = entityDetails?.attributes || [];
+              let attributes = entityDetails?.attributes || [];
               const versionValueData = versionValue;
-
+              attributes = await autoPopulateAttributeOption({
+                filePath: newFilePath,
+                entityId: dataSourceDetails?.entityId?.toString() || '',
+                attributesDetails: attributes,
+                attributMapping: jsonMapping,
+                userId,
+                organizationId,
+              });
               const validatedData = await validateFileData({
                 fileData,
                 attributes,
@@ -968,8 +976,8 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
     }
 
     const refAttributes = entity.attributes
-      .filter(attr => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
-      .map(attr => attr.name);
+      .filter((attr) => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
+      .map((attr) => attr.name);
 
     for (const attr of refAttributes) {
       if (rowData[attr]) {
@@ -1004,7 +1012,6 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
     next(e);
   }
 };
-
 
 export const updateSingleRowVersionValue = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -1047,7 +1054,7 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     if (!existingRow) {
       return res.status(404).json({ success: false, message: 'Row not found for update.' });
     }
-    
+
     // Use entityService to fetch entity and convert reference fields
     const entity = await findEntityById(dataSourceDetails.entityId);
     if (!entity || !entity.attributes) {
@@ -1055,8 +1062,8 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     }
 
     const refAttributes = entity.attributes
-      .filter(attr => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
-      .map(attr => attr.name);
+      .filter((attr) => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
+      .map((attr) => attr.name);
 
     for (const attr of refAttributes) {
       if (rowData[attr]) {
@@ -1071,10 +1078,14 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       }
     }
 
-    await dataSourceVersionValueService.updateOne(schemaName, { _id: rowId }, {
-      rowData: rowData,
-      updatedBy: userId,
-    });
+    await dataSourceVersionValueService.updateOne(
+      schemaName,
+      { _id: rowId },
+      {
+        rowData: rowData,
+        updatedBy: userId,
+      }
+    );
 
     return res.status(200).json({
       success: true,
@@ -1085,8 +1096,6 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     next(e);
   }
 };
-
-
 
 export const deleteMultipleRowsFromVersion = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -1102,7 +1111,7 @@ export const deleteMultipleRowsFromVersion = async (req: Request, res: Response,
       return res.status(404).json({ success: false, message: 'Data source not found.' });
     }
 
-    const versionQuery:any = {
+    const versionQuery: any = {
       dataSourceId,
       isCurrent: true,
     };
@@ -1138,8 +1147,6 @@ export const deleteMultipleRowsFromVersion = async (req: Request, res: Response,
     next(e);
   }
 };
-
-
 
 export const getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue = async (
   req: Request,
