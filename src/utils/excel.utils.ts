@@ -1125,49 +1125,37 @@ export function colToNumber(col: string): number {
   return num;
 }
 
-export async function getUniqueColumnValuesFromXLSXFileBasedOnColumnName({
+export async function extractUniqueColumnValuesByNamesFromXLSX({
   filePath,
-  columnName,
-  startRow,
+  columnNames,
+  startRow = 2,
 }: {
   filePath: string;
-  columnName?: string;
-  startRow: number;
-}): Promise<any[]> {
-  try {
-    const workbook = xlsx.readFile(filePath);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows: any[][] = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+  columnNames: string[];
+  startRow?: number;
+}): Promise<Record<string, any[]>> {
+  const workbook = xlsx.readFile(filePath);
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const rows: any[][] = xlsx.utils.sheet_to_json(sheet, { header: 1 });
 
-    if (rows.length === 0) {
-      throw new Error('Sheet is empty.');
-    }
+  if (rows.length === 0) throw new Error('Sheet is empty.');
+  const headerRow = rows[0];
 
-    if (!columnName) {
-      throw new Error('columnName is required.');
-    }
+  const result: Record<string, Set<any>> = {};
 
-    const headerRow = rows[0];
-    const colIndex = headerRow.findIndex((col) => String(col).trim().toLowerCase() === columnName.trim().toLowerCase());
+  for (const name of columnNames) {
+    const colIndex = headerRow.findIndex((col) => String(col).trim().toLowerCase() === name.trim().toLowerCase());
+    if (colIndex === -1) continue;
 
-    if (colIndex === -1) {
-      throw new Error(`Column "${columnName}" not found in header row.`);
-    }
-
-    const uniqueValues = new Set<any>();
-
+    const unique = new Set<any>();
     for (let i = startRow - 1; i < rows.length; i++) {
-      const row = rows[i];
-      const cellValue = row[colIndex];
-
-      if (cellValue !== undefined && cellValue !== null && cellValue !== '') {
-        uniqueValues.add(cellValue); // Keep original type
+      const cell = rows[i]?.[colIndex];
+      if (cell !== undefined && cell !== null && cell !== '') {
+        unique.add(cell);
       }
     }
-
-    return Array.from(uniqueValues);
-  } catch (err) {
-    console.error('Error reading Excel file:', err);
-    return [];
+    result[name] = unique;
   }
+
+  return Object.fromEntries(Object.entries(result).map(([key, val]) => [key, Array.from(val)]));
 }
