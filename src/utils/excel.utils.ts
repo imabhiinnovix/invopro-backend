@@ -1124,3 +1124,50 @@ export function colToNumber(col: string): number {
   }
   return num;
 }
+
+export async function getUniqueColumnValuesFromXLSXFileBasedOnColumnName({
+  filePath,
+  columnName,
+  startRow,
+}: {
+  filePath: string;
+  columnName?: string;
+  startRow: number;
+}): Promise<any[]> {
+  try {
+    const workbook = xlsx.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows: any[][] = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+    if (rows.length === 0) {
+      throw new Error('Sheet is empty.');
+    }
+
+    if (!columnName) {
+      throw new Error('columnName is required.');
+    }
+
+    const headerRow = rows[0];
+    const colIndex = headerRow.findIndex((col) => String(col).trim().toLowerCase() === columnName.trim().toLowerCase());
+
+    if (colIndex === -1) {
+      throw new Error(`Column "${columnName}" not found in header row.`);
+    }
+
+    const uniqueValues = new Set<any>();
+
+    for (let i = startRow - 1; i < rows.length; i++) {
+      const row = rows[i];
+      const cellValue = row[colIndex];
+
+      if (cellValue !== undefined && cellValue !== null && cellValue !== '') {
+        uniqueValues.add(cellValue); // Keep original type
+      }
+    }
+
+    return Array.from(uniqueValues);
+  } catch (err) {
+    console.error('Error reading Excel file:', err);
+    return [];
+  }
+}
