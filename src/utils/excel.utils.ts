@@ -1124,3 +1124,31 @@ export function colToNumber(col: string): number {
   }
   return num;
 }
+
+export async function getUniqueColumnValuesFromXLSXFile(
+  filePath: string,
+  columnNumber: number,
+  startRow: number
+): Promise<string[]> {
+  try {
+    const workbook = xlsx.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows: any[][] = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+    const uniqueValues = new Set<string>();
+
+    for (let i = startRow - 1; i < rows.length; i++) {
+      const row = rows[i];
+      const cellValue = row[columnNumber - 1];
+
+      if (cellValue !== undefined && cellValue !== null && String(cellValue).trim() !== '') {
+        uniqueValues.add(String(cellValue).trim());
+      }
+    }
+
+    return Array.from(uniqueValues);
+  } catch (err) {
+    console.error('Error reading Excel file:', err);
+    return [];
+  }
+}
