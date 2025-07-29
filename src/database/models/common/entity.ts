@@ -13,7 +13,7 @@ export interface IReferenceEntitySetting {
 export interface IAttribute {
   name: string;
   mappingName: string;
-  type: 'number' | 'text' | 'date' | 'boolean' | 'richtext' | 'url' | 'option' | 'multioption' | 'user' | 'reference';
+  type: 'number' | 'text' | 'date' | 'boolean' | 'richtext' | 'url' | 'option' | 'multioption' | 'user';
   validation?: string[];
   transformations?: string[];
   optionAttributeId?: string;
