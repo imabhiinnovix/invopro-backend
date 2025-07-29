@@ -251,3 +251,62 @@ export const createAttributeOptionWithFile = async (req: Request, res: Response,
     next(err);
   }
 };
+
+export const updateAttributeOptionWithFile = async (req: Request, res: Response, next: NextFunction) => {
+  const { attributeName, columnNumber, startRow, attributeOptionId } = req.body;
+  const { organizationId, userId } = req.user;
+
+  const files = Array.isArray(req.files) ? req.files : Object.values(req.files || {}).flat();
+  if (!files || files.length === 0) {
+    return res.status(400).json({ success: false, message: 'Excel file is required.' });
+  }
+
+  const { path: filePath } = files[0];
+  const colIndex = Number(columnNumber);
+  const rowStart = Number(startRow);
+
+  if (!attributeName || !colIndex || !rowStart) {
+    await unlink(filePath).catch((err) => {
+      console.error('Failed to delete uploaded file:', err.message);
+    });
+    return res.status(400).json({
+      success: false,
+      message: 'attributeName, columnNumber, and startRow are required.',
+    });
+  }
+
+  try {
+    const attributeValue = await getUniqueColumnValuesFromXLSXFile(filePath, colIndex, rowStart);
+
+    const existing = await attributeOptionService.findAttributeOptionById(attributeOptionId);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Attribute Option not found.' });
+    }
+
+    // Check if another attribute with same name exists
+    const duplicate = await attributeOptionService.findAttributeByNameAndOrganization(attributeName, organizationId);
+    if (duplicate && String(duplicate._id) !== attributeOptionId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Another attribute option with this name already exists.' });
+    }
+
+    const updated = await attributeOptionService.updateAttribute(attributeOptionId, {
+      attributeName,
+      attributeValue,
+      updatedBy: userId,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Attribute updated successfully',
+      data: updated,
+    });
+  } catch (err) {
+    next(err);
+  } finally {
+    await unlink(filePath).catch((err) => {
+      console.error('Failed to delete uploaded file:', err.message);
+    });
+  }
+};
