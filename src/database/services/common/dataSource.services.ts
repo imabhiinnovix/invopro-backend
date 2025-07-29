@@ -129,9 +129,9 @@ export const getDataSource = async (query: any) => {
   }
 };
 
-export const getDataSourcePopulate = async (query: any, populate: any) => {
+export const getDataSourcePopulate = async (query: any, populate: any, sort: Record<string, 1 | -1> = { createdAt: -1 }) => {
   try {
-    let dataSourceQuery: any = DataSource.findOne(query);
+    let dataSourceQuery: any = DataSource.findOne(query).sort(sort);
     if (populate && Array.isArray(populate)) {
       populate.forEach((field) => {
         dataSourceQuery = dataSourceQuery.populate(field);
