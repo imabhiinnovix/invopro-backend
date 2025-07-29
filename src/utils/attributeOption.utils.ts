@@ -55,6 +55,7 @@ export async function autoPopulateAttributeOption({
           isActive: true,
         });
 
+        console.log('created', created, created._id);
         // Update local attribute with new option ID
         const attrIndex = updatedAttributes.findIndex((a) => a.name === attributeName);
         if (attrIndex !== -1) {
@@ -62,12 +63,13 @@ export async function autoPopulateAttributeOption({
         }
       }
     }
-
+    console.log('updatedAttributes', updatedAttributes);
     // 🔄 Single entity update
     const updatedEntityDetails = await entityService.updateEntity(entityId, {
       attributes: updatedAttributes,
     });
 
+    console.log('updatedEntityDetails', updatedEntityDetails);
     return updatedEntityDetails?.attributes;
   } catch (e) {
     console.error('Error while auto populating attribute options:', e);
