@@ -97,7 +97,12 @@ const defaultPermissionsAdmin = [
   'PUT:/common/derivedField/update/:id',
   'DELETE:/common/derivedField/delete/:id',
   'GET:/common/derivedField/list',
-  'GET:/common/derivedField/:id'
+  'GET:/common/derivedField/:id',
+  'GET:/notivix/notification-setting/type/:id',
+  'GET:/notivix/notification-setting/type/list',
+  'POST:/notivix/notification-setting/type/create',
+  'PUT:/notivix/notification-setting/type/update/:id',
+  'DELETE:/notivix/notification-setting/type/delete/:id'
 ];
 
 const defaultPermissionsPrimarySuperAdmin = [

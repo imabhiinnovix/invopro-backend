@@ -18,41 +18,37 @@ import { permissionMiddleware } from '../../../middlewares/permission.middleware
 
 const router = Router();
 
-router.get('/list', authenticateToken, permissionMiddleware(), listCustomReports);
-router.get('/listReportRequest', authenticateToken, permissionMiddleware(), listReportRequest);
+router.get('/list', permissionMiddleware(), listCustomReports);
+router.get('/listReportRequest', permissionMiddleware(), listReportRequest);
 router.get(
   '/getVersionValue',
-  authenticateToken,
   permissionMiddleware(),
   getReportVersionValuesBasedOnReportIdAndVersionValue
 );
 
-router.post('/generate', authenticateToken, permissionMiddleware(), generateCustomReports);
+router.post('/generate', permissionMiddleware(), generateCustomReports);
 
-router.get('/download/:reportRequestId', authenticateToken, permissionMiddleware(), downloadReport);
+router.get('/download/:reportRequestId', permissionMiddleware(), downloadReport);
 router.get(
   '/reportDataOnDataSourceVersionId/:dataSourceVersionId',
-  authenticateToken,
   permissionMiddleware(),
   getReportDataBasedOnDataSourceVersionId
 );
 
 router.get(
   '/customReportDesignData/:customReportId',
-  authenticateToken,
   permissionMiddleware(),
   getCustomReportDesignDetailsBasedOnReportId
 );
-router.get('/reportDetails/:reportRequestId', authenticateToken, permissionMiddleware(), getReportRequestDetails);
+router.get('/reportDetails/:reportRequestId', permissionMiddleware(), getReportRequestDetails);
 router.get(
   '/reportData/:dataSourceId',
-  authenticateToken,
   permissionMiddleware(),
   getCustomReportDataBasedOnDataSourcedIdAndVersionValueRange
 );
 
-router.get('/listSettings', authenticateToken, permissionMiddleware(), getCustomReportSettings);
+router.get('/listSettings', permissionMiddleware(), getCustomReportSettings);
 
-router.post('/updateSettings/:customReportId', authenticateToken, permissionMiddleware(), updateCustomReportSettings);
+router.post('/updateSettings/:customReportId', permissionMiddleware(), updateCustomReportSettings);
 
 export default router;
