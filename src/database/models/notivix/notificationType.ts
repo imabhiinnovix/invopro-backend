@@ -33,7 +33,7 @@ const notificationConditionSchema = new Schema<INotificationCondition>(
     attributeId: { type: Schema.Types.ObjectId, required: true },
     referenceEntityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     referenceEntityAttributeId: { type: Schema.Types.ObjectId },
-    operator: { type: String, enum: ['eq', 'lt', 'gt', 'in', 'like'], required: true },
+    operator: { type: String, required: true },
     value: { type: String },
   },
   { _id: false }

@@ -199,7 +199,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
 
                   if (!attr) {
                     field.mappedAttributeName = 'Unknown';
-                    field.type = 'text';
+                    // field.type = 'text';
                     continue;
                   }
 
@@ -211,10 +211,10 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
                     const parentName = attr.name || 'Unknown';
                     const refName = refAttr?.name || 'Unknown';
                     field.mappedAttributeName = `${parentName}.${refName}`;
-                    field.type = refAttr?.type || 'text';
+                    // field.type = refAttr?.type || 'text';
                   } else {
                     field.mappedAttributeName = attr.name;
-                    field.type = attr?.type || 'text';
+                    // field.type = attr?.type || 'text';
                   }
                 }
               }
