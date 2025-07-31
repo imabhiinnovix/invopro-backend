@@ -21,7 +21,6 @@ export interface INotificationType extends Document {
   userId?: Types.ObjectId;
   name: string;
   entityId: Types.ObjectId;
-  triggerFieldId: Types.ObjectId;
   isActive: boolean;
   createdBy?: Types.ObjectId;
   updatedBy?: Types.ObjectId;
@@ -56,7 +55,6 @@ const notificationTypeSchema = new Schema<INotificationType>(
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
     name: { type: String, required: true },
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity', required: true },
-    triggerFieldId: { type: Schema.Types.ObjectId, required: true },
     isActive: { type: Boolean, default: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
