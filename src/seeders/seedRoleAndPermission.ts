@@ -53,6 +53,7 @@ const defaultPermissionsUser = [
   'GET:/reportivix/customReports/listSettings',
   'GET:/reportivix/nlQuery/getData',
   'GET:/reportivix/nlQuery/insights',
+  'POST:/common/dataSourceVersion/chartData',
 ];
 
 const defaultPermissionsAdmin = [
@@ -97,7 +98,7 @@ const defaultPermissionsAdmin = [
   'PUT:/common/derivedField/update/:id',
   'DELETE:/common/derivedField/delete/:id',
   'GET:/common/derivedField/list',
-  'GET:/common/derivedField/:id'
+  'GET:/common/derivedField/:id',
 ];
 
 const defaultPermissionsPrimarySuperAdmin = [
