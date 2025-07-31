@@ -26,6 +26,33 @@ import { Types } from 'mongoose';
 import { findEntityById } from '../../../database/services/common/entity.services';
 const ObjectId = mongoose.Types.ObjectId;
 
+export const ERROR_CODES = {
+  MANDATORY_MISSING: {
+    code: '1001',
+    type: 'Mandatory Error',
+    message: 'Required attribute is missing.',
+  },
+  INVALID_TYPE: {
+    code: '1002',
+    type: 'Type Error',
+    message: 'Invalid data type provided.',
+  },
+  INVALID_REFERENCE: {
+    code: '1003',
+    type: 'Reference Error',
+    message: 'Referenced value not found in reference entity.',
+  },
+  INVALID_OPTION: {
+    code: '1004',
+    type: 'Option Error',
+    message: 'Provided value is not among the allowed options.',
+  },
+  DUPLICATE_ENTRY: {
+    code: '1005',
+    type: 'Duplicate Error',
+    message: 'Duplicate combination of unique keys found.',
+  },
+};
 async function validateAndConvert({
   value,
   type,
@@ -152,14 +179,16 @@ async function validateFileData({
           rowNumber: index + 1,
           fileAttributeName: fileKey,
           attributeName: attrName,
-          errorType: 'Not Found',
-          errorCode: '404',
+          attributeType: attr.type,
+          errorType: ERROR_CODES.MANDATORY_MISSING.code,
+          errorCode: ERROR_CODES.MANDATORY_MISSING.type,
+          status: 'open',
           errorMessage: `Error: Row ${index + 1} - The attribute "${attrName}" is required but is missing.`,
         });
-        newRow.isErrorLog = 1;
+        newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
       } else if (value !== undefined && value != null && value) {
         if (attr.referenceEntitySetting?.refEntityId) {
-          const refEntityId = attr.referenceEntitySetting.refEntityId;
+          const refEntityId: string = attr.referenceEntitySetting.refEntityId;
           const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
           const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
           const RefModel = await getModelForEntity(refEntityId);
@@ -167,6 +196,7 @@ async function validateFileData({
             [`rowData.${refEntityField.name}`]: { $regex: `^${value}$`, $options: 'i' },
           });
           if (!referencedDoc) {
+            const refDataSourceDetails = await dataSourceService.findDataSourcesByEntityId(refEntityId);
             errors.push({
               entityId: entityId,
               dataSourceId: dataSourceId,
@@ -175,8 +205,12 @@ async function validateFileData({
               fileAttributeName: fileKey,
               fileAttributeValue: value,
               attributeName: attrName,
-              errorType: 'Reference Error',
-              errorCode: '404',
+              attributeType: attr.type,
+              refEntityId,
+              refDataSourceId: refDataSourceDetails[0]._id,
+              errorType: ERROR_CODES.INVALID_REFERENCE.type,
+              errorCode: ERROR_CODES.INVALID_REFERENCE.code,
+              status: 'open',
               errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value}, but it could not be resolved from the reference entity for the attribute ${attrName}.`,
             });
             newRow.isErrorLog = 1;
@@ -201,8 +235,11 @@ async function validateFileData({
                 fileAttributeName: fileKey,
                 fileAttributeValue: value,
                 attributeName: attrName,
-                errorType: 'Type Error',
-                errorCode: '400',
+                attributeType: attr.type,
+                attributeOptionId: attr.optionAttributeId,
+                errorType: ERROR_CODES.INVALID_OPTION.type,
+                errorCode: ERROR_CODES.INVALID_OPTION.code,
+                status: 'open',
                 errorMessage: `Error: Row ${index + 1} - ${fileKey} has a value ${value}, but a value of type ${attr.type} was expected from one of the valid settings attribute(${attrName}) options ${attributeOptionValue}.`,
               });
             } else {
@@ -214,8 +251,10 @@ async function validateFileData({
                 fileAttributeName: fileKey,
                 fileAttributeValue: value,
                 attributeName: attrName,
-                errorType: 'Type Error',
-                errorCode: '400',
+                attributeType: attr.type,
+                status: 'open',
+                errorType: ERROR_CODES.INVALID_TYPE.type,
+                errorCode: ERROR_CODES.INVALID_TYPE.code,
                 errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value} of type ${typeof value}, but a value of type ${attr.type} was expected for the settings attribute ${attrName}.`,
               });
             }
@@ -968,8 +1007,8 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
     }
 
     const refAttributes = entity.attributes
-      .filter(attr => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
-      .map(attr => attr.name);
+      .filter((attr) => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
+      .map((attr) => attr.name);
 
     for (const attr of refAttributes) {
       if (rowData[attr]) {
@@ -1004,7 +1043,6 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
     next(e);
   }
 };
-
 
 export const updateSingleRowVersionValue = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -1047,7 +1085,7 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     if (!existingRow) {
       return res.status(404).json({ success: false, message: 'Row not found for update.' });
     }
-    
+
     // Use entityService to fetch entity and convert reference fields
     const entity = await findEntityById(dataSourceDetails.entityId);
     if (!entity || !entity.attributes) {
@@ -1055,8 +1093,8 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     }
 
     const refAttributes = entity.attributes
-      .filter(attr => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
-      .map(attr => attr.name);
+      .filter((attr) => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
+      .map((attr) => attr.name);
 
     for (const attr of refAttributes) {
       if (rowData[attr]) {
@@ -1071,10 +1109,14 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       }
     }
 
-    await dataSourceVersionValueService.updateOne(schemaName, { _id: rowId }, {
-      rowData: rowData,
-      updatedBy: userId,
-    });
+    await dataSourceVersionValueService.updateOne(
+      schemaName,
+      { _id: rowId },
+      {
+        rowData: rowData,
+        updatedBy: userId,
+      }
+    );
 
     return res.status(200).json({
       success: true,
@@ -1085,8 +1127,6 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     next(e);
   }
 };
-
-
 
 export const deleteMultipleRowsFromVersion = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -1102,7 +1142,7 @@ export const deleteMultipleRowsFromVersion = async (req: Request, res: Response,
       return res.status(404).json({ success: false, message: 'Data source not found.' });
     }
 
-    const versionQuery:any = {
+    const versionQuery: any = {
       dataSourceId,
       isCurrent: true,
     };
@@ -1138,8 +1178,6 @@ export const deleteMultipleRowsFromVersion = async (req: Request, res: Response,
     next(e);
   }
 };
-
-
 
 export const getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue = async (
   req: Request,

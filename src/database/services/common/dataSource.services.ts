@@ -129,7 +129,11 @@ export const getDataSource = async (query: any) => {
   }
 };
 
-export const getDataSourcePopulate = async (query: any, populate: any, sort: Record<string, 1 | -1> = { createdAt: -1 }) => {
+export const getDataSourcePopulate = async (
+  query: any,
+  populate: any,
+  sort: Record<string, 1 | -1> = { createdAt: -1 }
+) => {
   try {
     let dataSourceQuery: any = DataSource.findOne(query).sort(sort);
     if (populate && Array.isArray(populate)) {
@@ -164,4 +168,18 @@ export const getDataSourcesByIds = async (ids: Types.ObjectId[]) => {
   }
 
   return dataSourceMap;
+};
+
+export const findDataSourcesByEntityId = async (entityId: string, populate = true) => {
+  try {
+    const query = DataSource.find({ entityId });
+
+    if (populate) {
+      query.populate('entityId');
+    }
+
+    return await query.exec();
+  } catch (err) {
+    throw err;
+  }
 };
