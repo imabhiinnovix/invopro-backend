@@ -37,7 +37,7 @@ export const getUserRoleList = async (req: Request, res: Response, next: NextFun
 export const getRolePermissionList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { roleId } = req.params;
-    console.log(roleId);
+
     let { organizationId, isSuperUser } = req.user;
     const { organizationId: paramOrgId }: any = req.query;
     const page = parseInt(req.query.page as string, 10) || 1;
