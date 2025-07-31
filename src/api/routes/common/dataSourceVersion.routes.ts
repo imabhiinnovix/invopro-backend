@@ -58,5 +58,5 @@ router.get(
   listAllAvailableDataSourceVersionValue
 );
 
-router.get('/chartData', authenticateToken, getNewChartData);
+router.post('/chartData', authenticateToken, getNewChartData);
 export default router;

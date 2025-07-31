@@ -1256,17 +1256,7 @@ export const listAllAvailableDataSourceVersionValue = async (req: Request, res: 
 
 export const getNewChartData = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { dataSourceId, filters, versionValue, dimension, groupBy, aggregation, conditions, widgetType } =
-      req.query as {
-        dataSourceId: string;
-        versionValue: string;
-        filters?: string;
-        dimension: string;
-        groupBy?: string;
-        aggregation: string;
-        conditions?: string;
-        widgetType?: string;
-      };
+    const { dataSourceId, filters, versionValue, dimension, groupBy, aggregation, conditions, widgetType } = req.body;
 
     const { orgCode } = req.user;
 
@@ -1306,19 +1296,15 @@ export const getNewChartData = async (req: Request, res: Response, next: NextFun
 
     const query = { dataSourceVersionId };
 
-    const parsedFilters = filters ? JSON.parse(filters) : {};
-    const parsedGroupBy = groupBy ? JSON.parse(groupBy) : [];
-    const parsedAggregation = aggregation ? JSON.parse(aggregation) : {};
-    const parsedConditons = conditions ? JSON.parse(conditions) : [];
     const result = await dataSourceVersionValueService.getDataSourceVersionValueV2({
       schemaName,
       query,
-      filters: parsedFilters,
+      filters,
       entityId: dataSourceDetails.entityId,
       dimension,
-      groupBy: parsedGroupBy,
-      aggregation: parsedAggregation,
-      conditions: parsedConditons,
+      groupBy,
+      aggregation,
+      conditions,
       widgetType,
     });
     const data = result ?? [];
