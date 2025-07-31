@@ -103,3 +103,21 @@ export const getDataSourceVersionValue = async ({
     throw err;
   }
 };
+
+export const updateImportLogDataSourceVersionValue = async (
+  schemaName: string,
+  query: Record<string, any>,
+  updateFields: Record<string, any>
+) => {
+  try {
+    const DataSourceVersionValueModel = createDefaultImportLogDataSourceVersionModel(schemaName);
+
+    const result = await DataSourceVersionValueModel.updateMany(query, {
+      $set: updateFields,
+    });
+
+    return result;
+  } catch (err) {
+    throw err;
+  }
+};

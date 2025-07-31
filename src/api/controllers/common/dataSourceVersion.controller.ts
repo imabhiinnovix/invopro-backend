@@ -180,8 +180,9 @@ async function validateFileData({
           fileAttributeName: fileKey,
           attributeName: attrName,
           attributeType: attr.type,
-          errorType: ERROR_CODES.MANDATORY_MISSING.code,
-          errorCode: ERROR_CODES.MANDATORY_MISSING.type,
+          attributeOptionId: attr.optionAttributeId ? attr.optionAttributeId : null,
+          errorType: ERROR_CODES.MANDATORY_MISSING.type,
+          errorCode: ERROR_CODES.MANDATORY_MISSING.code,
           status: 'open',
           errorMessage: `Error: Row ${index + 1} - The attribute "${attrName}" is required but is missing.`,
         });
@@ -213,7 +214,7 @@ async function validateFileData({
               status: 'open',
               errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value}, but it could not be resolved from the reference entity for the attribute ${attrName}.`,
             });
-            newRow.isErrorLog = 1;
+            newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
           } else {
             newRow.rowData[attrName] = referencedDoc._id;
           }
@@ -258,7 +259,7 @@ async function validateFileData({
                 errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value} of type ${typeof value}, but a value of type ${attr.type} was expected for the settings attribute ${attrName}.`,
               });
             }
-            newRow.isErrorLog = 1;
+            newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
           } else {
             newRow.rowData[attrName] = convertedValue;
           }
