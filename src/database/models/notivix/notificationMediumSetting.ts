@@ -21,7 +21,7 @@ const notificationMediumSettingSchema = new Schema<INotificationMediumSetting>(
     },
     templateId: {
       type: Schema.Types.ObjectId,
-      ref: 'NotificationTemplate',
+      ref: 'notification_template',
       required: true,
     },
     enabled: {

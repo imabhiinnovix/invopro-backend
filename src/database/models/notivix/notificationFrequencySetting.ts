@@ -22,7 +22,7 @@ export interface INotificationFrequencySetting extends Document {
   dayOfYearMonth?: number;
   repeatAnnually: boolean;
   acknowledgeRequired: boolean;
-  medium: 'email' | 'sms' | 'whatsapp';
+  attachmentRequired: boolean;
   recipients: INotificationRecipient[];
 }
 
@@ -55,8 +55,7 @@ const notificationFrequencySettingSchema = new Schema<INotificationFrequencySett
 
     repeatAnnually: { type: Boolean, default: false },
     acknowledgeRequired: { type: Boolean, default: false },
-    medium: { type: String, enum: ['email', 'sms', 'whatsapp'], required: true },
-
+    attachmentRequired: { type: Boolean, default: false },
     recipients: { type: [notificationRecipientSchema], default: [] },
   },
   {

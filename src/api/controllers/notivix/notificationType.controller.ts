@@ -88,21 +88,46 @@ export const deleteNotificationType = async (req: Request, res: Response, next: 
 export const listNotificationType = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { organizationId } = req.user;
+    const { name, entityId, page = 1, limit = 10, sort } = req.query;
 
-    const data = await NotificationTypeService.listNotificationType({
-      organizationId,
+    const parsedPage = parseInt(page as string, 10) || 1;
+    const parsedLimit = parseInt(limit as string, 10) || 10;
+
+    const query: any = { organizationId };
+
+    if (name) {
+      query.name = { $regex: name, $options: 'i' };
+    }
+
+    if (entityId) {
+      query.entityId = entityId;
+    }
+
+    const result = await NotificationTypeService.listNotificationType({
+      query,
+      page: parsedPage,
+      limit: parsedLimit,
+      sort: sort ? JSON.parse(sort as string) : { updatedAt: -1 },
+      populate: ['entityId'],
     });
+
+    const totalPages = Math.ceil(result.totalCount / parsedLimit);
 
     res.status(200).json({
       success: true,
       message: 'Notification Types Retrieved Successfully',
-      data,
+      data: result.data,
+      pagination: {
+        page: parsedPage,
+        limit: parsedLimit,
+        totalPages,
+        totalRecords: result.totalCount,
+      },
     });
   } catch (err) {
     next(err);
   }
 };
-
 
 
 export const getNotificationType = async (req: Request, res: Response, next: NextFunction) => {
