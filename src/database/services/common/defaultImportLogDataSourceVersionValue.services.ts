@@ -137,3 +137,15 @@ export const getImportLogDataSourceVersionValues = async (schemaName: string, qu
     throw err;
   }
 };
+
+export const deleteImportLogDataSourceVersionValues = async (schemaName: string, query: Record<string, any>) => {
+  try {
+    const DataSourceVersionValueModel: any = createDefaultImportLogDataSourceVersionModel(schemaName);
+
+    const result = await DataSourceVersionValueModel.deleteMany(query);
+
+    return result; // result.deletedCount, result.acknowledged etc.
+  } catch (err) {
+    throw err;
+  }
+};
