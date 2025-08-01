@@ -45,6 +45,8 @@ const ENV = {
     'radar',
     'scatter',
     'tabular',
+    'stackedBarLine',
+    'comboBarLine',
   ],
   FIELD_TYPE_ENUM: ['number', 'text', 'date', 'boolean', 'richtext', 'url', 'option', 'multioption', 'user'],
   BASE_API_ROUTE: process.env.BASE_API_ROUTE || '',
