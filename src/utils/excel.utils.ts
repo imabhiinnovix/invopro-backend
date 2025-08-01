@@ -1152,3 +1152,38 @@ export async function getUniqueColumnValuesFromXLSXFile(
     return [];
   }
 }
+
+export async function extractUniqueColumnValuesByNamesFromXLSX({
+  filePath,
+  columnNames,
+  startRow = 2,
+}: {
+  filePath: string;
+  columnNames: string[];
+  startRow?: number;
+}): Promise<Record<string, any[]>> {
+  const workbook = xlsx.readFile(filePath);
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const rows: any[][] = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+  if (rows.length === 0) throw new Error('Sheet is empty.');
+  const headerRow = rows[0];
+
+  const result: Record<string, Set<any>> = {};
+
+  for (const name of columnNames) {
+    const colIndex = headerRow.findIndex((col) => String(col).trim().toLowerCase() === name.trim().toLowerCase());
+    if (colIndex === -1) continue;
+
+    const unique = new Set<any>();
+    for (let i = startRow - 1; i < rows.length; i++) {
+      const cell = rows[i]?.[colIndex];
+      if (cell !== undefined && cell !== null && cell !== '') {
+        unique.add(cell);
+      }
+    }
+    result[name] = unique;
+  }
+
+  return Object.fromEntries(Object.entries(result).map(([key, val]) => [key, Array.from(val)]));
+}

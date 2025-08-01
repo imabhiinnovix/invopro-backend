@@ -24,6 +24,7 @@ import { version } from 'os';
 import { getEntityAttribute, getModelForEntity } from '../../../utils/entity.utils';
 import { Types } from 'mongoose';
 import { findEntityById } from '../../../database/services/common/entity.services';
+import { autoPopulateAttributeOption } from '../../../utils/attributeOption.utils';
 const ObjectId = mongoose.Types.ObjectId;
 
 async function validateAndConvert({
@@ -336,9 +337,16 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
             try {
               const fileData = await readExcelFile(newFilePath);
               const entityDetails = dataSourceDetails.entityId as any;
-              const attributes = entityDetails?.attributes || [];
+              let attributes = entityDetails?.attributes || [];
               const versionValueData = versionValue;
-
+              attributes = await autoPopulateAttributeOption({
+                filePath: newFilePath,
+                entityId: dataSourceDetails?.entityId || '',
+                attributesDetails: attributes,
+                attributMapping: jsonMapping,
+                userId,
+                organizationId,
+              });
               const validatedData = await validateFileData({
                 fileData,
                 attributes,
@@ -569,7 +577,6 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
 
                     const { originalname, path: filePath, size, mimetype } = file;
 
-                    console.log('originalname', originalname);
                     const fileName = originalname;
                     const fileExtension = fileName.split('.').pop();
                     const newFilePath = path.join(
