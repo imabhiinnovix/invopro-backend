@@ -1,47 +1,158 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import * as NotificationFrequencyService from '../../../database/services/notivix/notificationFrequency.service';
 
-export const createNotificationFrequency = async (req: Request, res: Response) => {
+export const createNotificationFrequency = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await NotificationFrequencyService.createNotificationFrequency(req.body);
-    res.status(201).json(data);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    const {
+      notificationTypeId,
+      frequency,
+      interval,
+      daysOfWeek,
+      dayOfMonth,
+      weekOfMonth,
+      dayOfWeekInMonth,
+      monthOfYear,
+      dayOfYearMonth,
+      repeatAnnually,
+      acknowledgeRequired,
+      attachmentRequired,
+      recipients,
+      medium,
+      templateId,
+    } = req.body;
+
+    const { organizationId, userId } = req.user;
+
+    const data = await NotificationFrequencyService.createNotificationFrequency({
+      organizationId,
+      userId,
+      notificationTypeId,
+      frequency,
+      interval,
+      daysOfWeek,
+      dayOfMonth,
+      weekOfMonth,
+      dayOfWeekInMonth,
+      monthOfYear,
+      dayOfYearMonth,
+      repeatAnnually,
+      acknowledgeRequired,
+      attachmentRequired,
+      recipients,
+      medium,
+      templateId,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Notification Frequency Setting Created Successfully',
+      data,
+    });
+  } catch (err) {
+    next(err);
   }
 };
 
-export const updateNotificationFrequency = async (req: Request, res: Response) => {
+
+
+export const updateNotificationFrequency = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await NotificationFrequencyService.updateNotificationFrequency(req.params.id, req.body);
-    res.status(200).json(data);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    const {
+      frequency,
+      interval,
+      daysOfWeek,
+      dayOfMonth,
+      weekOfMonth,
+      dayOfWeekInMonth,
+      monthOfYear,
+      dayOfYearMonth,
+      repeatAnnually,
+      acknowledgeRequired,
+      attachmentRequired,
+      recipients,
+      medium,
+      templateId,
+    } = req.body;
+
+    const data = await NotificationFrequencyService.updateNotificationFrequency(req.params.id, {
+      frequency,
+      interval,
+      daysOfWeek,
+      dayOfMonth,
+      weekOfMonth,
+      dayOfWeekInMonth,
+      monthOfYear,
+      dayOfYearMonth,
+      repeatAnnually,
+      acknowledgeRequired,
+      attachmentRequired,
+      recipients,
+      medium,
+      templateId,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Notification Frequency Setting Updated Successfully',
+      data,
+    });
+  } catch (err) {
+    next(err);
   }
 };
 
-export const deleteNotificationFrequency = async (req: Request, res: Response) => {
+
+export const deleteNotificationFrequency = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await NotificationFrequencyService.deleteNotificationFrequency(req.params.id);
-    res.status(204).send();
+    const { organizationId } = req.user;
+    await NotificationFrequencyService.deleteNotificationFrequency(req.params.id, organizationId);
+
+    res.json({
+      success: true,
+      message: 'Notification Frequency Deleted Successfully',
+    });
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    next(error);
   }
 };
 
-export const listNotificationFrequency = async (_req: Request, res: Response) => {
+
+
+export const listNotificationFrequency = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await NotificationFrequencyService.listNotificationFrequency();
-    res.status(200).json(data);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    const { organizationId } = req.user;
+
+    const data = await NotificationFrequencyService.listNotificationFrequency({
+      organizationId,
+      populate: ['notificationTypeId', 'templateId', 'medium'],
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Notification Frequency Settings Fetched Successfully',
+      data,
+    });
+  } catch (err) {
+    next(err);
   }
 };
 
-export const getNotificationFrequency = async (req: Request, res: Response) => {
+
+export const getNotificationFrequency = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await NotificationFrequencyService.getNotificationFrequency(req.params.id);
-    res.status(200).json(data);
-  } catch (error: any) {
-    res.status(404).json({ error: error.message });
+    const { organizationId } = req.user;
+
+    const data = await NotificationFrequencyService.getNotificationFrequency(req.params.id, {
+      organizationId,
+      populate: ['notificationTypeId', 'templateId', 'medium'],
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Notification Frequency Setting Fetched Successfully',
+      data,
+    });
+  } catch (err) {
+    next(err);
   }
 };

@@ -19,6 +19,24 @@ import {
 
 } from '../../controllers/notivix/notificationFrequency.controller';
 
+import {
+  createNotificationTemplate,
+  updateNotificationTemplate,
+  deleteNotificationTemplate,
+  listNotificationTemplate,
+  getNotificationTemplate,
+
+} from '../../controllers/notivix/notificationTemplate.controller';
+
+import {
+  createNotificationMedium,
+  updateNotificationMedium,
+  deleteNotificationMedium,
+  listNotificationMediums,
+  getNotificationMedium,
+
+} from '../../controllers/notivix/notificationMedium.controller';
+
 const router = Router();
 
 // Notification Types
@@ -34,5 +52,19 @@ router.put('/frequency/update/:id', permissionMiddleware(), updateNotificationFr
 router.delete('/frequency/delete/:id', permissionMiddleware(), deleteNotificationFrequency);
 router.get('/frequency/list', permissionMiddleware(), listNotificationFrequency);
 router.get('/frequency/:id', permissionMiddleware(), getNotificationFrequency);
+
+// Notification Template Settings
+router.post('/template/create', permissionMiddleware(), createNotificationTemplate);
+router.put('/template/update/:id', permissionMiddleware(), updateNotificationTemplate);
+router.delete('/template/delete/:id', permissionMiddleware(), deleteNotificationTemplate);
+router.get('/template/list', permissionMiddleware(), listNotificationTemplate);
+router.get('/template/:id', permissionMiddleware(), getNotificationTemplate);
+
+// Notification Medium Settings
+router.post('/medium/create', permissionMiddleware(), createNotificationMedium);
+router.put('/medium/update/:id', permissionMiddleware(), updateNotificationMedium);
+router.delete('/medium/delete/:id', permissionMiddleware(), deleteNotificationMedium);
+router.get('/medium/list', permissionMiddleware(), listNotificationMediums);
+router.get('/medium/:id', permissionMiddleware(), getNotificationMedium);
 
 export default router;

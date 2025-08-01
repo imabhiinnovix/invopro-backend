@@ -1,28 +1,32 @@
-import { Schema, model, Types, Document } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 
 export interface INotificationMediumSetting extends Document {
-  frequencySettingId: Types.ObjectId;
+  organizationId: Types.ObjectId;
+  userId: Types.ObjectId;
   medium: 'email' | 'sms' | 'whatsapp' | 'slack' | 'inapp';
-  templateId: Types.ObjectId;
+  fromAddress?: string;     // for email
+  serviceName?: string;     // e.g., "sendgrid", "twilio"
+  apiKey?: string;          // secret or token to access service
   enabled?: boolean;
 }
 
 const notificationMediumSettingSchema = new Schema<INotificationMediumSetting>(
   {
-    frequencySettingId: {
-      type: Schema.Types.ObjectId,
-      ref: 'notification_frequency_setting',
-      required: true,
-    },
+    organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     medium: {
       type: String,
       enum: ['email', 'sms', 'whatsapp', 'slack', 'inapp'],
-      required: true,
+      default: 'email'
     },
-    templateId: {
-      type: Schema.Types.ObjectId,
-      ref: 'notification_template',
-      required: true,
+    fromAddress: {
+      type: String,
+    },
+    serviceName: {
+      type: String,
+    },
+    apiKey: {
+      type: String,
     },
     enabled: {
       type: Boolean,
@@ -30,8 +34,11 @@ const notificationMediumSettingSchema = new Schema<INotificationMediumSetting>(
     },
   },
   {
-    timestamps: true, // Automatically adds createdAt and updatedAt
+    timestamps: true,
   }
 );
 
-export default model<INotificationMediumSetting>('notification_medium_setting', notificationMediumSettingSchema);
+export default model<INotificationMediumSetting>(
+  'notification_medium_setting',
+  notificationMediumSettingSchema
+);

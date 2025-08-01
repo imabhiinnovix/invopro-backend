@@ -2,9 +2,8 @@ import { Schema, model, Types, Document } from 'mongoose';
 
 // Interface: NotificationRecipient
 interface INotificationRecipient {
-  entityId: Types.ObjectId;
-  relationPath: string[];
-  escalateLevels?: number[];
+  attributeId: Types.ObjectId;
+  referenceAttributeId: Types.ObjectId;
 }
 
 // Interface: NotificationFrequencySetting
@@ -24,14 +23,15 @@ export interface INotificationFrequencySetting extends Document {
   acknowledgeRequired: boolean;
   attachmentRequired: boolean;
   recipients: INotificationRecipient[];
+  medium: Types.ObjectId;
+  templateId: Types.ObjectId;
 }
 
 // Embedded Schema: NotificationRecipient
 const notificationRecipientSchema = new Schema<INotificationRecipient>(
   {
-    entityId: { type: Schema.Types.ObjectId, ref: 'Entity', required: true },
-    relationPath: { type: [String], required: true },
-    escalateLevels: { type: [Number], default: [] },
+    attributeId: { type: Schema.Types.ObjectId, required: true },
+    referenceAttributeId: { type: Schema.Types.ObjectId },
   },
   { _id: false }
 );
@@ -57,6 +57,8 @@ const notificationFrequencySettingSchema = new Schema<INotificationFrequencySett
     acknowledgeRequired: { type: Boolean, default: false },
     attachmentRequired: { type: Boolean, default: false },
     recipients: { type: [notificationRecipientSchema], default: [] },
+    medium: { type: Schema.Types.ObjectId, ref: 'notification_medium_setting', required: true },
+    templateId: { type: Schema.Types.ObjectId, ref: 'notification_template', required: true },
   },
   {
     timestamps: true // replaces created_at / updated_at

@@ -8,16 +8,49 @@ export const updateNotificationFrequency = async (id: string, payload: any) => {
   return await NotificationFrequencySetting.findByIdAndUpdate(id, payload, { new: true });
 };
 
-export const deleteNotificationFrequency = async (id: string) => {
-  return await NotificationFrequencySetting.findByIdAndDelete(id);
+export const deleteNotificationFrequency = async (
+  id: string,
+  organizationId: string
+) => {
+  const result = await NotificationFrequencySetting.findOneAndDelete({
+    _id: id,
+    organizationId,
+  });
+
+  return result;
 };
 
-export const listNotificationFrequency = async () => {
-  return await NotificationFrequencySetting.find();
+export const listNotificationFrequency = async ({
+  organizationId,
+  populate = [],
+}: {
+  organizationId: string;
+  populate?: string[];
+}) => {
+  let query = NotificationFrequencySetting.find({ organizationId });
+
+  populate.forEach(field => {
+    query = query.populate(field);
+  });
+
+  return await query.exec();
 };
 
-export const getNotificationFrequency = async (id: string) => {
-  const doc = await NotificationFrequencySetting.findById(id);
-  if (!doc) throw new Error('Notification frequency not found');
-  return doc;
+export const getNotificationFrequency = async (
+  id: string,
+  {
+    organizationId,
+    populate = [],
+  }: { organizationId: string; populate?: string[] }
+) => {
+  let query = NotificationFrequencySetting.findOne({ _id: id, organizationId });
+
+  populate.forEach(field => {
+    query = query.populate(field);
+  });
+
+  const result = await query.exec();
+  if (!result) throw new Error('Notification Frequency not found');
+
+  return result;
 };

@@ -7,6 +7,7 @@ export interface INotificationTemplate extends Document {
   code: string;
   subject: string;
   body: string;
+  type: string;
 }
 
 const notificationTemplateSchema = new Schema<INotificationTemplate>(
@@ -17,6 +18,11 @@ const notificationTemplateSchema = new Schema<INotificationTemplate>(
     code: { type: String, unique: true, required: true }, // e.g., 'overall_summary'
     subject: { type: String, required: true },            // e.g., 'Reminder for {{name}}'
     body: { type: String, required: true },               // HTML or text body with placeholders
+    type: {
+      type: String,
+      enum: ['single', 'overall'], // single = one record, overall = multiple/cumulative
+      default: 'single',
+    },
   },
   {
     timestamps: true, // createdAt and updatedAt managed automatically
