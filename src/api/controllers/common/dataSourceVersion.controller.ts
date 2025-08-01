@@ -160,7 +160,15 @@ async function validateFileData({
   );
 
   for (const [index, row] of fileData.entries()) {
-    const newRow = { dataSourceId, entityId, dataSourceVersionId, versionValue, rowData: {}, isErrorLog: 0 };
+    const newRow = {
+      dataSourceId,
+      entityId,
+      dataSourceVersionId,
+      versionValue,
+      rowData: {},
+      isErrorLog: 0,
+      rowNumber: index + 1,
+    };
 
     for (const attr of attributes) {
       const attrName = attr.name;

@@ -4,6 +4,8 @@ import { getImportLogSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../uti
 import * as dataSourceService from '../../../database/services/common/dataSource.services';
 import * as importLogDataSourceVersionValueService from '../../../database/services/common/defaultImportLogDataSourceVersionValue.services';
 import { Schema } from 'mongoose';
+import * as attributeOptionService from '../../../database/services/common/attributeOption.services';
+
 export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
   req: Request,
   res: Response,
@@ -42,10 +44,20 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
   }
 };
 
-export const discardDataImportError = async (req: Request, res: Response, next: NextFunction) => {
+export const resolveDataImportError = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { action, rowNumber, dataSourceVersionId, dataSourceId } = req.body;
-    const { orgCode } = req.user;
+    const {
+      action,
+      rowNumber,
+      dataSourceVersionId,
+      dataSourceId,
+      errorDataId,
+      rowData,
+      attributeOptionId,
+      fileAttributeValue,
+      attributeName,
+    } = req.body;
+    const { orgCode, userId } = req.user;
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
     const schemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
       orgCode,
@@ -85,6 +97,52 @@ export const discardDataImportError = async (req: Request, res: Response, next: 
         },
         {
           isErrorLog: 1000,
+        }
+      );
+    } else if (action === 'update') {
+      await dataImportErrorServices.updateDataImportErrors(
+        { dataSourceVersionId: dataSourceVersionId, rowNumber: rowNumber },
+        { status: 'resolved' }
+      );
+      await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+        schemaName,
+        { _id: new Schema.Types.ObjectId(errorDataId) },
+        { rowData: rowData },
+        {
+          isErrorLog: -1,
+        }
+      );
+    } else if (action === 'addOption') {
+      await attributeOptionService.updateAttribute(attributeOptionId, {
+        fileAttributeValue,
+        updatedBy: userId,
+      });
+
+      const optionRecords = await dataImportErrorServices.getDataImportErrorRecords({
+        dataSourceVersionId: dataSourceVersionId,
+        attributeOptionId,
+        fileAttributeValue,
+        status: 'open',
+      });
+
+      const rowNumbersToUpdate = optionRecords.map((record) => record.rowNumber);
+
+      await dataImportErrorServices.updateDataImportErrors(
+        {
+          dataSourceVersionId: dataSourceVersionId,
+          attributeOptionId,
+          fileAttributeValue,
+          rowNumber: { $in: rowNumbersToUpdate },
+        },
+        { status: 'resolved' }
+      );
+
+      await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+        schemaName,
+        { dataSourceVersionId: new Schema.Types.ObjectId(errorDataId), rowNumber: { $in: rowNumbersToUpdate } },
+        {},
+        {
+          isErrorLog: -1,
         }
       );
     } else {

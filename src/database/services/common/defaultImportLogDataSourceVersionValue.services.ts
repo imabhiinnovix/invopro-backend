@@ -107,13 +107,15 @@ export const getDataSourceVersionValue = async ({
 export const updateImportLogDataSourceVersionValue = async (
   schemaName: string,
   query: Record<string, any>,
-  updateFields: Record<string, any>
+  updateFields: Record<string, any>,
+  incFields: Record<string, number> = {}
 ) => {
   try {
     const DataSourceVersionValueModel = createDefaultImportLogDataSourceVersionModel(schemaName);
 
     const result = await DataSourceVersionValueModel.updateMany(query, {
-      $set: updateFields,
+      ...(Object.keys(updateFields).length > 0 && { $set: updateFields }),
+      ...(Object.keys(incFields).length > 0 && { $inc: incFields }),
     });
 
     return result;

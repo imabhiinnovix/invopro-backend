@@ -50,3 +50,12 @@ export const updateDataImportErrors = async (query: Record<string, any>, updateF
     throw err;
   }
 };
+
+export const getDataImportErrorRecords = async (query) => {
+  try {
+    const matchingDocs = await DataImportErrorModel.find(query);
+    return matchingDocs;
+  } catch (error) {
+    throw error;
+  }
+};
