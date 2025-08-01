@@ -19,7 +19,7 @@ import * as customReportServices from '../../../database/services/reportivix/cus
 import { generateCustomReportsFunction } from '../reportivix/customReport.controller';
 import * as reportRequestService from '../../../database/services/reportivix/reportRequest.services';
 import { DateTime } from 'luxon';
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import { version } from 'os';
 import { getEntityAttribute, getModelForEntity } from '../../../utils/entity.utils';
 import { Types } from 'mongoose';
@@ -965,7 +965,15 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
 
 export const createSingleRowVersionValue = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { dataSourceId, versionValue, rowData } = req.body;
+    const {
+      dataSourceId,
+      versionValue,
+      rowData,
+      isErrorResolved,
+      rowNumber,
+      errorDataSourceVersionId,
+      errorDataSourceId,
+    } = req.body;
     const { userId, organizationId, orgCode } = req.user;
 
     if (!dataSourceId || !rowData) {
@@ -1042,6 +1050,27 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
     };
 
     await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, [newRow]);
+
+    if (isErrorResolved) {
+      const errorDataSourceDetails = await dataSourceService.findDataSourceById(errorDataSourceId, true);
+      const errorSchema = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+        orgCode,
+        versionCode: errorDataSourceDetails?.code!,
+      });
+
+      await dataImportErrorServices.updateDataImportErrors(
+        { dataSourceVersionId: errorDataSourceVersionId, rowNumber: rowNumber },
+        { status: 'resolved' }
+      );
+      await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+        errorSchema,
+        { dataSourceVersionId: new Schema.Types.ObjectId(errorDataSourceVersionId), rowNumber: rowNumber },
+        {},
+        {
+          isErrorLog: -1,
+        }
+      );
+    }
 
     return res.status(200).json({
       success: true,
