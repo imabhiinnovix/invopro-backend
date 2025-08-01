@@ -61,7 +61,7 @@ export const listEntity = async (req: Request, res: Response, next: NextFunction
     const query: any = { organizationId };
     if (search) query.name = { $regex: search, $options: 'i' };
 
-    let result: any = {};
+    let result: any = { organizationId };
     if (paginate) {
       result = await entityService.getEntityList({
         query,

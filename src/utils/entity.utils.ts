@@ -28,7 +28,6 @@ export async function getModelForEntity(entityId: string) {
   if (!dataSource || !dataSource.entityId) {
     throw new Error(`No DataSource found for entityId ${entityId}`);
   }
-  console.log('dataSource', dataSource);
   const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
     orgCode: dataSource.organizationId.code,
     versionCode: dataSource.code,
