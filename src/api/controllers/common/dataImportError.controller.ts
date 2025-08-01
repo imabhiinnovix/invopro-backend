@@ -3,9 +3,10 @@ import * as dataImportErrorServices from '../../../database/services/common/data
 import { getImportLogSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
 import * as dataSourceService from '../../../database/services/common/dataSource.services';
 import * as importLogDataSourceVersionValueService from '../../../database/services/common/defaultImportLogDataSourceVersionValue.services';
-import { Schema } from 'mongoose';
+import mongoose from 'mongoose';
 import * as attributeOptionService from '../../../database/services/common/attributeOption.services';
 import * as dataSourceVersionValueService from '../../../database/services/common/defaultDataSourceVersionValue.services';
+const ObjectId = mongoose.Types.ObjectId;
 
 export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
   req: Request,
@@ -72,7 +73,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         schemaName,
         {
-          dataSourceVersionId: new Schema.Types.ObjectId(dataSourceVersionId),
+          dataSourceVersionId: new ObjectId(dataSourceVersionId),
           rowNumber: rowNumber,
         },
         {
@@ -92,7 +93,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         schemaName,
         {
-          dataSourceVersionId: new Schema.Types.ObjectId(dataSourceVersionId),
+          dataSourceVersionId: new ObjectId(dataSourceVersionId),
           isErrorLog: 1,
         },
         {
@@ -102,24 +103,24 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       const allProcessedVersionValue = await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(
         schemaName,
         {
-          dataSourceVersionId: new Schema.Types.ObjectId(dataSourceVersionId),
+          dataSourceVersionId: new ObjectId(dataSourceVersionId),
           isErrorLog: 0,
         }
       );
 
       await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, allProcessedVersionValue);
     } else if (action === 'update') {
-      await dataImportErrorServices.updateDataImportErrors(
-        { dataSourceVersionId: dataSourceVersionId, rowNumber: rowNumber },
-        { status: 'resolved' }
-      );
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         schemaName,
-        { _id: new Schema.Types.ObjectId(errorDataId) },
+        { _id: new ObjectId(errorDataId) },
         { rowData: rowData },
         {
           isErrorLog: -1,
         }
+      );
+      await dataImportErrorServices.updateDataImportErrors(
+        { dataSourceVersionId: dataSourceVersionId, rowNumber: rowNumber },
+        { status: 'resolved' }
       );
     } else if (action === 'addOption') {
       await attributeOptionService.updateAttribute(attributeOptionId, {
@@ -148,7 +149,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
 
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         schemaName,
-        { dataSourceVersionId: new Schema.Types.ObjectId(errorDataId), rowNumber: { $in: rowNumbersToUpdate } },
+        { dataSourceVersionId: new ObjectId(errorDataId), rowNumber: { $in: rowNumbersToUpdate } },
         {},
         {
           isErrorLog: -1,
@@ -166,7 +167,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       const allProcessedVersionValue = await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(
         schemaName,
         {
-          dataSourceVersionId: new Schema.Types.ObjectId(dataSourceVersionId),
+          dataSourceVersionId: new ObjectId(dataSourceVersionId),
           isErrorLog: 0,
         }
       );
@@ -179,7 +180,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       );
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         schemaName,
-        { dataSourceVersionId: new Schema.Types.ObjectId(dataSourceVersionId), rowNumber: rowNumber },
+        { dataSourceVersionId: new ObjectId(dataSourceVersionId), rowNumber: rowNumber },
         {},
         {
           isErrorLog: -1,
@@ -188,7 +189,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         schemaName,
         {
-          dataSourceVersionId: new Schema.Types.ObjectId(dataSourceVersionId),
+          dataSourceVersionId: new ObjectId(dataSourceVersionId),
           errorCode: '1005',
         },
         {
@@ -198,7 +199,37 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
     } else {
       return res.status(400).json({ message: 'Not valid action.' });
     }
+    return res.status(200).json({ message: 'Action Applied.' });
   } catch (err) {
+    next(err);
+  }
+};
+
+export const getErrorRowDataBasedOnDataSourceVersionIdAndRowNumber = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { dataSourceId, dataSourceVersionId, rowNumber } = req.query as any;
+    const { orgCode } = req.user;
+    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+    const schemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSourceDetails?.code!,
+    });
+    const rawData = await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(schemaName, {
+      dataSourceVersionId: new ObjectId(dataSourceVersionId),
+      rowNumber: Number(rowNumber),
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Data retrieved sucessfully.',
+      data: rawData,
+    });
+  } catch (err) {
+    console.log('Error in getDataBasedOnDataSourceVersionIdAndRowNumber', err);
     next(err);
   }
 };

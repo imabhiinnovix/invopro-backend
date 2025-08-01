@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
 import {
+  getErrorRowDataBasedOnDataSourceVersionIdAndRowNumber,
   listDataSourceVersionErrorBasedOnDataSourceVersionId,
   resolveDataImportError,
 } from '../../controllers/common/dataImportError.controller';
@@ -16,4 +17,10 @@ router.post(
   resolveDataImportError
 );
 
+router.get(
+  '/data',
+  authenticateToken,
+  //   permissionMiddleware(),
+  getErrorRowDataBasedOnDataSourceVersionIdAndRowNumber
+);
 export default router;
