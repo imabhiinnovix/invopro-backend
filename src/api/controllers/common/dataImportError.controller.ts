@@ -134,10 +134,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
         { status: 'resolved' }
       );
     } else if (action === 'addOption') {
-      await attributeOptionService.updateAttribute(attributeOptionId, {
-        fileAttributeValue,
-        updatedBy: userId,
-      });
+      await attributeOptionService.addAttributeValueById(attributeOptionId, fileAttributeValue);
 
       const optionRecords = await dataImportErrorServices.getDataImportErrorRecords({
         dataSourceVersionId: dataSourceVersionId,
@@ -148,6 +145,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
 
       const rowNumbersToUpdate = optionRecords.map((record) => record.rowNumber);
 
+      console.log('rowNumbersToUpdate', rowNumbersToUpdate);
       await dataImportErrorServices.updateDataImportErrors(
         {
           dataSourceVersionId: dataSourceVersionId,
@@ -160,7 +158,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
 
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         errorSchemaName,
-        { dataSourceVersionId: new ObjectId(errorDataId), rowNumber: { $in: rowNumbersToUpdate } },
+        { dataSourceVersionId: new ObjectId(dataSourceVersionId), rowNumber: { $in: rowNumbersToUpdate } },
         {},
         {
           isErrorLog: -1,
