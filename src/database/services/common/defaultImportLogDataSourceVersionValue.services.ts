@@ -123,3 +123,17 @@ export const updateImportLogDataSourceVersionValue = async (
     throw err;
   }
 };
+
+export const getImportLogDataSourceVersionValues = async (schemaName: string, query: Record<string, any>) => {
+  try {
+    const DataSourceVersionValueModel = createDefaultImportLogDataSourceVersionModel(schemaName);
+
+    const pipeline = [{ $match: query }, { $project: { _id: 0 } }];
+
+    const results = await DataSourceVersionValueModel.aggregate(pipeline);
+
+    return results;
+  } catch (err) {
+    throw err;
+  }
+};

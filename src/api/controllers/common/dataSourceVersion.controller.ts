@@ -216,7 +216,7 @@ async function validateFileData({
               attributeName: attrName,
               attributeType: attr.type,
               refEntityId,
-              refDataSourceId: refDataSourceDetails[0]._id,
+
               errorType: ERROR_CODES.INVALID_REFERENCE.type,
               errorCode: ERROR_CODES.INVALID_REFERENCE.code,
               status: 'open',
@@ -303,8 +303,8 @@ async function validateFileData({
           dataSourceId,
           dataSourceVersionId,
           rowNumber: index + 1,
-          errorType: 'Duplicate Error',
-          errorCode: '403',
+          errorType: ERROR_CODES.DUPLICATE_ENTRY.type,
+          errorCode: ERROR_CODES.DUPLICATE_ENTRY.code,
           errorMessage: `Error: Row ${index + 1} - Duplicate combination found for unique keys: ${compositeKey}.`,
         });
         newRow.isErrorLog = 1;

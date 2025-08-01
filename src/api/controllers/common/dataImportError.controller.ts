@@ -5,6 +5,7 @@ import * as dataSourceService from '../../../database/services/common/dataSource
 import * as importLogDataSourceVersionValueService from '../../../database/services/common/defaultImportLogDataSourceVersionValue.services';
 import { Schema } from 'mongoose';
 import * as attributeOptionService from '../../../database/services/common/attributeOption.services';
+import * as dataSourceVersionValueService from '../../../database/services/common/defaultDataSourceVersionValue.services';
 
 export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
   req: Request,
@@ -55,7 +56,6 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       rowData,
       attributeOptionId,
       fileAttributeValue,
-      attributeName,
     } = req.body;
     const { orgCode, userId } = req.user;
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
@@ -79,7 +79,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
           isErrorLog: 1000,
         }
       );
-    } else if (action === 'discardAll') {
+    } else if (action === 'discardAllSubmit') {
       await dataImportErrorServices.updateDataImportErrors(
         {
           dataSourceVersionId: dataSourceVersionId,
@@ -99,6 +99,15 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
           isErrorLog: 1000,
         }
       );
+      const allProcessedVersionValue = await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(
+        schemaName,
+        {
+          dataSourceVersionId: new Schema.Types.ObjectId(dataSourceVersionId),
+          isErrorLog: 0,
+        }
+      );
+
+      await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, allProcessedVersionValue);
     } else if (action === 'update') {
       await dataImportErrorServices.updateDataImportErrors(
         { dataSourceVersionId: dataSourceVersionId, rowNumber: rowNumber },
@@ -143,6 +152,47 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
         {},
         {
           isErrorLog: -1,
+        }
+      );
+    } else if (action === 'submit') {
+      const openRecords = await dataImportErrorServices.getDataImportErrorRecords({
+        dataSourceVersionId: dataSourceVersionId,
+        status: 'open',
+      });
+      if (openRecords && openRecords.length > 0) {
+        return res.status(400).json({ message: 'Some of the record has not been resolved.' });
+      }
+
+      const allProcessedVersionValue = await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(
+        schemaName,
+        {
+          dataSourceVersionId: new Schema.Types.ObjectId(dataSourceVersionId),
+          isErrorLog: 0,
+        }
+      );
+
+      await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, allProcessedVersionValue);
+    } else if (action === 'unique') {
+      await dataImportErrorServices.updateDataImportErrors(
+        { dataSourceVersionId: dataSourceVersionId, rowNumber: rowNumber },
+        { status: 'resolved' }
+      );
+      await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+        schemaName,
+        { dataSourceVersionId: new Schema.Types.ObjectId(dataSourceVersionId), rowNumber: rowNumber },
+        {},
+        {
+          isErrorLog: -1,
+        }
+      );
+      await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+        schemaName,
+        {
+          dataSourceVersionId: new Schema.Types.ObjectId(dataSourceVersionId),
+          errorCode: '1005',
+        },
+        {
+          isErrorLog: 1000,
         }
       );
     } else {
