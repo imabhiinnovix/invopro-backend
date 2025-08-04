@@ -1,32 +1,79 @@
 import { Schema, model, Types, Document } from 'mongoose';
 
+interface IAttachmentField {
+  type: 'excel' | 'pdf' | 'image';
+  fileName: string;
+  fieldList?: {
+    attributeId: Types.ObjectId;
+    referenceAttributeId?: Types.ObjectId;
+  }[];
+  filePath?: string;
+}
+
 export interface INotificationTemplate extends Document {
   organizationId?: Types.ObjectId | null;
   userId?: Types.ObjectId;
+  entityId: Types.ObjectId;
   name: string;
   code: string;
   subject: string;
   body: string;
-  type: string;
+  type: 'single' | 'overall';
+  attachmentSettings?: IAttachmentField[];
 }
+
+const attachmentFieldSchema = new Schema<IAttachmentField>(
+  {
+    type: {
+      type: String,
+      enum: ['excel', 'pdf', 'image'],
+      required: true,
+    },
+    fileName: {
+      type: String,
+      required: true,
+    },
+    fieldList: {
+      type: [
+        {
+          attributeId: { type: Schema.Types.ObjectId, required: true },
+          referenceAttributeId: { type: Schema.Types.ObjectId },
+        },
+      ],
+      default: [],
+    },
+    filePath: {
+      type: String,
+    },
+  },
+  { _id: false }
+);
 
 const notificationTemplateSchema = new Schema<INotificationTemplate>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', default: null },
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
-    name: { type: String, required: true },               // e.g., 'Overall Summary'
-    code: { type: String, unique: true, required: true }, // e.g., 'overall_summary'
-    subject: { type: String, required: true },            // e.g., 'Reminder for {{name}}'
-    body: { type: String, required: true },               // HTML or text body with placeholders
+    entityId: { type: Schema.Types.ObjectId, ref: 'Entity', required: true },
+    name: { type: String, required: true },
+    code: { type: String, unique: true, required: true },
+    subject: { type: String, required: true },
+    body: { type: String, required: true },
     type: {
       type: String,
-      enum: ['single', 'overall'], // single = one record, overall = multiple/cumulative
+      enum: ['single', 'overall'],
       default: 'single',
+    },
+    attachmentSettings: {
+      type: [attachmentFieldSchema],
+      default: [],
     },
   },
   {
-    timestamps: true, // createdAt and updatedAt managed automatically
+    timestamps: true,
   }
 );
+
+// Compound unique index for (entityId + code)
+notificationTemplateSchema.index({ entityId: 1, code: 1 }, { unique: true });
 
 export default model<INotificationTemplate>('notification_template', notificationTemplateSchema);

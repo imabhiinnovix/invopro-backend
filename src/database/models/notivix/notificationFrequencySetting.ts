@@ -11,7 +11,7 @@ export interface INotificationFrequencySetting extends Document {
   organizationId: Types.ObjectId;
   userId?: Types.ObjectId;
   notificationTypeId: Types.ObjectId;
-  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+  frequency: 'once' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
   interval: number;
   daysOfWeek?: number[];
   dayOfMonth?: number[];
@@ -25,6 +25,8 @@ export interface INotificationFrequencySetting extends Document {
   recipients: INotificationRecipient[];
   medium: Types.ObjectId;
   templateId: Types.ObjectId;
+  schedulerStartDate?: Date;
+  schedulerEndDate?: Date;
 }
 
 // Embedded Schema: NotificationRecipient
@@ -46,12 +48,12 @@ const notificationFrequencySettingSchema = new Schema<INotificationFrequencySett
     frequency: { type: String, enum: ['once', 'daily', 'weekly', 'monthly', 'yearly', 'custom'], required: true },
     interval: { type: Number, default: 1 },
 
-    daysOfWeek: { type: [Number], default: [] },         // weekly
-    dayOfMonth: { type: [Number], default: [] },         // monthly
-    weekOfMonth: { type: [Number], default: [] },        // monthly
-    dayOfWeekInMonth: { type: Number },                  // monthly
-    monthOfYear: { type: Number },                       // yearly
-    dayOfYearMonth: { type: Number },                    // yearly
+    daysOfWeek: { type: [Number], default: [] },
+    dayOfMonth: { type: [Number], default: [] },
+    weekOfMonth: { type: [Number], default: [] },
+    dayOfWeekInMonth: { type: Number },
+    monthOfYear: { type: Number },
+    dayOfYearMonth: { type: Number },
 
     repeatAnnually: { type: Boolean, default: false },
     acknowledgeRequired: { type: Boolean, default: false },
@@ -59,9 +61,12 @@ const notificationFrequencySettingSchema = new Schema<INotificationFrequencySett
     recipients: { type: [notificationRecipientSchema], default: [] },
     medium: { type: Schema.Types.ObjectId, ref: 'notification_medium_setting', required: true },
     templateId: { type: Schema.Types.ObjectId, ref: 'notification_template', required: true },
+
+    schedulerStartDate: { type: Date },
+    schedulerEndDate: { type: Date },
   },
   {
-    timestamps: true // replaces created_at / updated_at
+    timestamps: true,
   }
 );
 

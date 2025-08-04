@@ -4,11 +4,13 @@ import * as notificationTemplateService from '../../../database/services/notivix
 export const createNotificationTemplate = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
-      name,
+        name,
+        entityId,
         code,
         subject,
         body,
-        type
+        type,
+        attachmentSettings
     } = req.body;
 
     const { organizationId, userId } = req.user;
@@ -16,11 +18,13 @@ export const createNotificationTemplate = async (req: Request, res: Response, ne
     const result = await notificationTemplateService.createNotificationTemplate({
         organizationId,
         userId,
+        entityId,
         name,
         code,
         subject,
         body,
-        type
+        type,
+        attachmentSettings
     });
 
     res.status(201).json({
@@ -76,22 +80,22 @@ export const updateNotificationTemplate = async (req: Request, res: Response, ne
   try {
     const {
       name,
+      entityId,
       code,
       subject,
       body,
-      type
+      type,
+      attachmentSettings
     } = req.body;
 
-    const { organizationId, userId } = req.user;
-
     const result = await notificationTemplateService.updateNotificationTemplate(req.params.id, {
-      organizationId,
-      userId,
       name,
+      entityId,
       code,
       subject,
       body,
-      type
+      type,
+      attachmentSettings
     });
 
     if (!result) {

@@ -6,6 +6,8 @@ export const createNotificationFrequency = async (req: Request, res: Response, n
     const {
       notificationTypeId,
       frequency,
+      schedulerStartDate,
+      schedulerEndDate,
       interval,
       daysOfWeek,
       dayOfMonth,
@@ -28,6 +30,8 @@ export const createNotificationFrequency = async (req: Request, res: Response, n
       userId,
       notificationTypeId,
       frequency,
+      schedulerStartDate,
+      schedulerEndDate,
       interval,
       daysOfWeek,
       dayOfMonth,
@@ -59,6 +63,8 @@ export const updateNotificationFrequency = async (req: Request, res: Response, n
   try {
     const {
       frequency,
+      schedulerStartDate,
+      schedulerEndDate,
       interval,
       daysOfWeek,
       dayOfMonth,
@@ -76,6 +82,8 @@ export const updateNotificationFrequency = async (req: Request, res: Response, n
 
     const data = await NotificationFrequencyService.updateNotificationFrequency(req.params.id, {
       frequency,
+      schedulerStartDate,
+      schedulerEndDate,
       interval,
       daysOfWeek,
       dayOfMonth,
