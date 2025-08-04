@@ -43,7 +43,7 @@ const notificationFrequencySettingSchema = new Schema<INotificationFrequencySett
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
     notificationTypeId: { type: Schema.Types.ObjectId, ref: 'notification_type', required: true },
 
-    frequency: { type: String, enum: ['daily', 'weekly', 'monthly', 'yearly', 'custom'], required: true },
+    frequency: { type: String, enum: ['once', 'daily', 'weekly', 'monthly', 'yearly', 'custom'], required: true },
     interval: { type: Number, default: 1 },
 
     daysOfWeek: { type: [Number], default: [] },         // weekly
