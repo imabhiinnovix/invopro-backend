@@ -199,11 +199,27 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
           isErrorLog: -1,
         }
       );
+
+      const dublicateRecords = await dataImportErrorServices.getDataImportErrorRecords({
+        dataSourceVersionId: dataSourceVersionId,
+        errorCode: '1005',
+        status: 'open',
+      });
+
+      const rowNumbersToUpdate = dublicateRecords.map((record) => record.rowNumber);
+
+      await dataImportErrorServices.updateDataImportErrors(
+        {
+          dataSourceVersionId: dataSourceVersionId,
+          rowNumber: { $in: rowNumbersToUpdate },
+        },
+        { status: 'discarded' }
+      );
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         errorSchemaName,
         {
           dataSourceVersionId: new ObjectId(dataSourceVersionId),
-          errorCode: '1005',
+          rowNumber: { $in: rowNumbersToUpdate },
         },
         {
           isErrorLog: 1000,
