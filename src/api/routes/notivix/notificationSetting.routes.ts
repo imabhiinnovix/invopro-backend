@@ -36,6 +36,7 @@ import {
   getNotificationMedium,
 
 } from '../../controllers/notivix/notificationMedium.controller';
+import { uploadMultipleFile } from '../../../middlewares/upload.middleware';
 
 const router = Router();
 
@@ -54,8 +55,8 @@ router.get('/frequency/list', permissionMiddleware(), listNotificationFrequency)
 router.get('/frequency/:id', permissionMiddleware(), getNotificationFrequency);
 
 // Notification Template Settings
-router.post('/template/create', permissionMiddleware(), createNotificationTemplate);
-router.put('/template/update/:id', permissionMiddleware(), updateNotificationTemplate);
+router.post('/template/create', permissionMiddleware(), uploadMultipleFile, createNotificationTemplate);
+router.put('/template/update/:id', permissionMiddleware(), uploadMultipleFile, updateNotificationTemplate);
 router.delete('/template/delete/:id', permissionMiddleware(), deleteNotificationTemplate);
 router.get('/template/list', permissionMiddleware(), listNotificationTemplate);
 router.get('/template/:id', permissionMiddleware(), getNotificationTemplate);

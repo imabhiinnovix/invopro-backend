@@ -35,3 +35,6 @@ export function arraysAreEqual(a?: (string | Types.ObjectId)[], b?: (string | Ty
 
   return sortedA.every((val, index) => val === sortedB[index]);
 }
+
+export const safeFileName = (name: string) => name.replace(/[^a-zA-Z0-9._-]/g, '_');
+
