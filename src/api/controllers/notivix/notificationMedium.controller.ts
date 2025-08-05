@@ -3,17 +3,14 @@ import * as NotificationMediumService from '../../../database/services/notivix/n
 
 export const createNotificationMedium = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { medium, fromAddress, serviceName, apiKey, enabled } = req.body;
+    const { mediumSettings, productId } = req.body;
     const { organizationId, userId } = req.user;
 
     const data = await NotificationMediumService.createNotificationMedium({
       organizationId,
       userId,
-      medium,
-      fromAddress,
-      serviceName,
-      apiKey,
-      enabled,
+      productId,
+      mediumSettings,
     });
 
     res.status(201).json({
@@ -28,20 +25,15 @@ export const createNotificationMedium = async (req: Request, res: Response, next
 
 export const updateNotificationMedium = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { medium, fromAddress, serviceName, apiKey, enabled } = req.body;
+    const { mediumSettings } = req.body;
 
     const data = await NotificationMediumService.updateNotificationMedium(req.params.id, {
-      medium,
-      fromAddress,
-      serviceName,
-      apiKey,
-      enabled,
+      mediumSettings
     });
 
     res.status(200).json({
       success: true,
       message: 'Notification Medium Updated Successfully',
-      data,
     });
   } catch (err) {
     next(err);
@@ -63,11 +55,20 @@ export const deleteNotificationMedium = async (req: Request, res: Response, next
   }
 };
 
-export const listNotificationMediums = async (req: Request, res: Response, next: NextFunction) => {
+
+export const listNotificationMediums = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { organizationId } = req.user;
+    const { productId } = req.query;
 
-    const data = await NotificationMediumService.listNotificationMediums({ organizationId });
+    const data = await NotificationMediumService.listNotificationMediums({
+      organizationId,
+      productId: productId?.toString(),
+    });
 
     res.status(200).json({
       success: true,

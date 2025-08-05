@@ -1,9 +1,7 @@
 import NotificationMediumModel from '../../models/notivix/notificationMediumSetting';
 import { Types } from 'mongoose';
 
-interface CreateNotificationMediumInput {
-  organizationId: Types.ObjectId;
-  userId: Types.ObjectId;
+interface MediumSetting {
   medium: 'email' | 'sms' | 'whatsapp' | 'slack' | 'inapp';
   fromAddress?: string;
   serviceName?: string;
@@ -11,12 +9,15 @@ interface CreateNotificationMediumInput {
   enabled?: boolean;
 }
 
+interface CreateNotificationMediumInput {
+  organizationId: Types.ObjectId;
+  userId: Types.ObjectId;
+  productId: Types.ObjectId;
+  mediumSettings: MediumSetting[];
+}
+
 interface UpdateNotificationMediumInput {
-  medium?: 'email' | 'sms' | 'whatsapp' | 'slack' | 'inapp';
-  fromAddress?: string;
-  serviceName?: string;
-  apiKey?: string;
-  enabled?: boolean;
+  mediumSettings?: MediumSetting[];
 }
 
 export const createNotificationMedium = async (
@@ -43,10 +44,17 @@ export const deleteNotificationMedium = async (
 
 export const listNotificationMediums = async ({
   organizationId,
+  productId,
 }: {
   organizationId: Types.ObjectId;
+  productId?: string;
 }) => {
-  return await NotificationMediumModel.find({ organizationId });
+  const query: any = { organizationId };
+  if (productId) {
+    query.productId = productId;
+  }
+
+  return await NotificationMediumModel.find(query);
 };
 
 export const getNotificationMedium = async (
