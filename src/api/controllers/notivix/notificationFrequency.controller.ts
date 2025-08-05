@@ -21,6 +21,8 @@ export const createNotificationFrequency = async (req: Request, res: Response, n
       recipients,
       medium,
       templateId,
+      triggerTime,
+      maxOccurrences,
     } = req.body;
 
     const { organizationId, userId } = req.user;
@@ -45,6 +47,8 @@ export const createNotificationFrequency = async (req: Request, res: Response, n
       recipients,
       medium,
       templateId,
+      triggerTime,
+      maxOccurrences,
     });
 
     res.status(201).json({
@@ -78,6 +82,8 @@ export const updateNotificationFrequency = async (req: Request, res: Response, n
       recipients,
       medium,
       templateId,
+      triggerTime,
+      maxOccurrences,
     } = req.body;
 
     const data = await NotificationFrequencyService.updateNotificationFrequency(req.params.id, {
@@ -97,6 +103,8 @@ export const updateNotificationFrequency = async (req: Request, res: Response, n
       recipients,
       medium,
       templateId,
+      triggerTime,
+      maxOccurrences,
     });
 
     res.status(200).json({
@@ -131,7 +139,10 @@ export const listNotificationFrequency = async (req: Request, res: Response, nex
     const { organizationId } = req.user;
 
     const data = await NotificationFrequencyService.listNotificationFrequency({
-      organizationId,
+      query: {
+        organizationId,
+        isActive: 'active',
+      },
       populate: ['notificationTypeId', 'templateId', 'medium'],
     });
 

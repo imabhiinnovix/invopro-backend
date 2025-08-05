@@ -27,6 +27,10 @@ export interface INotificationFrequencySetting extends Document {
   templateId: Types.ObjectId;
   schedulerStartDate?: Date;
   schedulerEndDate?: Date;
+  triggerTime?: string;
+  maxOccurrences?: number;
+  isActive: 'active' | 'in-active'; // enum
+
 }
 
 // Embedded Schema: NotificationRecipient
@@ -64,6 +68,16 @@ const notificationFrequencySettingSchema = new Schema<INotificationFrequencySett
 
     schedulerStartDate: { type: Date },
     schedulerEndDate: { type: Date },
+    triggerTime: {
+      type: String
+    },
+    maxOccurrences: { type: Number, min: 0, default: null },
+    isActive: {
+      type: String,
+      enum: ['active', 'in-active'],
+      default: 'active',
+    },
+
   },
   {
     timestamps: true,

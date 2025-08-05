@@ -12,28 +12,29 @@ export const deleteNotificationFrequency = async (
   id: string,
   organizationId: string
 ) => {
-  const result = await NotificationFrequencySetting.findOneAndDelete({
-    _id: id,
-    organizationId,
-  });
+  const result = await NotificationFrequencySetting.findOneAndUpdate(
+    { _id: id, organizationId },
+    { $set: { isActive: 'in-active' } },
+    { new: true } // return the updated document
+  );
 
   return result;
 };
 
 export const listNotificationFrequency = async ({
-  organizationId,
+  query = {},
   populate = [],
 }: {
-  organizationId: string;
+  query?: Record<string, any>;
   populate?: string[];
 }) => {
-  let query = NotificationFrequencySetting.find({ organizationId });
+  let dbQuery = NotificationFrequencySetting.find(query);
 
   populate.forEach(field => {
-    query = query.populate(field);
+    dbQuery = dbQuery.populate(field);
   });
 
-  return await query.exec();
+  return await dbQuery.exec();
 };
 
 export const getNotificationFrequency = async (
