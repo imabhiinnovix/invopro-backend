@@ -7,6 +7,7 @@ interface IFieldSetting {
   isFilterEnable?: boolean;
   isSortingEnable?: boolean;
   isDisplayEnable?: boolean;
+  isDerived: boolean;
 }
 
 interface IDataSource extends Document {
@@ -48,6 +49,10 @@ const fieldSettingSchema = new Schema<IFieldSetting>(
       default: false,
     },
     isDisplayEnable: {
+      type: Boolean,
+      default: false,
+    },
+    isDerived: {
       type: Boolean,
       default: false,
     },
