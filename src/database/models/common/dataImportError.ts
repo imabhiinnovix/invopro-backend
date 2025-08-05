@@ -15,6 +15,7 @@ interface IDataImportError extends Document {
   createdAt: Date;
   status: string;
   refEntityId: Types.ObjectId;
+  refDataSourceId: Types.ObjectId;
   attributeType: string;
 }
 const DataImportErrorSchema = new Schema<IDataImportError>(
@@ -29,6 +30,7 @@ const DataImportErrorSchema = new Schema<IDataImportError>(
     attributeOptionId: { type: Schema.Types.ObjectId, ref: 'attribute_option' },
     attributeType: { type: String },
     refEntityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
+    refDataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
     status: {
       type: String,
       enum: ['open', 'resolved', 'discarded'],
