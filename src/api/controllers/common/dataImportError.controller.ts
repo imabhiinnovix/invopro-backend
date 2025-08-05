@@ -202,6 +202,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
 
       const dublicateRecords = await dataImportErrorServices.getDataImportErrorRecords({
         dataSourceVersionId: dataSourceVersionId,
+        fileAttributeValue: fileAttributeValue,
         errorCode: '1005',
         status: 'open',
       });

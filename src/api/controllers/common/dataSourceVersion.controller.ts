@@ -305,6 +305,7 @@ async function validateFileData({
           rowNumber: index + 1,
           errorType: ERROR_CODES.DUPLICATE_ENTRY.type,
           errorCode: ERROR_CODES.DUPLICATE_ENTRY.code,
+          fileAttributeValue: compositeKey,
           errorMessage: `Error: Row ${index + 1} - Duplicate combination found for unique keys: ${compositeKey}.`,
         });
         newRow.isErrorLog = 1;
