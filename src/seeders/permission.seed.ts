@@ -1065,7 +1065,7 @@ let permissions = [
   {
     name: 'Delete Notification Medium Setting',
     method: 'DELETE',
-    resourceId: '/notivix/notification-setting/medium/delete/:id',
+    resourceId: '/notivix/notification-setting/medium/delete',
     extraOptions: {},
     resourceType: 'Notification Medium Setting',
     resourceCode: 'notification_setting_medium_delete',

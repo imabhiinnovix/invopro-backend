@@ -63,7 +63,7 @@ router.get('/template/:id', permissionMiddleware(), getNotificationTemplate);
 // Notification Medium Settings
 router.post('/medium/create', permissionMiddleware(), createNotificationMedium);
 router.put('/medium/update/:id', permissionMiddleware(), updateNotificationMedium);
-router.delete('/medium/delete/:id', permissionMiddleware(), deleteNotificationMedium);
+router.delete('/medium/delete', permissionMiddleware(), deleteNotificationMedium);
 router.get('/medium/list', permissionMiddleware(), listNotificationMediums);
 router.get('/medium/:id', permissionMiddleware(), getNotificationMedium);
 

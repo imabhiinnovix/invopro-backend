@@ -1,21 +1,36 @@
 import { Request, Response, NextFunction } from 'express';
 import * as NotificationMediumService from '../../../database/services/notivix/notificationMedium.service';
+import { Types } from 'mongoose';
+const isValidObjectId = (id?: string) => !!(id && Types.ObjectId.isValid(id));
 
 export const createNotificationMedium = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { mediumSettings, productId } = req.body;
+    const { productId, mediumSettings } = req.body;
     const { organizationId, userId } = req.user;
 
-    const data = await NotificationMediumService.createNotificationMedium({
+    if (!Array.isArray(mediumSettings) || mediumSettings.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'mediumSettings must be a non-empty array',
+      });
+    }
+
+    const createPayload = mediumSettings.map((ms: any) => ({
       organizationId,
       userId,
       productId,
-      mediumSettings,
-    });
+      medium: ms.medium,
+      fromAddress: ms.fromAddress,
+      serviceName: ms.serviceName,
+      apiKey: ms.apiKey,
+      enabled: ms.enabled,
+    }));
+
+    const data = await NotificationMediumService.createManyNotificationMediums(createPayload);
 
     res.status(201).json({
       success: true,
-      message: 'Notification Medium Created Successfully',
+      message: 'Notification Medium(s) Created Successfully',
       data,
     });
   } catch (err) {
@@ -23,32 +38,57 @@ export const createNotificationMedium = async (req: Request, res: Response, next
   }
 };
 
+
 export const updateNotificationMedium = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { mediumSettings } = req.body;
+    const { medium, fromAddress, serviceName, apiKey, enabled } = req.body;
 
     const data = await NotificationMediumService.updateNotificationMedium(req.params.id, {
-      mediumSettings
+      medium,
+      fromAddress,
+      serviceName,
+      apiKey,
+      enabled,
     });
 
     res.status(200).json({
       success: true,
       message: 'Notification Medium Updated Successfully',
+      data,
     });
   } catch (err) {
     next(err);
   }
 };
 
+
+/**
+ * DELETE many notification mediums by array of ids (body only).
+ * Body: { ids: ["id1","id2", ...] }
+ */
 export const deleteNotificationMedium = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { organizationId } = req.user;
+    const ids = req.body?.ids;
 
-    await NotificationMediumService.deleteNotificationMedium(req.params.id, organizationId);
+    // Ensure ids provided and is an array
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, message: 'ids array is required in request body' });
+    }
+
+    // Validate ids
+    const invalid = (ids as string[]).filter((id) => !isValidObjectId(id));
+    if (invalid.length > 0) {
+      return res.status(400).json({ success: false, message: `Invalid ObjectId(s): ${invalid.join(', ')}` });
+    }
+
+    // Call service (service will scope to organizationId)
+    const result = await NotificationMediumService.deleteNotificationMediumsByIds(ids, organizationId);
 
     res.status(200).json({
       success: true,
-      message: 'Notification Medium Deleted Successfully',
+      message: 'Notification Medium(s) Deleted Successfully',
+      deletedCount: result.deletedCount ?? 0,
     });
   } catch (err) {
     next(err);
@@ -56,19 +96,26 @@ export const deleteNotificationMedium = async (req: Request, res: Response, next
 };
 
 
-export const listNotificationMediums = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const listNotificationMediums = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { organizationId } = req.user;
-    const { productId } = req.query;
+    // Allow query override of organizationId for super users:
+    const { organizationId: paramOrgId } = req.query;
+    let { organizationId, isSuperUser } = req.user as any;
 
-    const data = await NotificationMediumService.listNotificationMediums({
+    if (isSuperUser && paramOrgId) {
+      organizationId = paramOrgId;
+    }
+
+    // Build query by taking all query params and ensuring organizationId is set
+    const query: Record<string, any> = {
+      ...req.query,
       organizationId,
-      productId: productId?.toString(),
-    });
+    };
+
+    // Ensure we don't keep the original organizationId from query if overwritten by req.user
+    // (this will still set organizationId to the correct value above)
+    // No further filtering of keys here — service will receive exactly what's needed.
+    const data = await NotificationMediumService.listNotificationMediums(query);
 
     res.status(200).json({
       success: true,

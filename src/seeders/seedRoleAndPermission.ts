@@ -117,7 +117,7 @@ const defaultPermissionsAdmin = [
   'GET:/notivix/notification-setting/medium/list',
   'POST:/notivix/notification-setting/medium/create',
   'PUT:/notivix/notification-setting/medium/update/:id',
-  'DELETE:/notivix/notification-setting/medium/delete/:id'
+  'DELETE:/notivix/notification-setting/medium/delete'
 ];
 
 const defaultPermissionsPrimarySuperAdmin = [
