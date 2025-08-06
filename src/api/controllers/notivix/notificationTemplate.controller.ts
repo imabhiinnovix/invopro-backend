@@ -15,10 +15,9 @@ export const createNotificationTemplate = async (req: Request, res: Response, ne
       subject,
       body,
       type,
-      groupBy,
+      groupBy: groupByRaw,
       attachmentSettings: attachmentSettingsRaw,
     } = req.body;
-    console.log('req.body',req.body);
     const { organizationId, userId } = req.user as any;
 
     // parse attachmentSettings if client sent JSON string
@@ -28,6 +27,14 @@ export const createNotificationTemplate = async (req: Request, res: Response, ne
         ? JSON.parse(attachmentSettingsRaw)
         : attachmentSettingsRaw;
     }
+
+      // parse groupBy if client sent JSON string
+      let groupBy: any[] = [];
+      if (groupByRaw) {
+        groupBy = typeof groupByRaw === 'string'
+          ? JSON.parse(groupByRaw)
+          : groupByRaw;
+      }
 
     // files uploaded by multer (field name 'attachments')
     const files = (req.files as Express.Multer.File[]) || [];
@@ -70,7 +77,6 @@ export const createNotificationTemplate = async (req: Request, res: Response, ne
       }
       // excel: assume attachment.fieldList already present
     }
-
     const result = await notificationTemplateService.createNotificationTemplate({
       organizationId,
       userId,
@@ -143,7 +149,7 @@ export const updateNotificationTemplate = async (req: Request, res: Response, ne
       subject,
       body,
       type,
-      groupBy,
+      groupBy: groupByRaw,
       attachmentSettings: attachmentSettingsRaw,
     } = req.body;
 
@@ -155,6 +161,14 @@ export const updateNotificationTemplate = async (req: Request, res: Response, ne
       attachmentSettings = typeof attachmentSettingsRaw === 'string'
         ? JSON.parse(attachmentSettingsRaw)
         : attachmentSettingsRaw;
+    }
+
+    // parse groupBy if client sent JSON string
+    let groupBy: any[] = [];
+    if (groupByRaw) {
+      groupBy = typeof groupByRaw === 'string'
+        ? JSON.parse(groupByRaw)
+        : groupByRaw;
     }
 
     const timestamp = Date.now().toString();
