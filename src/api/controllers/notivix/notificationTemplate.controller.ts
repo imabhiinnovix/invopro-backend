@@ -15,6 +15,7 @@ export const createNotificationTemplate = async (req: Request, res: Response, ne
       subject,
       body,
       type,
+      groupBy,
       attachmentSettings: attachmentSettingsRaw,
     } = req.body;
     console.log('req.body',req.body);
@@ -79,6 +80,7 @@ export const createNotificationTemplate = async (req: Request, res: Response, ne
       subject,
       body,
       type,
+      groupBy,
       attachmentSettings,
     });
 
@@ -141,6 +143,7 @@ export const updateNotificationTemplate = async (req: Request, res: Response, ne
       subject,
       body,
       type,
+      groupBy,
       attachmentSettings: attachmentSettingsRaw,
     } = req.body;
 
@@ -189,6 +192,7 @@ export const updateNotificationTemplate = async (req: Request, res: Response, ne
       subject,
       body,
       type,
+      groupBy,
       attachmentSettings,
     });
 

@@ -10,6 +10,11 @@ interface IAttachmentField {
   filePath?: string;
 }
 
+export interface IGroupByItem {
+  attributeId: Types.ObjectId;
+  referenceAttributeId?: Types.ObjectId;
+}
+
 export interface INotificationTemplate extends Document {
   organizationId?: Types.ObjectId | null;
   userId?: Types.ObjectId;
@@ -19,6 +24,7 @@ export interface INotificationTemplate extends Document {
   subject: string;
   body: string;
   type: 'single' | 'overall';
+  groupBy?: IGroupByItem[];
   attachmentSettings?: IAttachmentField[];
 }
 
@@ -49,6 +55,14 @@ const attachmentFieldSchema = new Schema<IAttachmentField>(
   { _id: false }
 );
 
+const groupByItemSchema = new Schema<IGroupByItem>(
+  {
+    attributeId: { type: Schema.Types.ObjectId, required: true },
+    referenceAttributeId: { type: Schema.Types.ObjectId },
+  },
+  { _id: false }
+);
+
 const notificationTemplateSchema = new Schema<INotificationTemplate>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', default: null },
@@ -62,6 +76,10 @@ const notificationTemplateSchema = new Schema<INotificationTemplate>(
       type: String,
       enum: ['single', 'overall'],
       default: 'single',
+    },
+    groupBy: {
+      type: [groupByItemSchema],
+      default: [],
     },
     attachmentSettings: {
       type: [attachmentFieldSchema],
