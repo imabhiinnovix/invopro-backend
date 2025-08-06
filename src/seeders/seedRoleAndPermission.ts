@@ -97,7 +97,27 @@ const defaultPermissionsAdmin = [
   'PUT:/common/derivedField/update/:id',
   'DELETE:/common/derivedField/delete/:id',
   'GET:/common/derivedField/list',
-  'GET:/common/derivedField/:id'
+  'GET:/common/derivedField/:id',
+  'GET:/notivix/notification-setting/type/:id',
+  'GET:/notivix/notification-setting/type/list',
+  'POST:/notivix/notification-setting/type/create',
+  'PUT:/notivix/notification-setting/type/update/:id',
+  'DELETE:/notivix/notification-setting/type/delete/:id',
+  'GET:/notivix/notification-setting/frequency/:id',
+  'GET:/notivix/notification-setting/frequency/list',
+  'POST:/notivix/notification-setting/frequency/create',
+  'PUT:/notivix/notification-setting/frequency/update/:id',
+  'DELETE:/notivix/notification-setting/frequency/delete/:id',
+  'GET:/notivix/notification-setting/template/:id',
+  'GET:/notivix/notification-setting/template/list',
+  'POST:/notivix/notification-setting/template/create',
+  'PUT:/notivix/notification-setting/template/update/:id',
+  'DELETE:/notivix/notification-setting/template/delete/:id',
+  'GET:/notivix/notification-setting/medium/:id',
+  'GET:/notivix/notification-setting/medium/list',
+  'POST:/notivix/notification-setting/medium/create',
+  'PUT:/notivix/notification-setting/medium/update/:id',
+  'DELETE:/notivix/notification-setting/medium/delete'
 ];
 
 const defaultPermissionsPrimarySuperAdmin = [

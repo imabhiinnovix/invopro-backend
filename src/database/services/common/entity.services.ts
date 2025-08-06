@@ -128,6 +128,7 @@ interface FieldOption {
     attributeId: Types.ObjectId;
     refAttributeId?: Types.ObjectId;
     isDerived?: boolean;
+    type?:string;
   };
 }
 
@@ -152,13 +153,17 @@ export const getEntityFieldOptions = async (entityId: string): Promise<FieldOpti
           value: {
             attributeId,
             refAttributeId: refAttributeId,
+            type: refAttr?.type || 'text'
           },
         });
       }
     } else {
       fieldOptions.push({
         label: attr.name,
-        value: { attributeId },
+        value: { 
+          attributeId, 
+          type: attr?.type || 'text' 
+        },
       });
     }
   }
@@ -171,6 +176,7 @@ export const getEntityFieldOptions = async (entityId: string): Promise<FieldOpti
       value: {
         attributeId: df._id,
         isDerived: true,
+        type: df?.type || 'text' 
       },
     });
   }
