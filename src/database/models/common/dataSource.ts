@@ -9,6 +9,13 @@ interface IFieldSetting {
   isDisplayEnable?: boolean;
 }
 
+interface IDataUploadCondition {
+  field: string;
+  operator: string;
+  value: any;
+  fieldType: string;
+}
+
 interface IDataSource extends Document {
   organizationId: Types.ObjectId;
   entityId: Types.ObjectId;
@@ -24,6 +31,7 @@ interface IDataSource extends Document {
   isVisible: boolean;
   isShowMenu: boolean;
   fieldSettings: IFieldSetting[];
+  condition: IDataUploadCondition[];
 }
 
 // Embedded sub-schema for field settings
@@ -55,6 +63,16 @@ const fieldSettingSchema = new Schema<IFieldSetting>(
   { _id: false }
 );
 
+const dataUploadConditionSchema = new Schema<IDataUploadCondition>(
+  {
+    field: { type: String, required: true },
+    operator: { type: String, required: true },
+    value: { type: Schema.Types.Mixed, required: true },
+    fieldType: { type: String, required: true },
+  },
+  { _id: false }
+);
+
 // DataSource Schema
 const dataSourceSchema = new Schema<IDataSource>(
   {
@@ -77,6 +95,10 @@ const dataSourceSchema = new Schema<IDataSource>(
     // Replacing filterFields/sortFields/displayFields with unified fieldSettings
     fieldSettings: {
       type: [fieldSettingSchema],
+      default: [],
+    },
+    condition: {
+      type: [dataUploadConditionSchema],
       default: [],
     },
     isShowMenu: { type: Boolean, default: false },

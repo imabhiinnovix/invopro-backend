@@ -53,6 +53,158 @@ export const ERROR_CODES = {
     message: 'Duplicate combination of unique keys found.',
   },
 };
+
+function evaluateCondition(fieldValue: any, operator: string, expectedValue: any, fieldType: string): boolean {
+  if (fieldValue === undefined || fieldValue === null) {
+    if (operator === 'blank') return true;
+    if (operator === 'notblank') return false;
+    fieldValue = '';
+  }
+
+  switch (fieldType) {
+    case 'number':
+      fieldValue = parseFloat(fieldValue);
+      expectedValue = parseFloat(expectedValue);
+      switch (operator) {
+        case 'lt':
+          return fieldValue < expectedValue;
+        case 'lte':
+          return fieldValue <= expectedValue;
+        case 'gt':
+          return fieldValue > expectedValue;
+        case 'gte':
+          return fieldValue >= expectedValue;
+        case 'eq':
+          return fieldValue === expectedValue;
+        case 'ne':
+          return fieldValue !== expectedValue;
+        case 'blank':
+          return isNaN(fieldValue);
+        case 'notblank':
+          return !isNaN(fieldValue);
+      }
+      break;
+
+    case 'date':
+      const dateValue = new Date(fieldValue);
+      const dateExpected = new Date(expectedValue);
+      switch (operator) {
+        case 'before':
+          return dateValue < dateExpected;
+        case 'after':
+          return dateValue > dateExpected;
+        case 'on':
+          return dateValue.toDateString() === dateExpected.toDateString();
+        case 'noton':
+          return dateValue.toDateString() !== dateExpected.toDateString();
+        case 'blank':
+          return isNaN(dateValue.getTime());
+        case 'notblank':
+          return !isNaN(dateValue.getTime());
+      }
+      break;
+
+    case 'boolean':
+      fieldValue = fieldValue === 'true' || fieldValue === true;
+      expectedValue = expectedValue === 'true' || expectedValue === true;
+      switch (operator) {
+        case 'eq':
+          return fieldValue === expectedValue;
+        case 'ne':
+          return fieldValue !== expectedValue;
+        case 'blank':
+          return fieldValue === null || fieldValue === undefined;
+        case 'notblank':
+          return fieldValue !== null && fieldValue !== undefined;
+      }
+      break;
+
+    case 'text':
+    case 'richtext':
+    case 'url':
+    case 'option':
+    case 'multioption':
+    case 'user':
+    default:
+      const stringVal = String(fieldValue).toLowerCase();
+      const expected = String(expectedValue).toLowerCase();
+      switch (operator) {
+        case 'contains':
+          return stringVal.includes(expected);
+        case 'notcontains':
+          return !stringVal.includes(expected);
+        case 'eq':
+          return stringVal === expected;
+        case 'ne':
+          return stringVal !== expected;
+        case 'startswith':
+          return stringVal.startsWith(expected);
+        case 'endswith':
+          return stringVal.endsWith(expected);
+        case 'blank':
+          return stringVal.trim() === '';
+        case 'notblank':
+          return stringVal.trim() !== '';
+      }
+  }
+
+  return false;
+}
+
+export async function validateFileDataCondition({ fileData, attributeSetting, conditions, jsonMapping }) {
+  if (!conditions || conditions.length === 0) return fileData;
+
+  const filteredData: Record<string, any>[] = [];
+
+  for (const row of fileData) {
+    let allConditionsMet = true;
+
+    for (const condition of conditions) {
+      let fieldValue = row[jsonMapping[condition.field.split('.')[0]]];
+
+      // Find the attribute setting for this condition.field
+      const attr = attributeSetting?.find((a) => a.name === condition.field.split('.')[0]);
+
+      // Check for reference resolution
+      if (attr?.referenceEntitySetting?.refEntityId && attr?.referenceEntitySetting?.refEntityField) {
+        const refEntityId: string = attr.referenceEntitySetting.refEntityId;
+        const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
+
+        const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
+        const RefModel = await getModelForEntity(refEntityId);
+
+        const referencedDoc: any = await RefModel.findOne({
+          [`rowData.${refEntityField.name}`]: {
+            $regex: `^${fieldValue}$`,
+            $options: 'i',
+          },
+        });
+
+        // If reference is found, replace fieldValue with resolved value
+        if (referencedDoc) {
+          fieldValue = referencedDoc?.rowData?.[condition.field.split('.')[1]];
+        } else {
+          // If reference not found, consider condition failed
+          allConditionsMet = false;
+          break;
+        }
+      }
+
+      const result = evaluateCondition(fieldValue, condition.operator, condition.value, condition.fieldType);
+      if (!result) {
+        allConditionsMet = false;
+        break;
+      }
+    }
+
+    if (allConditionsMet) {
+      filteredData.push(row);
+    }
+  }
+
+  return filteredData;
+}
+
 async function validateAndConvert({
   value,
   type,
@@ -383,10 +535,17 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
 
           debounceManager.debounce(dataSourceVersion._id as string, async () => {
             try {
-              const fileData = await readExcelFile(newFilePath);
+              const allFileData = await readExcelFile(newFilePath);
               const entityDetails = dataSourceDetails.entityId as any;
               const attributes = entityDetails?.attributes || [];
               const versionValueData = versionValue;
+
+              const fileData = await validateFileDataCondition({
+                fileData: allFileData,
+                attributeSetting: attributes,
+                conditions: dataSourceDetails.condition,
+                jsonMapping,
+              });
 
               const validatedData = await validateFileData({
                 fileData,
