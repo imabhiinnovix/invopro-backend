@@ -138,11 +138,19 @@ export const listNotificationFrequency = async (req: Request, res: Response, nex
   try {
     const { organizationId } = req.user;
 
+    const { notificationTypeId } = req.query; // or req.body if sent in body
+
+    const query: any = {
+      organizationId,
+      isActive: 'active',
+    };
+
+    if (notificationTypeId) {
+      query.notificationTypeId = notificationTypeId;
+    }
+
     const data = await NotificationFrequencyService.listNotificationFrequency({
-      query: {
-        organizationId,
-        isActive: 'active',
-      },
+      query,
       populate: ['notificationTypeId', 'templateId', 'medium'],
     });
 
