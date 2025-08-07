@@ -8,6 +8,7 @@ import * as dataSourceService from '../../../database/services/common/dataSource
 import * as attributeOptionService from '../../../database/services/common/attributeOption.services';
 import * as dataImportErrorServices from '../../../database/services/common/dataImportError.services';
 import {
+  escapeRegExp,
   getImportLogSchemaNameBasedOnVersionCodeAndOrgCode,
   getSchemaNameBasedOnVersionCodeAndOrgCode,
   sleep,
@@ -160,31 +161,37 @@ async function validateFileData({
         newRow.isErrorLog = 1;
       } else if (value !== undefined && value != null && value) {
         if (attr.referenceEntitySetting?.refEntityId) {
-          const refEntityId = attr.referenceEntitySetting.refEntityId;
-          const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
-          const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
-          const RefModel = await getModelForEntity(refEntityId);
-          const referencedDoc = await RefModel.findOne({
-            [`rowData.${refEntityField.name}`]: { $regex: `^${value}$`, $options: 'i' },
+        const refEntityId = attr.referenceEntitySetting.refEntityId;
+        const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
+
+        const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
+        const RefModel = await getModelForEntity(refEntityId);
+
+        const escapedValue = escapeRegExp(value.trim());
+        const regex = new RegExp(`^${escapedValue}$`, 'i'); // ✅ use RegExp object
+
+        const referencedDoc = await RefModel.findOne({
+          [`rowData.${refEntityField.name}`]: regex,
+        });
+
+        if (!referencedDoc) {
+          errors.push({
+            entityId: entityId,
+            dataSourceId: dataSourceId,
+            dataSourceVersionId: dataSourceVersionId,
+            rowNumber: index + 1,
+            fileAttributeName: fileKey,
+            fileAttributeValue: value,
+            attributeName: attrName,
+            errorType: 'Reference Error',
+            errorCode: '404',
+            errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value}, but it could not be resolved from the reference entity for the attribute ${attrName}.`,
           });
-          if (!referencedDoc) {
-            errors.push({
-              entityId: entityId,
-              dataSourceId: dataSourceId,
-              dataSourceVersionId: dataSourceVersionId,
-              rowNumber: index + 1,
-              fileAttributeName: fileKey,
-              fileAttributeValue: value,
-              attributeName: attrName,
-              errorType: 'Reference Error',
-              errorCode: '404',
-              errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value}, but it could not be resolved from the reference entity for the attribute ${attrName}.`,
-            });
-            newRow.isErrorLog = 1;
-          } else {
-            newRow.rowData[attrName] = referencedDoc._id;
-          }
+          newRow.isErrorLog = 1;
         } else {
+          newRow.rowData[attrName] = referencedDoc._id;
+        }
+      } else {
           const { isValid, convertedValue, attributeOptionValue } = await validateAndConvert({
             value,
             type: attr.type,
@@ -227,28 +234,30 @@ async function validateFileData({
         }
       }
     }
-    // Unique Rule Check (including fallback inside each rule)
-    if (Array.isArray(uniqueAttributeRules) && uniqueAttributeRules.length > 0) {
-      const compositeKeyParts: string[] = [];
+if (Array.isArray(uniqueAttributeRules) && uniqueAttributeRules.length > 0) {
+  for (const rule of uniqueAttributeRules) {
+    const keyValues: string[] = [];
 
-      for (const rule of uniqueAttributeRules) {
-        let selectedVal = '';
+    let isValidCombination = true;
 
-        for (const attrId of rule) {
-          const attrName = attributeIdToNameMap[attrId.toString()];
-          if (!attrName) continue;
-
-          const val = newRow.rowData[attrName];
-          if (val !== undefined && val !== null && `${val}`.trim() !== '') {
-            selectedVal = `${val}`.toLowerCase(); // normalize for comparison
-            break; // fallback logic: take first non-empty
-          }
-        }
-
-        compositeKeyParts.push(selectedVal);
+    for (const attrId of rule) {
+      const attrName = attributeIdToNameMap[attrId.toString()];
+      if (!attrName) {
+        isValidCombination = false;
+        break;
       }
 
-      const compositeKey = compositeKeyParts.join('|');
+      const val = newRow.rowData[attrName];
+      
+      if (val === undefined || val === null || `${val}`.trim() === '') {
+        isValidCombination = false;
+        break;
+      }
+      keyValues.push(`${val}`.toLowerCase().trim());
+    }
+
+    if (isValidCombination) {
+      const compositeKey = keyValues.join('|');
 
       if (seenCompositeKeys.has(compositeKey)) {
         errors.push({
@@ -264,7 +273,14 @@ async function validateFileData({
       } else {
         seenCompositeKeys.add(compositeKey);
       }
+
+      // ✅ apply only first valid rule, skip others
+      break;
     }
+  }
+}
+
+
 
     newRowData.push(newRow);
   }
