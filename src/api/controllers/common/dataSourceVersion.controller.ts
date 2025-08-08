@@ -150,7 +150,6 @@ function evaluateCondition(fieldValue: any, operator: string, expectedValue: any
 
   return false;
 }
-
 export async function validateFileDataCondition({ fileData, attributeSetting, conditions, jsonMapping }) {
   if (!conditions || conditions.length === 0) return fileData;
 
@@ -160,10 +159,25 @@ export async function validateFileDataCondition({ fileData, attributeSetting, co
     let allConditionsMet = true;
 
     for (const condition of conditions) {
-      let fieldValue = row[jsonMapping[condition.field.split('.')[0]]];
+      const baseField = condition.field.split('.')[0];
+      const mappedField = jsonMapping[baseField];
+
+      // Resolve fieldValue based on whether mapping is a string or array
+      let fieldValue: any;
+      if (Array.isArray(mappedField)) {
+        for (const key of mappedField) {
+          const candidate = row[key];
+          if (candidate !== undefined && candidate !== null && candidate !== '') {
+            fieldValue = candidate;
+            break;
+          }
+        }
+      } else {
+        fieldValue = row[mappedField];
+      }
 
       // Find the attribute setting for this condition.field
-      const attr = attributeSetting?.find((a) => a.name === condition.field.split('.')[0]);
+      const attr = attributeSetting?.find((a) => a.name === baseField);
 
       // Check for reference resolution
       if (attr?.referenceEntitySetting?.refEntityId && attr?.referenceEntitySetting?.refEntityField) {
@@ -182,9 +196,9 @@ export async function validateFileDataCondition({ fileData, attributeSetting, co
 
         // If reference is found, replace fieldValue with resolved value
         if (referencedDoc) {
-          fieldValue = referencedDoc?.rowData?.[condition.field.split('.')[1]];
+          const subField = condition.field.split('.')[1];
+          fieldValue = referencedDoc?.rowData?.[subField];
         } else {
-          // If reference not found, consider condition failed
           allConditionsMet = false;
           break;
         }
