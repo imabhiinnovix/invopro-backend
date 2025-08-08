@@ -8,6 +8,7 @@ import * as dataSourceService from '../../../database/services/common/dataSource
 import * as attributeOptionService from '../../../database/services/common/attributeOption.services';
 import * as dataImportErrorServices from '../../../database/services/common/dataImportError.services';
 import {
+  escapeRegExp,
   getImportLogSchemaNameBasedOnVersionCodeAndOrgCode,
   getSchemaNameBasedOnVersionCodeAndOrgCode,
   sleep,
@@ -24,6 +25,7 @@ import { version } from 'os';
 import { getEntityAttribute, getModelForEntity } from '../../../utils/entity.utils';
 import { Types } from 'mongoose';
 import { findEntityById } from '../../../database/services/common/entity.services';
+import { autoPopulateAttributeOption } from '../../../utils/attributeOption.utils';
 const ObjectId = mongoose.Types.ObjectId;
 
 export const ERROR_CODES = {
@@ -376,15 +378,20 @@ async function validateFileData({
         newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
       } else if (value !== undefined && value != null && value) {
         if (attr.referenceEntitySetting?.refEntityId) {
-          const refEntityId: string = attr.referenceEntitySetting.refEntityId;
+          const refEntityId = attr.referenceEntitySetting.refEntityId;
           const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
+
           const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
           const RefModel = await getModelForEntity(refEntityId);
+
+          const escapedValue = escapeRegExp(value.trim());
+          const regex = new RegExp(`^${escapedValue}$`, 'i'); // ✅ use RegExp object
+
           const referencedDoc = await RefModel.findOne({
-            [`rowData.${refEntityField.name}`]: { $regex: `^${value}$`, $options: 'i' },
+            [`rowData.${refEntityField.name}`]: regex,
           });
+
           if (!referencedDoc) {
-            const refDataSourceDetails = await dataSourceService.findDataSourcesByEntityId(refEntityId);
             errors.push({
               entityId: entityId,
               dataSourceId: dataSourceId,
@@ -393,15 +400,11 @@ async function validateFileData({
               fileAttributeName: fileKey,
               fileAttributeValue: value,
               attributeName: attrName,
-              attributeType: attr.type,
-              refEntityId,
-              refDataSourceId: refDataSourceDetails?.[0]?._id,
-              errorType: ERROR_CODES.INVALID_REFERENCE.type,
-              errorCode: ERROR_CODES.INVALID_REFERENCE.code,
-              status: 'open',
+              errorType: 'Reference Error',
+              errorCode: '404',
               errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value}, but it could not be resolved from the reference entity for the attribute ${attrName}.`,
             });
-            newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
+            newRow.isErrorLog = 1;
           } else {
             newRow.rowData[attrName] = referencedDoc._id;
           }
@@ -453,43 +456,50 @@ async function validateFileData({
         }
       }
     }
-    // Unique Rule Check (including fallback inside each rule)
     if (Array.isArray(uniqueAttributeRules) && uniqueAttributeRules.length > 0) {
-      const compositeKeyParts: string[] = [];
-
       for (const rule of uniqueAttributeRules) {
-        let selectedVal = '';
+        const keyValues: string[] = [];
+
+        let isValidCombination = true;
 
         for (const attrId of rule) {
           const attrName = attributeIdToNameMap[attrId.toString()];
-          if (!attrName) continue;
+          if (!attrName) {
+            isValidCombination = false;
+            break;
+          }
 
           const val = newRow.rowData[attrName];
-          if (val !== undefined && val !== null && `${val}`.trim() !== '') {
-            selectedVal = `${val}`.toLowerCase(); // normalize for comparison
-            break; // fallback logic: take first non-empty
+
+          if (val === undefined || val === null || `${val}`.trim() === '') {
+            isValidCombination = false;
+            break;
           }
+          keyValues.push(`${val}`.toLowerCase().trim());
         }
 
-        compositeKeyParts.push(selectedVal);
-      }
+        if (isValidCombination) {
+          const compositeKey = keyValues.join('|');
 
-      const compositeKey = compositeKeyParts.join('|');
+          if (seenCompositeKeys.has(compositeKey)) {
+            errors.push({
+              entityId,
+              dataSourceId,
+              dataSourceVersionId,
+              rowNumber: index + 1,
+              errorType: ERROR_CODES.DUPLICATE_ENTRY.type,
+              errorCode: ERROR_CODES.DUPLICATE_ENTRY.code,
+              fileAttributeValue: compositeKey,
+              errorMessage: `Error: Row ${index + 1} - Duplicate combination found for unique keys: ${compositeKey}.`,
+            });
+            newRow.isErrorLog = 1;
+          } else {
+            seenCompositeKeys.add(compositeKey);
+          }
 
-      if (seenCompositeKeys.has(compositeKey)) {
-        errors.push({
-          entityId,
-          dataSourceId,
-          dataSourceVersionId,
-          rowNumber: index + 1,
-          errorType: ERROR_CODES.DUPLICATE_ENTRY.type,
-          errorCode: ERROR_CODES.DUPLICATE_ENTRY.code,
-          fileAttributeValue: compositeKey,
-          errorMessage: `Error: Row ${index + 1} - Duplicate combination found for unique keys: ${compositeKey}.`,
-        });
-        newRow.isErrorLog = 1;
-      } else {
-        seenCompositeKeys.add(compositeKey);
+          // ✅ apply only first valid rule, skip others
+          break;
+        }
       }
     }
 
@@ -811,7 +821,6 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
 
                     const { originalname, path: filePath, size, mimetype } = file;
 
-                    console.log('originalname', originalname);
                     const fileName = originalname;
                     const fileExtension = fileName.split('.').pop();
                     const newFilePath = path.join(

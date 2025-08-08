@@ -10,14 +10,22 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${file.originalname}`);
   },
 });
-
+// Accept Excel/CSV + PDF + images
+const allowedMimeTypes = [
+  // Excel / CSV
+  'text/csv',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  // PDF
+  'application/pdf',
+  // Images
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/gif',
+];
 const fileFilter: multer.Options['fileFilter'] = (req, file, cb) => {
-  const allowedMimeTypes = [
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'text/csv',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  ];
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {

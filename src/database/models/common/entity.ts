@@ -70,7 +70,14 @@ const attributeSchema = new Schema<IAttribute>(
     },
     validation: { type: [String] },
     transformations: { type: [String] },
-    optionAttributeId: { type: String },
+    optionAttributeId: {
+      type: Types.ObjectId,
+      ref: 'attribute_option',
+      default: null,
+      set: (value: any) => {
+        return value === '' ? null : value;
+      },
+    },
     cleaner: { type: [String] },
     referenceEntitySetting: {
       type: referenceEntitySettingSchema,

@@ -128,6 +128,7 @@ interface FieldOption {
     attributeId: Types.ObjectId;
     refAttributeId?: Types.ObjectId;
     isDerived?: boolean;
+    type?:string;
   };
 }
 
@@ -152,29 +153,59 @@ export const getEntityFieldOptions = async (entityId: string): Promise<FieldOpti
           value: {
             attributeId,
             refAttributeId: refAttributeId,
+            type: refAttr?.type || 'text'
           },
         });
       }
     } else {
       fieldOptions.push({
         label: attr.name,
-        value: { attributeId },
-      });
-    }
-
-  }
-
-   // 2. Derived fields
-    const derivedFields: any = await getAllDerivedFields({ entityId });
-    for (const df of derivedFields) {
-      fieldOptions.push({
-        label: `${df.name}`,
-        value: {
-          attributeId: df._id,
-          isDerived: true,
+        value: { 
+          attributeId, 
+          type: attr?.type || 'text' 
         },
       });
     }
+  }
+
+  // 2. Derived fields
+  const derivedFields: any = await getAllDerivedFields({ entityId });
+  for (const df of derivedFields) {
+    fieldOptions.push({
+      label: `${df.name}`,
+      value: {
+        attributeId: df._id,
+        isDerived: true,
+        type: df?.type || 'text' 
+      },
+    });
+  }
 
   return fieldOptions;
 };
+
+export async function updateEntityAttributeOptionId({ entityId, attributeName, attributeType, optionAttributeId }) {
+  try {
+    const result = await Entity.updateOne(
+      {
+        _id: entityId,
+        attributes: {
+          $elemMatch: {
+            name: attributeName,
+            type: attributeType,
+          },
+        },
+      },
+      {
+        $set: {
+          'attributes.$.optionAttributeId': optionAttributeId,
+        },
+      }
+    );
+
+    return result;
+  } catch (error) {
+    console.error(`Failed to update attribute "${attributeName}":`, error);
+    throw error;
+  }
+}
