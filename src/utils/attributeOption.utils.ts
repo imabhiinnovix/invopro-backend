@@ -3,16 +3,14 @@ import * as attributeOptionService from '../database/services/common/attributeOp
 import * as entityService from '../database/services/common/entity.services';
 
 export async function autoPopulateAttributeOption({
-  filePath,
-  startRow = 2,
+  fileData = [],
   entityId,
   attributesDetails,
   attributMapping,
   userId,
   organizationId,
 }: {
-  filePath: string;
-  startRow?: number;
+  fileData?: any[];
   entityId: any;
   attributesDetails: any[];
   attributMapping: Record<string, any>;
@@ -22,18 +20,30 @@ export async function autoPopulateAttributeOption({
   try {
     const targetAttributes = attributesDetails.filter((attr) => ['option', 'multioption'].includes(attr.type));
 
-    const columnNames = targetAttributes.map((attr) => attributMapping[attr.name]).filter(Boolean);
+    const columnToUniqueValues: Record<string, string[]> = {};
 
-    const columnToUniqueValues = await extractUniqueColumnValuesByNamesFromXLSX({
-      filePath,
-      columnNames,
-      startRow,
-    });
+    for (const attribute of targetAttributes) {
+      const columnKeys = attributMapping[attribute.name];
+      if (!columnKeys) continue;
+
+      const columnArray = Array.isArray(columnKeys) ? columnKeys : [columnKeys];
+      const uniqueSet = new Set<string>();
+
+      for (const row of fileData) {
+        for (const key of columnArray) {
+          const value = row[key];
+          if (value !== undefined && value !== null && value !== '') {
+            uniqueSet.add(value.toString().trim());
+          }
+        }
+      }
+
+      columnToUniqueValues[attribute.name] = Array.from(uniqueSet);
+    }
 
     for (const attribute of targetAttributes) {
       const attributeName = attribute.name;
-      const columnHeader = attributMapping[attributeName];
-      const uniqueValues = columnToUniqueValues[columnHeader];
+      const uniqueValues = columnToUniqueValues[attributeName];
       const attributeOptionId = attribute.optionAttributeId;
 
       if (!uniqueValues || uniqueValues.length === 0) continue;

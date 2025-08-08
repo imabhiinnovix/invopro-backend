@@ -588,7 +588,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
       debounceManager.debounce(dataSourceVersion._id as string, async () => {
         try {
           const entityDetails = dataSourceDetails.entityId as any;
-          const attributes = entityDetails?.attributes || [];
+          let attributes = entityDetails?.attributes || [];
           const versionValueData = versionValue;
 
           const fileData = await validateFileDataCondition({
@@ -596,6 +596,15 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
             attributeSetting: attributes,
             conditions: dataSourceDetails.condition,
             jsonMapping,
+          });
+
+          attributes = await autoPopulateAttributeOption({
+            fileData: fileData,
+            entityId: dataSourceDetails?.entityId || '',
+            attributesDetails: attributes,
+            attributMapping: jsonMapping,
+            userId,
+            organizationId,
           });
 
           const validatedData = await validateFileData({
