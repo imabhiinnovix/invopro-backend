@@ -355,14 +355,14 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
               const entityDetails = dataSourceDetails.entityId as any;
               let attributes = entityDetails?.attributes || [];
               const versionValueData = versionValue;
-              attributes = await autoPopulateAttributeOption({
-                filePath: newFilePath,
-                entityId: dataSourceDetails?.entityId || '',
-                attributesDetails: attributes,
-                attributMapping: jsonMapping,
-                userId,
-                organizationId,
-              });
+              // attributes = await autoPopulateAttributeOption({
+              //   filePath: newFilePath,
+              //   entityId: dataSourceDetails?.entityId || '',
+              //   attributesDetails: attributes,
+              //   attributMapping: jsonMapping,
+              //   userId,
+              //   organizationId,
+              // });
               const validatedData = await validateFileData({
                 fileData,
                 attributes,
