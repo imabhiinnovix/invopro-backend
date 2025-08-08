@@ -485,10 +485,15 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
 
     const files = Array.isArray(req.files) ? req.files : Object.values(req.files!).flat();
 
+    let combinedFileName = '';
+    let combinedFilePath = '';
+    let combinedMimType = '';
+    let combinedSize = 0;
+    let combinedData: any[] = [];
     for (const file of files) {
-      const { originalname, path: filePath, size, mimetype } = file;
+      const { originalname, path: tempPath, size, mimetype } = file;
       const fileName = originalname;
-      const fileExtension = fileName.split('.').pop();
+      const fileExtension = fileName.split('.').pop()?.toLowerCase();
 
       const newFilePath = path.join(
         'uploads',
@@ -497,126 +502,128 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
         'dsvRequest',
         `${dataSourceId}_${versionValue}_${versionName}_${fileName}`
       );
-
       await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
-      await fsPromises.rename(filePath, newFilePath);
+      await fsPromises.rename(tempPath, newFilePath);
 
       if (fileExtension && ['xlsx', 'xls'].includes(fileExtension)) {
-        const existingVersionData =
-          await dataSourceVersionService.getDataSourceVersionBasedOnDataSourceIdAndVersionValueAndVersionName(
-            dataSourceId,
-            versionValue,
-            versionName
-          );
-
-        if (existingVersionData) {
-          return res.status(400).send('Version name already exists for same data source and version value.');
-        }
-
-        const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
-
-        if (dataSourceDetails && dataSourceDetails.entityId) {
-          const dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
-            entityId: dataSourceDetails.entityId._id,
-            dataSourceId,
-            versionName,
-            versionValue,
-            createdBy: userId,
-            status: 'processing',
-            separator: jsonSeparator,
-            fileName: fileName,
-            filePath: newFilePath,
-            fileType: mimetype,
-            fileSize: size,
-            mappings: jsonMapping,
-            isActive: true,
-            isCurrent: false,
-          });
-
-          debounceManager.debounce(dataSourceVersion._id as string, async () => {
-            try {
-              const allFileData = await readExcelFile(newFilePath);
-              const entityDetails = dataSourceDetails.entityId as any;
-              const attributes = entityDetails?.attributes || [];
-              const versionValueData = versionValue;
-
-              const fileData = await validateFileDataCondition({
-                fileData: allFileData,
-                attributeSetting: attributes,
-                conditions: dataSourceDetails.condition,
-                jsonMapping,
-              });
-
-              const validatedData = await validateFileData({
-                fileData,
-                attributes,
-                versionValue: versionValueData,
-                mapping: jsonMapping,
-                separator: jsonSeparator,
-                dataSourceId: dataSourceId,
-                dataSourceVersionId: dataSourceVersion._id as string,
-                entityId: dataSourceDetails.entityId._id,
-                uniqueAttributeRules: dataSourceDetails.uniqueAttributeRules,
-              });
-
-              if (validatedData.errors.length > 0) {
-                await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
-                  status: 'failed',
-                });
-                const schemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
-                  orgCode,
-                  versionCode: dataSourceDetails.code,
-                });
-                await dataImportErrorServices.createManyDataImportError(validatedData.errors);
-                await importLogDataSourceVersionValueService.createImportLogDataSourceVersionValue(
-                  schemaName,
-                  validatedData.newRowData
-                );
-              } else {
-                const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
-                  orgCode,
-                  versionCode: dataSourceDetails.code,
-                });
-                if (dataSourceDetails.versionType == 'constant') {
-                  await dataSourceVersionValueService.updateDataSourceVersionValue(
-                    schemaName,
-                    validatedData.newRowData,
-                    attributes,
-                    dataSourceDetails.uniqueAttributeRules || []
-                  );
-                } else {
-                  await dataSourceVersionValueService.createDataSourceVersionValue(
-                    schemaName,
-                    validatedData.newRowData
-                  );
-                }
-
-                await dataSourceVersionService.updateDataSourceVersions({
-                  query: { dataSourceId, versionValue },
-                  updateFields: { isCurrent: false },
-                });
-
-                await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
-                  status: 'completed',
-                  isCurrent: true,
-                });
-              }
-            } catch (error) {
-              console.error('Error while processing data:', error);
-            }
-          });
-        } else {
-          throw new Error('Data source not found.');
-        }
-
-        return res.status(200).json({
-          success: true,
-          message: 'Data upload is in progress.',
-        });
+        const fileData = await readExcelFile(newFilePath);
+        combinedData = [...combinedData, ...fileData];
+        combinedFileName = combinedFileName ? `${combinedFileName}|${fileName}` : fileName;
+        combinedFilePath = combinedFilePath ? `${combinedFilePath}|${newFilePath}` : newFilePath;
+        combinedMimType = combinedMimType ? `${combinedMimType}|${mimetype}` : mimetype;
+        combinedSize += size;
       } else {
-        throw new Error('Invalid file format');
+        throw new Error(`Invalid file format for ${fileName}`);
       }
     }
+
+    const existingVersionData =
+      await dataSourceVersionService.getDataSourceVersionBasedOnDataSourceIdAndVersionValueAndVersionName(
+        dataSourceId,
+        versionValue,
+        versionName
+      );
+
+    if (existingVersionData) {
+      return res.status(400).send('Version name already exists for same data source and version value.');
+    }
+
+    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+
+    if (dataSourceDetails && dataSourceDetails.entityId) {
+      const dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
+        entityId: dataSourceDetails.entityId._id,
+        dataSourceId,
+        versionName,
+        versionValue,
+        createdBy: userId,
+        status: 'processing',
+        separator: jsonSeparator,
+        fileName: combinedFileName,
+        filePath: combinedFilePath,
+        fileType: combinedMimType,
+        fileSize: combinedSize,
+        mappings: jsonMapping,
+        isActive: true,
+        isCurrent: false,
+      });
+
+      debounceManager.debounce(dataSourceVersion._id as string, async () => {
+        try {
+          const entityDetails = dataSourceDetails.entityId as any;
+          const attributes = entityDetails?.attributes || [];
+          const versionValueData = versionValue;
+
+          const fileData = await validateFileDataCondition({
+            fileData: combinedData,
+            attributeSetting: attributes,
+            conditions: dataSourceDetails.condition,
+            jsonMapping,
+          });
+
+          const validatedData = await validateFileData({
+            fileData,
+            attributes,
+            versionValue: versionValueData,
+            mapping: jsonMapping,
+            separator: jsonSeparator,
+            dataSourceId: dataSourceId,
+            dataSourceVersionId: dataSourceVersion._id as string,
+            entityId: dataSourceDetails.entityId._id,
+            uniqueAttributeRules: dataSourceDetails.uniqueAttributeRules,
+          });
+
+          if (validatedData.errors.length > 0) {
+            await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
+              status: 'failed',
+            });
+            const schemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+              orgCode,
+              versionCode: dataSourceDetails.code,
+            });
+            await dataImportErrorServices.createManyDataImportError(validatedData.errors);
+            await importLogDataSourceVersionValueService.createImportLogDataSourceVersionValue(
+              schemaName,
+              validatedData.newRowData
+            );
+          } else {
+            const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+              orgCode,
+              versionCode: dataSourceDetails.code,
+            });
+            if (dataSourceDetails.versionType == 'constant') {
+              await dataSourceVersionValueService.updateDataSourceVersionValue(
+                schemaName,
+                validatedData.newRowData,
+                attributes,
+                dataSourceDetails.uniqueAttributeRules || []
+              );
+            } else {
+              await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, validatedData.newRowData);
+            }
+
+            await dataSourceVersionService.updateDataSourceVersions({
+              query: { dataSourceId, versionValue },
+              updateFields: { isCurrent: false },
+            });
+
+            await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
+              status: 'completed',
+              isCurrent: true,
+            });
+          }
+        } catch (error) {
+          console.error('Error while processing data:', error);
+        }
+      });
+    } else {
+      throw new Error('Data source not found.');
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Data upload is in progress.',
+    });
   } catch (e) {
     next(e);
   }
