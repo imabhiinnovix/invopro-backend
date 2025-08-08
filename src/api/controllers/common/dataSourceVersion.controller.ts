@@ -325,7 +325,20 @@ async function validateFileData({
     for (const attr of attributes) {
       const attrName = attr.name;
       const fileKey = mapping[attrName];
-      let value = row[fileKey];
+      let value: any;
+
+      if (Array.isArray(fileKey)) {
+        // Find the first value that is not null, undefined, or empty string
+        for (const key of fileKey) {
+          const candidate = row[key];
+          if (candidate !== undefined && candidate !== null && candidate !== '') {
+            value = candidate;
+            break;
+          }
+        }
+      } else {
+        value = row[fileKey];
+      }
 
       if (typeof value === 'object' && value != null) {
         value = value.text;
