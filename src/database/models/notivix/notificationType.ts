@@ -1,73 +1,89 @@
-import { Schema, model, Types, Document } from 'mongoose';
+import { Schema, model, Types, Document } from "mongoose";
 
-// Interface: NotificationCondition
+// -------------------
+// Interfaces
+// -------------------
 interface INotificationCondition {
   attributeId: Types.ObjectId;
   referenceEntityId?: Types.ObjectId;
   referenceEntityAttributeId?: Types.ObjectId;
-  operator: 'eq' | 'lt' | 'gt' | 'in' | 'like';
-  value: string;
+  operator: string;
+  value?: string;
 }
 
-// Interface: NotificationConditionGroup
 interface INotificationConditionGroup {
-  group_operator: 'AND' | 'OR';
-  conditions: INotificationCondition[];
+  group_operator: "AND" | "OR";
+  conditions: (INotificationCondition | INotificationConditionGroup)[];
 }
 
-// Interface: NotificationType
 export interface INotificationType extends Document {
   organizationId: Types.ObjectId;
   userId?: Types.ObjectId;
   name: string;
   entityId: Types.ObjectId;
-  isActive: boolean;
+  status: "active" | "inactive";
   createdBy?: Types.ObjectId;
   updatedBy?: Types.ObjectId;
   conditionGroups: INotificationConditionGroup[];
 }
 
-// Embedded Schema: NotificationCondition
-const notificationConditionSchema = new Schema<INotificationCondition>(
+// -------------------
+// Recursive Schema
+// -------------------
+
+// Step 1: Define the base schema without "conditions" so we can reference it later
+const conditionOrGroupSchema = new Schema<any>(
   {
-    attributeId: { type: Schema.Types.ObjectId, required: true },
-    referenceEntityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
+    attributeId: { type: Schema.Types.ObjectId },
+    referenceEntityId: { type: Schema.Types.ObjectId, ref: "Entity" },
     referenceEntityAttributeId: { type: Schema.Types.ObjectId },
-    operator: { type: String, required: true },
+    operator: { type: String },
     value: { type: String },
+    group_operator: { type: String, enum: ["AND", "OR"] },
   },
   { _id: false }
 );
 
-// Embedded Schema: NotificationConditionGroup
-const notificationConditionGroupSchema = new Schema<INotificationConditionGroup>(
-  {
-    group_operator: { type: String, enum: ['AND', 'OR'], required: true },
-    conditions: { type: [notificationConditionSchema], default: [] },
-  },
-  { _id: false }
-);
+// Step 2: Add conditions array recursively
+conditionOrGroupSchema.add({
+  conditions: {
+    type: [conditionOrGroupSchema],
+    default: []
+  }
+});
 
-// Main Schema: NotificationType
+// -------------------
+// Main NotificationType schema
+// -------------------
 const notificationTypeSchema = new Schema<INotificationType>(
   {
-    organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
-    userId: { type: Schema.Types.ObjectId, ref: 'User' },
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
+    },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true,},
     name: { type: String, required: true },
-    entityId: { type: Schema.Types.ObjectId, ref: 'Entity', required: true },
-    isActive: { type: Boolean, default: true },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
-    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
-    conditionGroups: { type: [notificationConditionGroupSchema], default: [] },
+    entityId: { type: Schema.Types.ObjectId, ref: "Entity", required: true },
+    status: { type: String, enum: ["active", "inactive"], default: "active" },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+    updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    conditionGroups: {
+      type: [conditionOrGroupSchema],
+      default: [],
+    },
   },
-  {
-    timestamps: true, // adds createdAt and updatedAt automatically
-  }
+  { timestamps: true }
 );
 
-// Indexes (optional, based on use case)
-notificationTypeSchema.index({ name: 1, organizationId: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
+notificationTypeSchema.index(
+  { name: 1, organizationId: 1 },
+  { unique: true, collation: { locale: "en", strength: 2 } }
+);
 
-const NotificationType = model<INotificationType>('notification_type', notificationTypeSchema);
+const NotificationType = model<INotificationType>(
+  "notification_type",
+  notificationTypeSchema
+);
 
 export default NotificationType;
