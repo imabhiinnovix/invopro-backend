@@ -225,20 +225,46 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
                     continue;
                   }
 
-                  if (attr.referenceEntitySetting?.refEntityId && field.refAttributeId) {
-                    const refEntity = await Entity.findById(attr.referenceEntitySetting.refEntityId).lean();
-                    const refAttr = refEntity?.attributes?.find(
-                      (a: any) => String(a._id) === String(field.refAttributeId)
-                    );
-                    const parentName = attr.name || 'Unknown';
-                    const refName = refAttr?.name || 'Unknown';
-                    field.mappedAttributeName = `${parentName}.${refName}`;
+                  if (attr.referenceEntitySetting?.refEntityId && Array.isArray(field.refAttributeId) && field.refAttributeId.length > 0) {
+                    // Start with parent attribute name
+                    let mappedName = attr.name || 'Unknown';
+
+                    // Walk through refAttributeId to get names stepwise
+                    let currentEntityId = attr.referenceEntitySetting.refEntityId.toString();
+
+                    for (const refAttrId of field.refAttributeId) {
+                      const refEntity = await entityService.findEntityById(currentEntityId);
+                      if (!refEntity || !Array.isArray(refEntity.attributes)) {
+                        mappedName += '.Unknown';
+                        break;
+                      }
+
+                      const refAttr = refEntity.attributes.find((a: any) => String(a._id) === String(refAttrId));
+                      if (!refAttr) {
+                        mappedName += '.Unknown';
+                        break;
+                      }
+
+                      mappedName += `.${refAttr.name}`;
+
+                      // Prepare for next level lookup if exists
+                      if (refAttr.referenceEntitySetting?.refEntityId) {
+                        currentEntityId = refAttr.referenceEntitySetting.refEntityId.toString();
+                      } else {
+                        // No further reference
+                        break;
+                      }
+                    }
+
+                    field.mappedAttributeName = mappedName;
                   } else {
+                    // No multi-level reference, just use attribute name
                     field.mappedAttributeName = attr.name;
                   }
                 }
               }
             }
+
 
             ds.uniqueAttributeRules = Array.isArray(ds.uniqueAttributeRules)
               ? ds.uniqueAttributeRules.map((ruleGroup: any[]) =>
