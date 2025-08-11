@@ -8,6 +8,7 @@ interface INotificationCondition {
   referenceEntityId?: Types.ObjectId;
   referenceEntityAttributeId?: Types.ObjectId;
   operator: string;
+  timeUnit: string;
   value?: string;
 }
 
@@ -39,6 +40,7 @@ const conditionOrGroupSchema = new Schema<any>(
     referenceEntityAttributeId: { type: Schema.Types.ObjectId },
     operator: { type: String },
     value: { type: String },
+    timeUnit: { type: String },
     group_operator: { type: String, enum: ["AND", "OR"] },
   },
   { _id: false }
