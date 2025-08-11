@@ -5,14 +5,14 @@ interface IAttachmentField {
   fileName: string;
   fieldList?: {
     attributeId: Types.ObjectId;
-    referenceAttributeId?: Types.ObjectId;
+    refAttributeId?: Types.ObjectId[];
   }[];
   filePath?: string;
 }
 
 export interface IGroupByItem {
   attributeId: Types.ObjectId;
-  referenceAttributeId?: Types.ObjectId;
+  refAttributeId?: Types.ObjectId[];
 }
 
 export interface INotificationTemplate extends Document {
@@ -43,7 +43,7 @@ const attachmentFieldSchema = new Schema<IAttachmentField>(
       type: [
         {
           attributeId: { type: Schema.Types.ObjectId, required: true },
-          referenceAttributeId: { type: Schema.Types.ObjectId },
+          refAttributeId: { type: [Schema.Types.ObjectId], default: [] },
         },
       ],
       default: [],
@@ -58,7 +58,7 @@ const attachmentFieldSchema = new Schema<IAttachmentField>(
 const groupByItemSchema = new Schema<IGroupByItem>(
   {
     attributeId: { type: Schema.Types.ObjectId, required: true },
-    referenceAttributeId: { type: Schema.Types.ObjectId },
+    refAttributeId: { type: [Schema.Types.ObjectId], default: [] },
   },
   { _id: false }
 );

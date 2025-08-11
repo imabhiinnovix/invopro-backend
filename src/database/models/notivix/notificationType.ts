@@ -5,7 +5,7 @@ import { Schema, model, Types, Document } from "mongoose";
 // -------------------
 interface INotificationCondition {
   attributeId: Types.ObjectId;
-  referenceAttributeId?: Types.ObjectId;
+  refAttributeId?: Types.ObjectId[];
   operator: string;
   timeUnit: string;
   value?: string;
@@ -35,7 +35,10 @@ export interface INotificationType extends Document {
 const conditionOrGroupSchema = new Schema<any>(
   {
     attributeId: { type: Schema.Types.ObjectId },
-    referenceAttributeId: { type: Schema.Types.ObjectId },
+    refAttributeId: {
+      type: [Schema.Types.ObjectId],
+      default: [], // Always an array, even for single level
+    },
     operator: { type: String },
     value: { type: String },
     timeUnit: { type: String },

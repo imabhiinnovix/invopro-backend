@@ -3,7 +3,7 @@ import { Schema, model, Document, Types } from 'mongoose';
 
 interface IFieldSetting {
   attributeId: Types.ObjectId;
-  refAttributeId?: Types.ObjectId;
+  refAttributeId?: Types.ObjectId[];
   label?: string;
   isFilterEnable?: boolean;
   isSortingEnable?: boolean;
@@ -37,7 +37,8 @@ const fieldSettingSchema = new Schema<IFieldSetting>(
       required: true,
     },
     refAttributeId: {
-      type: Schema.Types.ObjectId,
+      type: [Schema.Types.ObjectId],
+      default: [], // Always an array, even for single level
     },
     label: {
       type: String,

@@ -5,7 +5,7 @@ import { Schema, model, Types, Document } from 'mongoose';
 // ----------------------------------
 interface INotificationRecipient {
   attributeId?: Types.ObjectId; // optional if using custom email
-  referenceAttributeId?: Types.ObjectId;
+  refAttributeId?: Types.ObjectId[];
   customEmails?: string[]; // <-- array of manual/custom emails
 }
 
@@ -41,7 +41,7 @@ export interface INotificationFrequencySetting extends Document {
 const notificationRecipientSchema = new Schema<INotificationRecipient>(
   {
     attributeId: { type: Schema.Types.ObjectId },
-    referenceAttributeId: { type: Schema.Types.ObjectId },
+    refAttributeId: { type: [Schema.Types.ObjectId], default: [] },
     customEmails: { type: [String], trim: true, lowercase: true, default: [] } // array of emails
   },
   { _id: false }
