@@ -1,12 +1,14 @@
 import { Schema, model, Types, Document } from 'mongoose';
 
-// Interface: NotificationRecipient
+// ----------------------------------
+// Interfaces
+// ----------------------------------
 interface INotificationRecipient {
-  attributeId: Types.ObjectId;
-  referenceAttributeId: Types.ObjectId;
+  attributeId?: Types.ObjectId; // optional if using custom email
+  referenceAttributeId?: Types.ObjectId;
+  customEmails?: string[]; // <-- array of manual/custom emails
 }
 
-// Interface: NotificationFrequencySetting
 export interface INotificationFrequencySetting extends Document {
   organizationId: Types.ObjectId;
   userId?: Types.ObjectId;
@@ -22,27 +24,32 @@ export interface INotificationFrequencySetting extends Document {
   repeatAnnually: boolean;
   acknowledgeRequired: boolean;
   attachmentRequired: boolean;
-  recipients: INotificationRecipient[];
+  recipients_to: INotificationRecipient[];  // <-- To list
+  recipients_cc: INotificationRecipient[];  // <-- CC list
   medium: Types.ObjectId;
   templateId: Types.ObjectId;
   schedulerStartDate?: Date;
   schedulerEndDate?: Date;
   triggerTime?: string;
   maxOccurrences?: number;
-  isActive: 'active' | 'in-active'; // enum
-
+  isActive: 'active' | 'in-active';
 }
 
+// ----------------------------------
 // Embedded Schema: NotificationRecipient
+// ----------------------------------
 const notificationRecipientSchema = new Schema<INotificationRecipient>(
   {
-    attributeId: { type: Schema.Types.ObjectId, required: true },
+    attributeId: { type: Schema.Types.ObjectId },
     referenceAttributeId: { type: Schema.Types.ObjectId },
+    customEmails: { type: [String], trim: true, lowercase: true, default: [] } // array of emails
   },
   { _id: false }
 );
 
+// ----------------------------------
 // Main Schema: NotificationFrequencySetting
+// ----------------------------------
 const notificationFrequencySettingSchema = new Schema<INotificationFrequencySetting>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
@@ -62,29 +69,30 @@ const notificationFrequencySettingSchema = new Schema<INotificationFrequencySett
     repeatAnnually: { type: Boolean, default: false },
     acknowledgeRequired: { type: Boolean, default: false },
     attachmentRequired: { type: Boolean, default: false },
-    recipients: { type: [notificationRecipientSchema], default: [] },
+
+    recipients_to: { type: [notificationRecipientSchema], default: [] },
+    recipients_cc: { type: [notificationRecipientSchema], default: [] },
+
     medium: { type: Schema.Types.ObjectId, ref: 'notification_medium_setting', required: true },
     templateId: { type: Schema.Types.ObjectId, ref: 'notification_template', required: true },
 
     schedulerStartDate: { type: Date },
     schedulerEndDate: { type: Date },
-    triggerTime: {
-      type: String
-    },
+    triggerTime: { type: String },
     maxOccurrences: { type: Number, min: 0, default: null },
+
     isActive: {
       type: String,
       enum: ['active', 'in-active'],
       default: 'active',
-    },
-
+    }
   },
   {
     timestamps: true,
   }
 );
 
-// Optional: Indexes if needed
+// Index
 notificationFrequencySettingSchema.index(
   { notificationTypeId: 1, organizationId: 1 },
   { unique: false }

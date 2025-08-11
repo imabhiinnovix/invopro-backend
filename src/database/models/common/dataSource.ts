@@ -1,3 +1,4 @@
+import config from '../../../config';
 import { Schema, model, Document, Types } from 'mongoose';
 
 interface IFieldSetting {
@@ -7,6 +8,7 @@ interface IFieldSetting {
   isFilterEnable?: boolean;
   isSortingEnable?: boolean;
   isDisplayEnable?: boolean;
+  type: 'number' | 'text' | 'date' | 'boolean' | 'richtext' | 'url' | 'option' | 'multioption' | 'user';
   isDerived: boolean;
 }
 
@@ -55,6 +57,11 @@ const fieldSettingSchema = new Schema<IFieldSetting>(
     isDerived: {
       type: Boolean,
       default: false,
+    },
+    type: {
+      type: String,
+      required: true,
+      enum: config.FIELD_TYPE_ENUM,
     },
   },
   { _id: false }

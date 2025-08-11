@@ -5,8 +5,7 @@ import { Schema, model, Types, Document } from "mongoose";
 // -------------------
 interface INotificationCondition {
   attributeId: Types.ObjectId;
-  referenceEntityId?: Types.ObjectId;
-  referenceEntityAttributeId?: Types.ObjectId;
+  referenceAttributeId?: Types.ObjectId;
   operator: string;
   timeUnit: string;
   value?: string;
@@ -21,7 +20,7 @@ export interface INotificationType extends Document {
   organizationId: Types.ObjectId;
   userId?: Types.ObjectId;
   name: string;
-  entityId: Types.ObjectId;
+  dataSourceId: Types.ObjectId;
   status: "active" | "inactive";
   createdBy?: Types.ObjectId;
   updatedBy?: Types.ObjectId;
@@ -36,8 +35,7 @@ export interface INotificationType extends Document {
 const conditionOrGroupSchema = new Schema<any>(
   {
     attributeId: { type: Schema.Types.ObjectId },
-    referenceEntityId: { type: Schema.Types.ObjectId, ref: "Entity" },
-    referenceEntityAttributeId: { type: Schema.Types.ObjectId },
+    referenceAttributeId: { type: Schema.Types.ObjectId },
     operator: { type: String },
     value: { type: String },
     timeUnit: { type: String },
@@ -66,7 +64,11 @@ const notificationTypeSchema = new Schema<INotificationType>(
     },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true,},
     name: { type: String, required: true },
-    entityId: { type: Schema.Types.ObjectId, ref: "Entity", required: true },
+    dataSourceId: {
+      type: Schema.Types.ObjectId,
+      ref: "data_source",
+      required: true
+    },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },
     updatedBy: { type: Schema.Types.ObjectId, ref: "User" },

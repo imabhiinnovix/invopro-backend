@@ -18,7 +18,7 @@ export interface IGroupByItem {
 export interface INotificationTemplate extends Document {
   organizationId?: Types.ObjectId | null;
   userId?: Types.ObjectId;
-  entityId: Types.ObjectId;
+  dataSourceId: Types.ObjectId;
   name: string;
   code: string;
   subject: string;
@@ -67,7 +67,11 @@ const notificationTemplateSchema = new Schema<INotificationTemplate>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', default: null },
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
-    entityId: { type: Schema.Types.ObjectId, ref: 'Entity', required: true },
+    dataSourceId: {
+      type: Schema.Types.ObjectId,
+      ref: "data_source",
+      required: true
+    },
     name: { type: String, required: true },
     code: { type: String, unique: true, required: true },
     subject: { type: String, required: true },
