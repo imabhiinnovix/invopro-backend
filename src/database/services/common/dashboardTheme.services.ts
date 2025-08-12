@@ -30,3 +30,38 @@ export const deleteDashboardTheme = async (themeId: string) => {
     throw err;
   }
 };
+
+export const getDashboardThemeList = async ({
+  query,
+  select = '',
+  page,
+  limit,
+  sort = { updatedAt: -1 },
+  populate,
+  paginate = true,
+}: any) => {
+  try {
+    let dashboardThemeQuery = DashboardThemeModel.find(query).select(select).sort(sort);
+
+    // Apply pagination only if enabled
+    if (paginate && page && limit) {
+      dashboardThemeQuery = dashboardThemeQuery.skip((page - 1) * limit).limit(limit);
+    }
+
+    // Populate references if provided
+    if (Array.isArray(populate)) {
+      populate.forEach((field) => {
+        dashboardThemeQuery = dashboardThemeQuery.populate(field);
+      });
+    }
+
+    const [dashboardTheme, totalCount] = await Promise.all([
+      dashboardThemeQuery.lean().exec(),
+      DashboardThemeModel.countDocuments(query), // Always count
+    ]);
+
+    return { data: dashboardTheme, totalCount };
+  } catch (err) {
+    throw err;
+  }
+};

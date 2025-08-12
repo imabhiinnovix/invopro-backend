@@ -188,7 +188,7 @@ const DashboardThemeSchema = new Schema<IDashboardTheme>(
     dashboardFont: { type: Schema.Types.ObjectId, ref: 'dashboard_font' },
 
     isDefault: { type: Boolean, default: false },
-    isActive: { type: Boolean, default: true },
+    isActive: { type: Boolean, default: false },
 
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },

@@ -6,6 +6,6 @@ const router = Router();
 
 router.get('/list/:dashboardId', authenticateToken, getUsers);
 router.post('/create', authenticateToken, createShare);
-router.post('/:dashboardShareId', authenticateToken, deleteShare);
+router.get('/:dashboardShareId', authenticateToken, deleteShare);
 
 export default router;

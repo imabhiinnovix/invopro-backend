@@ -5,8 +5,12 @@ import * as dashboardFontService from '../../../database/services/common/dashboa
 
 export async function createDashboardFont(req: Request, res: Response, next: NextFunction) {
   try {
-    const { userId, organizationId } = req.user;
-    const { fontName } = req.body;
+    let { userId, organizationId, isSuperUser } = req.user;
+    const { fontName, bodyOrganizationId } = req.body;
+
+    if (isSuperUser && bodyOrganizationId) {
+      organizationId = bodyOrganizationId;
+    }
     const files = Array.isArray(req.files) ? req.files : Object.values(req.files || {}).flat();
 
     if (!files || files.length === 0) {
@@ -125,6 +129,90 @@ export const getDashboardFontList = async (req: Request, res: Response, next: Ne
       message: 'Dashboard fonts retrieved successfully',
       data: result.data,
       totalCount: result.totalCount,
+    });
+  } catch (err) {
+    console.error(err);
+    next(err);
+  }
+};
+
+export const downloadDashboardFontTheme = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { fontId } = req.params;
+
+    // Fetch font details from DB
+    const fontDetails = await dashboardFontService.findFontById(fontId);
+
+    if (!fontDetails) {
+      return res.status(404).json({
+        success: false,
+        message: 'Font theme not found',
+      });
+    }
+
+    // File path from stored location
+    const filePath = path.resolve(fontDetails.filePath);
+
+    // Check if file exists
+    try {
+      await fsPromises.access(filePath);
+    } catch {
+      return res.status(404).json({
+        success: false,
+        message: 'Font file not found on server',
+      });
+    }
+
+    res.download(fontDetails.filePath!, fontDetails.name!, (err) => {
+      if (err) {
+        console.error('Error downloading file:', err);
+        res.status(500).send('Error downloading file');
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    next(err);
+  }
+};
+
+export const deleteDashboardFontTheme = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { fontId } = req.params;
+
+    // Fetch font details from DB
+    const fontDetails = await dashboardFontService.findFontById(fontId);
+
+    if (!fontDetails) {
+      return res.status(404).json({
+        success: false,
+        message: 'Font theme not found',
+      });
+    }
+
+    // Resolve full file path
+    const filePath = path.resolve(fontDetails.filePath);
+
+    // Try deleting the file if it exists
+    try {
+      await fsPromises.access(filePath);
+      await fsPromises.unlink(filePath);
+    } catch {
+      console.warn(`Font file not found or already deleted: ${filePath}`);
+    }
+
+    // Delete the DB entry
+    const deletedFont = await dashboardFontService.deleteFont(fontId);
+
+    if (!deletedFont) {
+      return res.status(404).json({
+        success: false,
+        message: 'Font record not found in database',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Font theme deleted successfully',
     });
   } catch (err) {
     console.error(err);
