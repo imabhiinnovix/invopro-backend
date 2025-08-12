@@ -4,6 +4,7 @@ import {
   createMultipleDataSourceVersionBasedOnCustomReportId,
 } from './dataSourceVersion.controller';
 import { getAttributesFromXlsxOrCsvHeaders } from './getAttributesFromXlsxOrCsvHeaders.controller';
+import { createDashboardFont } from './dashboardFont.controller';
 
 export const handleFileUpload = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -19,6 +20,8 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
       return await createDataSourceVersion(req, res, next);
     } else if (operation.toLowerCase() === 'customreport') {
       return await createMultipleDataSourceVersionBasedOnCustomReportId(req, res, next);
+    } else if (operation.toLowerCase() === 'dashboardFont') {
+      return await createDashboardFont(req, res, next);
     } else {
       res.status(400).json({
         success: false,
