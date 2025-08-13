@@ -1,4 +1,14 @@
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
+import config from '../config';
+// Import all models **after connecting** to ensure populate works
+import "../database/models/notivix/notificationType";
+import "../database/models/notivix/notificationTemplate";
+import "../database/models/notivix/notificationMediumSetting";
+import "../database/models/notivix/notificationFrequencySetting";
+import "../database/models/notivix/notificationAcknowledge";
+import "../database/models/notivix/preparedNotification";
+import "../database/models/notivix/notificationTrigger";
+import "../database/models/common/organization";
 import NotificationFrequencySetting from "../database/models/notivix/notificationFrequencySetting";
 import NotificationAcknowledge from "../database/models/notivix/notificationAcknowledge";
 import PreparedNotification from "../database/models/notivix/preparedNotification";
@@ -6,6 +16,16 @@ import NotificationTriggerModel from "../database/models/notivix/notificationTri
 import { getModelForEntity } from "../utils/entity.utils";
 import { findEntityById } from "../database/services/common/entity.services";
 import createDefaultDataSourceVersionModel from "../database/models/common/defaultDataSourceVersionModel";
+import { listNotificationFrequency } from "../database/services/notivix/notificationFrequency.service";
+import { findDataSourceById } from "../database/services/common/dataSource.services";
+import { getSchemaNameBasedOnVersionCodeAndOrgCode } from "../utils/common.utils";
+
+
+
+// --------------------
+// Helpers
+// --------------------
+
 
 // Combine Date and Time string to Date object
 function combineDateAndTime(date: Date, triggerTime?: string): Date {
@@ -100,110 +120,265 @@ function buildPayload(template: any, caseData: any, notifType: any, acknowledgeI
   return { subject: replacePlaceholders(template.subject || "", caseData), body, attachments };
 }
 
-// Resolve recipients based on notificationType config
-function resolveRecipients(caseData: any, notifType: any) {
-  const to = (notifType.recipient_to || []).map((field: string) => caseData[field]).filter(Boolean);
-  const cc = (notifType.recipient_cc || []).map((field: string) => caseData[field]).filter(Boolean);
-  return { to, cc };
-}
+// --------------------
+// Recipient resolution
+// --------------------
 
-// Build filters from notification conditions
-async function buildFiltersFromConditions(conditions: any[], attributeMap: Map<string, any>): Promise<Record<string, any>> {
-  const filters: Record<string, any> = {};
+function resolveRecipientsFromSetting(
+  caseData: any,
+  recipients: { attributeId?: Types.ObjectId; refAttributeId?: Types.ObjectId[]; customEmails?: string[] }[]
+): string[] {
+  const emails = new Set<string>();
+  if (!recipients || recipients.length === 0) return [];
 
-  for (const cond of conditions) {
-    const attr = attributeMap.get(String(cond.attributeId));
-    if (!attr) continue;
-
-    let fieldPath = attr.name;
-
-    if (cond.refAttributeId && cond.refAttributeId.length > 0) {
-      let currentEntityId = attr.referenceEntitySetting?.refEntityId?.toString();
-      let mappedName = attr.name || "Unknown";
-
-      for (const refAttrId of cond.refAttributeId) {
-        const refEntity = await findEntityById(currentEntityId);
-        const refAttr = refEntity?.attributes?.find((a: any) => String(a._id) === String(refAttrId));
-        if (!refAttr) break;
-        mappedName += `.${refAttr.name}`;
-        currentEntityId = refAttr.referenceEntitySetting?.refEntityId?.toString();
+  for (const recipient of recipients) {
+    // Custom emails
+    if (recipient.customEmails && recipient.customEmails.length > 0) {
+      for (const email of recipient.customEmails) {
+        if (email) emails.add(email.trim().toLowerCase());
       }
-      fieldPath = mappedName;
+      continue;
     }
 
-    let mongoCond: any;
-    switch (cond.operator) {
-      case "equals":
-        mongoCond = cond.value;
-        break;
-      case "in":
-        mongoCond = { $in: Array.isArray(cond.value) ? cond.value : [cond.value] };
-        break;
-      case "not_in":
-        mongoCond = { $nin: Array.isArray(cond.value) ? cond.value : [cond.value] };
-        break;
-      case "exists":
-        mongoCond = { $exists: true, $ne: null };
-        break;
-      case "not_exists":
-        mongoCond = { $in: [null, undefined] };
-        break;
-      case "lt":
-      case "lte":
-      case "gt":
-      case "gte":
-        const numVal = Number(cond.value);
-        if (cond.timeUnit && !isNaN(numVal)) {
-          const now = new Date();
-          const multiplier =
-            cond.timeUnit === "days"
-              ? 24 * 60 * 60 * 1000
-              : cond.timeUnit === "hours"
-              ? 60 * 60 * 1000
-              : cond.timeUnit === "minutes"
-              ? 60 * 1000
-              : 1000;
-          const targetDate = new Date(now.getTime() + numVal * multiplier);
-          mongoCond = { [`$${cond.operator}`]: targetDate };
-        } else {
-          mongoCond = { [`$${cond.operator}`]: cond.value };
+    // Attribute resolution
+    if (recipient.attributeId) {
+      let val: any = caseData.rowData?.[recipient.attributeId.toString()];
+      if (recipient.refAttributeId && recipient.refAttributeId.length > 0) {
+        for (const refId of recipient.refAttributeId) {
+          val = val?.rowData?.[refId.toString()] ?? val;
         }
-        break;
-      default:
-        mongoCond = cond.value;
+      }
+      if (typeof val === "string" && val.trim() !== "") {
+        emails.add(val.trim().toLowerCase());
+      }
     }
-
-    filters[fieldPath] = mongoCond;
   }
 
-  return filters;
+  return Array.from(emails);
 }
+
+// Wrapper to match PreparedNotification schema
+function resolveRecipients(caseData: any, notifType: any, freqSetting: any) {
+  const to = resolveRecipientsFromSetting(caseData, freqSetting.recipients_to);
+  const cc = resolveRecipientsFromSetting(caseData, freqSetting.recipients_cc);
+  return { recipient_to: to, recipient_cc: cc };
+}
+
+// --------------------
+// Notification processing
+// --------------------
+
+// Build filters from notification conditions
+// Recursive filter builder
+// Build a Mongo filter from your conditionGroups structure.
+// - Preserves the exact grouping in your JSON (AND/OR at each node)
+// - Avoids redundant extra $and at the top
+// - Never turns OR leaves into AND
+async function buildFiltersFromConditions(
+  conditionGroups: any[],
+  attributeMap: Map<string, any>
+): Promise<any> {
+  if (!Array.isArray(conditionGroups) || conditionGroups.length === 0) return {};
+
+  // Build each top-level group. "conditionGroups" themselves are combined with AND
+  const groupFilters: any[] = [];
+  for (const group of conditionGroups) {
+    const f = await buildGroupFilter(group, attributeMap);
+    if (Object.keys(f).length) groupFilters.push(f);
+  }
+
+  // If only one top-level group, return it as-is (NO extra $and wrapper)
+  if (groupFilters.length === 1) return groupFilters[0];
+
+  // Otherwise AND the groups together
+  return { $and: groupFilters };
+}
+
+function isGroupNode(node: any): boolean {
+  return !!node && typeof node === "object" && Array.isArray(node.conditions) && node.group_operator;
+}
+
+async function buildGroupFilter(
+  node: any,
+  attributeMap: Map<string, any>
+): Promise<any> {
+  // If this node is actually a leaf with attributeId, handle as leaf
+  if (!isGroupNode(node) && node?.attributeId) {
+    const leaf = await buildLeafFilter(node, attributeMap);
+    return leaf ?? {};
+  }
+
+  // If it's a group, recurse children
+  if (isGroupNode(node)) {
+    const op = String(node.group_operator).toLowerCase() === "or" ? "$or" : "$and";
+    const children: any[] = [];
+
+    for (const child of node.conditions) {
+      // Child can be a nested group or a leaf
+      if (isGroupNode(child)) {
+        const nested = await buildGroupFilter(child, attributeMap);
+        if (Object.keys(nested).length) children.push(nested);
+      } else if (child?.attributeId) {
+        const lf = await buildLeafFilter(child, attributeMap);
+        if (lf && Object.keys(lf).length) children.push(lf);
+      }
+      // silently skip empty/invalid nodes
+    }
+
+    if (children.length === 0) return {};
+    // Always return this group's own wrapper so explicit nesting is preserved
+    return { [op]: children };
+  }
+
+  // Fallback
+  return {};
+}
+
+async function buildLeafFilter(cond: any, attributeMap: Map<string, any>): Promise<any> {
+  const attr = attributeMap.get(String(cond.attributeId));
+  if (!attr) return {};
+
+  // Resolve field path, including refAttributeId chain if any
+  let fieldPath = attr.name;
+  if (Array.isArray(cond.refAttributeId) && cond.refAttributeId.length > 0) {
+    let currentEntityId = attr.referenceEntitySetting?.refEntityId?.toString();
+    let mappedName = attr.name || "Unknown";
+    for (const refAttrId of cond.refAttributeId) {
+      const refEntity = await findEntityById(currentEntityId);
+      const refAttr = refEntity?.attributes?.find((a: any) => String(a._id) === String(refAttrId));
+      if (!refAttr) break;
+      mappedName += `.${refAttr.name}`;
+      currentEntityId = refAttr.referenceEntitySetting?.refEntityId?.toString();
+    }
+    fieldPath = mappedName;
+  }
+
+  // Map operator
+  let mongoCond: any;
+  switch (cond.operator) {
+    case "equals":
+      mongoCond = cond.value;
+      break;
+    case "contains":
+      mongoCond = { $in: Array.isArray(cond.value) ? cond.value : [cond.value] };
+      break;
+    case "notcontains":
+      mongoCond = { $nin: Array.isArray(cond.value) ? cond.value : [cond.value] };
+      break;
+    case "exists":
+      mongoCond = { $exists: true, $ne: null };
+      break;
+    case "not_exists":
+      mongoCond = { $exists: false };
+      break;
+    case "lt":
+    case "lte":
+    case "gt":
+    case "gte": {
+      const numVal = Number(cond.value);
+      if (cond.timeUnit && !isNaN(numVal)) {
+        const now = new Date();
+        const multiplier =
+          cond.timeUnit === "d" ? 86400000 :
+          cond.timeUnit === "h" ? 3600000 : 1000;
+        const targetDate = new Date(now.getTime() + numVal * multiplier);
+        mongoCond = { [`$${cond.operator}`]: targetDate };
+      } else {
+        mongoCond = { [`$${cond.operator}`]: cond.value };
+      }
+      break;
+    }
+    default:
+      mongoCond = cond.value;
+  }
+
+  return { [fieldPath]: mongoCond };
+}
+
+
+
+
 
 // Batch fetch matching cases with lookups and flattening
 async function processBatchedMatchingCases({
   schemaName,
-  entityId,
+  entity,
   filters = {},
   batchSize = 100,
   processBatch,
 }: {
   schemaName: string;
-  entityId: string;
+  entity: Record<string, any>;
   filters?: Record<string, any>;
   batchSize?: number;
   processBatch: (cases: any[]) => Promise<void>;
 }) {
   const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
-  const entity: any = await findEntityById(entityId);
-  const attributesMap: Record<string, any> = entity.attributes.reduce((acc, attr) => {
+
+  // Map by attribute *name* (that's what buildFiltersFromConditions used)
+  const attributesMap: Record<string, any> = entity.attributes.reduce((acc: any, attr: any) => {
     acc[attr.name] = attr;
     return acc;
   }, {});
 
+  // --- helpers -------------------------------------------------------------
+
+  // Turn a logical/field filter into an aggregation-ready one by rewriting field paths
+  function transformFilterForAggregation(input: any): any {
+    if (Array.isArray(input)) {
+      return input.map(transformFilterForAggregation);
+    }
+    if (input && typeof input === "object") {
+      const keys = Object.keys(input);
+      // Logical operator object? ($and, $or, $nor, $not)
+      if (keys.length === 1 && keys[0].startsWith("$")) {
+        const op = keys[0];
+        const val = (input as any)[op];
+        if (Array.isArray(val)) {
+          return { [op]: val.map(transformFilterForAggregation) };
+        }
+        // $not expects an expression (object), still transform inside
+        return { [op]: transformFilterForAggregation(val) };
+      }
+
+      // Field conditions
+      const out: any = {};
+      for (const [fieldPath, condition] of Object.entries(input)) {
+        out[toAggregationFieldPath(fieldPath)] = transformFilterForAggregation(condition);
+      }
+      return out;
+    }
+    // Primitive (string/number/date/etc.)
+    return input;
+  }
+
+  // Convert "Field" or "Ref.Field" into the right `rowData.*` path for $match
+  function toAggregationFieldPath(fieldPath: string): string {
+    // e.g. "Attorney.Name" or "LocalAgentName"
+    const parts = fieldPath.split(".");
+    const first = parts[0];
+    const rest = parts.slice(1);
+
+    const attr = attributesMap[first];
+    const isRef = !!attr?.referenceEntitySetting?.refEntityId;
+
+    // If it's a reference attribute AND user is filtering a subfield → use _resolved.rowData.<sub>
+    if (isRef && rest.length > 0) {
+      return `rowData.${first}_resolved.rowData.${rest.join(".")}`;
+    }
+
+    // Otherwise match directly on the stored value in rowData (scalar or _id)
+    return `rowData.${fieldPath}`;
+  }
+
+  // ------------------------------------------------------------------------
+
   let skip = 0;
+
   while (true) {
     const aggregationPipeline: any[] = [];
 
+    // $lookup each referenced attribute once (as you already do)
     for (const [attrName, attr] of Object.entries(attributesMap)) {
       if (attr.referenceEntitySetting?.refEntityId) {
         const refEntityId = attr.referenceEntitySetting.refEntityId;
@@ -228,42 +403,35 @@ async function processBatchedMatchingCases({
       }
     }
 
-    const filterConditions: any[] = [];
-    for (const [key, val] of Object.entries(filters)) {
-      if (key.includes(".")) {
-        const [refField, subField] = key.split(".");
-        const asField = `rowData.${refField}_resolved`;
-        filterConditions.push({
-          [`${asField}.rowData.${subField}`]: val,
-        });
-      } else {
-        filterConditions.push({
-          [`rowData.${key}`]: val,
-        });
-      }
+    // Transform your nested filter object to use the correct rowData / _resolved paths
+    if (filters && Object.keys(filters).length > 0) {
+      const matchFilter = transformFilterForAggregation(filters);
+      aggregationPipeline.push({ $match: matchFilter });
     }
-    if (filterConditions.length > 0) aggregationPipeline.push({ $match: { $and: filterConditions } });
 
     aggregationPipeline.push({ $skip: skip });
     aggregationPipeline.push({ $limit: batchSize });
 
+    console.log("aggregationPipeline", JSON.stringify(aggregationPipeline, null, 2));
+
     const rawData = await DataSourceVersionValue.aggregate(aggregationPipeline).exec();
     if (rawData.length === 0) break;
 
-    const processedData = rawData.map((doc) => {
+    // Flatten resolved refs back into 'Attorney.Name'-style keys for payloads, like before
+    const processedData = rawData.map((doc: any) => {
       const rowData = { ...doc.rowData };
-      for (const key in attributesMap) {
+      for (const key of Object.keys(attributesMap)) {
         const attr = attributesMap[key];
         const resolvedKey = `${key}_resolved`;
-        if (attr.referenceEntitySetting && rowData.hasOwnProperty(resolvedKey)) {
+        if (attr.referenceEntitySetting && Object.prototype.hasOwnProperty.call(rowData, resolvedKey)) {
           const refResolved = rowData[resolvedKey];
           if (refResolved?.rowData) {
-            Object.entries(refResolved.rowData).forEach(([subKey, value]) => {
+            for (const [subKey, value] of Object.entries(refResolved.rowData)) {
               rowData[`${key}.${subKey}`] = value;
-            });
+            }
           }
-          delete rowData[key];
-          delete rowData[resolvedKey];
+          delete rowData[key];          // remove original ObjectId field
+          delete rowData[resolvedKey];  // and the resolved doc
         }
       }
       return { ...doc, rowData };
@@ -273,6 +441,7 @@ async function processBatchedMatchingCases({
     skip += batchSize;
   }
 }
+
 
 // Group cases by template.groupBy fields, handling nested refs
 function groupCasesByFields(cases: any[], groupBy: any[]) {
@@ -304,53 +473,82 @@ function groupCasesByFields(cases: any[], groupBy: any[]) {
 
 // Main function to prepare today's notifications
 export async function prepareTodayNotifications() {
+  // Connect to MongoDB
+    const conn = await mongoose.connect(config.MONGO_URI!);
+    console.info(`MongoDB Connected: ${conn.connection.host}`);  
+  console.log("🔹 Starting prepareTodayNotifications");
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
-  const settings = await NotificationFrequencySetting.find({
-    isActive: true,
+  console.log("📅 Today's date:", today.toDateString());
+  const query = {
+    isActive: 'active',
     schedulerStartDate: { $lte: new Date(today.getTime() + 86399999) },
     $or: [{ schedulerEndDate: null }, { schedulerEndDate: { $gte: today } }],
-  })
-    .populate("notificationTypeId")
-    .populate("templateId")
-    .populate("mediumSettingId");
+  };
+  const populate = ['notificationTypeId', 'templateId', 'medium'];
+  const settings = await listNotificationFrequency({query, populate});
+
+  console.log(`⚙️ Found ${settings.length} active frequency settings`);
 
   let totalPrepared = 0;
 
   for (const setting of settings) {
     try {
-      if (!isDueToday(setting, today)) continue;
+      console.log(`\n🔹 Processing frequency setting ${setting._id}`);
+
+      if (!isDueToday(setting, today)) {
+        console.log("⏭ Not due today, skipping");
+        continue;
+      }
+      console.log("✅ Setting is due today");
 
       const notifType = setting.notificationTypeId as any;
       const template = setting.templateId as any;
       const mediumSetting = setting.medium as any;
       const sentAt = combineDateAndTime(today, setting.triggerTime);
 
-      if (!notifType || !template) continue;
+      if (!notifType || !template) {
+        console.log("⚠️ Missing notificationType or template, skipping");
+        continue;
+      }
 
-      const entity: any = await findEntityById(notifType.entityId);
+      const dataSourceDetails: any = await findDataSourceById(notifType.dataSourceId);
+      const entity: any = dataSourceDetails?.entityId;
       const attributeMap: any = new Map(entity.attributes.map((a: any) => [String(a._id), a]));
+      console.log(`📌 Loaded entity ${entity._id} with ${entity.attributes.length} attributes`);
 
-      const filtersDef = await buildFiltersFromConditions(notifType.conditions || [], attributeMap);
+      const filters = await buildFiltersFromConditions(notifType.conditionGroups || [], attributeMap);
+      console.log("🔍 Built filters from conditions:", JSON.stringify(filters, null, 2));
 
       const allMatchingCases: any[] = [];
       let trigger: any = null;
 
-      // Fetch all matching cases in batches and accumulate
+      console.log("🚀 Fetching matching cases in batches...");
+
+       const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+                  orgCode : 'reportivix',
+                  versionCode: dataSourceDetails.code,
+                });
+
       await processBatchedMatchingCases({
-        schemaName: notifType.schemaName,
-        entityId: notifType.entityId,
-        filters: filtersDef,
+        schemaName,
+        entity,
+        filters,
         batchSize: 100,
         processBatch: async (casesBatch) => {
+          console.log(`📝 Processing batch of ${casesBatch.length} cases`);
           allMatchingCases.push(...casesBatch);
         },
       });
+      console.log(`✅ Total matching cases fetched: ${allMatchingCases.length}`);
 
-      if (allMatchingCases.length === 0) continue;
+      if (allMatchingCases.length === 0) {
+        console.log("⏭ No matching cases, skipping setting");
+        continue;
+      }
 
-      // Create notification trigger once per frequency setting run
+      console.log("🛠 Creating notification trigger...");
       trigger = await NotificationTriggerModel.create({
         notificationTypeId: notifType._id,
         frequencySettingId: setting._id,
@@ -358,11 +556,14 @@ export async function prepareTodayNotifications() {
       });
 
       if (template.type === "single") {
-        // One notification per case
+        console.log("📬 Preparing single notifications");
+        const preparedDocs: any = [];
+
         for (const caseData of allMatchingCases) {
           let ackId: any;
 
           if (notifType.requiresAcknowledgment) {
+            console.log(`🔑 Creating acknowledgment for case ${caseData._id}`);
             const ack = await NotificationAcknowledge.create({
               status: "pending",
               caseId: caseData._id,
@@ -371,8 +572,8 @@ export async function prepareTodayNotifications() {
             ackId = ack._id;
           }
 
-          const preparedDoc = {
-            organizationId: caseData.organizationId,
+          preparedDocs.push({
+            organizationId: notifType.organizationId,
             notificationTypeId: notifType._id,
             frequencySettingId: setting._id,
             templateId: template._id,
@@ -380,39 +581,43 @@ export async function prepareTodayNotifications() {
             scheduledAt: new Date(),
             sentAt,
             payload: buildPayload(template, caseData, notifType, ackId),
-            recipients: resolveRecipients(caseData, notifType),
+            recipients: resolveRecipients(caseData, notifType, setting),
             status: "pending",
             notificationTriggerId: trigger._id,
             acknowledgeId: ackId,
-          };
-
-          await PreparedNotification.create(preparedDoc);
-          totalPrepared++;
+          });
         }
+
+        await PreparedNotification.insertMany(preparedDocs);
+        totalPrepared += preparedDocs.length;
+        console.log(`✅ Inserted ${preparedDocs.length} single notifications`);
+
       } else if (template.type === "overall") {
-        // Group cases by template.groupBy fields
+        console.log("📬 Preparing grouped/overall notifications");
         const groupedCases = groupCasesByFields(allMatchingCases, template.groupBy || []);
+        console.log(`🔹 Total groups formed: ${Object.keys(groupedCases).length}`);
+
+        const preparedDocs: any = [];
 
         for (const [groupKey, groupCases] of Object.entries(groupedCases)) {
           let ackId: any;
 
           if (notifType.requiresAcknowledgment) {
+            console.log(`🔑 Creating acknowledgment for group ${groupKey}`);
             const ack = await NotificationAcknowledge.create({
               status: "pending",
-              caseId: groupCases[0]._id, // or null if no caseId for group
+              caseId: groupCases[0]._id,
               notificationTypeId: notifType._id,
             });
             ackId = ack._id;
           }
 
-          // Pass grouped cases as caseData for payload building
           const caseDataForPayload = {
-            ...groupCases[0], // representative case for placeholders
-            groupCases,       // all grouped cases for summary
+            ...groupCases[0],
+            groupCases,
           };
-
-          const preparedDoc = {
-            organizationId: groupCases[0].organizationId,
+          preparedDocs.push({
+            organizationId: notifType.organizationId,
             notificationTypeId: notifType._id,
             frequencySettingId: setting._id,
             templateId: template._id,
@@ -420,21 +625,23 @@ export async function prepareTodayNotifications() {
             scheduledAt: new Date(),
             sentAt,
             payload: buildPayload(template, caseDataForPayload, notifType, ackId),
-            recipients: resolveRecipients(caseDataForPayload, notifType),
+            recipients: resolveRecipients(caseDataForPayload, notifType, setting),
             status: "pending",
             notificationTriggerId: trigger._id,
             acknowledgeId: ackId,
-          };
-
-          await PreparedNotification.create(preparedDoc);
-          totalPrepared++;
+          });
         }
-      }
 
+        await PreparedNotification.insertMany(preparedDocs);
+        totalPrepared += preparedDocs.length;
+        console.log(`✅ Inserted ${preparedDocs.length} grouped notifications`);
+      }
     } catch (error) {
-      console.error(`Error preparing notifications for setting ${setting._id}:`, error);
+      console.error(`❌ Error preparing notifications for setting ${setting._id}:`, error);
     }
   }
 
-  console.log(`Prepared ${totalPrepared} notifications for today`);
+  console.log(`🏁 Finished. Total notifications prepared: ${totalPrepared}`);
 }
+
+prepareTodayNotifications();
