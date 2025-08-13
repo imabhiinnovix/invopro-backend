@@ -122,10 +122,6 @@ const preparedNotificationSchema = new Schema<IPreparedNotification>(
 /* Indexes */
 preparedNotificationSchema.index({ scheduledAt: 1, status: 1 });
 preparedNotificationSchema.index({ organizationId: 1, status: 1, scheduledAt: 1 });
-preparedNotificationSchema.index(
-  { frequencySettingId: 1, scheduledAt: 1 },
-  { unique: true, partialFilterExpression: { scheduledAt: { $exists: true } } }
-);
 preparedNotificationSchema.index({ notificationTriggerId: 1, status: 1 });
 
 const PreparedNotificationModel = model<IPreparedNotification>(

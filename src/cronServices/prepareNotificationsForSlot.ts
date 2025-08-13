@@ -239,19 +239,7 @@ async function buildLeafFilter(cond: any, attributeMap: Map<string, any>): Promi
   if (!attr) return {};
 
   // Resolve field path, including refAttributeId chain if any
-  let fieldPath = attr.name;
-  if (Array.isArray(cond.refAttributeId) && cond.refAttributeId.length > 0) {
-    let currentEntityId = attr.referenceEntitySetting?.refEntityId?.toString();
-    let mappedName = attr.name || "Unknown";
-    for (const refAttrId of cond.refAttributeId) {
-      const refEntity = await findEntityById(currentEntityId);
-      const refAttr = refEntity?.attributes?.find((a: any) => String(a._id) === String(refAttrId));
-      if (!refAttr) break;
-      mappedName += `.${refAttr.name}`;
-      currentEntityId = refAttr.referenceEntitySetting?.refEntityId?.toString();
-    }
-    fieldPath = mappedName;
-  }
+  const fieldPath = await resolveFieldPath(attr, cond.refAttributeId);
 
   // Map operator
   let mongoCond: any;
@@ -444,32 +432,93 @@ async function processBatchedMatchingCases({
 
 
 // Group cases by template.groupBy fields, handling nested refs
-function groupCasesByFields(cases: any[], groupBy: any[]) {
-  if (!groupBy || groupBy.length === 0) return { all: cases };
+async function resolveFieldPath(attr: any, refAttributeId: string[] = []) {
+  let fieldPath = attr.name;
 
-  const groups = new Map<string, any[]>();
+  if (Array.isArray(refAttributeId) && refAttributeId.length > 0) {
+    let currentEntityId = attr.referenceEntitySetting?.refEntityId?.toString();
+    let mappedName = attr.name || "Unknown";
 
-  for (const c of cases) {
-    const keyParts = groupBy.map((gb) => {
-      // gb.attributeId is ObjectId, convert to string
-      let val = c.rowData?.[gb.attributeId.toString()] ?? "";
+    for (const refAttrId of refAttributeId) {
+      const refEntity = await findEntityById(currentEntityId);
+      const refAttr = refEntity?.attributes?.find(
+        (a: any) => String(a._id) === String(refAttrId)
+      );
+      if (!refAttr) break;
+      mappedName += `.${refAttr.name}`;
+      currentEntityId = refAttr.referenceEntitySetting?.refEntityId?.toString();
+    }
 
-      if (gb.refAttributeId && gb.refAttributeId.length > 0) {
-        // Resolve nested reference attributes
-        for (const refId of gb.refAttributeId) {
-          val = val?.rowData?.[refId.toString()] ?? val;
-        }
-      }
-      return val ?? "";
-    });
-
-    const key = keyParts.join("|");
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(c);
+    fieldPath = mappedName;
   }
 
-  return Object.fromEntries(groups);
+  return fieldPath;
 }
+
+// Simple safe getter for nested properties
+function getNestedValue(obj: any, path: string) {
+  if (obj == null) return undefined;
+
+  // First, check for flat key match
+  if (Object.prototype.hasOwnProperty.call(obj, path)) {
+    return obj[path];
+  }
+
+  // Then, fall back to dot-path traversal
+  return path.split(".").reduce((acc, key) => {
+    if (acc && typeof acc === "object" && key in acc) {
+      return acc[key];
+    }
+    return undefined;
+  }, obj);
+}
+
+
+export async function groupCasesByFields(
+  cases: any[],
+  groupBy: any[],
+  attributeMap: Map<string, any>
+) {
+  // Resolve field paths in order
+  const resolvedGroupBy: any[] = [];
+  for (const gb of groupBy) {
+    const attr = attributeMap.get(String(gb.attributeId));
+    if (!attr) continue;
+    const fieldPath = await resolveFieldPath(attr, gb.refAttributeId);
+    resolvedGroupBy.push({ ...gb, fieldPath });
+  }
+
+  // Recursive function for ordered grouping
+  function groupRecursive(data: any[], level: number): Record<string, any> {
+    if (level >= resolvedGroupBy.length) {
+      return data; // no more levels, return cases array
+    }
+
+    const fieldPath = resolvedGroupBy[level].fieldPath;
+    const grouped: Record<string, any> = {};
+
+    for (const item of data) {
+      let key = getNestedValue(item.rowData, fieldPath);
+      key = key != null ? String(key) : "Unknown";
+
+      if (!grouped[key]) {
+        grouped[key] = [];
+      }
+      grouped[key].push(item);
+    }
+
+    // Recursively group the next level
+    for (const key in grouped) {
+      grouped[key] = groupRecursive(grouped[key], level + 1);
+    }
+
+    return grouped;
+  }
+
+  return groupRecursive(cases, 0);
+}
+
+
 
 // Main function to prepare today's notifications
 export async function prepareTodayNotifications() {
@@ -594,8 +643,8 @@ export async function prepareTodayNotifications() {
 
       } else if (template.type === "overall") {
         console.log("📬 Preparing grouped/overall notifications");
-        const groupedCases = groupCasesByFields(allMatchingCases, template.groupBy || []);
-        console.log(`🔹 Total groups formed: ${Object.keys(groupedCases).length}`);
+        const groupedCases = await groupCasesByFields(allMatchingCases, template.groupBy || [], attributeMap);
+        console.log(`🔹 Total groups formed: ${Object.keys(groupedCases).length}`, groupedCases);
 
         const preparedDocs: any = [];
 
