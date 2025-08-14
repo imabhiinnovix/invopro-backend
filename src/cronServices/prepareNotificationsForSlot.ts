@@ -158,7 +158,7 @@ function resolveRecipientsFromSetting(
 }
 
 // Wrapper to match PreparedNotification schema
-function resolveRecipients(caseData: any, notifType: any, freqSetting: any) {
+function resolveRecipients(caseData: any, freqSetting: any) {
   const to = resolveRecipientsFromSetting(caseData, freqSetting.recipients_to);
   const cc = resolveRecipientsFromSetting(caseData, freqSetting.recipients_cc);
   return { recipient_to: to, recipient_cc: cc };
@@ -287,7 +287,7 @@ async function buildLeafFilter(cond: any, attributeMap: Map<string, any>): Promi
 
 
 
-// Batch fetch matching cases with lookups and flattening
+// Batch fetch matching cases with recursive lookups and flattening
 async function processBatchedMatchingCases({
   schemaName,
   entity,
@@ -303,78 +303,28 @@ async function processBatchedMatchingCases({
 }) {
   const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
 
-  // Map by attribute *name* (that's what buildFiltersFromConditions used)
+  // Map by attribute name
   const attributesMap: Record<string, any> = entity.attributes.reduce((acc: any, attr: any) => {
     acc[attr.name] = attr;
     return acc;
   }, {});
 
-  // --- helpers -------------------------------------------------------------
+  // --- Recursive $lookup generator ---
+  async function generateLookupsForAllReferences(
+    attrMap: Record<string, any>,
+    parentPath = ''
+  ): Promise<any[]> {
+    const lookups: any[] = [];
 
-  // Turn a logical/field filter into an aggregation-ready one by rewriting field paths
-  function transformFilterForAggregation(input: any): any {
-    if (Array.isArray(input)) {
-      return input.map(transformFilterForAggregation);
-    }
-    if (input && typeof input === "object") {
-      const keys = Object.keys(input);
-      // Logical operator object? ($and, $or, $nor, $not)
-      if (keys.length === 1 && keys[0].startsWith("$")) {
-        const op = keys[0];
-        const val = (input as any)[op];
-        if (Array.isArray(val)) {
-          return { [op]: val.map(transformFilterForAggregation) };
-        }
-        // $not expects an expression (object), still transform inside
-        return { [op]: transformFilterForAggregation(val) };
-      }
+    for (const [attrName, attr] of Object.entries(attrMap)) {
+      const fullPath = parentPath ? `${parentPath}.${attrName}` : attrName;
 
-      // Field conditions
-      const out: any = {};
-      for (const [fieldPath, condition] of Object.entries(input)) {
-        out[toAggregationFieldPath(fieldPath)] = transformFilterForAggregation(condition);
-      }
-      return out;
-    }
-    // Primitive (string/number/date/etc.)
-    return input;
-  }
-
-  // Convert "Field" or "Ref.Field" into the right `rowData.*` path for $match
-  function toAggregationFieldPath(fieldPath: string): string {
-    // e.g. "Attorney.Name" or "LocalAgentName"
-    const parts = fieldPath.split(".");
-    const first = parts[0];
-    const rest = parts.slice(1);
-
-    const attr = attributesMap[first];
-    const isRef = !!attr?.referenceEntitySetting?.refEntityId;
-
-    // If it's a reference attribute AND user is filtering a subfield → use _resolved.rowData.<sub>
-    if (isRef && rest.length > 0) {
-      return `rowData.${first}_resolved.rowData.${rest.join(".")}`;
-    }
-
-    // Otherwise match directly on the stored value in rowData (scalar or _id)
-    return `rowData.${fieldPath}`;
-  }
-
-  // ------------------------------------------------------------------------
-
-  let skip = 0;
-
-  while (true) {
-    const aggregationPipeline: any[] = [];
-
-    // $lookup each referenced attribute once (as you already do)
-    for (const [attrName, attr] of Object.entries(attributesMap)) {
       if (attr.referenceEntitySetting?.refEntityId) {
-        const refEntityId = attr.referenceEntitySetting.refEntityId;
-        const localField = `rowData.${attrName}`;
-        const asField = `rowData.${attrName}_resolved`;
-        const refModel = await getModelForEntity(refEntityId);
+        const refModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
+        const localField = parentPath ? `${parentPath}.${attrName}` : `rowData.${attrName}`;
+        const asField = parentPath ? `${parentPath}.${attrName}_resolved` : `rowData.${attrName}_resolved`;
 
-        aggregationPipeline.push({
+        lookups.push({
           $lookup: {
             from: refModel.collection.name,
             localField,
@@ -382,48 +332,110 @@ async function processBatchedMatchingCases({
             as: asField,
           },
         });
-        aggregationPipeline.push({
-          $unwind: {
-            path: `$${asField}`,
-            preserveNullAndEmptyArrays: true,
-          },
-        });
+        lookups.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
+
+        // Recursively generate lookups for referenced entity's attributes
+        const refEntity = await findEntityById(attr.referenceEntitySetting.refEntityId);
+        const refAttrMap = (refEntity?.attributes || []).reduce((acc: any, a: any) => {
+          acc[a.name] = a;
+          return acc;
+        }, {});
+        const nestedLookups = await generateLookupsForAllReferences(refAttrMap, asField + '.rowData');
+        lookups.push(...nestedLookups);
       }
     }
 
-    // Transform your nested filter object to use the correct rowData / _resolved paths
-    if (filters && Object.keys(filters).length > 0) {
-      const matchFilter = transformFilterForAggregation(filters);
-      aggregationPipeline.push({ $match: matchFilter });
+    return lookups;
+  }
+
+  // --- Recursive flattening ---
+async function flattenAllResolved(rowData: Record<string, any>): Promise<Record<string, any>> {
+  const newRow: Record<string, any> = {};
+
+  for (const [key, value] of Object.entries(rowData)) {
+    if (value && typeof value === "object" && "rowData" in value && typeof value.rowData === "object") {
+      // It's a resolved object
+      const cleanKey = key.replace(/_resolved$/, "");
+      const nested = await flattenAllResolved(value.rowData);
+
+      for (const [subKey, subValue] of Object.entries(nested)) {
+        newRow[`${cleanKey}.${subKey}`] = subValue;
+      }
+    } else if (typeof value === "object" && value !== null && mongoose.Types.ObjectId.isValid(value)) {
+      // Skip ObjectId fields that have a resolved version
+      const resolvedKey = `${key}_resolved`;
+      if (resolvedKey in rowData) continue;
+      newRow[key] = value;
+    } else {
+      newRow[key] = value;
+    }
+  }
+
+  return newRow;
+}
+
+
+
+
+
+  // --- Transform filters for aggregation ---
+  function transformFilterForAggregation(input: any): any {
+    if (Array.isArray(input)) return input.map(transformFilterForAggregation);
+    if (input && typeof input === "object") {
+      const keys = Object.keys(input);
+      if (keys.length === 1 && keys[0].startsWith("$")) {
+        const op = keys[0];
+        const val = (input as any)[op];
+        return Array.isArray(val)
+          ? { [op]: val.map(transformFilterForAggregation) }
+          : { [op]: transformFilterForAggregation(val) };
+      }
+
+      const out: any = {};
+      for (const [fieldPath, condition] of Object.entries(input)) {
+        out[toAggregationFieldPath(fieldPath)] = transformFilterForAggregation(condition);
+      }
+      return out;
+    }
+    return input;
+  }
+
+  function toAggregationFieldPath(fieldPath: string): string {
+    const parts = fieldPath.split(".");
+    const first = parts[0];
+    const rest = parts.slice(1);
+    const attr = attributesMap[first];
+    const isRef = !!attr?.referenceEntitySetting?.refEntityId;
+
+    if (isRef && rest.length > 0) {
+      return `rowData.${first}_resolved.rowData.${rest.join(".")}`;
     }
 
-    aggregationPipeline.push({ $skip: skip });
-    aggregationPipeline.push({ $limit: batchSize });
+    return `rowData.${fieldPath}`;
+  }
 
-    console.log("aggregationPipeline", JSON.stringify(aggregationPipeline, null, 2));
+  // --- Pagination loop ---
+  let skip = 0;
+  const lookups = await generateLookupsForAllReferences(attributesMap);
+
+  while (true) {
+    const aggregationPipeline: any[] = [...lookups];
+
+    if (filters && Object.keys(filters).length > 0) {
+      aggregationPipeline.push({ $match: transformFilterForAggregation(filters) });
+    }
+
+    aggregationPipeline.push({ $skip: skip }, { $limit: batchSize });
 
     const rawData = await DataSourceVersionValue.aggregate(aggregationPipeline).exec();
     if (rawData.length === 0) break;
 
-    // Flatten resolved refs back into 'Attorney.Name'-style keys for payloads, like before
-    const processedData = rawData.map((doc: any) => {
-      const rowData = { ...doc.rowData };
-      for (const key of Object.keys(attributesMap)) {
-        const attr = attributesMap[key];
-        const resolvedKey = `${key}_resolved`;
-        if (attr.referenceEntitySetting && Object.prototype.hasOwnProperty.call(rowData, resolvedKey)) {
-          const refResolved = rowData[resolvedKey];
-          if (refResolved?.rowData) {
-            for (const [subKey, value] of Object.entries(refResolved.rowData)) {
-              rowData[`${key}.${subKey}`] = value;
-            }
-          }
-          delete rowData[key];          // remove original ObjectId field
-          delete rowData[resolvedKey];  // and the resolved doc
-        }
-      }
-      return { ...doc, rowData };
-    });
+    const processedData = await Promise.all(
+      rawData.map(async doc => {
+        const flatRowData = await flattenAllResolved(doc.rowData);
+        return { ...doc, rowData: flatRowData };
+      })
+    );
 
     await processBatch(processedData);
     skip += batchSize;
@@ -431,9 +443,12 @@ async function processBatchedMatchingCases({
 }
 
 
+
 // Group cases by template.groupBy fields, handling nested refs
 async function resolveFieldPath(attr: any, refAttributeId: string[] = []) {
   let fieldPath = attr.name;
+
+  console.log('refAttributeId', refAttributeId);
 
   if (Array.isArray(refAttributeId) && refAttributeId.length > 0) {
     let currentEntityId = attr.referenceEntitySetting?.refEntityId?.toString();
@@ -451,7 +466,7 @@ async function resolveFieldPath(attr: any, refAttributeId: string[] = []) {
 
     fieldPath = mappedName;
   }
-
+  console.log('fieldPath', fieldPath);
   return fieldPath;
 }
 
@@ -496,7 +511,7 @@ export async function groupCasesByFields(
 
     const fieldPath = resolvedGroupBy[level].fieldPath;
     const grouped: Record<string, any> = {};
-
+    console.log('fieldPath',fieldPath);
     for (const item of data) {
       let key = getNestedValue(item.rowData, fieldPath);
       key = key != null ? String(key) : "Unknown";
@@ -566,7 +581,7 @@ export async function prepareTodayNotifications() {
       const entity: any = dataSourceDetails?.entityId;
       const attributeMap: any = new Map(entity.attributes.map((a: any) => [String(a._id), a]));
       console.log(`📌 Loaded entity ${entity._id} with ${entity.attributes.length} attributes`);
-
+      console.log('notifType.conditionGroups',JSON.stringify(notifType.conditionGroups, null, 2));
       const filters = await buildFiltersFromConditions(notifType.conditionGroups || [], attributeMap);
       console.log("🔍 Built filters from conditions:", JSON.stringify(filters, null, 2));
 
@@ -629,8 +644,8 @@ export async function prepareTodayNotifications() {
             mediumSettingId: mediumSetting?._id,
             scheduledAt: new Date(),
             sentAt,
-            payload: buildPayload(template, caseData, notifType, ackId),
-            recipients: resolveRecipients(caseData, notifType, setting),
+            payload: caseData,
+            recipients: resolveRecipients(caseData, setting),
             status: "pending",
             notificationTriggerId: trigger._id,
             acknowledgeId: ackId,
@@ -643,12 +658,14 @@ export async function prepareTodayNotifications() {
 
       } else if (template.type === "overall") {
         console.log("📬 Preparing grouped/overall notifications");
-        const groupedCases = await groupCasesByFields(allMatchingCases, template.groupBy || [], attributeMap);
-        console.log(`🔹 Total groups formed: ${Object.keys(groupedCases).length}`, groupedCases);
+        const groupedCases = await groupCasesByFields(allMatchingCases, [setting.targetEntity], attributeMap);
+        console.log(`🔹 Total groups formed: ${Object.keys(groupedCases).length}`);
 
         const preparedDocs: any = [];
 
         for (const [groupKey, groupCases] of Object.entries(groupedCases)) {
+          if(groupKey == 'Unknown')
+            continue;  
           let ackId: any;
 
           if (notifType.requiresAcknowledgment) {
@@ -661,10 +678,10 @@ export async function prepareTodayNotifications() {
             ackId = ack._id;
           }
 
-          const caseDataForPayload = {
-            ...groupCases[0],
-            groupCases,
-          };
+        //   const caseDataForPayload = {
+        //     ...groupCases[0],
+        //     groupCases,
+        //   };
           preparedDocs.push({
             organizationId: notifType.organizationId,
             notificationTypeId: notifType._id,
@@ -673,8 +690,8 @@ export async function prepareTodayNotifications() {
             mediumSettingId: mediumSetting?._id,
             scheduledAt: new Date(),
             sentAt,
-            payload: buildPayload(template, caseDataForPayload, notifType, ackId),
-            recipients: resolveRecipients(caseDataForPayload, notifType, setting),
+            payload: await groupCasesByFields(groupCases, template.groupBy, attributeMap),
+            recipients: resolveRecipients(groupCases[0], setting),
             status: "pending",
             notificationTriggerId: trigger._id,
             acknowledgeId: ackId,
