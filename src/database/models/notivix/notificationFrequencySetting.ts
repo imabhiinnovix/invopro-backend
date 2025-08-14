@@ -24,6 +24,7 @@ export interface INotificationFrequencySetting extends Document {
   repeatAnnually: boolean;
   acknowledgeRequired: boolean;
   attachmentRequired: boolean;
+  targetEntity: INotificationRecipient,
   recipients_to: INotificationRecipient[];  // <-- To list
   recipients_cc: INotificationRecipient[];  // <-- CC list
   medium: Types.ObjectId;
@@ -69,7 +70,7 @@ const notificationFrequencySettingSchema = new Schema<INotificationFrequencySett
     repeatAnnually: { type: Boolean, default: false },
     acknowledgeRequired: { type: Boolean, default: false },
     attachmentRequired: { type: Boolean, default: false },
-
+    targetEntity: { type: notificationRecipientSchema },
     recipients_to: { type: [notificationRecipientSchema], default: [] },
     recipients_cc: { type: [notificationRecipientSchema], default: [] },
 
