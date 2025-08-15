@@ -46,7 +46,7 @@ const ENV = {
     'scatter',
     'tabular',
   ],
-  FIELD_TYPE_ENUM: ['number', 'text', 'date', 'boolean', 'richtext', 'url', 'option', 'multioption', 'user'],
+  FIELD_TYPE_ENUM: ['number', 'text', 'date', 'boolean', 'richtext', 'url', 'option', 'multioption', 'user', 'email'],
   BASE_API_ROUTE: process.env.BASE_API_ROUTE || '',
 };
 

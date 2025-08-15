@@ -124,10 +124,11 @@ function buildPayload(template: any, caseData: any, notifType: any, acknowledgeI
 // Recipient resolution
 // --------------------
 
-function resolveRecipientsFromSetting(
+async function resolveRecipientsFromSetting(
   caseData: any,
-  recipients: { attributeId?: Types.ObjectId; refAttributeId?: Types.ObjectId[]; customEmails?: string[] }[]
-): string[] {
+  recipients: { attributeId?: Types.ObjectId; refAttributeId?: Types.ObjectId[]; customEmails?: string[] }[],
+  attributeMap: Map<string, any>
+): Promise<string[]> {
   const emails = new Set<string>();
   if (!recipients || recipients.length === 0) return [];
 
@@ -142,12 +143,15 @@ function resolveRecipientsFromSetting(
 
     // Attribute resolution
     if (recipient.attributeId) {
-      let val: any = caseData.rowData?.[recipient.attributeId.toString()];
-      if (recipient.refAttributeId && recipient.refAttributeId.length > 0) {
-        for (const refId of recipient.refAttributeId) {
-          val = val?.rowData?.[refId.toString()] ?? val;
-        }
-      }
+      const attr = attributeMap.get(String(recipient.attributeId));
+      if (!attr) continue;
+
+      // Resolve full dot path
+      const fieldPath = await resolveFieldPath(attr, recipient.refAttributeId || []);
+
+      // Get value from flattened rowData
+      const val = getNestedValue(caseData.rowData, fieldPath);
+
       if (typeof val === "string" && val.trim() !== "") {
         emails.add(val.trim().toLowerCase());
       }
@@ -157,10 +161,11 @@ function resolveRecipientsFromSetting(
   return Array.from(emails);
 }
 
+
 // Wrapper to match PreparedNotification schema
-function resolveRecipients(caseData: any, freqSetting: any) {
-  const to = resolveRecipientsFromSetting(caseData, freqSetting.recipients_to);
-  const cc = resolveRecipientsFromSetting(caseData, freqSetting.recipients_cc);
+async function resolveRecipients(caseData: any, freqSetting: any, attributeMap: any) {
+  const to = await resolveRecipientsFromSetting(caseData, freqSetting.recipients_to, attributeMap);
+  const cc = await resolveRecipientsFromSetting(caseData, freqSetting.recipients_cc, attributeMap);
   return { recipient_to: to, recipient_cc: cc };
 }
 
@@ -445,9 +450,8 @@ async function flattenAllResolved(rowData: Record<string, any>): Promise<Record<
 
 
 // Group cases by template.groupBy fields, handling nested refs
-async function resolveFieldPath(attr: any, refAttributeId: string[] = []) {
+async function resolveFieldPath(attr: any, refAttributeId: (string | Types.ObjectId)[] = []) {
   let fieldPath = attr.name;
-
   console.log('refAttributeId', refAttributeId);
 
   if (Array.isArray(refAttributeId) && refAttributeId.length > 0) {
@@ -455,17 +459,27 @@ async function resolveFieldPath(attr: any, refAttributeId: string[] = []) {
     let mappedName = attr.name || "Unknown";
 
     for (const refAttrId of refAttributeId) {
-      const refEntity = await findEntityById(currentEntityId);
-      const refAttr = refEntity?.attributes?.find(
-        (a: any) => String(a._id) === String(refAttrId)
+      if (!currentEntityId) break;
+
+      const refEntity: any = await findEntityById(currentEntityId);
+      if (!refEntity) break;
+
+      const refAttr = refEntity.attributes.find(
+        (a: any) => String(a._id) === refAttrId.toString()
       );
       if (!refAttr) break;
+
       mappedName += `.${refAttr.name}`;
-      currentEntityId = refAttr.referenceEntitySetting?.refEntityId?.toString();
+
+      // Only update currentEntityId if this attribute is a reference
+      if (refAttr.referenceEntitySetting?.refEntityId) {
+        currentEntityId = refAttr.referenceEntitySetting.refEntityId.toString();
+      }
     }
 
     fieldPath = mappedName;
   }
+
   console.log('fieldPath', fieldPath);
   return fieldPath;
 }
@@ -511,9 +525,10 @@ export async function groupCasesByFields(
 
     const fieldPath = resolvedGroupBy[level].fieldPath;
     const grouped: Record<string, any> = {};
-    console.log('fieldPath',fieldPath);
+    // console.log('fieldPath',fieldPath);
     for (const item of data) {
       let key = getNestedValue(item.rowData, fieldPath);
+      console.log('key', key, item.rowData, fieldPath);
       key = key != null ? String(key) : "Unknown";
 
       if (!grouped[key]) {
@@ -645,7 +660,7 @@ export async function prepareTodayNotifications() {
             scheduledAt: new Date(),
             sentAt,
             payload: caseData,
-            recipients: resolveRecipients(caseData, setting),
+            recipients: await resolveRecipients(caseData, setting, attributeMap),
             status: "pending",
             notificationTriggerId: trigger._id,
             acknowledgeId: ackId,
@@ -677,7 +692,7 @@ export async function prepareTodayNotifications() {
             });
             ackId = ack._id;
           }
-
+          console.log('groupKey',groupKey);
         //   const caseDataForPayload = {
         //     ...groupCases[0],
         //     groupCases,
@@ -691,7 +706,7 @@ export async function prepareTodayNotifications() {
             scheduledAt: new Date(),
             sentAt,
             payload: await groupCasesByFields(groupCases, template.groupBy, attributeMap),
-            recipients: resolveRecipients(groupCases[0], setting),
+            recipients: await resolveRecipients(groupCases[0], setting, attributeMap),
             status: "pending",
             notificationTriggerId: trigger._id,
             acknowledgeId: ackId,
