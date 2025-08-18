@@ -28,6 +28,7 @@ import { findEntityById } from '../../../database/services/common/entity.service
 import { autoPopulateAttributeOption } from '../../../utils/attributeOption.utils';
 const ObjectId = mongoose.Types.ObjectId;
 
+
 async function validateAndConvert({
   value,
   type,
@@ -47,47 +48,93 @@ async function validateAndConvert({
       convertedValue = 0;
     }
 
-    return { isValid: !isNaN(convertedValue), convertedValue: !isNaN(convertedValue) ? convertedValue : null };
-  } else if (type === 'text' || type === 'richtext') {
-    const convertedValue = value !== undefined && value !== null ? String(value) : null;
+    return {
+      isValid: !isNaN(convertedValue),
+      convertedValue: !isNaN(convertedValue) ? convertedValue : null,
+    };
+  }
+
+  if (type === 'text' || type === 'richtext') {
+    const convertedValue =
+      value !== undefined && value !== null ? String(value) : null;
     return { isValid: typeof convertedValue === 'string', convertedValue };
-  } else if (type === 'date') {
+  }
+
+  if (type === 'date') {
     if (typeof value === 'number') {
       value = excelDateToJSDate(value);
     }
     const convertedValue = new Date(value);
     return {
       isValid: !isNaN(convertedValue.getTime()),
-      convertedValue: !isNaN(convertedValue.getTime()) ? convertedValue.toISOString() : null,
+      convertedValue: !isNaN(convertedValue.getTime())
+        ? convertedValue.toISOString()
+        : null,
     };
-  } else if (type === 'boolean') {
+  }
+
+  if (type === 'boolean') {
     const convertedValue =
-      value === 'true' || value === true ? true : value === 'false' || value === false ? false : null;
+      value === 'true' || value === true
+        ? true
+        : value === 'false' || value === false
+        ? false
+        : null;
     return { isValid: typeof convertedValue === 'boolean', convertedValue };
-  } else if (type === 'url') {
+  }
+
+  if (type === 'url') {
     const urlRegex =
       /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)/;
     const isValid = urlRegex.test(value);
     return { isValid, convertedValue: isValid ? value : null };
-  } else if (type === 'email') {
+  }
+
+  if (type === 'email') {
     const emailRegex =
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     const isValid = emailRegex.test(value);
     return { isValid, convertedValue: isValid ? value : null };
-  } else if (type === 'option' || type === 'multioption') {
+  }
+
+  if (type === 'option' || type === 'multioption') {
     if (optionAttributeId) {
-      const attributeOptionDetails = await attributeOptionService.findAttributeOptionById(optionAttributeId);
-      const attributeOptionValue = attributeOptionDetails?.attributeValue ? attributeOptionDetails?.attributeValue : [];
+      const attributeOptionDetails =
+        await attributeOptionService.findAttributeOptionById(optionAttributeId);
+
+      // attributeValue is array of { _id, value }
+      const attributeOptionValue = attributeOptionDetails?.attributeValue || [];
+
       if (type === 'option') {
-        const isValid = attributeOptionValue.includes(value);
-        return { isValid, convertedValue: isValid ? value : null, attributeOptionValue: attributeOptionValue };
+        const valNorm = String(value).trim().toLowerCase();
+
+        const match = attributeOptionValue.find(
+          (opt: any) => opt.value?.trim().toLowerCase() === valNorm
+        );
+
+        const isValid = !!match;
+        return {
+          isValid,
+          convertedValue: isValid ? match._id : null, // store _id instead of raw value
+          attributeOptionValue,
+        };
       } else {
-        const splittedValue = value.split(separator);
-        const allValid = splittedValue.every((val: any) => attributeOptionValue.includes(val));
+        const splittedValue = String(value)
+          .split(separator || ',')
+          .map((v) => v.trim());
+
+        // normalize for case-insensitive compare
+        const normSplitted = splittedValue.map((v) => v.toLowerCase());
+
+        const matches = attributeOptionValue.filter((opt: any) =>
+          normSplitted.includes(opt.value?.trim().toLowerCase())
+        );
+
+        const allValid = matches.length === normSplitted.length;
         return {
           isValid: allValid,
-          convertedValue: allValid ? splittedValue : null,
-          attributeOptionValue: attributeOptionValue,
+          convertedValue: allValid ? matches.map((m: any) => m._id) : null, // array of _ids
+          attributeOptionValue,
         };
       }
     } else {
@@ -97,6 +144,7 @@ async function validateAndConvert({
       };
     }
   }
+
   return { isValid: true, convertedValue: value };
 }
 
