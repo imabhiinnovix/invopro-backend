@@ -1,7 +1,7 @@
 import { extractUniqueColumnValuesByNamesFromXLSX } from './excel.utils';
 import * as attributeOptionService from '../database/services/common/attributeOption.services';
 import * as entityService from '../database/services/common/entity.services';
-import { getModelForEntity, getEntityAttribute } from './entity.utils';
+import { getEntityAttribute } from './entity.utils';
 import { Types } from 'mongoose';
 
 export async function autoPopulateAttributeOption({
@@ -23,8 +23,9 @@ export async function autoPopulateAttributeOption({
 }) {
   try {
     const targetAttributes = attributesDetails.filter((attr) =>
-      ['option', 'multioption'].includes(attr.type)
+      ['option', 'multioption', 'text-with-option'].includes(attr.type)
     );
+
 
     const columnNames = targetAttributes
       .map((attr) => attributMapping[attr.name])
@@ -41,9 +42,7 @@ export async function autoPopulateAttributeOption({
       const columnHeader = attributMapping[attributeName];
       const attributeOptionId = attribute.optionAttributeId;
 
-      let uniqueValues: string[] = [];
-
-      // 1️⃣ Reference entity case
+      // 1️⃣ If this attribute is a reference field → reuse referenced optionAttributeId
       if (
         attribute.referenceEntitySetting?.refEntityId &&
         attribute.referenceEntitySetting?.refEntityField
@@ -51,28 +50,29 @@ export async function autoPopulateAttributeOption({
         const refEntityId = attribute.referenceEntitySetting.refEntityId;
         const refFieldId = attribute.referenceEntitySetting.refEntityField;
 
-        // Find the referenced attribute
         const refAttribute = await getEntityAttribute(
           refEntityId.toString(),
           refFieldId.toString()
         );
-        if (!refAttribute) continue;
 
-        // Get model for referenced entity
-        const refModel = await getModelForEntity(refEntityId.toString());
+        if (refAttribute?.optionAttributeId) {
+          // just update the entity’s field to point to the same optionAttributeId
+          await entityService.updateEntityAttributeOptionId({
+            entityId,
+            attributeName,
+            attributeType: attribute.type,
+            optionAttributeId: refAttribute.optionAttributeId,
+          });
+        }
 
-        // Distinct values from referenced entity’s DataSource
-        uniqueValues = await refModel.distinct(`rowData.${refAttribute.name}`);
+        // skip Excel processing for reference fields
+        continue;
       }
 
-      // 2️⃣ Normal Excel case if not reference or no values yet
-      if ((!uniqueValues || uniqueValues.length === 0) && columnHeader) {
-        uniqueValues = columnToUniqueValues[columnHeader] || [];
-      }
-
+      // 2️⃣ Normal Excel-driven option field
+      const uniqueValues = columnHeader ? columnToUniqueValues[columnHeader] || [] : [];
       if (!uniqueValues || uniqueValues.length === 0) continue;
 
-      // 3️⃣ Preserve or create attributeOption values
       if (attributeOptionId) {
         const existing = await attributeOptionService.findAttributeOptionById(
           attributeOptionId
@@ -84,7 +84,6 @@ export async function autoPopulateAttributeOption({
           existingValues.map((ev: any) => [ev.value.toLowerCase(), ev])
         );
 
-        // Merge values, preserve _id if exists
         const mappedValues = uniqueValues.map((val: string) => {
           const lower = val?.toLowerCase?.() || '';
           if (existingMap.has(lower)) {
