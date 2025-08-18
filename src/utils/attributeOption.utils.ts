@@ -28,6 +28,7 @@ export async function autoPopulateAttributeOption({
     const columnNames = targetAttributes
       .map((attr) => attributMapping[attr.name])
       .filter(Boolean);
+    
 
     const columnToUniqueValues = await extractUniqueColumnValuesByNamesFromXLSX({
       filePath,
