@@ -1106,8 +1106,9 @@ export const createSingleRowVersionValue = async (
 
     let version = await dataSourceVersionService.getDataSourceVersion({
       query: versionQuery,
+      populate:[],
+      sort: { createdAt: -1 }
     });
-
     if (!version) {
       // Fallback to current YYYY-MM if version not provided
       const now = new Date();
@@ -1204,9 +1205,12 @@ export const updateSingleRowVersionValue = async (
       ...(versionValue && { versionValue }),
     };
 
-    const version = await dataSourceVersionService.getDataSourceVersion({
+    let version = await dataSourceVersionService.getDataSourceVersion({
       query: versionQuery,
+      populate:[],
+      sort: { createdAt: -1 }
     });
+    
     if (!version) {
       return res
         .status(404)
