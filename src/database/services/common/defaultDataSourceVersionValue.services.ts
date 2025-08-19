@@ -409,5 +409,9 @@ export const deleteVersionValues = async (
   filter: Record<string, any>,
 ) => {
   const Model = createDefaultDataSourceVersionModel(schemaName) as Model<Document>;
-  return await Model.deleteMany(filter);
+  
+  // Soft delete: set status = "inactive"
+  return await Model.updateMany(filter, {
+    $set: { status: 'in-active', updatedAt: new Date() },
+  });
 };

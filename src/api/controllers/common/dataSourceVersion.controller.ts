@@ -1040,7 +1040,7 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     const parsedSort = sort ? JSON.parse(sort) : {};
     const parsedFilters = filters ? JSON.parse(filters) : {};
 
-    const query = { dataSourceVersionId };
+    const query = { dataSourceVersionId, status: 'active' };
 
     const result = await dataSourceVersionValueService.getDataSourceVersionValueV1({
       schemaName,
@@ -1290,6 +1290,8 @@ export const deleteMultipleRowsFromVersion = async (req: Request, res: Response,
 
     const versionDetails = await dataSourceVersionService.getDataSourceVersion({
       query: versionQuery,
+      populate:[],
+      sort: { createdAt: -1 }
     });
 
     if (!versionDetails) {
@@ -1300,7 +1302,6 @@ export const deleteMultipleRowsFromVersion = async (req: Request, res: Response,
       orgCode,
       versionCode: dataSourceDetails.code,
     });
-
     await dataSourceVersionValueService.deleteVersionValues(schemaName, {
       _id: { $in: ids.map((id: string) => new Types.ObjectId(id)) },
       dataSourceVersionId: versionDetails._id,
