@@ -25,7 +25,7 @@ import { version } from 'os';
 import { getEntityAttribute, getModelForEntity } from '../../../utils/entity.utils';
 import { Types } from 'mongoose';
 import { findEntityById } from '../../../database/services/common/entity.services';
-import { autoPopulateAttributeOption } from '../../../utils/attributeOption.utils';
+import { autoPopulateAttributeOption, autoPopulateAttributeOptionFromRow } from '../../../utils/attributeOption.utils';
 const ObjectId = mongoose.Types.ObjectId;
 
 async function validateAndConvert({
@@ -1140,6 +1140,14 @@ export const createSingleRowVersionValue = async (
         .json({ success: false, message: 'Entity or attributes not found.' });
     }
 
+    await autoPopulateAttributeOptionFromRow({
+        entityId: dataSourceDetails.entityId,
+        attributes: entity.attributes,
+        rowData,
+        userId,
+        organizationId,
+    });
+
     const { isValid, errors, validatedRowData } = await validateRowData({
       rowData,
       attributes: entity.attributes,
@@ -1180,7 +1188,7 @@ export const updateSingleRowVersionValue = async (
 ) => {
   try {
     const { dataSourceId, versionValue, rowData } = req.body;
-    const { userId, orgCode } = req.user;
+    const { userId, organizationId, orgCode } = req.user;
     const { rowId } = req.params;
 
     if (!dataSourceId || !rowData || !rowId) {
@@ -1240,6 +1248,14 @@ export const updateSingleRowVersionValue = async (
         .status(400)
         .json({ success: false, message: 'Entity or attributes not found.' });
     }
+
+    await autoPopulateAttributeOptionFromRow({
+        entityId: dataSourceDetails.entityId,
+        attributes: entity.attributes,
+        rowData,
+        userId,
+        organizationId,
+    });
 
     const { isValid, errors, validatedRowData } = await validateRowData({
       rowData,
