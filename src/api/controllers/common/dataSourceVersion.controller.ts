@@ -28,12 +28,11 @@ import { findEntityById } from '../../../database/services/common/entity.service
 import { autoPopulateAttributeOption } from '../../../utils/attributeOption.utils';
 const ObjectId = mongoose.Types.ObjectId;
 
-
 async function validateAndConvert({
   value,
   type,
   optionAttributeId,
-  separator,
+  separator = ',',
 }: {
   value: any;
   type: string;
@@ -47,7 +46,6 @@ async function validateAndConvert({
     } else if (typeof value === 'string' && value.toLowerCase().trim() === 'no') {
       convertedValue = 0;
     }
-
     return {
       isValid: !isNaN(convertedValue),
       convertedValue: !isNaN(convertedValue) ? convertedValue : null,
@@ -102,38 +100,38 @@ async function validateAndConvert({
       const attributeOptionDetails =
         await attributeOptionService.findAttributeOptionById(optionAttributeId);
 
-      // attributeValue is array of { _id, value }
-      const attributeOptionValue = attributeOptionDetails?.attributeValue || [];
+      const attributeOptionValue: string[] =
+        attributeOptionDetails?.attributeValue || [];
+
+      // normalize available options to lowercase
+      const optionSet = new Set(
+        attributeOptionValue.map((v) => v.toLowerCase())
+      );
 
       if (type === 'option') {
-        const valNorm = String(value).trim().toLowerCase();
-
-        const match = attributeOptionValue.find(
-          (opt: any) => opt.value?.trim().toLowerCase() === valNorm
-        );
-
-        const isValid = !!match;
+        const candidate = String(value).trim();
+        const isValid = optionSet.has(candidate.toLowerCase());
         return {
           isValid,
-          convertedValue: isValid ? match._id : null, // store _id instead of raw value
+          convertedValue: isValid ? candidate : null,
           attributeOptionValue,
         };
       } else {
-        const splittedValue = String(value)
-          .split(separator || ',')
-          .map((v) => v.trim());
+        // handle both array and string
+        const valuesArray: string[] = Array.isArray(value)
+          ? value.map((v) => String(v).trim())
+          : String(value)
+              .split(separator)
+              .map((v) => v.trim())
+              .filter(Boolean);
 
-        // normalize for case-insensitive compare
-        const normSplitted = splittedValue.map((v) => v.toLowerCase());
-
-        const matches = attributeOptionValue.filter((opt: any) =>
-          normSplitted.includes(opt.value?.trim().toLowerCase())
+        const allValid = valuesArray.every((val) =>
+          optionSet.has(val.toLowerCase())
         );
 
-        const allValid = matches.length === normSplitted.length;
         return {
           isValid: allValid,
-          convertedValue: allValid ? matches.map((m: any) => m._id) : null, // array of _ids
+          convertedValue: allValid ? valuesArray : null,
           attributeOptionValue,
         };
       }
@@ -338,6 +336,95 @@ if (Array.isArray(uniqueAttributeRules) && uniqueAttributeRules.length > 0) {
     newRowData,
   };
 }
+
+export async function validateRowData({
+  rowData,
+  attributes,
+  separator = ',',
+}: {
+  rowData: Record<string, any>;
+  attributes: any[];
+  separator?: string;
+}) {
+  const errors: any[] = [];
+  const validatedRowData: Record<string, any> = { ...rowData };
+
+  for (const attr of attributes) {
+    const value = validatedRowData[attr.name];
+
+    // 1️⃣ Required check
+    if (value === undefined || value === null || value === '') {
+      if (attr.required === 'Mandatory') {
+        errors.push({
+          attributeName: attr.name,
+          errorType: 'Not Found',
+          errorCode: '404',
+          errorMessage: `Attribute "${attr.name}" is required but missing.`,
+        });
+      }
+      continue;
+    }
+
+    // 2️⃣ Reference resolution
+    if (attr.referenceEntitySetting?.refEntityId) {
+      const refEntityId = attr.referenceEntitySetting.refEntityId;
+      const refFieldId = attr.referenceEntitySetting.refEntityField;
+      const refEntityField = await getEntityAttribute(refEntityId, refFieldId);
+      const RefModel = await getModelForEntity(refEntityId);
+
+      const escapedValue = escapeRegExp(String(value).trim());
+      const regex = new RegExp(`^${escapedValue}$`, 'i');
+
+      const referencedDoc = await RefModel.findOne({
+        [`rowData.${refEntityField.name}`]: regex,
+      });
+
+      if (!referencedDoc) {
+        errors.push({
+          attributeName: attr.name,
+          errorType: 'Reference Error',
+          errorCode: '404',
+          errorMessage: `Value "${value}" could not be resolved from reference entity for "${attr.name}".`,
+        });
+      } else {
+        validatedRowData[attr.name] = referencedDoc._id;
+      }
+    } else {
+      // 3️⃣ Validate against type + options
+      const { isValid, convertedValue, attributeOptionValue } =
+        await validateAndConvert({
+          value,
+          type: attr.type,
+          optionAttributeId: attr.optionAttributeId,
+          separator,
+        });
+
+      if (!isValid) {
+        if (['option', 'multioption'].includes(attr.type)) {
+          errors.push({
+            attributeName: attr.name,
+            errorType: 'Type Error',
+            errorCode: '400',
+            errorMessage: `Invalid value "${value}" for "${attr.name}". Expected one of: ${attributeOptionValue}`,
+          });
+        } else {
+          errors.push({
+            attributeName: attr.name,
+            errorType: 'Type Error',
+            errorCode: '400',
+            errorMessage: `Invalid value "${value}" (expected type ${attr.type}) for "${attr.name}".`,
+          });
+        }
+      } else {
+        validatedRowData[attr.name] = convertedValue;
+      }
+    }
+  }
+
+  return { isValid: errors.length === 0, errors, validatedRowData };
+}
+
+
 
 export async function createDataSourceVersion(req: Request, res: Response, next: NextFunction) {
   try {
@@ -986,18 +1073,29 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
   }
 };
 
-export const createSingleRowVersionValue = async (req: Request, res: Response, next: NextFunction) => {
+export const createSingleRowVersionValue = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { dataSourceId, versionValue, rowData } = req.body;
     const { userId, organizationId, orgCode } = req.user;
 
     if (!dataSourceId || !rowData) {
-      return res.status(400).json({ success: false, message: 'Missing required fields.' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Missing required fields.' });
     }
 
-    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+    const dataSourceDetails = await dataSourceService.findDataSourceById(
+      dataSourceId,
+      true
+    );
     if (!dataSourceDetails) {
-      return res.status(404).json({ success: false, message: 'Data source not found.' });
+      return res
+        .status(404)
+        .json({ success: false, message: 'Data source not found.' });
     }
 
     const versionQuery: any = {
@@ -1006,12 +1104,16 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       ...(versionValue && { versionValue }),
     };
 
-    let version = await dataSourceVersionService.getDataSourceVersion({ query: versionQuery });
+    let version = await dataSourceVersionService.getDataSourceVersion({
+      query: versionQuery,
+    });
 
     if (!version) {
       // Fallback to current YYYY-MM if version not provided
       const now = new Date();
-      const fallbackVersionValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const fallbackVersionValue = `${now.getFullYear()}-${String(
+        now.getMonth() + 1
+      ).padStart(2, '0')}`;
 
       const newVersionValue = versionValue || fallbackVersionValue;
 
@@ -1029,66 +1131,71 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       versionCode: dataSourceDetails.code,
     });
 
-    const versionId = version._id;
-    const entityId = dataSourceDetails.entityId;
-
-    // Use entityService to fetch entity and convert reference fields
-    const entity = await findEntityById(entityId);
+    // 🔎 Validate rowData
+    const entity = await findEntityById(dataSourceDetails.entityId);
     if (!entity || !entity.attributes) {
-      return res.status(400).json({ success: false, message: 'Entity or attributes not found.' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Entity or attributes not found.' });
     }
 
-    const refAttributes = entity.attributes
-      .filter((attr) => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
-      .map((attr) => attr.name);
+    const { isValid, errors, validatedRowData } = await validateRowData({
+      rowData,
+      attributes: entity.attributes,
+    });
 
-    for (const attr of refAttributes) {
-      if (rowData[attr]) {
-        try {
-          rowData[attr] = new Types.ObjectId(rowData[attr]);
-        } catch {
-          return res.status(400).json({
-            success: false,
-            message: `Invalid ObjectId for reference field '${attr}'`,
-          });
-        }
-      }
+    if (!isValid) {
+      return res.status(400).json({ success: false, errors });
     }
 
     const newRow = {
       dataSourceId,
       versionValue: version.versionValue,
-      entityId,
-      dataSourceVersionId: versionId,
-      rowData,
+      entityId: dataSourceDetails.entityId,
+      dataSourceVersionId: version._id,
+      rowData: validatedRowData,
       createdBy: userId,
     };
 
-    await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, [newRow]);
+    await dataSourceVersionValueService.createDataSourceVersionValue(
+      schemaName,
+      [newRow]
+    );
 
-    return res.status(200).json({
-      success: true,
-      message: 'Row created successfully.',
-    });
+    return res
+      .status(200)
+      .json({ success: true, message: 'Row created successfully.' });
   } catch (e) {
     console.error('Error in createSingleRowVersionValue', e);
     next(e);
   }
 };
 
-export const updateSingleRowVersionValue = async (req: Request, res: Response, next: NextFunction) => {
+
+export const updateSingleRowVersionValue = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { dataSourceId, versionValue, rowData } = req.body;
-    const { userId, organizationId, orgCode } = req.user;
+    const { userId, orgCode } = req.user;
     const { rowId } = req.params;
 
     if (!dataSourceId || !rowData || !rowId) {
-      return res.status(400).json({ success: false, message: 'Missing required fields.' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Missing required fields.' });
     }
 
-    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+    const dataSourceDetails = await dataSourceService.findDataSourceById(
+      dataSourceId,
+      true
+    );
     if (!dataSourceDetails) {
-      return res.status(404).json({ success: false, message: 'Data source not found.' });
+      return res
+        .status(404)
+        .json({ success: false, message: 'Data source not found.' });
     }
 
     const versionQuery: any = {
@@ -1097,9 +1204,13 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       ...(versionValue && { versionValue }),
     };
 
-    const version = await dataSourceVersionService.getDataSourceVersion({ query: versionQuery });
+    const version = await dataSourceVersionService.getDataSourceVersion({
+      query: versionQuery,
+    });
     if (!version) {
-      return res.status(404).json({ success: false, message: 'Version not found.' });
+      return res
+        .status(404)
+        .json({ success: false, message: 'Version not found.' });
     }
 
     const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
@@ -1107,58 +1218,48 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       versionCode: dataSourceDetails.code,
     });
 
-    const versionId = version._id;
-
     const existingRow = await dataSourceVersionValueService.findOne(schemaName, {
       _id: rowId,
-      dataSourceVersionId: versionId,
+      dataSourceVersionId: version._id,
     });
 
     if (!existingRow) {
-      return res.status(404).json({ success: false, message: 'Row not found for update.' });
+      return res
+        .status(404)
+        .json({ success: false, message: 'Row not found for update.' });
     }
 
-    // Use entityService to fetch entity and convert reference fields
+    // 🔎 Validate rowData
     const entity = await findEntityById(dataSourceDetails.entityId);
     if (!entity || !entity.attributes) {
-      return res.status(400).json({ success: false, message: 'Entity or attributes not found.' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Entity or attributes not found.' });
     }
 
-    const refAttributes = entity.attributes
-      .filter((attr) => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
-      .map((attr) => attr.name);
-
-    for (const attr of refAttributes) {
-      if (rowData[attr]) {
-        try {
-          rowData[attr] = new Types.ObjectId(rowData[attr]);
-        } catch {
-          return res.status(400).json({
-            success: false,
-            message: `Invalid ObjectId for reference field '${attr}'`,
-          });
-        }
-      }
-    }
-
-    await dataSourceVersionValueService.updateOne(
-      schemaName,
-      { _id: rowId },
-      {
-        rowData: rowData,
-        updatedBy: userId,
-      }
-    );
-
-    return res.status(200).json({
-      success: true,
-      message: 'Row updated successfully.',
+    const { isValid, errors, validatedRowData } = await validateRowData({
+      rowData,
+      attributes: entity.attributes,
     });
+
+    if (!isValid) {
+      return res.status(400).json({ success: false, errors });
+    }
+
+    await dataSourceVersionValueService.updateOne(schemaName, { _id: rowId }, {
+      rowData: validatedRowData,
+      updatedBy: userId,
+    });
+
+    return res
+      .status(200)
+      .json({ success: true, message: 'Row updated successfully.' });
   } catch (e) {
     console.error('Error in updateSingleRowVersionValue', e);
     next(e);
   }
 };
+
 
 export const deleteMultipleRowsFromVersion = async (req: Request, res: Response, next: NextFunction) => {
   try {

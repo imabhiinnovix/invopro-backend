@@ -2,7 +2,6 @@ import { extractUniqueColumnValuesByNamesFromXLSX } from './excel.utils';
 import * as attributeOptionService from '../database/services/common/attributeOption.services';
 import * as entityService from '../database/services/common/entity.services';
 import { getEntityAttribute } from './entity.utils';
-import { Types } from 'mongoose';
 
 export async function autoPopulateAttributeOption({
   filePath,
@@ -26,7 +25,6 @@ export async function autoPopulateAttributeOption({
       ['option', 'multioption', 'text-with-option'].includes(attr.type)
     );
 
-
     const columnNames = targetAttributes
       .map((attr) => attributMapping[attr.name])
       .filter(Boolean);
@@ -42,7 +40,7 @@ export async function autoPopulateAttributeOption({
       const columnHeader = attributMapping[attributeName];
       const attributeOptionId = attribute.optionAttributeId;
 
-      // 1️⃣ If this attribute is a reference field → reuse referenced optionAttributeId
+      // Reference entity case → reuse optionAttributeId
       if (
         attribute.referenceEntitySetting?.refEntityId &&
         attribute.referenceEntitySetting?.refEntityField
@@ -56,7 +54,6 @@ export async function autoPopulateAttributeOption({
         );
 
         if (refAttribute?.optionAttributeId) {
-          // just update the entity’s field to point to the same optionAttributeId
           await entityService.updateEntityAttributeOptionId({
             entityId,
             attributeName,
@@ -65,44 +62,35 @@ export async function autoPopulateAttributeOption({
           });
         }
 
-        // skip Excel processing for reference fields
-        continue;
+        continue; // skip Excel-driven logic for reference fields
       }
 
-      // 2️⃣ Normal Excel-driven option field
+      // Normal case: extract from Excel
       const uniqueValues = columnHeader ? columnToUniqueValues[columnHeader] || [] : [];
       if (!uniqueValues || uniqueValues.length === 0) continue;
 
       if (attributeOptionId) {
-        const existing = await attributeOptionService.findAttributeOptionById(
-          attributeOptionId
-        );
-        const existingValues = existing?.attributeValue || [];
+        const existing = await attributeOptionService.findAttributeOptionById(attributeOptionId);
+        const existingValues: string[] = existing?.attributeValue || [];
 
-        // case-insensitive lookup map
-        const existingMap = new Map(
-          existingValues.map((ev: any) => [ev.value.toLowerCase(), ev])
-        );
+        // Case-insensitive set for existing values
+        const existingSet = new Set(existingValues.map((v) => v.toLowerCase()));
 
-        const mappedValues = uniqueValues.map((val: string) => {
-          const lower = val?.toLowerCase?.() || '';
-          if (existingMap.has(lower)) {
-            const match = existingMap.get(lower);
-            return { _id: match._id, value: val };
-          } else {
-            return { value: val };
-          }
-        });
+        // Merge → preserve existing + add new ones (case-insensitive)
+        const mergedValues: string[] = [
+          ...existingValues,
+          ...uniqueValues.filter((val) => !existingSet.has(val.toLowerCase())),
+        ];
 
         await attributeOptionService.updateAttribute(attributeOptionId, {
-          attributeValue: mappedValues,
+          attributeValue: mergedValues,
           updatedBy: userId,
         });
       } else {
-        const mappedValues = uniqueValues.map((val: string) => ({ value: val }));
+        // Create new
         const created = await attributeOptionService.createAttribute({
           attributeName,
-          attributeValue: mappedValues,
+          attributeValue: uniqueValues,
           organizationId,
           createdBy: userId,
           isActive: true,
