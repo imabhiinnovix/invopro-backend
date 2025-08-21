@@ -290,75 +290,119 @@ export const getDataSourceVersionValueV1 = async ({
     // Step 6: Transform
     // Step 6: Transform
     // Step 6: Transform
-    const transformedData = await Promise.all(
-      versionValueData.map(async (doc: any) => {
-        const newDoc = { ...doc };
-        const rowData: Record<string, any> = { ...doc.rowData };
+      const transformedData = await Promise.all(
+  versionValueData.map(async (doc: any) => {
+    const newDoc = { ...doc };
+    const rowData: Record<string, any> = { ...doc.rowData };
 
-        for (const key in attributesMap) {
-          const attr = attributesMap[key];
-          const resolvedKey = `${key}_resolved`;
+    for (const key in attributesMap) {
+      const attr = attributesMap[key];
+      const resolvedKey = `${key}_resolved`;
 
-          if (attr.referenceEntitySetting && rowData.hasOwnProperty(resolvedKey)) {
-            const refResolved = rowData[resolvedKey];
+      if (attr.referenceEntitySetting && rowData.hasOwnProperty(resolvedKey)) {
+        const refResolved = rowData[resolvedKey];
 
-            // ✅ Determine display field from refEntityField
-            let displayField: string | undefined;
-            if (attr.referenceEntitySetting.refEntityField) {
-              const refFieldAttr = await getEntityAttribute(
-                attr.referenceEntitySetting.refEntityId,
-                attr.referenceEntitySetting.refEntityField
-              );
-              displayField = refFieldAttr?.name;
-            }
-
-            if (Array.isArray(refResolved)) {
-              // multiple refs → array of strings
-              const displayValues: string[] = [];
-
-              for (const ref of refResolved) {
-                if (!ref?.rowData) continue;
-
-                // copy subfields into arrays
-                for (const subKey in ref.rowData) {
-                  if (!rowData[`${key}.${subKey}`]) {
-                    rowData[`${key}.${subKey}`] = [];
-                  }
-                  rowData[`${key}.${subKey}`].push(ref.rowData[subKey]);
-                }
-
-                // use chosen displayField, fallback to first value if not found
-                const displayVal =
-                  displayField && ref.rowData[displayField] !== undefined
-                    ? ref.rowData[displayField]
-                    : Object.values(ref.rowData)[0];
-
-                displayValues.push(displayVal);
-              }
-
-              rowData[key] = displayValues;
-            } else if (refResolved && refResolved.rowData) {
-              // single ref → single string
-              const refRowData = refResolved.rowData;
-
-              for (const subKey in refRowData) {
-                rowData[`${key}.${subKey}`] = refRowData[subKey];
-              }
-
-              rowData[key] =
-                displayField && refRowData[displayField] !== undefined
-                  ? refRowData[displayField]
-                  : Object.values(refRowData)[0];
-            }
-
-            delete rowData[resolvedKey];
-          }
+        // ✅ Determine display field from refEntityField
+        let displayField: string | undefined;
+        if (attr.referenceEntitySetting.refEntityField) {
+          const refFieldAttr = await getEntityAttribute(
+            attr.referenceEntitySetting.refEntityId,
+            attr.referenceEntitySetting.refEntityField
+          );
+          displayField = refFieldAttr?.name;
         }
 
-        newDoc.rowData = rowData;
-        return newDoc;
-      })
-    );
+        // --- 🔹 Handle Many-to-One Reference Expansion ---
+       if (attr.referenceEntitySetting.relationType === "many_to_one") {
+        // Get the reference field attribute
+        const refFieldAttr = await getEntityAttribute(
+          attr.referenceEntitySetting.refEntityId,
+          attr.referenceEntitySetting.refEntityField
+        );
+
+        const refFieldName = refFieldAttr?.name;
+        if (refFieldName && refResolved?.rowData?.[refFieldName]) {
+          const refValue = refResolved.rowData[refFieldName];
+
+          // Load reference entity model dynamically
+          const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
+
+          // Fetch all docs that match the same reference field value
+          const relatedDocs: any[] = await RefModel.find({
+            [`rowData.${refFieldName}`]: refValue,
+          }).lean();
+
+          // --- Combine subfields into arrays, except the reference field itself ---
+          for (const r of relatedDocs) {
+            for (const subKey in r.rowData) {
+              if (subKey === refFieldName) continue; // skip main ref field
+              if (!rowData[`${key}.${subKey}`]) rowData[`${key}.${subKey}`] = [];
+              rowData[`${key}.${subKey}`].push(r.rowData[subKey]);
+            }
+          }
+
+          // Remove duplicates in subfield arrays
+          for (const subKey in rowData) {
+            if (subKey.startsWith(`${key}.`) && Array.isArray(rowData[subKey])) {
+              rowData[subKey] = [...new Set(rowData[subKey])];
+            }
+          }
+
+          // --- Set main reference field as single value ---
+          rowData[`${key}.${refFieldName}`] = refResolved.rowData[refFieldName];
+
+          // Optional: if you want the top-level key to also show the display value
+          rowData[key] =
+            displayField && refResolved.rowData[displayField] !== undefined
+              ? refResolved.rowData[displayField]
+              : Object.values(refResolved.rowData)[0];
+        }
+      }
+
+
+
+        // --- 🔹 Default handling for one-to-one or array refs ---
+        else if (Array.isArray(refResolved)) {
+          const displayValues: string[] = [];
+          for (const ref of refResolved) {
+            if (!ref?.rowData) continue;
+
+            for (const subKey in ref.rowData) {
+              if (!rowData[`${key}.${subKey}`]) {
+                rowData[`${key}.${subKey}`] = [];
+              }
+              rowData[`${key}.${subKey}`].push(ref.rowData[subKey]);
+            }
+
+            const displayVal =
+              displayField && ref.rowData[displayField] !== undefined
+                ? ref.rowData[displayField]
+                : Object.values(ref.rowData)[0];
+
+            displayValues.push(displayVal);
+          }
+          rowData[key] = displayValues;
+        } else if (refResolved && refResolved.rowData) {
+          const refRowData = refResolved.rowData;
+
+          for (const subKey in refRowData) {
+            rowData[`${key}.${subKey}`] = refRowData[subKey];
+          }
+
+          rowData[key] =
+            displayField && refRowData[displayField] !== undefined
+              ? refRowData[displayField]
+              : Object.values(refRowData)[0];
+        }
+
+        delete rowData[resolvedKey];
+      }
+    }
+
+    newDoc.rowData = rowData;
+    return newDoc;
+  })
+);
 
     // Step 7: Count
     const countPipeline = aggregationPipeline.filter(

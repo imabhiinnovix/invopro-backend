@@ -81,10 +81,7 @@ export async function autoPopulateAttributeOption({
         const existing = await attributeOptionService.findAttributeOptionById(attributeOptionId);
         const existingValues: string[] = existing?.attributeValue || [];
 
-        // Case-insensitive set for existing values
         const existingSet = new Set(existingValues.map((v) => v.toLowerCase()));
-
-        // Merge → preserve existing + add new ones (case-insensitive)
         const mergedValues: string[] = [
           ...existingValues,
           ...uniqueValues.filter((val) => !existingSet.has(val.toLowerCase())),
@@ -95,21 +92,44 @@ export async function autoPopulateAttributeOption({
           updatedBy: userId,
         });
       } else {
-        // Create new
-        const created = await attributeOptionService.createAttribute({
-          attributeName,
-          attributeValue: uniqueValues,
-          organizationId,
-          createdBy: userId,
-          isActive: true,
-        });
+        // 🔑 Fix: check if attribute already exists before creating
+        const existing: any = await attributeOptionService.findAttributeByNameAndOrganization(attributeName, organizationId);
 
-        await entityService.updateEntityAttributeOptionId({
-          entityId,
-          attributeName,
-          attributeType: attribute.type,
-          optionAttributeId: created._id,
-        });
+        if (existing) {
+          const existingValues: string[] = existing?.attributeValue || [];
+          const existingSet = new Set(existingValues.map((v) => v.toLowerCase()));
+          const mergedValues = [
+            ...existingValues,
+            ...uniqueValues.filter((val) => !existingSet.has(val.toLowerCase())),
+          ];
+
+          await attributeOptionService.updateAttribute(existing._id, {
+            attributeValue: mergedValues,
+            updatedBy: userId,
+          });
+
+          await entityService.updateEntityAttributeOptionId({
+            entityId,
+            attributeName,
+            attributeType: attribute.type,
+            optionAttributeId: existing._id,
+          });
+        } else {
+          const created = await attributeOptionService.createAttribute({
+            attributeName,
+            attributeValue: uniqueValues,
+            organizationId,
+            createdBy: userId,
+            isActive: true,
+          });
+
+          await entityService.updateEntityAttributeOptionId({
+            entityId,
+            attributeName,
+            attributeType: attribute.type,
+            optionAttributeId: created._id,
+          });
+        }
       }
     }
 
@@ -120,6 +140,7 @@ export async function autoPopulateAttributeOption({
     throw e;
   }
 }
+
 export async function autoPopulateAttributeOptionFromRow({
   entityId,
   attributes,
@@ -141,19 +162,16 @@ export async function autoPopulateAttributeOptionFromRow({
     for (const attribute of targetAttributes) {
       const attributeName = attribute.name;
       let rawValue = rowData[attributeName];
-
       if (!rawValue) continue;
 
-      // normalize into array of strings
       const values = Array.isArray(rawValue) ? rawValue.map((v) => String(v).trim()) : [String(rawValue).trim()];
 
-      // Handle reference case
+      // Reference entity case
       if (attribute.referenceEntitySetting?.refEntityId && attribute.referenceEntitySetting?.refEntityField) {
         const refEntityId = attribute.referenceEntitySetting.refEntityId;
         const refFieldId = attribute.referenceEntitySetting.refEntityField;
 
         const refAttribute = await getEntityAttribute(refEntityId.toString(), refFieldId.toString());
-
         if (refAttribute?.optionAttributeId) {
           await entityService.updateEntityAttributeOptionId({
             entityId,
@@ -177,20 +195,41 @@ export async function autoPopulateAttributeOptionFromRow({
           updatedBy: userId,
         });
       } else {
-        const created = await attributeOptionService.createAttribute({
-          attributeName,
-          attributeValue: values,
-          organizationId,
-          createdBy: userId,
-          isActive: true,
-        });
+        // 🔑 Fix: check before creating
+        const existing: any = await attributeOptionService.findAttributeByNameAndOrganization(attributeName, organizationId);
 
-        await entityService.updateEntityAttributeOptionId({
-          entityId,
-          attributeName,
-          attributeType: attribute.type,
-          optionAttributeId: created._id,
-        });
+        if (existing) {
+          const existingValues: string[] = existing?.attributeValue || [];
+          const existingSet = new Set(existingValues.map((v) => v.toLowerCase()));
+          const mergedValues = [...existingValues, ...values.filter((val) => !existingSet.has(val.toLowerCase()))];
+
+          await attributeOptionService.updateAttribute(existing._id, {
+            attributeValue: mergedValues,
+            updatedBy: userId,
+          });
+
+          await entityService.updateEntityAttributeOptionId({
+            entityId,
+            attributeName,
+            attributeType: attribute.type,
+            optionAttributeId: existing._id,
+          });
+        } else {
+          const created = await attributeOptionService.createAttribute({
+            attributeName,
+            attributeValue: values,
+            organizationId,
+            createdBy: userId,
+            isActive: true,
+          });
+
+          await entityService.updateEntityAttributeOptionId({
+            entityId,
+            attributeName,
+            attributeType: attribute.type,
+            optionAttributeId: created._id,
+          });
+        }
       }
     }
   } catch (e) {
