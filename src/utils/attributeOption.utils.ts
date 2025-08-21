@@ -5,16 +5,14 @@ import { getEntityAttribute } from './entity.utils';
 import { Types } from 'mongoose';
 
 export async function autoPopulateAttributeOption({
-  filePath,
-  startRow = 2,
+  fileData = [],
   entityId,
   attributesDetails,
   attributMapping,
   userId,
   organizationId,
 }: {
-  filePath: string;
-  startRow?: number;
+  fileData?: any[];
   entityId: any;
   attributesDetails: any[];
   attributMapping: Record<string, any>;
@@ -26,33 +24,42 @@ export async function autoPopulateAttributeOption({
       ['option', 'multioption', 'text-with-option'].includes(attr.type)
     );
 
-    const columnNames = targetAttributes
-      .map((attr) => attributMapping[attr.name])
-      .filter(Boolean);
+    const columnToUniqueValues: Record<string, string[]> = {};
 
-    const columnToUniqueValues = await extractUniqueColumnValuesByNamesFromXLSX({
-      filePath,
-      columnNames,
-      startRow,
-    });
+    // Build a mapping of column → unique values from Excel
+    for (const attribute of targetAttributes) {
+      const columnKeys = attributMapping[attribute.name];
+      if (!columnKeys) continue;
 
+      const columnArray = Array.isArray(columnKeys) ? columnKeys : [columnKeys];
+      const uniqueSet = new Set<string>();
+
+      for (const row of fileData) {
+        for (const key of columnArray) {
+          const value = row[key];
+          if (value !== undefined && value !== null && value !== '') {
+            uniqueSet.add(value.toString().trim());
+          }
+        }
+      }
+
+      for (const key of columnArray) {
+        columnToUniqueValues[key] = Array.from(uniqueSet);
+      }
+    }
+
+    // Process each target attribute
     for (const attribute of targetAttributes) {
       const attributeName = attribute.name;
       const columnHeader = attributMapping[attributeName];
       const attributeOptionId = attribute.optionAttributeId;
 
       // Reference entity case → reuse optionAttributeId
-      if (
-        attribute.referenceEntitySetting?.refEntityId &&
-        attribute.referenceEntitySetting?.refEntityField
-      ) {
+      if (attribute.referenceEntitySetting?.refEntityId && attribute.referenceEntitySetting?.refEntityField) {
         const refEntityId = attribute.referenceEntitySetting.refEntityId;
         const refFieldId = attribute.referenceEntitySetting.refEntityField;
 
-        const refAttribute = await getEntityAttribute(
-          refEntityId.toString(),
-          refFieldId.toString()
-        );
+        const refAttribute = await getEntityAttribute(refEntityId.toString(), refFieldId.toString());
 
         if (refAttribute?.optionAttributeId) {
           await entityService.updateEntityAttributeOptionId({
@@ -113,7 +120,6 @@ export async function autoPopulateAttributeOption({
     throw e;
   }
 }
-
 export async function autoPopulateAttributeOptionFromRow({
   entityId,
   attributes,
@@ -139,22 +145,14 @@ export async function autoPopulateAttributeOptionFromRow({
       if (!rawValue) continue;
 
       // normalize into array of strings
-      const values = Array.isArray(rawValue)
-        ? rawValue.map((v) => String(v).trim())
-        : [String(rawValue).trim()];
+      const values = Array.isArray(rawValue) ? rawValue.map((v) => String(v).trim()) : [String(rawValue).trim()];
 
       // Handle reference case
-      if (
-        attribute.referenceEntitySetting?.refEntityId &&
-        attribute.referenceEntitySetting?.refEntityField
-      ) {
+      if (attribute.referenceEntitySetting?.refEntityId && attribute.referenceEntitySetting?.refEntityField) {
         const refEntityId = attribute.referenceEntitySetting.refEntityId;
         const refFieldId = attribute.referenceEntitySetting.refEntityField;
 
-        const refAttribute = await getEntityAttribute(
-          refEntityId.toString(),
-          refFieldId.toString()
-        );
+        const refAttribute = await getEntityAttribute(refEntityId.toString(), refFieldId.toString());
 
         if (refAttribute?.optionAttributeId) {
           await entityService.updateEntityAttributeOptionId({
@@ -172,10 +170,7 @@ export async function autoPopulateAttributeOptionFromRow({
         const existingValues: string[] = existing?.attributeValue || [];
         const existingSet = new Set(existingValues.map((v) => v.toLowerCase()));
 
-        const mergedValues = [
-          ...existingValues,
-          ...values.filter((val) => !existingSet.has(val.toLowerCase())),
-        ];
+        const mergedValues = [...existingValues, ...values.filter((val) => !existingSet.has(val.toLowerCase()))];
 
         await attributeOptionService.updateAttribute(attribute.optionAttributeId, {
           attributeValue: mergedValues,
