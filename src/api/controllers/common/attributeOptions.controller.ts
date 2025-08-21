@@ -16,11 +16,12 @@ export const createAttribute = async (req: Request, res: Response, next: NextFun
     }
     const attribute = await attributeOptionService.createAttribute({
       attributeName,
-      attributeValue,
+      attributeValue: (attributeValue || []).map((val: string) => ({ value: val })),
       organizationId,
       createdBy: userId,
       isActive: true,
     });
+
     res.status(201).json({
       success: true,
       message: 'Attribute created successfully',

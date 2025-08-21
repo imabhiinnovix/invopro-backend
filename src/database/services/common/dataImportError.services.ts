@@ -41,3 +41,21 @@ export const getDataSourceVersionErrrorList = async ({
     throw err;
   }
 };
+
+export const updateDataImportErrors = async (query: Record<string, any>, updateFields: Record<string, any>) => {
+  try {
+    const result = await DataImportErrorModel.updateMany(query, { $set: updateFields });
+    return result;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getDataImportErrorRecords = async (query) => {
+  try {
+    const matchingDocs = await DataImportErrorModel.find(query);
+    return matchingDocs;
+  } catch (error) {
+    throw error;
+  }
+};

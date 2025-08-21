@@ -9,7 +9,7 @@ import { permissionMiddleware } from '../../../middlewares/permission.middleware
 
 const router = Router();
 
-router.get('/getData', authenticateToken, permissionMiddleware(), runNaturalLanguageAggregation);
-router.get('/insights', authenticateToken, permissionMiddleware(), runNaturalLanguageInsights);
+router.get('/getData', permissionMiddleware(), runNaturalLanguageAggregation);
+router.get('/insights', permissionMiddleware(), runNaturalLanguageInsights);
 
 export default router;

@@ -162,6 +162,30 @@ export const validatorOperatorData: FieldTypeOperators[] = [
         valueRequired: false,
         order: 6,
       },
+      {
+        operatorKey: 'onOrAfterToday',
+        operatorName: 'Due On or After Today',
+        valueRequired: false,
+        order: 7,
+      },
+      {
+        operatorKey: 'onOrBeforeToday',
+        operatorName: 'Due On or Before Today',
+        valueRequired: false,
+        order: 8,
+      },
+      {
+        operatorKey: 'afterToday',
+        operatorName: 'Due After Today',
+        valueRequired: false,
+        order: 9,
+      },
+      {
+        operatorKey: 'beforeToday',
+        operatorName: 'Due Before Today',
+        valueRequired: false,
+        order: 10,
+      },
     ],
   },
   {

@@ -126,57 +126,77 @@ interface FieldOption {
   label: string;
   value: {
     attributeId: Types.ObjectId;
-    refAttributeId?: Types.ObjectId;
+    refAttributeId?: Types.ObjectId[];
     isDerived?: boolean;
+    type?:string;
   };
 }
 
 export const getEntityFieldOptions = async (entityId: string): Promise<FieldOption[]> => {
-  const fieldOptions: FieldOption[] = [];
+  const visited = new Set<string>(); // avoid circular references
 
-  const entity = await Entity.findById(entityId).lean();
-  if (!entity || !Array.isArray(entity.attributes)) return fieldOptions;
+  const buildOptions = async (
+    currentEntityId: string,
+    pathLabels: string[] = [],
+    attributeIdChain: Types.ObjectId[] = []
+  ): Promise<FieldOption[]> => {
+    const options: FieldOption[] = [];
 
-  for (const attr of entity.attributes) {
-    const attributeId = (attr as any)?._id;
+    const entity = await Entity.findById(currentEntityId).lean();
+    if (!entity || !Array.isArray(entity.attributes)) return options;
 
-    if (attr.referenceEntitySetting?.refEntityId) {
-      const refEntityId = attr.referenceEntitySetting.refEntityId;
-      const refEntity = await Entity.findById(refEntityId).lean();
-      if (!refEntity || !Array.isArray(refEntity.attributes)) continue;
+    for (const attr of entity.attributes) {
+      const currentAttrId = (attr as any)?._id;
+      const currentLabelPath = [...pathLabels, attr.name];
+      const currentRefPath = [...attributeIdChain, currentAttrId];
 
-      for (const refAttr of refEntity.attributes) {
-        const refAttributeId = (refAttr as any)?._id;
-        fieldOptions.push({
-          label: `${attr.name}.${refAttr.name}`,
+      if (attr.referenceEntitySetting?.refEntityId) {
+        // Recurse into referenced entity
+        if (visited.has(attr.referenceEntitySetting.refEntityId.toString())) continue;
+        visited.add(attr.referenceEntitySetting.refEntityId.toString());
+
+        const nestedOptions = await buildOptions(
+          attr.referenceEntitySetting.refEntityId.toString(),
+          currentLabelPath,
+          currentRefPath
+        );
+        options.push(...nestedOptions);
+      } else {
+        // Final leaf field
+        const [rootAttributeId, ...refAttributeId] = currentRefPath;
+        options.push({
+          label: currentLabelPath.join('.'),
           value: {
-            attributeId,
-            refAttributeId: refAttributeId,
+            attributeId: rootAttributeId,
+            refAttributeId, // always an array, may be []
+            type: attr?.type || 'text'
           },
         });
       }
-    } else {
-      fieldOptions.push({
-        label: attr.name,
-        value: { attributeId },
-      });
     }
-  }
 
-  // 2. Derived fields
+    return options;
+  };
+
+  const fieldOptions = await buildOptions(entityId);
+
+  // Add derived fields
   const derivedFields: any = await getAllDerivedFields({ entityId });
   for (const df of derivedFields) {
     fieldOptions.push({
-      label: `${df.name}`,
+      label: df.name,
       value: {
         attributeId: df._id,
+        refAttributeId: [],
         isDerived: true,
+        type: df?.type || 'text',
       },
     });
   }
 
   return fieldOptions;
 };
+
 
 export async function updateEntityAttributeOptionId({ entityId, attributeName, attributeType, optionAttributeId }) {
   try {

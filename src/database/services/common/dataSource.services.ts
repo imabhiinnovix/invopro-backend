@@ -54,31 +54,40 @@ export const getDataSourceList = async ({
   limit,
   sort = { updatedAt: -1 },
   populate,
+  paginate = true
 }: any) => {
   try {
-    // Remove the await keyword here
-    let dataSourceQuery: any = DataSource.find(query)
+    let dataSourceQuery = DataSource.find(query)
       .select(select)
-      .skip((page - 1) * limit)
-      .limit(limit)
       .sort(sort);
 
-    if (populate && Array.isArray(populate)) {
+    // Apply pagination only if enabled
+    console.log('paginate',paginate, page, limit);
+    if (paginate && page && limit) {
+      console.log('paginate',paginate);
+      dataSourceQuery = dataSourceQuery
+        .skip((page - 1) * limit)
+        .limit(limit);
+    }
+
+    // Populate references if provided
+    if (Array.isArray(populate)) {
       populate.forEach((field) => {
         dataSourceQuery = dataSourceQuery.populate(field);
       });
     }
 
-    // Now await the final query execution
-    const dataSource = await dataSourceQuery.lean().exec();
-
-    const totalCount = await DataSource.countDocuments(query);
+    const [dataSource, totalCount] = await Promise.all([
+      dataSourceQuery.lean().exec(),
+      DataSource.countDocuments(query) // Always count
+    ]);
 
     return { data: dataSource, totalCount };
   } catch (err) {
     throw err;
   }
 };
+
 
 export const getDataSourceListWithAggregation = async ({ query }: any) => {
   try {
@@ -129,7 +138,11 @@ export const getDataSource = async (query: any) => {
   }
 };
 
-export const getDataSourcePopulate = async (query: any, populate: any, sort: Record<string, 1 | -1> = { createdAt: -1 }) => {
+export const getDataSourcePopulate = async (
+  query: any,
+  populate: any,
+  sort: Record<string, 1 | -1> = { createdAt: -1 }
+) => {
   try {
     let dataSourceQuery: any = DataSource.findOne(query).sort(sort);
     if (populate && Array.isArray(populate)) {
@@ -164,4 +177,18 @@ export const getDataSourcesByIds = async (ids: Types.ObjectId[]) => {
   }
 
   return dataSourceMap;
+};
+
+export const findDataSourcesByEntityId = async (entityId: string, populate = true) => {
+  try {
+    const query = DataSource.find({ entityId });
+
+    if (populate) {
+      query.populate('entityId');
+    }
+
+    return await query.exec();
+  } catch (err) {
+    throw err;
+  }
 };
