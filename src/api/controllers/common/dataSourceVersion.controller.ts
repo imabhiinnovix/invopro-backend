@@ -791,6 +791,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
       success: true,
       message: 'Data upload is in progress.',
       dataSourceVersionId,
+      status: 'pending',
     });
   } catch (e) {
     next(e);
