@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import Attribute from '../../models/common/attributeOption';
 
 export const createAttribute = async (attributeData: any) => {
@@ -16,6 +17,19 @@ export const updateAttribute = async (attributeId: string, attributeData: any) =
     return attributeResp;
   } catch (err) {
     throw err;
+  }
+};
+
+export const addAttributeValueById = async (id: string | Types.ObjectId, newValue: string) => {
+  try {
+    const result = await Attribute.updateOne(
+      { _id: new Types.ObjectId(id) },
+      { $addToSet: { attributeValue: newValue } }
+    );
+
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to add attribute value: ${error}`);
   }
 };
 
