@@ -1294,6 +1294,137 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
   }
 };
 
+async function handleReferenceSubFields({
+  rowData,
+  attributes,
+  dataSourceId,
+  versionId,
+  versionValue,
+  userId,
+  organizationId,
+}) {
+  for (const key of Object.keys(rowData)) {
+    if (!key.includes('.')) continue; // only dotted keys
+
+    const [parentAttrName, subAttrName] = key.split('.');
+
+    // find attribute whose subfield is the current dotted key
+    const attr = attributes.find(
+      a => a.referenceEntitySetting?.refEntityId && a.referenceEntitySetting?.refEntityField && subAttrName
+    );
+    if (!attr || !attr.referenceEntitySetting) continue;
+
+    // fetch referenced entity
+    const refEntity: any = await findEntityById(attr.referenceEntitySetting.refEntityId.toString());
+    if (!refEntity) continue;
+
+    // find subfield marked as isReferenceEdit
+    const subAttr = refEntity.attributes.find(a => a.name === subAttrName && a.isReferenceEdit);
+    if (!subAttr) continue;
+
+    // reference model
+    const RefModel = await getModelForEntity(refEntity._id);
+
+    // get the actual reference field name
+    const refFieldAttr = refEntity.attributes.find(
+      a => String(a._id) === String(attr.referenceEntitySetting.refEntityField)
+    );
+    if (!refFieldAttr) continue;
+
+    const refFieldName = refFieldAttr.name;
+
+    const parentValue = rowData[parentAttrName]; // main row value
+    const subValue = rowData[key];
+
+    // 🔹 Resolve parentValueResolved from reference model row
+    let parentValueResolved;
+    if (attr.referenceEntitySetting.relationType === 'many_to_one') {
+      const parentValuesArray = Array.isArray(parentValue) ? parentValue : [parentValue];
+      parentValueResolved = await Promise.all(
+        parentValuesArray.map(async v => {
+          const existingRow: any = await RefModel.findById(v);
+          return existingRow ? existingRow.rowData[refFieldName] : null;
+        })
+      );
+      parentValueResolved = parentValueResolved.filter(v => v != null);
+      if (!parentValueResolved.length) continue;
+    } else {
+      const existingRow: any = await RefModel.findById(parentValue);
+      if (!existingRow) continue;
+      parentValueResolved = existingRow.rowData[refFieldName];
+    }
+
+    if (attr.referenceEntitySetting.relationType === 'many_to_one') {
+      const subValues = Array.isArray(subValue) ? subValue : [subValue];
+
+      // mark inactive any missing entries
+      const existingRows: any[] = await RefModel.find({
+        [`rowData.${refFieldName}`]: { $in: parentValueResolved },
+      });
+
+      for (const r of existingRows) {
+        if (!subValues.includes(r.rowData[subAttr.name])) {
+          await RefModel.updateOne({ _id: r._id }, { status: 'in-active' });
+        }
+      }
+
+      // upsert each value
+      for (const val of subValues) {
+        for (const parentVal of parentValueResolved) {
+          await RefModel.updateOne(
+            {
+              [`rowData.${refFieldName}`]: parentVal,
+              [`rowData.${subAttr.name}`]: val,
+            },
+            {
+              $set: {
+                rowData: {
+                  [refFieldName]: parentVal,
+                  [subAttr.name]: val,
+                },
+                status: 'active',
+                dataSourceId,
+                dataSourceVersionId: versionId,
+                versionValue,
+                createdBy: userId,
+                organizationId,
+                updatedAt: new Date(),
+              },
+            },
+            { upsert: true }
+          );
+        }
+      }
+    } else {
+      // one_to_one
+      await RefModel.updateOne(
+        { [`rowData.${refFieldName}`]: parentValueResolved },
+        {
+          $set: {
+            rowData: {
+              [refFieldName]: parentValueResolved,
+              [subAttr.name]: subValue,
+            },
+            status: 'active',
+            dataSourceId,
+            dataSourceVersionId: versionId,
+            versionValue,
+            createdBy: userId,
+            organizationId,
+            updatedAt: new Date(),
+          },
+        },
+        { upsert: true }
+      );
+    }
+  }
+}
+
+
+
+
+
+
 export const createSingleRowVersionValue = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
@@ -1328,7 +1459,6 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       sort: { createdAt: -1 },
     });
     if (!version) {
-      // Fallback to current YYYY-MM if version not provided
       const now = new Date();
       const fallbackVersionValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -1348,7 +1478,6 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       versionCode: dataSourceDetails.code,
     });
 
-    // 🔎 Validate rowData
     const entity = await findEntityById(dataSourceDetails.entityId);
     if (!entity || !entity.attributes) {
       return res.status(400).json({ success: false, message: 'Entity or attributes not found.' });
@@ -1371,6 +1500,17 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       return res.status(400).json({ success: false, errors });
     }
 
+    // 🔹 Handle reference subfields
+    await handleReferenceSubFields({
+      rowData: validatedRowData,
+      attributes: entity.attributes,
+      dataSourceId,
+      versionId: version?._id,
+      versionValue: version.versionValue,
+      userId,
+      organizationId,
+    });
+
     const newRow = {
       dataSourceId,
       versionValue: version.versionValue,
@@ -1390,16 +1530,14 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       });
 
       await dataImportErrorServices.updateDataImportErrors(
-        { dataSourceVersionId: errorDataSourceVersionId, rowNumber: rowNumber },
+        { dataSourceVersionId: errorDataSourceVersionId, rowNumber },
         { status: 'resolved' }
       );
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         errorSchema,
-        { dataSourceVersionId: new Schema.Types.ObjectId(errorDataSourceVersionId), rowNumber: rowNumber },
+        { dataSourceVersionId: new Schema.Types.ObjectId(errorDataSourceVersionId), rowNumber },
         {},
-        {
-          isErrorLog: -1,
-        }
+        { isErrorLog: -1 }
       );
     }
 
@@ -1458,7 +1596,6 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       return res.status(404).json({ success: false, message: 'Row not found for update.' });
     }
 
-    // 🔎 Validate rowData
     const entity = await findEntityById(dataSourceDetails.entityId);
     if (!entity || !entity.attributes) {
       return res.status(400).json({ success: false, message: 'Entity or attributes not found.' });
@@ -1481,6 +1618,17 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       return res.status(400).json({ success: false, errors });
     }
 
+    // 🔹 Handle reference subfields
+    await handleReferenceSubFields({
+      rowData: validatedRowData,
+      attributes: entity.attributes,
+      dataSourceId,
+      versionId: version?._id,
+      versionValue: version.versionValue,
+      userId,
+      organizationId,
+    });
+
     await dataSourceVersionValueService.updateOne(
       schemaName,
       { _id: rowId },
@@ -1496,6 +1644,7 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     next(e);
   }
 };
+
 
 export const deleteMultipleRowsFromVersion = async (req: Request, res: Response, next: NextFunction) => {
   try {

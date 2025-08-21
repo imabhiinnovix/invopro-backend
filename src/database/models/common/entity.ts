@@ -1,31 +1,48 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* @ts-nocheck */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Schema, model, Document, Types } from 'mongoose';
 import config from '../../../config';
 
-// Define the Reference Entity Setting interface
+// ---------------------------
+// Reference Entity Setting interface
+// ---------------------------
 export interface IReferenceEntitySetting {
   refEntityId: Types.ObjectId;
   refEntityField?: Types.ObjectId;
   relationType: 'one_to_one' | 'many_to_one';
 }
 
-// Define the Attribute interface
+// ---------------------------
+// Attribute interface
+// ---------------------------
 export interface IAttribute {
   name: string;
   mappingName: string;
-  type: 'number' | 'text' | 'date' | 'boolean' | 'richtext' | 'url' | 'option' | 'multioption' | 'user' | 'email' | 'text-with-option';
+  type:
+    | 'number'
+    | 'text'
+    | 'date'
+    | 'boolean'
+    | 'richtext'
+    | 'url'
+    | 'option'
+    | 'multioption'
+    | 'user'
+    | 'email'
+    | 'text-with-option';
+  required: any;
   validation?: string[];
   transformations?: string[];
   optionAttributeId?: string;
   cleaner?: string[];
-  required: any;
   referenceEntitySetting?: IReferenceEntitySetting;
+  isReferenceEdit?: boolean; // ✅ Added
 }
 
-// Define the IEntity interface
+// ---------------------------
+// Entity interface
+// ---------------------------
 interface IEntity extends Document {
   name: string;
   description?: string;
@@ -36,7 +53,9 @@ interface IEntity extends Document {
   isActive: boolean;
 }
 
-// ReferenceEntitySetting schema
+// ---------------------------
+// ReferenceEntitySetting Schema
+// ---------------------------
 const referenceEntitySettingSchema = new Schema<IReferenceEntitySetting>(
   {
     refEntityId: {
@@ -56,7 +75,9 @@ const referenceEntitySettingSchema = new Schema<IReferenceEntitySetting>(
   { _id: false }
 );
 
-// Define the Attribute Schema
+// ---------------------------
+// Attribute Schema
+// ---------------------------
 const attributeSchema = new Schema<IAttribute>(
   {
     name: { type: String, required: true },
@@ -77,20 +98,21 @@ const attributeSchema = new Schema<IAttribute>(
       type: Types.ObjectId,
       ref: 'attribute_option',
       default: null,
-      set: (value: any) => {
-        return value === '' ? null : value;
-      },
+      set: (value: any) => (value === '' ? null : value),
     },
     cleaner: { type: [String] },
     referenceEntitySetting: {
       type: referenceEntitySettingSchema,
       required: false,
     },
+    isReferenceEdit: { type: Boolean, default: false }, // ✅ Added
   },
   { _id: true, toJSON: { getters: true }, toObject: { getters: true } }
 );
 
-// Define the Entity Schema
+// ---------------------------
+// Entity Schema
+// ---------------------------
 const entitySchema = new Schema<IEntity>(
   {
     name: { type: String, required: true },
@@ -106,9 +128,15 @@ const entitySchema = new Schema<IEntity>(
   }
 );
 
-entitySchema.index({ name: 1, organizationId: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
+// Unique index
+entitySchema.index(
+  { name: 1, organizationId: 1 },
+  { unique: true, collation: { locale: 'en', strength: 2 } }
+);
 
-// Create the entity model
+// ---------------------------
+// Model
+// ---------------------------
 const Entity = model<IEntity>('Entity', entitySchema);
 
 export default Entity;

@@ -203,6 +203,45 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
             if (ds.entityId?.attributes?.length) {
               for (const attr of ds.entityId.attributes) {
                 attributeMap.set(String(attr._id), attr);
+               if (attr.referenceEntitySetting?.refEntityId) {
+  // fetch referenced entity
+  const refEntity: any = await entityService.findEntityById(
+    attr.referenceEntitySetting.refEntityId.toString()
+  );
+
+  if (refEntity?.attributes?.length) {
+    for (const refAttr of refEntity.attributes) {
+      // Only include subfields marked as isReferenceEdit
+      if (refAttr.isReferenceEdit) {
+        // Skip the main reference field itself
+        if (
+          String(refAttr._id) ===
+          String(attr.referenceEntitySetting.refEntityField)
+        )
+          continue;
+
+        // avoid duplicate by checking _id
+        if (!attributeMap.has(refAttr._id.toString())) {
+          // copy all properties as-is
+          const newAttr = { ...(refAttr.toObject?.() || refAttr) };
+
+          // prefix name with parent reference field
+          newAttr.name = `${attr.name}.${refAttr.name}`;
+
+          // Add to attribute map
+          attributeMap.set(newAttr._id.toString(), newAttr);
+
+          // Add to entity attributes
+          ds.entityId.attributes.push(newAttr);
+        }
+      }
+    }
+  }
+}
+
+
+
+
               }
             }
 

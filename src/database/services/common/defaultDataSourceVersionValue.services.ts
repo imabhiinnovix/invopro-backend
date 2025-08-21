@@ -302,7 +302,7 @@ export const getDataSourceVersionValueV1 = async ({
       if (attr.referenceEntitySetting && rowData.hasOwnProperty(resolvedKey)) {
         const refResolved = rowData[resolvedKey];
 
-        // ✅ Determine display field from refEntityField
+        // Determine display field from refEntityField
         let displayField: string | undefined;
         if (attr.referenceEntitySetting.refEntityField) {
           const refFieldAttr = await getEntityAttribute(
@@ -312,66 +312,71 @@ export const getDataSourceVersionValueV1 = async ({
           displayField = refFieldAttr?.name;
         }
 
-        // --- 🔹 Handle Many-to-One Reference Expansion ---
-       if (attr.referenceEntitySetting.relationType === "many_to_one") {
-        // Get the reference field attribute
-        const refFieldAttr = await getEntityAttribute(
-          attr.referenceEntitySetting.refEntityId,
-          attr.referenceEntitySetting.refEntityField
-        );
+        // Handle Many-to-One Reference Expansion
+        if (attr.referenceEntitySetting.relationType === "many_to_one") {
+          const refFieldAttr = await getEntityAttribute(
+            attr.referenceEntitySetting.refEntityId,
+            attr.referenceEntitySetting.refEntityField
+          );
+          const refFieldName = refFieldAttr?.name;
 
-        const refFieldName = refFieldAttr?.name;
-        if (refFieldName && refResolved?.rowData?.[refFieldName]) {
-          const refValue = refResolved.rowData[refFieldName];
+          if (refFieldName && refResolved?.rowData?.[refFieldName]) {
+            const refValue = refResolved.rowData[refFieldName];
+            const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
 
-          // Load reference entity model dynamically
-          const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
+            const relatedDocs: any[] = await RefModel.find({
+              [`rowData.${refFieldName}`]: refValue,
+            }).lean();
 
-          // Fetch all docs that match the same reference field value
-          const relatedDocs: any[] = await RefModel.find({
-            [`rowData.${refFieldName}`]: refValue,
-          }).lean();
+            for (const r of relatedDocs) {
+              for (const subKey in r.rowData) {
+                if (subKey === refFieldName) continue; // skip main ref field
 
-          // --- Combine subfields into arrays, except the reference field itself ---
-          for (const r of relatedDocs) {
-            for (const subKey in r.rowData) {
-              if (subKey === refFieldName) continue; // skip main ref field
-              if (!rowData[`${key}.${subKey}`]) rowData[`${key}.${subKey}`] = [];
-              rowData[`${key}.${subKey}`].push(r.rowData[subKey]);
+                const arrayKey = `${key}.${subKey}`;
+                if (!Array.isArray(rowData[arrayKey])) {
+                  rowData[arrayKey] = [];
+                }
+
+                const value = r.rowData[subKey];
+                if (Array.isArray(value)) {
+                  rowData[arrayKey].push(...value);
+                } else if (value !== undefined) {
+                  rowData[arrayKey].push(value);
+                }
+              }
             }
-          }
 
-          // Remove duplicates in subfield arrays
-          for (const subKey in rowData) {
-            if (subKey.startsWith(`${key}.`) && Array.isArray(rowData[subKey])) {
-              rowData[subKey] = [...new Set(rowData[subKey])];
+            // Remove duplicates
+            for (const subKey in rowData) {
+              if (subKey.startsWith(`${key}.`) && Array.isArray(rowData[subKey])) {
+                rowData[subKey] = [...new Set(rowData[subKey])];
+              }
             }
+
+            // Set main reference field
+            rowData[`${key}.${refFieldName}`] = refResolved.rowData[refFieldName];
+            rowData[key] =
+              displayField && refResolved.rowData[displayField] !== undefined
+                ? refResolved.rowData[displayField]
+                : Object.values(refResolved.rowData)[0];
           }
-
-          // --- Set main reference field as single value ---
-          rowData[`${key}.${refFieldName}`] = refResolved.rowData[refFieldName];
-
-          // Optional: if you want the top-level key to also show the display value
-          rowData[key] =
-            displayField && refResolved.rowData[displayField] !== undefined
-              ? refResolved.rowData[displayField]
-              : Object.values(refResolved.rowData)[0];
         }
-      }
-
-
-
-        // --- 🔹 Default handling for one-to-one or array refs ---
+        // Default handling for one-to-one or array refs
         else if (Array.isArray(refResolved)) {
           const displayValues: string[] = [];
           for (const ref of refResolved) {
             if (!ref?.rowData) continue;
 
             for (const subKey in ref.rowData) {
-              if (!rowData[`${key}.${subKey}`]) {
-                rowData[`${key}.${subKey}`] = [];
+              const arrayKey = `${key}.${subKey}`;
+              if (!Array.isArray(rowData[arrayKey])) rowData[arrayKey] = [];
+
+              const value = ref.rowData[subKey];
+              if (Array.isArray(value)) {
+                rowData[arrayKey].push(...value);
+              } else if (value !== undefined) {
+                rowData[arrayKey].push(value);
               }
-              rowData[`${key}.${subKey}`].push(ref.rowData[subKey]);
             }
 
             const displayVal =
@@ -384,7 +389,6 @@ export const getDataSourceVersionValueV1 = async ({
           rowData[key] = displayValues;
         } else if (refResolved && refResolved.rowData) {
           const refRowData = refResolved.rowData;
-
           for (const subKey in refRowData) {
             rowData[`${key}.${subKey}`] = refRowData[subKey];
           }
@@ -403,6 +407,7 @@ export const getDataSourceVersionValueV1 = async ({
     return newDoc;
   })
 );
+
 
     // Step 7: Count
     const countPipeline = aggregationPipeline.filter(
