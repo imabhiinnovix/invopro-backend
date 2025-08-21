@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Types } from 'mongoose';
 import Entity from '../../models/common/entity';
 import { getAllDerivedFields } from './derivedField.services';

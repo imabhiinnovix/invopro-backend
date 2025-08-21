@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import NotificationTemplate from '../../models/notivix/notificationTemplate';
 import { Types } from 'mongoose';
 

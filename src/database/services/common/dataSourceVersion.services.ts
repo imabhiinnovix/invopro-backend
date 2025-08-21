@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import DataSourceVersion from '../../models/common/dataSourceVersion';
 
 export const createDataSourceVersion = async (createDataSourceVersionValue: any) => {

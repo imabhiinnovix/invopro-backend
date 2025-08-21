@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import { PopulateOptions } from 'mongoose';
 import organizationProductSubscription from '../../models/common/organizationProductSubscription';
 

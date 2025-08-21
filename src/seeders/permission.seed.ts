@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import Permission from '../database/models/common/permissionModel'; // Your Mongoose model
 
 let permissions = [

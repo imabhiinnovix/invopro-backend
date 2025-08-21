@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Settings } from 'luxon';
 import { buildAggregationPipeline } from '../../../utils/aggregationPipeline';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';

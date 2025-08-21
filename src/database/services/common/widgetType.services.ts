@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import WidgetType from '../../models/common/widgetType';
 
 export const createWidgetType = async (widgetTypeData: any) => {

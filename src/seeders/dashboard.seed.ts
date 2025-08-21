@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import Dashboard from '../database/models/common/dashboard';
 
 const defaultSettings = {

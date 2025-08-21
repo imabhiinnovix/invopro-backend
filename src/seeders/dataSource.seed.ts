@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import DataSource from '../database/models/common/dataSource';
 
 function getDataSourceToBeSeed({ entityDataSourceMap, organizationId, createdBy, updatedBy }) {

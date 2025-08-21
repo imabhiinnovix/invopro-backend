@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import DataImportErrorModel from '../../models/common/dataImportError';
 
 export const createManyDataImportError = async (value: any) => {

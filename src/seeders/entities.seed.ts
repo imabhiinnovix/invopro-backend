@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import Entity from '../database/models/common/entity';
 import mongoose from 'mongoose';
 

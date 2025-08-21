@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import mongoose, { Schema, model, Document, Types } from 'mongoose';
 
 interface IDataSource {

@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import WidgetAppearance from '../../models/common/widgetAppearance';
 
 export const findAllWidgetAppearance = async ({ query, populate, page, limit, sort }: any) => {

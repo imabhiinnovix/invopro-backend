@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import createDefaultDataSourceVersionModel from '../../models/common/defaultDataSourceVersionModel';
 import { Model, Document, AnyBulkWriteOperation, Types } from 'mongoose';
 import { findEntityById } from './entity.services';

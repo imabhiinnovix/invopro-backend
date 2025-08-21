@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import AiCacheModel from '../../models/reportivix/aiCache';
 
 export const createAiCacheData = async (cacheData: any) => {

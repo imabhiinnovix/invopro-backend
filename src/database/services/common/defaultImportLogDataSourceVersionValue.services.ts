@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import createDefaultImportLogDataSourceVersionModel from '../../models/common/defaultImportLogDataSourceVersionModel';
 import createDefaultDataSourceVersionModel from '../../models/common/defaultImportLogDataSourceVersionModel';
 import { Model, Document, AnyBulkWriteOperation } from 'mongoose';

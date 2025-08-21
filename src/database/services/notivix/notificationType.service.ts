@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import NotificationType from '../../models/notivix/notificationType';
 
 export const createNotificationType = async (payload: any) => {

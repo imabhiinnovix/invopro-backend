@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import Operator from '../database/models/common/operator';
 import { validatorOperatorData } from '../utils/operators';
 

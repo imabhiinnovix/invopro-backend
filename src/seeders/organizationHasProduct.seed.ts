@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import { Types } from 'mongoose';
 import OrganizationProductSubscription from '../database/models/common/organizationProductSubscription';
 

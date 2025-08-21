@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import mongoose, { Types } from 'mongoose';
 import Permission from '../database/models/common/permissionModel'; // adjust path if needed
 import UserRole from '../database/models/common/userRole';

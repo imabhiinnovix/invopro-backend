@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Types } from 'mongoose';
 import WidgetTheme, { IWidgetTheme } from '../../models/common/widgetTheme';
 

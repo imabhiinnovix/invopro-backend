@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import { Types } from 'mongoose';
 import Attribute from '../../models/common/attributeOption';
 

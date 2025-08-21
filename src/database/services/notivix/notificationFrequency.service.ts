@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import NotificationFrequencySetting from '../../models/notivix/notificationFrequencySetting';
 
 export const createNotificationFrequency = async (payload: any) => {

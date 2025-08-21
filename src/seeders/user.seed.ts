@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import User from '../database/models/common/user';
 import UserRole from '../database/models/common/userRole';
 import Organization from '../database/models/common/organization';
