@@ -892,15 +892,6 @@ let permissions = [
     isSuperUser: false,
   },
   {
-    name: 'Get Notification Type',
-    method: 'GET',
-    resourceId: '/notivix/notification-setting/type/:id',
-    extraOptions: {},
-    resourceType: 'Notification Setting Type',
-    resourceCode: 'notification_setting_type_get',
-    isSuperUser: false,
-  },
-  {
     name: 'List Notification Types',
     method: 'GET',
     resourceId: '/notivix/notification-setting/type/list',
@@ -937,12 +928,12 @@ let permissions = [
     isSuperUser: false,
   },
   {
-    name: 'Get Notification Frequency',
+    name: 'Get Notification Type',
     method: 'GET',
-    resourceId: '/notivix/notification-setting/frequency/:id',
+    resourceId: '/notivix/notification-setting/type/:id',
     extraOptions: {},
-    resourceType: 'Notification Setting Frequency',
-    resourceCode: 'notification_setting_frequency_get',
+    resourceType: 'Notification Setting Type',
+    resourceCode: 'notification_setting_type_get',
     isSuperUser: false,
   },
   {
@@ -982,12 +973,12 @@ let permissions = [
     isSuperUser: false,
   },
   {
-    name: 'Get Notification Template',
+    name: 'Get Notification Frequency',
     method: 'GET',
-    resourceId: '/notivix/notification-setting/template/:id',
+    resourceId: '/notivix/notification-setting/frequency/:id',
     extraOptions: {},
-    resourceType: 'Notification Setting Template',
-    resourceCode: 'notification_setting_template_get',
+    resourceType: 'Notification Setting Frequency',
+    resourceCode: 'notification_setting_frequency_get',
     isSuperUser: false,
   },
   {
@@ -1027,12 +1018,12 @@ let permissions = [
     isSuperUser: false,
   },
   {
-    name: 'Get Notification Medium Setting',
+    name: 'Get Notification Template',
     method: 'GET',
-    resourceId: '/notivix/notification-setting/medium/:id',
+    resourceId: '/notivix/notification-setting/template/:id',
     extraOptions: {},
-    resourceType: 'Notification Medium Setting',
-    resourceCode: 'notification_setting_medium_get',
+    resourceType: 'Notification Setting Template',
+    resourceCode: 'notification_setting_template_get',
     isSuperUser: false,
   },
   {
@@ -1070,7 +1061,16 @@ let permissions = [
     resourceType: 'Notification Medium Setting',
     resourceCode: 'notification_setting_medium_delete',
     isSuperUser: false,
-  }
+  },
+  {
+    name: 'Get Notification Medium Setting',
+    method: 'GET',
+    resourceId: '/notivix/notification-setting/medium/:id',
+    extraOptions: {},
+    resourceType: 'Notification Medium Setting',
+    resourceCode: 'notification_setting_medium_get',
+    isSuperUser: false,
+  },
 
 ];
 

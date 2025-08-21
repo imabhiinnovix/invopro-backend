@@ -25,7 +25,7 @@ import { version } from 'os';
 import { getEntityAttribute, getModelForEntity } from '../../../utils/entity.utils';
 import { Types } from 'mongoose';
 import { findEntityById } from '../../../database/services/common/entity.services';
-import { autoPopulateAttributeOption } from '../../../utils/attributeOption.utils';
+import { autoPopulateAttributeOption, autoPopulateAttributeOptionFromRow } from '../../../utils/attributeOption.utils';
 const ObjectId = mongoose.Types.ObjectId;
 
 export const ERROR_CODES = {
@@ -225,7 +225,7 @@ async function validateAndConvert({
   value,
   type,
   optionAttributeId,
-  separator,
+  separator = ',',
 }: {
   value: any;
   type: string;
@@ -239,12 +239,18 @@ async function validateAndConvert({
     } else if (typeof value === 'string' && value.toLowerCase().trim() === 'no') {
       convertedValue = 0;
     }
+    return {
+      isValid: !isNaN(convertedValue),
+      convertedValue: !isNaN(convertedValue) ? convertedValue : null,
+    };
+  }
 
-    return { isValid: !isNaN(convertedValue), convertedValue: !isNaN(convertedValue) ? convertedValue : null };
-  } else if (type === 'text' || type === 'richtext') {
+  if (type === 'text' || type === 'richtext') {
     const convertedValue = value !== undefined && value !== null ? String(value) : null;
     return { isValid: typeof convertedValue === 'string', convertedValue };
-  } else if (type === 'date') {
+  }
+
+  if (type === 'date') {
     if (typeof value === 'number') {
       value = excelDateToJSDate(value);
     }
@@ -253,34 +259,60 @@ async function validateAndConvert({
       isValid: !isNaN(convertedValue.getTime()),
       convertedValue: !isNaN(convertedValue.getTime()) ? convertedValue.toISOString() : null,
     };
-  } else if (type === 'boolean') {
+  }
+
+  if (type === 'boolean') {
     const convertedValue =
       value === 'true' || value === true ? true : value === 'false' || value === false ? false : null;
     return { isValid: typeof convertedValue === 'boolean', convertedValue };
-  } else if (type === 'url') {
+  }
+
+  if (type === 'url') {
     const urlRegex =
       /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)/;
     const isValid = urlRegex.test(value);
     return { isValid, convertedValue: isValid ? value : null };
-  } else if (type === 'email') {
+  }
+
+  if (type === 'email') {
     const emailRegex =
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     const isValid = emailRegex.test(value);
     return { isValid, convertedValue: isValid ? value : null };
-  } else if (type === 'option' || type === 'multioption') {
+  }
+
+  if (type === 'option' || type === 'multioption') {
     if (optionAttributeId) {
       const attributeOptionDetails = await attributeOptionService.findAttributeOptionById(optionAttributeId);
-      const attributeOptionValue = attributeOptionDetails?.attributeValue ? attributeOptionDetails?.attributeValue : [];
+
+      const attributeOptionValue: string[] = attributeOptionDetails?.attributeValue || [];
+
+      // normalize available options to lowercase
+      const optionSet = new Set(attributeOptionValue.map((v) => v.toLowerCase()));
+
       if (type === 'option') {
-        const isValid = attributeOptionValue.includes(value);
-        return { isValid, convertedValue: isValid ? value : null, attributeOptionValue: attributeOptionValue };
+        const candidate = String(value).trim();
+        const isValid = optionSet.has(candidate.toLowerCase());
+        return {
+          isValid,
+          convertedValue: isValid ? candidate : null,
+          attributeOptionValue,
+        };
       } else {
-        const splittedValue = value.split(separator);
-        const allValid = splittedValue.every((val: any) => attributeOptionValue.includes(val));
+        // handle both array and string
+        const valuesArray: string[] = Array.isArray(value)
+          ? value.map((v) => String(v).trim())
+          : String(value)
+              .split(separator)
+              .map((v) => v.trim())
+              .filter(Boolean);
+
+        const allValid = valuesArray.every((val) => optionSet.has(val.toLowerCase()));
+
         return {
           isValid: allValid,
-          convertedValue: allValid ? splittedValue : null,
-          attributeOptionValue: attributeOptionValue,
+          convertedValue: allValid ? valuesArray : null,
+          attributeOptionValue,
         };
       }
     } else {
@@ -290,6 +322,7 @@ async function validateAndConvert({
       };
     }
   }
+
   return { isValid: true, convertedValue: value };
 }
 
@@ -510,6 +543,92 @@ async function validateFileData({
     errors,
     newRowData,
   };
+}
+
+export async function validateRowData({
+  rowData,
+  attributes,
+  separator = ',',
+}: {
+  rowData: Record<string, any>;
+  attributes: any[];
+  separator?: string;
+}) {
+  const errors: any[] = [];
+  const validatedRowData: Record<string, any> = { ...rowData };
+
+  for (const attr of attributes) {
+    const value = validatedRowData[attr.name];
+
+    // 1️⃣ Required check
+    if (value === undefined || value === null || value === '') {
+      if (attr.required === 'Mandatory') {
+        errors.push({
+          attributeName: attr.name,
+          errorType: 'Not Found',
+          errorCode: '404',
+          errorMessage: `Attribute "${attr.name}" is required but missing.`,
+        });
+      }
+      continue;
+    }
+
+    // 2️⃣ Reference resolution
+    if (attr.referenceEntitySetting?.refEntityId) {
+      const refEntityId = attr.referenceEntitySetting.refEntityId;
+      const refFieldId = attr.referenceEntitySetting.refEntityField;
+      const refEntityField = await getEntityAttribute(refEntityId, refFieldId);
+      const RefModel = await getModelForEntity(refEntityId);
+
+      const escapedValue = escapeRegExp(String(value).trim());
+      const regex = new RegExp(`^${escapedValue}$`, 'i');
+
+      const referencedDoc = await RefModel.findOne({
+        [`rowData.${refEntityField.name}`]: regex,
+      });
+
+      if (!referencedDoc) {
+        errors.push({
+          attributeName: attr.name,
+          errorType: 'Reference Error',
+          errorCode: '404',
+          errorMessage: `Value "${value}" could not be resolved from reference entity for "${attr.name}".`,
+        });
+      } else {
+        validatedRowData[attr.name] = referencedDoc._id;
+      }
+    } else {
+      // 3️⃣ Validate against type + options
+      const { isValid, convertedValue, attributeOptionValue } = await validateAndConvert({
+        value,
+        type: attr.type,
+        optionAttributeId: attr.optionAttributeId,
+        separator,
+      });
+
+      if (!isValid) {
+        if (['option', 'multioption'].includes(attr.type)) {
+          errors.push({
+            attributeName: attr.name,
+            errorType: 'Type Error',
+            errorCode: '400',
+            errorMessage: `Invalid value "${value}" for "${attr.name}". Expected one of: ${attributeOptionValue}`,
+          });
+        } else {
+          errors.push({
+            attributeName: attr.name,
+            errorType: 'Type Error',
+            errorCode: '400',
+            errorMessage: `Invalid value "${value}" (expected type ${attr.type}) for "${attr.name}".`,
+          });
+        }
+      } else {
+        validatedRowData[attr.name] = convertedValue;
+      }
+    }
+  }
+
+  return { isValid: errors.length === 0, errors, validatedRowData };
 }
 
 export async function createDataSourceVersion(req: Request, res: Response, next: NextFunction) {
@@ -1142,7 +1261,7 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     const parsedSort = sort ? JSON.parse(sort) : {};
     const parsedFilters = filters ? JSON.parse(filters) : {};
 
-    const query = { dataSourceVersionId };
+    const query = { dataSourceVersionId, status: 'active' };
 
     const result = await dataSourceVersionValueService.getDataSourceVersionValueV1({
       schemaName,
@@ -1203,8 +1322,11 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       ...(versionValue && { versionValue }),
     };
 
-    let version = await dataSourceVersionService.getDataSourceVersion({ query: versionQuery });
-
+    let version = await dataSourceVersionService.getDataSourceVersion({
+      query: versionQuery,
+      populate: [],
+      sort: { createdAt: -1 },
+    });
     if (!version) {
       // Fallback to current YYYY-MM if version not provided
       const now = new Date();
@@ -1226,38 +1348,35 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       versionCode: dataSourceDetails.code,
     });
 
-    const versionId = version._id;
-    const entityId = dataSourceDetails.entityId;
-
-    // Use entityService to fetch entity and convert reference fields
-    const entity = await findEntityById(entityId);
+    // 🔎 Validate rowData
+    const entity = await findEntityById(dataSourceDetails.entityId);
     if (!entity || !entity.attributes) {
       return res.status(400).json({ success: false, message: 'Entity or attributes not found.' });
     }
 
-    const refAttributes = entity.attributes
-      .filter((attr) => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
-      .map((attr) => attr.name);
+    await autoPopulateAttributeOptionFromRow({
+      entityId: dataSourceDetails.entityId,
+      attributes: entity.attributes,
+      rowData,
+      userId,
+      organizationId,
+    });
 
-    for (const attr of refAttributes) {
-      if (rowData[attr]) {
-        try {
-          rowData[attr] = new Types.ObjectId(rowData[attr]);
-        } catch {
-          return res.status(400).json({
-            success: false,
-            message: `Invalid ObjectId for reference field '${attr}'`,
-          });
-        }
-      }
+    const { isValid, errors, validatedRowData } = await validateRowData({
+      rowData,
+      attributes: entity.attributes,
+    });
+
+    if (!isValid) {
+      return res.status(400).json({ success: false, errors });
     }
 
     const newRow = {
       dataSourceId,
       versionValue: version.versionValue,
-      entityId,
-      dataSourceVersionId: versionId,
-      rowData,
+      entityId: dataSourceDetails.entityId,
+      dataSourceVersionId: version._id,
+      rowData: validatedRowData,
       createdBy: userId,
     };
 
@@ -1315,7 +1434,12 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       ...(versionValue && { versionValue }),
     };
 
-    const version = await dataSourceVersionService.getDataSourceVersion({ query: versionQuery });
+    let version = await dataSourceVersionService.getDataSourceVersion({
+      query: versionQuery,
+      populate: [],
+      sort: { createdAt: -1 },
+    });
+
     if (!version) {
       return res.status(404).json({ success: false, message: 'Version not found.' });
     }
@@ -1325,53 +1449,48 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       versionCode: dataSourceDetails.code,
     });
 
-    const versionId = version._id;
-
     const existingRow = await dataSourceVersionValueService.findOne(schemaName, {
       _id: rowId,
-      dataSourceVersionId: versionId,
+      dataSourceVersionId: version._id,
     });
 
     if (!existingRow) {
       return res.status(404).json({ success: false, message: 'Row not found for update.' });
     }
 
-    // Use entityService to fetch entity and convert reference fields
+    // 🔎 Validate rowData
     const entity = await findEntityById(dataSourceDetails.entityId);
     if (!entity || !entity.attributes) {
       return res.status(400).json({ success: false, message: 'Entity or attributes not found.' });
     }
 
-    const refAttributes = entity.attributes
-      .filter((attr) => attr.referenceEntitySetting && attr.referenceEntitySetting.refEntityField)
-      .map((attr) => attr.name);
+    await autoPopulateAttributeOptionFromRow({
+      entityId: dataSourceDetails.entityId,
+      attributes: entity.attributes,
+      rowData,
+      userId,
+      organizationId,
+    });
 
-    for (const attr of refAttributes) {
-      if (rowData[attr]) {
-        try {
-          rowData[attr] = new Types.ObjectId(rowData[attr]);
-        } catch {
-          return res.status(400).json({
-            success: false,
-            message: `Invalid ObjectId for reference field '${attr}'`,
-          });
-        }
-      }
+    const { isValid, errors, validatedRowData } = await validateRowData({
+      rowData,
+      attributes: entity.attributes,
+    });
+
+    if (!isValid) {
+      return res.status(400).json({ success: false, errors });
     }
 
     await dataSourceVersionValueService.updateOne(
       schemaName,
       { _id: rowId },
       {
-        rowData: rowData,
+        rowData: validatedRowData,
         updatedBy: userId,
       }
     );
 
-    return res.status(200).json({
-      success: true,
-      message: 'Row updated successfully.',
-    });
+    return res.status(200).json({ success: true, message: 'Row updated successfully.' });
   } catch (e) {
     console.error('Error in updateSingleRowVersionValue', e);
     next(e);
@@ -1403,6 +1522,8 @@ export const deleteMultipleRowsFromVersion = async (req: Request, res: Response,
 
     const versionDetails = await dataSourceVersionService.getDataSourceVersion({
       query: versionQuery,
+      populate: [],
+      sort: { createdAt: -1 },
     });
 
     if (!versionDetails) {
@@ -1413,7 +1534,6 @@ export const deleteMultipleRowsFromVersion = async (req: Request, res: Response,
       orgCode,
       versionCode: dataSourceDetails.code,
     });
-
     await dataSourceVersionValueService.deleteVersionValues(schemaName, {
       _id: { $in: ids.map((id: string) => new Types.ObjectId(id)) },
       dataSourceVersionId: versionDetails._id,

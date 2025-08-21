@@ -1,12 +1,14 @@
+import config from '../../../config';
 import { Schema, model, Document, Types } from 'mongoose';
 
 interface IFieldSetting {
   attributeId: Types.ObjectId;
-  refAttributeId?: Types.ObjectId;
+  refAttributeId?: Types.ObjectId[];
   label?: string;
   isFilterEnable?: boolean;
   isSortingEnable?: boolean;
   isDisplayEnable?: boolean;
+  type: 'number' | 'text' | 'date' | 'boolean' | 'richtext' | 'url' | 'option' | 'multioption' | 'user';
   isDerived: boolean;
 }
 
@@ -43,7 +45,8 @@ const fieldSettingSchema = new Schema<IFieldSetting>(
       required: true,
     },
     refAttributeId: {
-      type: Schema.Types.ObjectId,
+      type: [Schema.Types.ObjectId],
+      default: [], // Always an array, even for single level
     },
     label: {
       type: String,
@@ -63,6 +66,11 @@ const fieldSettingSchema = new Schema<IFieldSetting>(
     isDerived: {
       type: Boolean,
       default: false,
+    },
+    type: {
+      type: String,
+      required: true,
+      enum: config.FIELD_TYPE_ENUM,
     },
   },
   { _id: false }

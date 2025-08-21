@@ -650,7 +650,7 @@ export const getReportVersionValuesBasedOnReportIdAndVersionValue = async (
       reportDataSourceFileNameMap[dataSource.dataSourceId] = dataSource.fileDetails;
     }
 
-    const versionValueDetails = dataSourceResult?.data?.map((source) => ({
+    const versionValueDetails = dataSourceResult?.data?.map((source: any) => ({
       ...source,
       requiredFiles: reportDataSourceFileNameMap[source._id],
       reportName: customReportData?.reportName,

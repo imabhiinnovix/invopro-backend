@@ -5,7 +5,7 @@ export const createNotificationType = async (req: Request, res: Response, next: 
   try {
     const {
       name,
-      entityId,
+      dataSourceId,
       triggerFieldId,
       conditionGroups,
     } = req.body;
@@ -15,7 +15,7 @@ export const createNotificationType = async (req: Request, res: Response, next: 
       organizationId,
       userId,
       name,
-      entityId,
+      dataSourceId,
       triggerFieldId,
       conditionGroups,
     });
@@ -35,7 +35,7 @@ export const updateNotificationType = async (req: Request, res: Response, next: 
   try {
     const {
       name,
-      entityId,
+      dataSourceId,
       triggerFieldId,
       conditionGroups,
     } = req.body;
@@ -46,7 +46,7 @@ export const updateNotificationType = async (req: Request, res: Response, next: 
       { _id: req.params.id, organizationId },
       {
         name,
-        entityId,
+        dataSourceId,
         triggerFieldId,
         conditionGroups,
         updatedBy: userId,
@@ -88,7 +88,7 @@ export const deleteNotificationType = async (req: Request, res: Response, next: 
 export const listNotificationType = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { organizationId } = req.user;
-    const { name, entityId, page = 1, limit = 10, sort } = req.query;
+    const { name, dataSourceId, page = 1, limit = 10, sort } = req.query;
 
     const parsedPage = parseInt(page as string, 10) || 1;
     const parsedLimit = parseInt(limit as string, 10) || 10;
@@ -99,8 +99,8 @@ export const listNotificationType = async (req: Request, res: Response, next: Ne
       query.name = { $regex: name, $options: 'i' };
     }
 
-    if (entityId) {
-      query.entityId = entityId;
+    if (dataSourceId) {
+      query.dataSourceId = dataSourceId;
     }
 
     const result = await NotificationTypeService.listNotificationType({
@@ -108,7 +108,7 @@ export const listNotificationType = async (req: Request, res: Response, next: Ne
       page: parsedPage,
       limit: parsedLimit,
       sort: sort ? JSON.parse(sort as string) : { updatedAt: -1 },
-      populate: ['entityId'],
+      populate: ['dataSourceId'],
     });
 
     const totalPages = Math.ceil(result.totalCount / parsedLimit);

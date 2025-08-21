@@ -147,14 +147,38 @@ export const checkDataSourceNameAvailableOrNot = async (req: Request, res: Respo
 
 export const listDataSource = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search, paginate = false, canEditInline = false } = req.query;
+     const {
+      search
+    } = req.query;
+    const paginate = String(req.query.paginate).toLowerCase() === 'true';
+    const canEditInline = String(req.query.canEditInline).toLowerCase() === 'true';
+    const isShowMenu = String(req.query.isShowMenu).toLowerCase() === 'true';
+    const isAllowPermission = String(req.query.isAllowPermission).toLowerCase() === 'true';
+
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
     const { organizationId } = req.user;
 
     const query: any = { organizationId, isVisible: true };
-    if (search) query.name = { $regex: search, $options: 'i' };
-    if (canEditInline) query['canEditInline'] = true;
+
+
+    // Search filter
+    if (search) {
+      query.name = { $regex: search, $options: 'i' };
+    }
+
+    // Individual flag filters
+    if (canEditInline && !isAllowPermission) {
+      query['canEditInline'] = true;
+    }
+    if (isShowMenu && !isAllowPermission) {
+      query['isShowMenu'] = true;
+    }
+
+    // OR condition for permission mode
+    if (isAllowPermission) {
+      query.$or = [{ isShowMenu: true }, { canEditInline: true }];
+    }
 
     const populate = paginate
       ? [
@@ -169,6 +193,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
       page,
       limit,
       populate,
+      paginate
     });
 
     const data = Array.isArray(result.data)
@@ -181,44 +206,65 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
               }
             }
 
-            const derivedFields: any[] = [];
-
-            // Enhance fieldSettings with mapped name/type + check for derived fields
             if (Array.isArray(ds.fieldSettings)) {
               for (const field of ds.fieldSettings) {
-
                 // Derived field logic
                 if (field.isDerived && field.attributeId) {
                   const derived = await findDerivedFieldById(field.attributeId);
                   if (derived) {
-                      field.mappedAttributeName = `Derived.${derived.name}`;
-                      field.values = Array.isArray(derived.valueRules) ? derived.valueRules.map(vr => vr.value) : [];
+                    field.mappedAttributeName = `Derived.${derived.name}`;
+                    field.values = Array.isArray(derived.valueRules)
+                      ? derived.valueRules.map(vr => vr.value)
+                      : [];
                   }
-                }else{
+                } else {
                   const attr = attributeMap.get(String(field.attributeId));
 
                   if (!attr) {
                     field.mappedAttributeName = 'Unknown';
-                    // field.type = 'text';
                     continue;
                   }
 
-                  if (attr.referenceEntitySetting?.refEntityId && field.refAttributeId) {
-                    const refEntity = await Entity.findById(attr.referenceEntitySetting.refEntityId).lean();
-                    const refAttr = refEntity?.attributes?.find(
-                      (a: any) => String(a._id) === String(field.refAttributeId)
-                    );
-                    const parentName = attr.name || 'Unknown';
-                    const refName = refAttr?.name || 'Unknown';
-                    field.mappedAttributeName = `${parentName}.${refName}`;
-                    // field.type = refAttr?.type || 'text';
+                  if (attr.referenceEntitySetting?.refEntityId && Array.isArray(field.refAttributeId) && field.refAttributeId.length > 0) {
+                    // Start with parent attribute name
+                    let mappedName = attr.name || 'Unknown';
+
+                    // Walk through refAttributeId to get names stepwise
+                    let currentEntityId = attr.referenceEntitySetting.refEntityId.toString();
+
+                    for (const refAttrId of field.refAttributeId) {
+                      const refEntity = await entityService.findEntityById(currentEntityId);
+                      if (!refEntity || !Array.isArray(refEntity.attributes)) {
+                        mappedName += '.Unknown';
+                        break;
+                      }
+
+                      const refAttr = refEntity.attributes.find((a: any) => String(a._id) === String(refAttrId));
+                      if (!refAttr) {
+                        mappedName += '.Unknown';
+                        break;
+                      }
+
+                      mappedName += `.${refAttr.name}`;
+
+                      // Prepare for next level lookup if exists
+                      if (refAttr.referenceEntitySetting?.refEntityId) {
+                        currentEntityId = refAttr.referenceEntitySetting.refEntityId.toString();
+                      } else {
+                        // No further reference
+                        break;
+                      }
+                    }
+
+                    field.mappedAttributeName = mappedName;
                   } else {
+                    // No multi-level reference, just use attribute name
                     field.mappedAttributeName = attr.name;
-                    // field.type = attr?.type || 'text';
                   }
                 }
               }
             }
+
 
             ds.uniqueAttributeRules = Array.isArray(ds.uniqueAttributeRules)
               ? ds.uniqueAttributeRules.map((ruleGroup: any[]) =>
@@ -246,6 +292,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
     next(err);
   }
 };
+
 
 
 export const getDataSourceById = async (req: Request, res: Response, next: NextFunction) => {

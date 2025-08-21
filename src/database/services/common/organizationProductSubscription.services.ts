@@ -74,3 +74,30 @@ export const findOrganizationProductSubscription = async (
   const organizationProductSubscriptionDetails = await query;
   return organizationProductSubscriptionDetails;
 };
+
+export const updateOrganizationProductSubscription = async (
+  organizationProductSubscriptionId: string,
+  updateData: any
+) => {
+  try {
+    const updatedSubscription = await organizationProductSubscription.findByIdAndUpdate(
+      organizationProductSubscriptionId,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    return updatedSubscription;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const deleteOrganizationProductSubscriptions = async (ids: string[]) => {
+  try {
+    return await organizationProductSubscription.deleteMany({
+      _id: { $in: ids },
+    });
+  } catch (err) {
+    throw err;
+  }
+};

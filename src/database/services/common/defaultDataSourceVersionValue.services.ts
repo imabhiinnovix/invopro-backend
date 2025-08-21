@@ -287,6 +287,7 @@ export const getDataSourceVersionValueV1 = async ({
 
     // Step 6: Transform
     // Step 6: Transform
+    // Step 6: Transform
     const transformedData = await Promise.all(
       versionValueData.map(async (doc: any) => {
         const newDoc = { ...doc };
@@ -299,14 +300,55 @@ export const getDataSourceVersionValueV1 = async ({
           if (attr.referenceEntitySetting && rowData.hasOwnProperty(resolvedKey)) {
             const refResolved = rowData[resolvedKey];
 
-            if (refResolved && refResolved.rowData) {
+            // ✅ Determine display field from refEntityField
+            let displayField: string | undefined;
+            if (attr.referenceEntitySetting.refEntityField) {
+              const refFieldAttr = await getEntityAttribute(
+                attr.referenceEntitySetting.refEntityId,
+                attr.referenceEntitySetting.refEntityField
+              );
+              displayField = refFieldAttr?.name;
+            }
+
+            if (Array.isArray(refResolved)) {
+              // multiple refs → array of strings
+              const displayValues: string[] = [];
+
+              for (const ref of refResolved) {
+                if (!ref?.rowData) continue;
+
+                // copy subfields into arrays
+                for (const subKey in ref.rowData) {
+                  if (!rowData[`${key}.${subKey}`]) {
+                    rowData[`${key}.${subKey}`] = [];
+                  }
+                  rowData[`${key}.${subKey}`].push(ref.rowData[subKey]);
+                }
+
+                // use chosen displayField, fallback to first value if not found
+                const displayVal =
+                  displayField && ref.rowData[displayField] !== undefined
+                    ? ref.rowData[displayField]
+                    : Object.values(ref.rowData)[0];
+
+                displayValues.push(displayVal);
+              }
+
+              rowData[key] = displayValues;
+            } else if (refResolved && refResolved.rowData) {
+              // single ref → single string
               const refRowData = refResolved.rowData;
 
               for (const subKey in refRowData) {
                 rowData[`${key}.${subKey}`] = refRowData[subKey];
               }
+
+              rowData[key] =
+                displayField && refRowData[displayField] !== undefined
+                  ? refRowData[displayField]
+                  : Object.values(refRowData)[0];
             }
-            delete rowData[key];
+
             delete rowData[resolvedKey];
           }
         }
@@ -315,6 +357,7 @@ export const getDataSourceVersionValueV1 = async ({
         return newDoc;
       })
     );
+
 
 
     // Step 7: Count
@@ -366,5 +409,9 @@ export const deleteVersionValues = async (
   filter: Record<string, any>,
 ) => {
   const Model = createDefaultDataSourceVersionModel(schemaName) as Model<Document>;
-  return await Model.deleteMany(filter);
+  
+  // Soft delete: set status = "inactive"
+  return await Model.updateMany(filter, {
+    $set: { status: 'in-active', updatedAt: new Date() },
+  });
 };
