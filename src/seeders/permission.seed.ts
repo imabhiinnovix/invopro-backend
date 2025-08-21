@@ -451,6 +451,16 @@ let permissions = [
     isSuperUser: false,
   },
   {
+    name: 'Get Chart Data',
+    method: 'POST',
+    methodName: 'view',
+    resourceId: '/common/dataSourceVersion/chartData',
+    extraOptions: {},
+    resourceType: 'Data Source Version',
+    resourceCode: 'dataSourceVersion__get_chart_data',
+    isSuperUser: false,
+  },
+  {
     name: 'List Data Import Errors',
     method: 'GET',
     resourceId: '/common/dataImportError/list',
@@ -1071,7 +1081,6 @@ let permissions = [
     resourceCode: 'notification_setting_medium_get',
     isSuperUser: false,
   },
-
 ];
 
 function getDynamicPermission(

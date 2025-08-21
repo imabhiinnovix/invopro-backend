@@ -1662,3 +1662,69 @@ export const listAllAvailableDataSourceVersionValue = async (req: Request, res: 
     next(e);
   }
 };
+
+export const getNewChartData = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dataSourceId, filters, versionValue, dimension, groupBy, aggregation, conditions, widgetType } = req.body;
+
+    const { orgCode } = req.user;
+
+    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+    if (!dataSourceDetails) {
+      return res.status(404).json({ success: false, message: 'Data source not found.' });
+    }
+
+    const versionQuery: any = {
+      dataSourceId: new Types.ObjectId(dataSourceId),
+      isCurrent: true, // Always filter for current version
+    };
+
+    if (versionValue) {
+      versionQuery.versionValue = versionValue; // Optional, narrows to specific version if provided
+    }
+
+    const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
+      query: versionQuery,
+    });
+    console.log('dataSourceVersionDetails', dataSourceVersionDetails, versionQuery);
+
+    if (!dataSourceVersionDetails?.data?.length) {
+      return res.status(200).json({
+        success: true,
+        message: 'Version data has been successfully retrieved.',
+        data: [],
+        totalCount: 0,
+      });
+    }
+
+    const dataSourceVersionId = dataSourceVersionDetails.data[0]._id;
+    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSourceDetails.code,
+    });
+
+    const query = { dataSourceVersionId };
+
+    const result = await dataSourceVersionValueService.getDataSourceVersionValueV2({
+      schemaName,
+      query,
+      filters,
+      entityId: dataSourceDetails.entityId,
+      dimension,
+      groupBy,
+      aggregation,
+      conditions,
+      widgetType,
+    });
+    const data = result ?? [];
+
+    return res.status(200).json({
+      success: true,
+      message: 'Chart data has been successfully retrieved.',
+      data,
+    });
+  } catch (e) {
+    console.log('Error in getNotivixChartData:', e);
+    next(e);
+  }
+};

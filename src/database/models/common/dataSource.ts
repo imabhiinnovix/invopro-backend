@@ -8,6 +8,7 @@ interface IFieldSetting {
   isFilterEnable?: boolean;
   isSortingEnable?: boolean;
   isDisplayEnable?: boolean;
+  isDashboardFilter: boolean;
   type: 'number' | 'text' | 'date' | 'boolean' | 'richtext' | 'url' | 'option' | 'multioption' | 'user';
   isDerived: boolean;
 }
@@ -54,6 +55,10 @@ const fieldSettingSchema = new Schema<IFieldSetting>(
     isFilterEnable: {
       type: Boolean,
       default: false,
+    },
+    isDashboardFilter: {
+      type: Boolean,
+      default: true,
     },
     isSortingEnable: {
       type: Boolean,
