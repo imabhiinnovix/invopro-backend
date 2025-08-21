@@ -24,6 +24,12 @@ const allowedMimeTypes = [
   'image/jpeg',
   'image/jpg',
   'image/gif',
+  // Fonts
+  'font/ttf', // TrueType
+  'font/otf', // OpenType
+  'font/woff', // Web Open Font Format
+  'font/woff2', // Web Open Font Format 2
+  'application/vnd.ms-fontobject', // Embedded OpenType (EOT)
 ];
 const fileFilter: multer.Options['fileFilter'] = (req, file, cb) => {
   if (allowedMimeTypes.includes(file.mimetype)) {

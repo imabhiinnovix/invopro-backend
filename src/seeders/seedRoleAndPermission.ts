@@ -121,6 +121,13 @@ const defaultPermissionsAdmin = [
   'POST:/notivix/notification-setting/medium/create',
   'PUT:/notivix/notification-setting/medium/update/:id',
   'DELETE:/notivix/notification-setting/medium/delete',
+  'GET:/common/dashboardFont/list',
+  'GET:/common/dashboardFont/download/:fontId',
+  'DELETE:/common/dashboardFont/delete/:fontId',
+  'GET:/common/dashboardTheme/list',
+  'POST:/common/dashboardTheme/create',
+  'PUT:/common/dashboardTheme/update/:themeId',
+  'DELETE:/common/dashboardTheme/delete/:themeId',
   'GET:/notivix/notification-setting/medium/:id',
 ];
 

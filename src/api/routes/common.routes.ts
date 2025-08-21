@@ -20,6 +20,8 @@ import attributeRoutes from './common/attributeOption.routes';
 import fileRoutes from './common/file.routes';
 import dataSourceRoutes from './common/dataSource.routes';
 import derivedFieldRoutes from './common/derivedField.routes';
+import dashboardFontRoutes from './common/dashboardFont.routes';
+import dashboardThemeRoutes from './common/dashboardTheme.routes';
 
 const router = Router();
 
@@ -44,5 +46,7 @@ router.use('/operator', operatorRoutes);
 router.use('/widgetTheme', widgetThemeRoutes);
 router.use('/dashboardShare', dashboardShareRoutes);
 router.use('/derivedField', derivedFieldRoutes);
+router.use('/dashboardFont', dashboardFontRoutes);
+router.use('/dashboardTheme', dashboardThemeRoutes);
 
 export default router;
