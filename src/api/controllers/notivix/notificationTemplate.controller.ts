@@ -10,7 +10,7 @@ export const createNotificationTemplate = async (req: Request, res: Response, ne
   try {
     const {
       name,
-      entityId,
+      dataSourceId,
       code,
       subject,
       body,
@@ -61,7 +61,7 @@ export const createNotificationTemplate = async (req: Request, res: Response, ne
         const newFilePath = path.join(
           'uploads',
           String(organizationId),
-          String(entityId),
+          String(dataSourceId),
           'notificationTemplates',
           newFileName
         );
@@ -80,7 +80,7 @@ export const createNotificationTemplate = async (req: Request, res: Response, ne
     const result = await notificationTemplateService.createNotificationTemplate({
       organizationId,
       userId,
-      entityId: new Types.ObjectId(entityId),
+      dataSourceId: new Types.ObjectId(dataSourceId),
       name,
       code,
       subject,
@@ -144,7 +144,7 @@ export const updateNotificationTemplate = async (req: Request, res: Response, ne
   try {
     const {
       name,
-      entityId,
+      dataSourceId,
       code,
       subject,
       body,
@@ -184,7 +184,7 @@ export const updateNotificationTemplate = async (req: Request, res: Response, ne
         const newFilePath = path.join(
           'uploads',
           String(organizationId),
-          String(entityId),
+          String(dataSourceId),
           'notificationTemplates',
           newFileName
         );
@@ -200,7 +200,7 @@ export const updateNotificationTemplate = async (req: Request, res: Response, ne
     const result = await notificationTemplateService.updateNotificationTemplate(req.params.id, {
       organizationId,
       userId,
-      entityId: entityId ? new Types.ObjectId(entityId) : undefined,
+      dataSourceId: dataSourceId ? new Types.ObjectId(dataSourceId) : undefined,
       name,
       code,
       subject,

@@ -5,6 +5,7 @@ import {
 } from './dataSourceVersion.controller';
 import { getAttributesFromXlsxOrCsvHeaders } from './getAttributesFromXlsxOrCsvHeaders.controller';
 import { createDashboardFont, updateDashboardFont } from './dashboardFont.controller';
+import { createAttributeOptionWithFile, updateAttributeOptionWithFile } from './attributeOptions.controller';
 
 export const handleFileUpload = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -24,6 +25,10 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
       return await createDashboardFont(req, res, next);
     } else if (operation.toLowerCase() === 'update_dashboard_font') {
       return await updateDashboardFont(req, res, next);
+    } else if (operation.toLowerCase() === 'createattributeoption') {
+      return await createAttributeOptionWithFile(req, res, next);
+    } else if (operation.toLowerCase() === 'updateattributeoption') {
+      return await updateAttributeOptionWithFile(req, res, next);
     } else {
       res.status(400).json({
         success: false,

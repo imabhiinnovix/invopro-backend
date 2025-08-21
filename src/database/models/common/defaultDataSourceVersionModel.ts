@@ -5,10 +5,11 @@ interface IDefaultDataSourceVersionValue extends Document {
   dataSourceId: Types.ObjectId;
   dataSourceVersionId: Types.ObjectId;
   versionValue: string;
-  rowData: Record<string, any>; // Defines rowData as an object with string keys and values of any type
+  rowData: Record<string, any>;
+  status: 'active' | 'in-active'; // ✅ added status
   createdBy?: Types.ObjectId;
-  createdAt?: Date; // Added by timestamps
-  updatedAt?: Date; // Added by timestamps
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 // Mongoose Schema
@@ -18,13 +19,18 @@ const defaultDataSourceVersionSchema = new Schema<IDefaultDataSourceVersionValue
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'DataSource' },
     dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'data_source_version' },
     versionValue: { type: String },
-    rowData: { type: Schema.Types.Mixed }, // Accepts any type of object
+    rowData: { type: Schema.Types.Mixed },
+    status: {
+      type: String,
+      enum: ['active', 'in-active'], // ✅ enum constraint
+      default: 'active',
+    },
     createdBy: { type: Schema.Types.ObjectId },
-    createdAt: { type: Date, default: new Date(Date.now()).toISOString() },
-    updatedAt: { type: Date, default: new Date(Date.now()).toISOString() },
+    createdAt: { type: Date, default: () => new Date() },
+    updatedAt: { type: Date, default: () => new Date() },
   },
   {
-    timestamps: false, // Automatically manage createdAt and updatedAt timestamps
+    timestamps: false, // you are manually handling createdAt/updatedAt
   }
 );
 
@@ -33,10 +39,8 @@ defaultDataSourceVersionSchema.index({ dataSourceVersionId: 1 });
 // Function to create a model with a dynamic schema name
 const createDefaultDataSourceVersionModel = (schemaName: string) => {
   if (models[schemaName]) {
-    // If the model already exists, return it
     return models[schemaName];
   }
-  // Otherwise, create and return the model
   return model<IDefaultDataSourceVersionValue>(schemaName, defaultDataSourceVersionSchema);
 };
 

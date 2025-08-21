@@ -8,6 +8,7 @@ interface IDashboard extends Document {
   description: string;
   isDeleted: boolean;
   isActive: boolean;
+  dataSourceId: Types.ObjectId;
   isShareble: boolean;
   settings: {
     columnsGrid: number;
@@ -21,7 +22,8 @@ interface IDashboard extends Document {
 const settingsSchema = new Schema(
   {
     columnsGrid: { type: Number, default: 2 },
-    dashboardType: { type: String, enum: ['trend', 'normal'], default: 'normal' },
+    dashboardType: { type: String, enum: ['trend', 'normal', 'fixed'], default: 'normal' },
+    dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
     startVersionValue: { type: String, default: '' },
     endVersionValue: { type: String, default: '' },
     dynamicVersionValue: {

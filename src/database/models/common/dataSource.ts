@@ -1,13 +1,23 @@
+import config from '../../../config';
 import { Schema, model, Document, Types } from 'mongoose';
 
 interface IFieldSetting {
   attributeId: Types.ObjectId;
-  refAttributeId?: Types.ObjectId;
+  refAttributeId?: Types.ObjectId[];
   label?: string;
   isFilterEnable?: boolean;
   isSortingEnable?: boolean;
   isDisplayEnable?: boolean;
+  isDashboardFilter: boolean;
+  type: 'number' | 'text' | 'date' | 'boolean' | 'richtext' | 'url' | 'option' | 'multioption' | 'user';
   isDerived: boolean;
+}
+
+interface IDataUploadCondition {
+  field: string;
+  operator: string;
+  value: any;
+  fieldType: string;
 }
 
 interface IDataSource extends Document {
@@ -25,6 +35,7 @@ interface IDataSource extends Document {
   isVisible: boolean;
   isShowMenu: boolean;
   fieldSettings: IFieldSetting[];
+  condition: IDataUploadCondition[];
 }
 
 // Embedded sub-schema for field settings
@@ -35,7 +46,8 @@ const fieldSettingSchema = new Schema<IFieldSetting>(
       required: true,
     },
     refAttributeId: {
-      type: Schema.Types.ObjectId,
+      type: [Schema.Types.ObjectId],
+      default: [], // Always an array, even for single level
     },
     label: {
       type: String,
@@ -43,6 +55,10 @@ const fieldSettingSchema = new Schema<IFieldSetting>(
     isFilterEnable: {
       type: Boolean,
       default: false,
+    },
+    isDashboardFilter: {
+      type: Boolean,
+      default: true,
     },
     isSortingEnable: {
       type: Boolean,
@@ -56,6 +72,21 @@ const fieldSettingSchema = new Schema<IFieldSetting>(
       type: Boolean,
       default: false,
     },
+    type: {
+      type: String,
+      required: true,
+      enum: config.FIELD_TYPE_ENUM,
+    },
+  },
+  { _id: false }
+);
+
+const dataUploadConditionSchema = new Schema<IDataUploadCondition>(
+  {
+    field: { type: String, required: true },
+    operator: { type: String, required: true },
+    value: { type: Schema.Types.Mixed, required: true },
+    fieldType: { type: String, required: true },
   },
   { _id: false }
 );
@@ -82,6 +113,10 @@ const dataSourceSchema = new Schema<IDataSource>(
     // Replacing filterFields/sortFields/displayFields with unified fieldSettings
     fieldSettings: {
       type: [fieldSettingSchema],
+      default: [],
+    },
+    condition: {
+      type: [dataUploadConditionSchema],
       default: [],
     },
     isShowMenu: { type: Boolean, default: false },

@@ -23,10 +23,6 @@ const OperatorSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  timeUnitRequired:{
-    type: Boolean,
-    required: false,
-  }
 });
 
 // Single schema for all field types and their operators

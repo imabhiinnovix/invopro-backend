@@ -18,7 +18,8 @@ export const createNotificationFrequency = async (req: Request, res: Response, n
       repeatAnnually,
       acknowledgeRequired,
       attachmentRequired,
-      recipients,
+      recipients_to,
+      recipients_cc,
       medium,
       templateId,
       triggerTime,
@@ -44,7 +45,8 @@ export const createNotificationFrequency = async (req: Request, res: Response, n
       repeatAnnually,
       acknowledgeRequired,
       attachmentRequired,
-      recipients,
+      recipients_to,
+      recipients_cc,
       medium,
       templateId,
       triggerTime,
@@ -60,6 +62,7 @@ export const createNotificationFrequency = async (req: Request, res: Response, n
     next(err);
   }
 };
+
 
 
 
@@ -79,7 +82,8 @@ export const updateNotificationFrequency = async (req: Request, res: Response, n
       repeatAnnually,
       acknowledgeRequired,
       attachmentRequired,
-      recipients,
+      recipients_to,
+      recipients_cc,
       medium,
       templateId,
       triggerTime,
@@ -100,7 +104,8 @@ export const updateNotificationFrequency = async (req: Request, res: Response, n
       repeatAnnually,
       acknowledgeRequired,
       attachmentRequired,
-      recipients,
+      recipients_to,
+      recipients_cc,
       medium,
       templateId,
       triggerTime,
@@ -116,6 +121,7 @@ export const updateNotificationFrequency = async (req: Request, res: Response, n
     next(err);
   }
 };
+
 
 
 export const deleteNotificationFrequency = async (req: Request, res: Response, next: NextFunction) => {
