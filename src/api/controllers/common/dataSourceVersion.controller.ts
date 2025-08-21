@@ -646,6 +646,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
     let combinedMimType = '';
     let combinedSize = 0;
     let combinedData: any[] = [];
+    let dataSourceVersionId;
     for (const file of files) {
       const { originalname, path: tempPath, size, mimetype } = file;
       const fileName = originalname;
@@ -704,6 +705,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
         isCurrent: false,
       });
 
+      dataSourceVersionId = dataSourceVersion._id;
       debounceManager.debounce(dataSourceVersion._id as string, async () => {
         try {
           const entityDetails = dataSourceDetails.entityId as any;
@@ -788,6 +790,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
     return res.status(200).json({
       success: true,
       message: 'Data upload is in progress.',
+      dataSourceVersionId,
     });
   } catch (e) {
     next(e);
@@ -1660,5 +1663,23 @@ export const listAllAvailableDataSourceVersionValue = async (req: Request, res: 
   } catch (e) {
     console.log('Error in listAllAvailableDataSourceVersionValue.', e);
     next(e);
+  }
+};
+
+export const getDataSourceVersionDetailsBasedOnId = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dataSourceVersionId } = req.params;
+
+    const result = await dataSourceVersionService.getDataSourceVersionDetailBasedOnId({
+      _id: new Types.ObjectId(dataSourceVersionId),
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Data Source Version Details Fetched Successfully',
+      data: result,
+    });
+  } catch (err) {
+    next(err);
   }
 };

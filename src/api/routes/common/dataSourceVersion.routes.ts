@@ -7,6 +7,7 @@ import {
   createUpdateCustomDataSourceVersionValue,
   deleteMultipleRowsFromVersion,
   getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue,
+  getDataSourceVersionDetailsBasedOnId,
   getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue,
   listAllAvailableDataSourceVersionValue,
   listDataSourceVersion,
@@ -28,27 +29,13 @@ router.get(
 router.post('/create', authenticateToken, permissionMiddleware(), createUpdateCustomDataSourceVersionValue);
 
 // Create new version value row
-router.post(
-  '/versionData/create',
-  authenticateToken,
-  permissionMiddleware(),
-  createSingleRowVersionValue
-);
+router.post('/versionData/create', authenticateToken, permissionMiddleware(), createSingleRowVersionValue);
 
 // Update existing version value row
-router.put(
-  '/versionData/update/:rowId',
-  authenticateToken,
-  permissionMiddleware(),
-  updateSingleRowVersionValue
-);
+router.put('/versionData/update/:rowId', authenticateToken, permissionMiddleware(), updateSingleRowVersionValue);
 
 //Delete single/multiple version value row
-router.delete('/versionData/delete', 
-  authenticateToken, 
-  permissionMiddleware(), 
-  deleteMultipleRowsFromVersion
-);
+router.delete('/versionData/delete', authenticateToken, permissionMiddleware(), deleteMultipleRowsFromVersion);
 
 router.get(
   '/versionData',
@@ -69,5 +56,7 @@ router.get(
   permissionMiddleware(),
   listAllAvailableDataSourceVersionValue
 );
+
+router.get('/:dataSourceVersionId', authenticateToken, getDataSourceVersionDetailsBasedOnId);
 
 export default router;
