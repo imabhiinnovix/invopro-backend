@@ -7,6 +7,7 @@ import {
   createUpdateCustomDataSourceVersionValue,
   deleteMultipleRowsFromVersion,
   getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue,
+  getDataSourceVersionDetailsBasedOnId,
   getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue,
   getNewChartData,
   listAllAvailableDataSourceVersionValue,
@@ -59,4 +60,6 @@ router.get(
 );
 
 router.post('/chartData', authenticateToken, permissionMiddleware(), getNewChartData);
+router.get('/:dataSourceVersionId', authenticateToken, getDataSourceVersionDetailsBasedOnId);
+
 export default router;
