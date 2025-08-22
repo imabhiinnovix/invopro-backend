@@ -361,6 +361,7 @@ async function validateFileData({
   );
 
   for (const [index, row] of fileData.entries()) {
+    console.log('Processing Index:', index);
     const newRow = {
       dataSourceId,
       entityId,
@@ -399,7 +400,7 @@ async function validateFileData({
           dataSourceId: dataSourceId,
           dataSourceVersionId: dataSourceVersionId,
           rowNumber: index + 1,
-          fileAttributeName: fileKey,
+          fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
           attributeName: attrName,
           attributeType: attr.type,
           attributeOptionId: attr.optionAttributeId ? attr.optionAttributeId : null,
@@ -430,7 +431,7 @@ async function validateFileData({
               dataSourceId: dataSourceId,
               dataSourceVersionId: dataSourceVersionId,
               rowNumber: index + 1,
-              fileAttributeName: fileKey,
+              fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
               fileAttributeValue: value,
               attributeName: attrName,
               errorType: 'Reference Error',
@@ -456,7 +457,7 @@ async function validateFileData({
                 dataSourceId: dataSourceId,
                 dataSourceVersionId: dataSourceVersionId,
                 rowNumber: index + 1,
-                fileAttributeName: fileKey,
+                fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
                 fileAttributeValue: value,
                 attributeName: attrName,
                 attributeType: attr.type,
@@ -472,7 +473,7 @@ async function validateFileData({
                 dataSourceId: dataSourceId,
                 dataSourceVersionId: dataSourceVersionId,
                 rowNumber: index + 1,
-                fileAttributeName: fileKey,
+                fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
                 fileAttributeValue: value,
                 attributeName: attrName,
                 attributeType: attr.type,
@@ -737,6 +738,8 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
             entityId: dataSourceDetails.entityId._id,
             uniqueAttributeRules: dataSourceDetails.uniqueAttributeRules,
           });
+
+          console.log('validatedData:', validatedData);
 
           if (validatedData.errors.length > 0) {
             await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
@@ -1310,7 +1313,7 @@ async function handleReferenceSubFields({
 
     // find attribute whose subfield is the current dotted key
     const attr = attributes.find(
-      a => a.referenceEntitySetting?.refEntityId && a.referenceEntitySetting?.refEntityField && subAttrName
+      (a) => a.referenceEntitySetting?.refEntityId && a.referenceEntitySetting?.refEntityField && subAttrName
     );
     if (!attr || !attr.referenceEntitySetting) continue;
 
@@ -1319,7 +1322,7 @@ async function handleReferenceSubFields({
     if (!refEntity) continue;
 
     // find subfield marked as isReferenceEdit
-    const subAttr = refEntity.attributes.find(a => a.name === subAttrName && a.isReferenceEdit);
+    const subAttr = refEntity.attributes.find((a) => a.name === subAttrName && a.isReferenceEdit);
     if (!subAttr) continue;
 
     // reference model
@@ -1327,7 +1330,7 @@ async function handleReferenceSubFields({
 
     // get the actual reference field name
     const refFieldAttr = refEntity.attributes.find(
-      a => String(a._id) === String(attr.referenceEntitySetting.refEntityField)
+      (a) => String(a._id) === String(attr.referenceEntitySetting.refEntityField)
     );
     if (!refFieldAttr) continue;
 
@@ -1341,12 +1344,12 @@ async function handleReferenceSubFields({
     if (attr.referenceEntitySetting.relationType === 'many_to_one') {
       const parentValuesArray = Array.isArray(parentValue) ? parentValue : [parentValue];
       parentValueResolved = await Promise.all(
-        parentValuesArray.map(async v => {
+        parentValuesArray.map(async (v) => {
           const existingRow: any = await RefModel.findById(v);
           return existingRow ? existingRow.rowData[refFieldName] : null;
         })
       );
-      parentValueResolved = parentValueResolved.filter(v => v != null);
+      parentValueResolved = parentValueResolved.filter((v) => v != null);
       if (!parentValueResolved.length) continue;
     } else {
       const existingRow: any = await RefModel.findById(parentValue);
@@ -1419,11 +1422,6 @@ async function handleReferenceSubFields({
     }
   }
 }
-
-
-
-
-
 
 export const createSingleRowVersionValue = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -1644,7 +1642,6 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     next(e);
   }
 };
-
 
 export const deleteMultipleRowsFromVersion = async (req: Request, res: Response, next: NextFunction) => {
   try {
