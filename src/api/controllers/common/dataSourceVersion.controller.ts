@@ -1877,7 +1877,7 @@ export const getNewChartData = async (req: Request, res: Response, next: NextFun
     console.log('Error in getNotivixChartData:', e);
     next(e);
   }
-
+};
 
 export const getDataSourceVersionDetailsBasedOnId = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -1895,4 +1895,4 @@ export const getDataSourceVersionDetailsBasedOnId = async (req: Request, res: Re
   } catch (err) {
     next(err);
   }
-}
+};
