@@ -37,16 +37,20 @@ export const getUserRoleList = async (req: Request, res: Response, next: NextFun
 export const getRolePermissionList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { roleId } = req.params;
-
+    const { paginate } = req.query;
     let { organizationId, isSuperUser } = req.user;
     const { organizationId: paramOrgId }: any = req.query;
-    const page = parseInt(req.query.page as string, 10) || 1;
-    const limit = parseInt(req.query.limit as string, 10) || 10;
+    let page = parseInt(req.query.page as string, 10) || 1;
+    let limit = parseInt(req.query.limit as string, 10) || 10;
 
     if (isSuperUser && paramOrgId) {
       organizationId = paramOrgId;
     }
     const query: any = { roleId };
+    if (!paginate) {
+      page = 1;
+      limit = Number.MAX_SAFE_INTEGER; // effectively unlimited
+    }
 
     const { data, totalCount } = await userRoleService.getPermissionDetailsBasedOnRoleId({
       query,
