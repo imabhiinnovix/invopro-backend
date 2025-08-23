@@ -138,50 +138,86 @@ interface FieldOption {
 export const getEntityFieldOptions = async (entityId: string): Promise<FieldOption[]> => {
   const visited = new Set<string>(); // avoid circular references
 
-  const buildOptions = async (
-    currentEntityId: string,
-    pathLabels: string[] = [],
-    attributeIdChain: Types.ObjectId[] = []
-  ): Promise<FieldOption[]> => {
-    const options: FieldOption[] = [];
+const buildOptions = async (
+  currentEntityId: string,
+  pathLabels: string[] = [],
+  attributeIdChain: Types.ObjectId[] = []
+): Promise<FieldOption[]> => {
+  const options: FieldOption[] = [];
 
-    const entity = await Entity.findById(currentEntityId).lean();
-    if (!entity || !Array.isArray(entity.attributes)) return options;
+  const entity = await Entity.findById(currentEntityId).lean();
+  if (!entity || !Array.isArray(entity.attributes)) return options;
 
-    for (const attr of entity.attributes) {
-      const currentAttrId = (attr as any)?._id;
-      const currentLabelPath = [...pathLabels, attr.name];
-      const currentRefPath = [...attributeIdChain, currentAttrId];
+  for (const attr of entity.attributes) {
+    const currentAttrId = (attr as any)?._id;
+    const currentLabelPath = [...pathLabels, attr.name];
+    const currentRefPath = [...attributeIdChain, currentAttrId];
 
-      if (attr.referenceEntitySetting?.refEntityId) {
-        // Recurse into referenced entity
-        if (visited.has(attr.referenceEntitySetting.refEntityId.toString())) continue;
-        visited.add(attr.referenceEntitySetting.refEntityId.toString());
+    const refSetting = attr.referenceEntitySetting;
 
-        const nestedOptions = await buildOptions(
-          attr.referenceEntitySetting.refEntityId.toString(),
-          currentLabelPath,
-          currentRefPath
-        );
-        options.push(...nestedOptions);
-      } else {
-        // Final leaf field
-        const [rootAttributeId, ...refAttributeId] = currentRefPath;
-        options.push({
-          label: currentLabelPath.join('.'),
-          value: {
-            attributeId: rootAttributeId,
-            refAttributeId, // always an array, may be []
-            type: attr?.type || 'text'
-          },
-        });
+    // Always include the current field itself
+    options.push({
+      label: currentLabelPath.join('.'),
+      value: {
+        attributeId: currentAttrId,
+        refAttributeId: attributeIdChain,
+        type: attr?.type || 'text',
+      },
+    });
+
+    // If it has a reference entity
+    if (refSetting?.refEntityId) {
+      const nestedEntityId = refSetting.refEntityId.toString();
+      const relationType = refSetting.relationType;
+
+      if (!visited.has(nestedEntityId)) {
+        visited.add(nestedEntityId);
+
+        const nestedEntity: any = await Entity.findById(nestedEntityId).lean();
+        if (!nestedEntity || !Array.isArray(nestedEntity.attributes)) continue;
+
+        for (const subAttr of nestedEntity.attributes) {
+          // Skip the refFieldId itself for mapping relations
+          if (
+            (relationType === 'mapping_one_to_one' || relationType === 'mapping_many_to_one') &&
+            refSetting.refEntityField?.toString() === subAttr._id.toString()
+          ) {
+            continue;
+          }
+
+          const nestedLabelPath = [...currentLabelPath, subAttr.name];
+          const nestedRefPath = [...currentRefPath, subAttr._id];
+
+          // Recurse if the sub-attribute itself is a reference
+          if (subAttr.referenceEntitySetting?.refEntityId) {
+            const nestedOptions = await buildOptions(
+              subAttr.referenceEntitySetting.refEntityId.toString(),
+              nestedLabelPath,
+              nestedRefPath
+            );
+            options.push(...nestedOptions);
+          } else {
+            const [rootAttributeId, ...refAttributeId] = nestedRefPath;
+            options.push({
+              label: nestedLabelPath.join('.'),
+              value: {
+                attributeId: rootAttributeId,
+                refAttributeId,
+                type: subAttr.type || 'text',
+              },
+            });
+          }
+        }
       }
     }
+  }
 
-    return options;
-  };
+  return options;
+};
 
-  const fieldOptions = await buildOptions(entityId);
+// Example usage
+const fieldOptions = await buildOptions(entityId);
+
 
   // Add derived fields
   const derivedFields: any = await getAllDerivedFields({ entityId });

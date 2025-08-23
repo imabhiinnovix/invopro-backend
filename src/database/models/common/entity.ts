@@ -10,7 +10,7 @@ import config from '../../../config';
 export interface IReferenceEntitySetting {
   refEntityId: Types.ObjectId;
   refEntityField?: Types.ObjectId;
-  relationType: 'one_to_one' | 'many_to_one';
+  relationType: 'one_to_one' | 'many_to_one' | 'mapping_one_to_one' | 'mapping_many_to_one';
 }
 
 // ---------------------------
@@ -68,7 +68,7 @@ const referenceEntitySettingSchema = new Schema<IReferenceEntitySetting>(
     },
     relationType: {
       type: String,
-      enum: ['one_to_one', 'many_to_one'],
+      enum: ['one_to_one', 'many_to_one', 'mapping_one_to_one', 'mapping_many_to_one'], // ✅ Added new relation types
       required: true,
     },
   },

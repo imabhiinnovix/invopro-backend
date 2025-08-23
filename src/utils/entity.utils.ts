@@ -24,7 +24,7 @@ export async function getModelForEntity(entityId: string) {
     },
   ]);
 
-  console.log(dataSource);
+  // console.log(dataSource);
   if (!dataSource || !dataSource.entityId) {
     throw new Error(`No DataSource found for entityId ${entityId}`);
   }
@@ -42,6 +42,17 @@ export async function getModelForEntity(entityId: string) {
 export async function getEntityAttribute(entityId: string, attributeId: string) {
   const refEntity: any = await findEntityById(entityId);
   const attribute = refEntity?.attributes?.find((attr) => attr._id.toString() === attributeId.toString());
+  return attribute;
+}
+
+export async function getAttributeByName(entityId: string, attributeName: string) {
+  const refEntity: any = await findEntityById(entityId);
+  if (!refEntity?.attributes) return undefined;
+
+  const attribute = refEntity.attributes.find(
+    (attr) => attr.name?.toString() === attributeName.toString()
+  );
+
   return attribute;
 }
 

@@ -182,7 +182,7 @@ export async function validateFileDataCondition({ fileData, attributeSetting, co
       const attr = attributeSetting?.find((a) => a.name === baseField);
 
       // Check for reference resolution
-      if (attr?.referenceEntitySetting?.refEntityId && attr?.referenceEntitySetting?.refEntityField) {
+      if (attr?.referenceEntitySetting?.refEntityId && attr?.referenceEntitySetting?.refEntityField && ['one_to_one','many_to_one'].includes(attr.referenceEntitySetting?.relationType)) {
         const refEntityId: string = attr.referenceEntitySetting.refEntityId;
         const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
 
@@ -410,7 +410,7 @@ async function validateFileData({
         });
         newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
       } else if (value !== undefined && value != null && value) {
-        if (attr.referenceEntitySetting?.refEntityId) {
+        if (attr.referenceEntitySetting?.refEntityId && ['one_to_one','many_to_one'].includes(attr.referenceEntitySetting?.relationType)) {
           const refEntityId = attr.referenceEntitySetting.refEntityId;
           const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
 
@@ -574,7 +574,7 @@ export async function validateRowData({
     }
 
     // 2️⃣ Reference resolution
-    if (attr.referenceEntitySetting?.refEntityId) {
+    if (attr.referenceEntitySetting?.refEntityId && ['one_to_one','many_to_one'].includes(attr.referenceEntitySetting?.relationType)) {
       const refEntityId = attr.referenceEntitySetting.refEntityId;
       const refFieldId = attr.referenceEntitySetting.refEntityField;
       const refEntityField = await getEntityAttribute(refEntityId, refFieldId);
@@ -1303,43 +1303,149 @@ async function handleReferenceSubFields({
   userId,
   organizationId,
 }) {
-  for (const key of Object.keys(rowData)) {
-    if (!key.includes('.')) continue; // only dotted keys
+  const dottedKeys = Object.keys(rowData).filter(key => key.includes('.'));
+  for (const key of dottedKeys) {
+    if (!key.includes('.')) continue; // Only dotted keys
 
     const [parentAttrName, subAttrName] = key.split('.');
 
-    // find attribute whose subfield is the current dotted key
+    // Find attribute whose subfield matches the dotted key
     const attr = attributes.find(
       a => a.referenceEntitySetting?.refEntityId && a.referenceEntitySetting?.refEntityField && subAttrName
     );
     if (!attr || !attr.referenceEntitySetting) continue;
 
-    // fetch referenced entity
+    const relationType = attr.referenceEntitySetting.relationType;
+
+    // Fetch referenced entity
     const refEntity: any = await findEntityById(attr.referenceEntitySetting.refEntityId.toString());
     if (!refEntity) continue;
 
-    // find subfield marked as isReferenceEdit
+    // Find subfield marked as isReferenceEdit
     const subAttr = refEntity.attributes.find(a => a.name === subAttrName && a.isReferenceEdit);
     if (!subAttr) continue;
 
-    // reference model
+    // Reference model for sub-entity (used for mapping)
     const RefModel = await getModelForEntity(refEntity._id);
 
-    // get the actual reference field name
+    // Get reference field name
     const refFieldAttr = refEntity.attributes.find(
       a => String(a._id) === String(attr.referenceEntitySetting.refEntityField)
     );
     if (!refFieldAttr) continue;
-
     const refFieldName = refFieldAttr.name;
 
     const parentValue = rowData[parentAttrName]; // main row value
     const subValue = rowData[key];
 
-    // 🔹 Resolve parentValueResolved from reference model row
+    // -------------------------------
+    // 1️⃣ Mapping reference logic
+    // -------------------------------
+    console.log('relationType',relationType);
+    if (['mapping_one_to_one', 'mapping_many_to_one'].includes(relationType)) {
+  // 1️⃣ Resolve parent doc (_id) → AttorneyName
+  const parentRefFieldAttr = await getEntityAttribute(
+    attr.referenceEntitySetting.refEntityId,
+    attr.referenceEntitySetting.refEntityField
+  );
+  const parentRefFieldName = parentRefFieldAttr?.name;
+  const parentRefModel = await getModelForEntity(parentRefFieldAttr.referenceEntitySetting?.refEntityId);
+  console.log('parentRefFieldName',parentValue,parentRefModel);
+  const parentDoc = await parentRefModel.findOne({
+    [`rowData.${parentRefFieldName}`]: parentValue,
+  });
+  if (!parentDoc) continue;
+  const parentId = parentDoc._id;
+
+  // -------------------------------
+  // Mark existing mappings as inactive
+  // -------------------------------
+  console.log('refFieldName',refFieldName,parentId,RefModel,versionId);
+  await RefModel.deleteMany(
+    { [`rowData.${refFieldName}`]: parentId }
+  );
+
+  // 2️⃣ Resolve subfield doc (_id) → FOName
+  const subRefModel = await getModelForEntity(subAttr.referenceEntitySetting.refEntityId);
+
+  if (relationType === 'mapping_many_to_one') {
+    const subValuesArray = Array.isArray(subValue) ? subValue : [subValue];
+
+    for (const val of subValuesArray) {
+      console.log('val',val,subAttr.name);
+      const escapedValue = escapeRegExp(val.trim());
+      const regex = new RegExp(`^${escapedValue}$`, 'i'); // ✅ use RegExp object
+      const subRefDoc = await subRefModel.findOne({ [`rowData.${subAttr.name}`]: regex });
+      console.log('subRefDoc',subRefDoc,regex,parentId);
+      if (!subRefDoc) continue;
+      const subId = subRefDoc._id;
+
+      // 3️⃣ Upsert mapping table
+      await RefModel.updateOne(
+        { [`rowData.${refFieldName}`]: parentId, [`rowData.${subAttr.name}`]: subId },
+        {
+          $set: {
+            [`rowData.${refFieldName}`]: parentId,
+            [`rowData.${subAttr.name}`]: subId,
+            status: 'active',
+            dataSourceId,
+            dataSourceVersionId: versionId,
+            versionValue,
+            createdBy: userId,
+            organizationId,
+            updatedAt: new Date(),
+          },
+        },
+        { upsert: true }
+      );
+    }
+  } else {
+    // mapping_one_to_one → single subValue
+    const escapedValue = escapeRegExp(subValue.trim());
+    const regex = new RegExp(`^${escapedValue}$`, 'i'); // ✅ use RegExp object
+    const subRefDoc = await subRefModel.findOne({ [`rowData.${subAttr.name}`]: regex });
+    if (!subRefDoc) continue;
+    const subId = subRefDoc._id;
+
+    await RefModel.updateOne(
+      { [`rowData.${refFieldName}`]: parentId },
+      {
+        $set: {
+          [`rowData.${refFieldName}`]: parentId,
+          [`rowData.${subAttr.name}`]: subId,
+          status: 'active',
+          dataSourceId,
+          dataSourceVersionId: versionId,
+          versionValue,
+          createdBy: userId,
+          organizationId,
+          updatedAt: new Date(),
+        },
+      },
+      { upsert: true }
+    );
+  }
+  // ✅ Remove dotted key from rowData in parent document
+  console.log('parentRefModel',parentRefModel,parentId,key);
+    const doc: any = await parentRefModel.findById(parentId);
+if (doc && doc.rowData && key in doc.rowData) {
+  delete doc.rowData[key]; // remove the literal key with dots
+  await parentRefModel.updateOne(
+    { _id: parentId },
+    { $set: { rowData: doc.rowData } }
+  );
+}
+  continue; // done with mapping case
+}
+
+
+    // -------------------------------
+    // 2️⃣ Normal reference logic
+    // -------------------------------
     let parentValueResolved;
-    if (attr.referenceEntitySetting.relationType === 'many_to_one') {
+    if (relationType === 'many_to_one') {
       const parentValuesArray = Array.isArray(parentValue) ? parentValue : [parentValue];
+
       parentValueResolved = await Promise.all(
         parentValuesArray.map(async v => {
           const existingRow: any = await RefModel.findById(v);
@@ -1348,16 +1454,10 @@ async function handleReferenceSubFields({
       );
       parentValueResolved = parentValueResolved.filter(v => v != null);
       if (!parentValueResolved.length) continue;
-    } else {
-      const existingRow: any = await RefModel.findById(parentValue);
-      if (!existingRow) continue;
-      parentValueResolved = existingRow.rowData[refFieldName];
-    }
 
-    if (attr.referenceEntitySetting.relationType === 'many_to_one') {
       const subValues = Array.isArray(subValue) ? subValue : [subValue];
 
-      // mark inactive any missing entries
+      // Mark inactive any missing entries
       const existingRows: any[] = await RefModel.find({
         [`rowData.${refFieldName}`]: { $in: parentValueResolved },
       });
@@ -1368,7 +1468,7 @@ async function handleReferenceSubFields({
         }
       }
 
-      // upsert each value
+      // Upsert each value
       for (const val of subValues) {
         for (const parentVal of parentValueResolved) {
           await RefModel.updateOne(
@@ -1397,6 +1497,10 @@ async function handleReferenceSubFields({
       }
     } else {
       // one_to_one
+      const existingRow: any = await RefModel.findById(parentValue);
+      if (!existingRow) continue;
+      parentValueResolved = existingRow.rowData[refFieldName];
+
       await RefModel.updateOne(
         { [`rowData.${refFieldName}`]: parentValueResolved },
         {
@@ -1419,6 +1523,7 @@ async function handleReferenceSubFields({
     }
   }
 }
+
 
 
 
@@ -1500,6 +1605,20 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       return res.status(400).json({ success: false, errors });
     }
 
+    
+
+    const newRow = {
+      dataSourceId,
+      versionValue: version.versionValue,
+      entityId: dataSourceDetails.entityId,
+      dataSourceVersionId: version._id,
+      rowData: validatedRowData,
+      createdBy: userId,
+      status:'active',
+    };
+
+    await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, [newRow]);
+    
     // 🔹 Handle reference subfields
     await handleReferenceSubFields({
       rowData: validatedRowData,
@@ -1510,17 +1629,6 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       userId,
       organizationId,
     });
-
-    const newRow = {
-      dataSourceId,
-      versionValue: version.versionValue,
-      entityId: dataSourceDetails.entityId,
-      dataSourceVersionId: version._id,
-      rowData: validatedRowData,
-      createdBy: userId,
-    };
-
-    await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, [newRow]);
 
     if (isErrorResolved) {
       const errorDataSourceDetails = await dataSourceService.findDataSourceById(errorDataSourceId, true);
@@ -1618,16 +1726,7 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       return res.status(400).json({ success: false, errors });
     }
 
-    // 🔹 Handle reference subfields
-    await handleReferenceSubFields({
-      rowData: validatedRowData,
-      attributes: entity.attributes,
-      dataSourceId,
-      versionId: version?._id,
-      versionValue: version.versionValue,
-      userId,
-      organizationId,
-    });
+   
 
     await dataSourceVersionValueService.updateOne(
       schemaName,
@@ -1637,6 +1736,17 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
         updatedBy: userId,
       }
     );
+
+     // 🔹 Handle reference subfields
+    await handleReferenceSubFields({
+      rowData: validatedRowData,
+      attributes: entity.attributes,
+      dataSourceId,
+      versionId: version?._id,
+      versionValue: version.versionValue,
+      userId,
+      organizationId,
+    });
 
     return res.status(200).json({ success: true, message: 'Row updated successfully.' });
   } catch (e) {
