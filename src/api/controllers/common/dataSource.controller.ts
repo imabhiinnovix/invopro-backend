@@ -147,9 +147,7 @@ export const checkDataSourceNameAvailableOrNot = async (req: Request, res: Respo
 
 export const listDataSource = async (req: Request, res: Response, next: NextFunction) => {
   try {
-     const {
-      search
-    } = req.query;
+    const { search } = req.query;
     const paginate = String(req.query.paginate).toLowerCase() === 'true';
     const canEditInline = String(req.query.canEditInline).toLowerCase() === 'true';
     const isShowMenu = String(req.query.isShowMenu).toLowerCase() === 'true';
@@ -160,7 +158,6 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
     const { organizationId } = req.user;
 
     const query: any = { organizationId, isVisible: true };
-
 
     // Search filter
     if (search) {
@@ -193,7 +190,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
       page,
       limit,
       populate,
-      paginate
+      paginate,
     });
 
     const data = Array.isArray(result.data)
@@ -203,96 +200,82 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
             if (ds.entityId?.attributes?.length) {
               for (const attr of ds.entityId.attributes) {
                 attributeMap.set(String(attr._id), attr);
-               if (attr.referenceEntitySetting?.refEntityId) {
-  // fetch referenced entity (level 1)
-  const refEntity: any = await entityService.findEntityById(
-    attr.referenceEntitySetting.refEntityId.toString()
-  );
+                if (attr.referenceEntitySetting?.refEntityId) {
+                  // fetch referenced entity (level 1)
+                  const refEntity: any = await entityService.findEntityById(
+                    attr.referenceEntitySetting.refEntityId.toString()
+                  );
 
-  if (refEntity?.attributes?.length) {
-    for (const refAttr of refEntity.attributes) {
-      // Only include subfields marked as isReferenceEdit
-      if (!refAttr.isReferenceEdit) continue;
+                  if (refEntity?.attributes?.length) {
+                    for (const refAttr of refEntity.attributes) {
+                      // Only include subfields marked as isReferenceEdit
+                      if (!refAttr.isReferenceEdit) continue;
 
-      // Skip the main reference field itself (the join/display field)
-      if (
-        String(refAttr._id) ===
-        String(attr.referenceEntitySetting.refEntityField)
-      ) continue;
+                      // Skip the main reference field itself (the join/display field)
+                      if (String(refAttr._id) === String(attr.referenceEntitySetting.refEntityField)) continue;
 
-      const refAttrId = refAttr._id.toString();
-      if (attributeMap.has(refAttrId)) continue;
+                      const refAttrId = refAttr._id.toString();
+                      if (attributeMap.has(refAttrId)) continue;
 
-      // Start with parent + first-level sub-attr
-      let computedName = `${attr.name}.${refAttr.name}`;
+                      // Start with parent + first-level sub-attr
+                      let computedName = `${attr.name}.${refAttr.name}`;
 
-      // If this first-level sub-attr is itself a reference, append ONLY its display field name
-      const subRef = refAttr.referenceEntitySetting;
-      if (subRef?.refEntityId && subRef?.refEntityField) {
-        const subEntity: any = await entityService.findEntityById(
-          subRef.refEntityId.toString()
-        );
+                      // If this first-level sub-attr is itself a reference, append ONLY its display field name
+                      const subRef = refAttr.referenceEntitySetting;
+                      if (subRef?.refEntityId && subRef?.refEntityField) {
+                        const subEntity: any = await entityService.findEntityById(subRef.refEntityId.toString());
 
-        const displayAttr =
-          subEntity?.attributes?.find(
-            (a: any) => String(a._id) === String(subRef.refEntityField)
-          );
+                        const displayAttr = subEntity?.attributes?.find(
+                          (a: any) => String(a._id) === String(subRef.refEntityField)
+                        );
 
-        if (displayAttr?.name) {
-          // Append display field name once and STOP (one extra level only)
-          computedName = `${computedName}.${displayAttr.name}`;
-        }
-      }
+                        if (displayAttr?.name) {
+                          // Append display field name once and STOP (one extra level only)
+                          computedName = `${computedName}.${displayAttr.name}`;
+                        }
+                      }
 
-      // Copy attr and set the computed one-level (or one-level+display) name
-      const newAttr = { ...(refAttr.toObject?.() || refAttr) };
-      newAttr.name = computedName;
+                      // Copy attr and set the computed one-level (or one-level+display) name
+                      const newAttr = { ...(refAttr.toObject?.() || refAttr) };
+                      newAttr.name = computedName;
 
-      attributeMap.set(refAttrId, newAttr);
-      ds.entityId.attributes.push(newAttr);
-    }
-  }
-}
-
-
-
-
-
+                      attributeMap.set(refAttrId, newAttr);
+                      ds.entityId.attributes.push(newAttr);
+                    }
+                  }
+                }
               }
             }
 
-           // Precompute all field options for this entity
-const fieldOptions = await entityService.getEntityFieldOptions(ds.entityId._id.toString());
+            // Precompute all field options for this entity
+            const fieldOptions = await entityService.getEntityFieldOptions(ds.entityId._id.toString());
 
-if (Array.isArray(ds.fieldSettings)) {
-  for (const field of ds.fieldSettings) {
-    // Derived fields
-    if (field.isDerived && field.attributeId) {
-      const derived = await findDerivedFieldById(field.attributeId);
-      if (derived) {
-        field.mappedAttributeName = `Derived.${derived.name}`;
-        field.values = Array.isArray(derived.valueRules)
-          ? derived.valueRules.map(vr => vr.value)
-          : [];
-      }
-      continue;
-    }
+            if (Array.isArray(ds.fieldSettings)) {
+              for (const field of ds.fieldSettings) {
+                // Derived fields
+                if (field.isDerived && field.attributeId) {
+                  const derived = await findDerivedFieldById(field.attributeId);
+                  if (derived) {
+                    field.mappedAttributeName = `Derived.${derived.name}`;
+                    field.values = Array.isArray(derived.valueRules) ? derived.valueRules.map((vr) => vr.value) : [];
+                  }
+                  continue;
+                }
 
-    // Normal fields → just look up in fieldOptions
-    const match = fieldOptions.find(opt =>
-      String(opt.value.attributeId) === String(field.attributeId) &&
-      JSON.stringify(opt.value.refAttributeId || []) === JSON.stringify(field.refAttributeId || [])
-    );
+                // Normal fields → just look up in fieldOptions
+                const match = fieldOptions.find(
+                  (opt) =>
+                    String(opt.value.attributeId) === String(field.attributeId) &&
+                    JSON.stringify(opt.value.refAttributeId || []) === JSON.stringify(field.refAttributeId || [])
+                );
 
-    if (match) {
-      field.mappedAttributeName = match.label;
-    } else {
-      field.mappedAttributeName = 'Unknown';
-    }
-  }
-}
-
-
+                if (match) {
+                  field.mappedAttributeName = match.label;
+                } else {
+                  field.mappedAttributeName = 'Unknown';
+                }
+              }
+            }
 
             ds.uniqueAttributeRules = Array.isArray(ds.uniqueAttributeRules)
               ? ds.uniqueAttributeRules.map((ruleGroup: any[]) =>
@@ -321,8 +304,6 @@ if (Array.isArray(ds.fieldSettings)) {
   }
 };
 
-
-
 export const getDataSourceById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const dataSourceDetails = await dataSourceService.findDataSourceById(req.params.dataSourceId);
@@ -330,6 +311,25 @@ export const getDataSourceById = async (req: Request, res: Response, next: NextF
       success: true,
       message: 'Data Source Details Fetched Successfully',
       data: dataSourceDetails,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getDataSourceWithFieldOptionDetails = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const dataSourceDetails: any = await dataSourceService.findDataSourceById(req.params.dataSourceId);
+    const entityFieldOptions = await entityService.getEntityFieldOptions(dataSourceDetails?.entityId?._id);
+    // Convert to plain object with type assertion so TypeScript allows adding custom props
+    const dataSourceObject = (dataSourceDetails?.toObject ? dataSourceDetails.toObject() : dataSourceDetails) as any;
+
+    // Append the custom field
+    dataSourceObject.entityFieldOptions = entityFieldOptions;
+    res.status(200).json({
+      success: true,
+      message: 'Data Source Details Fetched Successfully',
+      data: dataSourceObject,
     });
   } catch (err) {
     next(err);

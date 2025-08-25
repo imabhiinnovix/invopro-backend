@@ -7,6 +7,7 @@ import {
   checkDataSourceNameAvailableOrNot,
   createDataSourcce,
   getDataSourceById,
+  getDataSourceWithFieldOptionDetails,
   getWidgetDataByFilter,
   listDataSource,
   updateDataSource,
@@ -24,5 +25,11 @@ router.put('/update/:dataSourceId', authenticateToken, permissionMiddleware(), u
 router.get('/list', authenticateToken, permissionMiddleware(), listDataSource);
 router.get('/dataSourceId/:dataSourceId', authenticateToken, permissionMiddleware(), getDataSourceById);
 router.post('/getWidgetDataByFilter', authenticateToken, permissionMiddleware(), getWidgetDataByFilter);
+router.get(
+  '/dataSourceDetails/:dataSourceId',
+  authenticateToken,
+  // permissionMiddleware(),
+  getDataSourceWithFieldOptionDetails
+);
 
 export default router;
