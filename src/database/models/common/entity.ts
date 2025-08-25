@@ -37,7 +37,7 @@ export interface IAttribute {
   optionAttributeId?: string;
   cleaner?: string[];
   referenceEntitySetting?: IReferenceEntitySetting;
-  isReferenceEditable?: boolean; // ✅ Added
+  isReferenceEditable?: string; // ✅ Added
 }
 
 // ---------------------------
@@ -105,7 +105,11 @@ const attributeSchema = new Schema<IAttribute>(
       type: referenceEntitySettingSchema,
       required: false,
     },
-    isReferenceEditable: { type: Boolean, default: false }, // ✅ Added
+    isReferenceEditable: {
+      type: String,
+      enum: ["EDIT", "VIEW", "HIDE"], // enum values
+      default: "EDIT"
+    }, // ✅ Added
   },
   { _id: true, toJSON: { getters: true }, toObject: { getters: true } }
 );

@@ -1322,7 +1322,7 @@ async function handleReferenceSubFields({
     if (!refEntity) continue;
 
     // Find subfield marked as isReferenceEdit
-    const subAttr = refEntity.attributes.find(a => a.name === subAttrName && a.isReferenceEditable);
+    const subAttr = refEntity.attributes.find(a => a.name === subAttrName && a.isReferenceEditable == 'EDIT');
     if (!subAttr) continue;
 
     // Reference model for sub-entity (used for mapping)
