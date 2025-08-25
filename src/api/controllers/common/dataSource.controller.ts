@@ -212,7 +212,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
   if (refEntity?.attributes?.length) {
     for (const refAttr of refEntity.attributes) {
       // Only include subfields marked as isReferenceEdit
-      if (!refAttr.isEditable) continue;
+      // if (!refAttr.isReferenceEditable) continue;
 
       // Skip the main reference field itself (the join/display field)
       if (
