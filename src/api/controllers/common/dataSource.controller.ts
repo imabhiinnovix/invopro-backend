@@ -212,7 +212,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
   if (refEntity?.attributes?.length) {
     for (const refAttr of refEntity.attributes) {
       // Only include subfields marked as isReferenceEdit
-      if (!refAttr.isReferenceEdit) continue;
+      if (!refAttr.isEditable) continue;
 
       // Skip the main reference field itself (the join/display field)
       if (
@@ -260,6 +260,17 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
 
               }
             }
+
+            if (Array.isArray(ds.entityId?.attributes) && Array.isArray(ds.fieldSettings)) {
+            for (const attr of ds.entityId.attributes) {
+              const matchField = ds.fieldSettings.find(
+                (f: any) => String(f.attributeId) === String(attr._id)
+              );
+
+              attr.label = matchField?.label || attr.name;
+            }
+          }
+
 
            // Precompute all field options for this entity
 const fieldOptions = await entityService.getEntityFieldOptions(ds.entityId._id.toString());
