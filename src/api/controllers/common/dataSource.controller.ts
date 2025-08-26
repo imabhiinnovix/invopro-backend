@@ -202,6 +202,15 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
             const attributeMap = new Map<string, any>();
             if (ds.entityId?.attributes?.length) {
               for (const attr of ds.entityId.attributes) {
+                // Ensure default only if not already set
+                if (attr.isReferenceField === undefined) {
+                  const ref = attr.referenceEntitySetting;
+                  attr.isReferenceField = !!(
+                    ref?.refEntityId &&
+                    !["mapping_many_to_one", "mapping_one_to_one"].includes(ref.relationType)
+                  );
+                }
+
                 attributeMap.set(String(attr._id), attr);
                if (attr.referenceEntitySetting?.refEntityId) {
   // fetch referenced entity (level 1)
@@ -247,6 +256,8 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
       // Copy attr and set the computed one-level (or one-level+display) name
       const newAttr = { ...(refAttr.toObject?.() || refAttr) };
       newAttr.name = computedName;
+      // Always mark derived ones as reference
+      newAttr.isReferenceField = true;
 
       attributeMap.set(refAttrId, newAttr);
       ds.entityId.attributes.push(newAttr);
@@ -268,6 +279,10 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
               );
 
               attr.label = matchField?.label || attr.name;
+              // Ensure default false if still undefined
+              if (attr.isReferenceField === undefined) {
+                attr.isReferenceField = false;
+              }
             }
           }
 
