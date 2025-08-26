@@ -42,6 +42,12 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
       success: true,
       message: 'Data Import Error Fetched Successfully',
       data: result.data,
+      pagination: {
+        page: page,
+        limit,
+        totalPage: Math.ceil(result.totalCount / limit),
+        totalRecords: result.totalCount,
+      },
       totalCount: result.totalCount,
     });
   } catch (err) {
