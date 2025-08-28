@@ -426,21 +426,24 @@ async function validateFileData({
           });
 
           if (!referencedDoc) {
+            const refDataSourceDetails = await dataSourceService.findDataSourcesByEntityId(refEntityId);
             errors.push({
               entityId: entityId,
               dataSourceId: dataSourceId,
               dataSourceVersionId: dataSourceVersionId,
               rowNumber: index + 1,
-              fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
+              fileAttributeName: fileKey,
               fileAttributeValue: value,
               attributeName: attrName,
-              refEntityId: refEntityField,
-              refDataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
-              errorType: ERROR_CODES.INVALID_REFERENCE.message,
+              attributeType: attr.type,
+              refEntityId,
+              refDataSourceId: refDataSourceDetails?.[0]?._id,
+              errorType: ERROR_CODES.INVALID_REFERENCE.type,
               errorCode: ERROR_CODES.INVALID_REFERENCE.code,
+              status: 'open',
               errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value}, but it could not be resolved from the reference entity for the attribute ${attrName}.`,
             });
-            newRow.isErrorLog = 1;
+            newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
           } else {
             newRow.rowData[attrName] = referencedDoc._id;
           }
