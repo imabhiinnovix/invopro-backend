@@ -1439,9 +1439,10 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       versionValue,
       rowData,
       isErrorResolved,
-      rowNumber,
       errorDataSourceVersionId,
       errorDataSourceId,
+      attributeName,
+      fileAttributeValue,
     } = req.body;
     const { userId, organizationId, orgCode } = req.user;
 
@@ -1536,15 +1537,33 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
         versionCode: errorDataSourceDetails?.code!,
       });
 
+      const refrenceRecords = await dataImportErrorServices.getDataImportErrorRecords({
+        dataSourceVersionId: errorDataSourceVersionId,
+        attributeName,
+        fileAttributeValue,
+        status: 'open',
+      });
+
+      const rowNumbersToUpdate = refrenceRecords.map((record) => record.rowNumber);
+
+      console.log('rowNumbersToUpdate', rowNumbersToUpdate);
       await dataImportErrorServices.updateDataImportErrors(
-        { dataSourceVersionId: errorDataSourceVersionId, rowNumber },
+        {
+          dataSourceVersionId: errorDataSourceVersionId,
+          attributeName,
+          fileAttributeValue,
+          rowNumber: { $in: rowNumbersToUpdate },
+        },
         { status: 'resolved' }
       );
+
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         errorSchema,
-        { dataSourceVersionId: new Schema.Types.ObjectId(errorDataSourceVersionId), rowNumber },
+        { dataSourceVersionId: new ObjectId(errorDataSourceVersionId), rowNumber: { $in: rowNumbersToUpdate } },
         {},
-        { isErrorLog: -1 }
+        {
+          isErrorLog: -1,
+        }
       );
     }
 
