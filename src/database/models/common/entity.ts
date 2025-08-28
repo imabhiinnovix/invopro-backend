@@ -90,7 +90,7 @@ const attributeSchema = new Schema<IAttribute>(
     required: {
       type: Boolean,
       required: true,
-      get: (value: boolean) => (value ? 'Mandatory' : 'Not Mandatory'),
+      get: (value: boolean) => (value ? true : false),
     },
     validation: { type: [String] },
     transformations: { type: [String] },
