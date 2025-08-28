@@ -10,7 +10,7 @@ import config from '../../../config';
 export interface IReferenceEntitySetting {
   refEntityId: Types.ObjectId;
   refEntityField?: Types.ObjectId;
-  relationType: 'one_to_one' | 'many_to_one';
+  relationType: 'one_to_one' | 'many_to_one' | 'mapping_one_to_one' | 'mapping_many_to_one';
 }
 
 // ---------------------------
@@ -37,7 +37,7 @@ export interface IAttribute {
   optionAttributeId?: string;
   cleaner?: string[];
   referenceEntitySetting?: IReferenceEntitySetting;
-  isReferenceEdit?: boolean; // ✅ Added
+  isReferenceEditable?: string; // ✅ Added
 }
 
 // ---------------------------
@@ -68,7 +68,7 @@ const referenceEntitySettingSchema = new Schema<IReferenceEntitySetting>(
     },
     relationType: {
       type: String,
-      enum: ['one_to_one', 'many_to_one'],
+      enum: ['one_to_one', 'many_to_one', 'mapping_one_to_one', 'mapping_many_to_one'], // ✅ Added new relation types
       required: true,
     },
   },
@@ -90,7 +90,7 @@ const attributeSchema = new Schema<IAttribute>(
     required: {
       type: Boolean,
       required: true,
-      get: (value: boolean) => (value ? 'Mandatory' : 'Not Mandatory'),
+      get: (value: boolean) => (value ? true : false),
     },
     validation: { type: [String] },
     transformations: { type: [String] },
@@ -105,7 +105,11 @@ const attributeSchema = new Schema<IAttribute>(
       type: referenceEntitySettingSchema,
       required: false,
     },
-    isReferenceEdit: { type: Boolean, default: false }, // ✅ Added
+    isReferenceEditable: {
+      type: String,
+      enum: ["EDIT", "VIEW", "HIDE"], // enum values
+      default: "EDIT"
+    }, // ✅ Added
   },
   { _id: true, toJSON: { getters: true }, toObject: { getters: true } }
 );

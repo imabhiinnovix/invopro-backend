@@ -200,38 +200,70 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
       ? await Promise.all(
           result.data.map(async (ds: any) => {
             const attributeMap = new Map<string, any>();
-            if (ds.entityId?.attributes?.length) {
-              for (const attr of ds.entityId.attributes) {
-                attributeMap.set(String(attr._id), attr);
-               if (attr.referenceEntitySetting?.refEntityId) {
-  // fetch referenced entity
-  const refEntity: any = await entityService.findEntityById(
-    attr.referenceEntitySetting.refEntityId.toString()
-  );
+           if (ds.entityId?.attributes?.length) {
+  for (const attr of ds.entityId.attributes) {
+    // Ensure default only if not already set
+    if (attr.isReferenceField === undefined) {
+      const ref = attr.referenceEntitySetting;
+      attr.isReferenceField = !!(
+        ref?.refEntityId &&
+        !["mapping_many_to_one", "mapping_one_to_one"].includes(ref.relationType)
+      );
+    }
 
-  if (refEntity?.attributes?.length) {
-    for (const refAttr of refEntity.attributes) {
-      // Only include subfields marked as isReferenceEdit
-      if (refAttr.isReferenceEdit) {
-        // Skip the main reference field itself
-        if (
-          String(refAttr._id) ===
-          String(attr.referenceEntitySetting.refEntityField)
-        )
-          continue;
+    attributeMap.set(String(attr._id), attr);
 
-        // avoid duplicate by checking _id
-        if (!attributeMap.has(refAttr._id.toString())) {
-          // copy all properties as-is
+    const refSetting = attr.referenceEntitySetting;
+
+    // Only dive into reference entity if relationType is mapping_*
+    if (
+      refSetting?.refEntityId &&
+      ["mapping_many_to_one", "mapping_one_to_one"].includes(
+        refSetting.relationType
+      )
+    ) {
+      // fetch referenced entity (level 1)
+      const refEntity: any = await entityService.findEntityById(
+        refSetting.refEntityId.toString()
+      );
+
+      if (refEntity?.attributes?.length) {
+        for (const refAttr of refEntity.attributes) {
+          // Skip the main reference field itself (the join/display field)
+          if (
+            String(refAttr._id) === String(refSetting.refEntityField)
+          )
+            continue;
+
+          const refAttrId = refAttr._id.toString();
+          if (attributeMap.has(refAttrId)) continue;
+
+          // Start with parent + first-level sub-attr
+          let computedName = `${attr.name}.${refAttr.name}`;
+
+          // If this sub-attr is itself a reference, append ONLY its display field name
+          const subRef = refAttr.referenceEntitySetting;
+          if (subRef?.refEntityId && subRef?.refEntityField) {
+            const subEntity: any = await entityService.findEntityById(
+              subRef.refEntityId.toString()
+            );
+
+            const displayAttr = subEntity?.attributes?.find(
+              (a: any) => String(a._id) === String(subRef.refEntityField)
+            );
+
+            if (displayAttr?.name) {
+              // Append display field name once and STOP
+              computedName = `${computedName}.${displayAttr.name}`;
+            }
+          }
+
+          // Clone and adjust
           const newAttr = { ...(refAttr.toObject?.() || refAttr) };
+          newAttr.name = computedName;
+          newAttr.isReferenceField = true;
 
-          // prefix name with parent reference field
-          newAttr.name = `${attr.name}.${refAttr.name}`;
-
-          // Add to attribute map
-          attributeMap.set(newAttr._id.toString(), newAttr);
-
-          // Add to entity attributes
+          attributeMap.set(refAttrId, newAttr);
           ds.entityId.attributes.push(newAttr);
         }
       }
@@ -240,69 +272,63 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
 }
 
 
+           if (Array.isArray(ds.entityId?.attributes) && Array.isArray(ds.fieldSettings)) {
+            for (const attr of ds.entityId.attributes) {
 
-
-              }
-            }
-
-            if (Array.isArray(ds.fieldSettings)) {
-              for (const field of ds.fieldSettings) {
-                // Derived field logic
-                if (field.isDerived && field.attributeId) {
-                  const derived = await findDerivedFieldById(field.attributeId);
-                  if (derived) {
-                    field.mappedAttributeName = `Derived.${derived.name}`;
-                    field.values = Array.isArray(derived.valueRules)
-                      ? derived.valueRules.map(vr => vr.value)
-                      : [];
-                  }
+              const matchField = ds.fieldSettings.find((f: any) => {
+                if (attr.referenceEntitySetting) {
+                  // refAttributeId is always array → pick last element
+                  const lastRef = f.refAttributeId?.[f.refAttributeId.length - 1];
+                  return String(lastRef) === String(attr._id);
                 } else {
-                  const attr = attributeMap.get(String(field.attributeId));
-
-                  if (!attr) {
-                    field.mappedAttributeName = 'Unknown';
-                    continue;
-                  }
-
-                  if (attr.referenceEntitySetting?.refEntityId && Array.isArray(field.refAttributeId) && field.refAttributeId.length > 0) {
-                    // Start with parent attribute name
-                    let mappedName = attr.name || 'Unknown';
-
-                    // Walk through refAttributeId to get names stepwise
-                    let currentEntityId = attr.referenceEntitySetting.refEntityId.toString();
-
-                    for (const refAttrId of field.refAttributeId) {
-                      const refEntity = await entityService.findEntityById(currentEntityId);
-                      if (!refEntity || !Array.isArray(refEntity.attributes)) {
-                        mappedName += '.Unknown';
-                        break;
-                      }
-
-                      const refAttr = refEntity.attributes.find((a: any) => String(a._id) === String(refAttrId));
-                      if (!refAttr) {
-                        mappedName += '.Unknown';
-                        break;
-                      }
-
-                      mappedName += `.${refAttr.name}`;
-
-                      // Prepare for next level lookup if exists
-                      if (refAttr.referenceEntitySetting?.refEntityId) {
-                        currentEntityId = refAttr.referenceEntitySetting.refEntityId.toString();
-                      } else {
-                        // No further reference
-                        break;
-                      }
-                    }
-
-                    field.mappedAttributeName = mappedName;
-                  } else {
-                    // No multi-level reference, just use attribute name
-                    field.mappedAttributeName = attr.name;
-                  }
+                  // Direct match with attributeId
+                  return String(f.attributeId) === String(attr._id);
                 }
+              });
+
+
+              attr.label = matchField?.label || attr.name;
+
+              // Ensure default false if still undefined
+              if (attr.isReferenceField === undefined) {
+                attr.isReferenceField = false;
               }
             }
+          }
+
+
+
+           // Precompute all field options for this entity
+const fieldOptions = await entityService.getEntityFieldOptions(ds.entityId._id.toString());
+
+if (Array.isArray(ds.fieldSettings)) {
+  for (const field of ds.fieldSettings) {
+    // Derived fields
+    if (field.isDerived && field.attributeId) {
+      const derived = await findDerivedFieldById(field.attributeId);
+      if (derived) {
+        field.mappedAttributeName = `Derived.${derived.name}`;
+        field.values = Array.isArray(derived.valueRules)
+          ? derived.valueRules.map(vr => vr.value)
+          : [];
+      }
+      continue;
+    }
+
+    // Normal fields → just look up in fieldOptions
+    const match = fieldOptions.find(opt =>
+      String(opt.value.attributeId) === String(field.attributeId) &&
+      JSON.stringify(opt.value.refAttributeId || []) === JSON.stringify(field.refAttributeId || [])
+    );
+
+    if (match) {
+      field.mappedAttributeName = match.label;
+    } else {
+      field.mappedAttributeName = 'Unknown';
+    }
+  }
+}
+
 
 
             ds.uniqueAttributeRules = Array.isArray(ds.uniqueAttributeRules)
