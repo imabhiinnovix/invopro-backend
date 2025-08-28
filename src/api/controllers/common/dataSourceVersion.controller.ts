@@ -432,7 +432,7 @@ async function validateFileData({
               dataSourceId: dataSourceId,
               dataSourceVersionId: dataSourceVersionId,
               rowNumber: index + 1,
-              fileAttributeName: fileKey,
+              fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
               fileAttributeValue: value,
               attributeName: attrName,
               attributeType: attr.type,
