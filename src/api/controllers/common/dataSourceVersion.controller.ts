@@ -437,6 +437,7 @@ async function validateFileData({
               attributeName: attrName,
               attributeType: attr.type,
               refEntityId,
+              refAttributeId: refEntityFieldId,
               refDataSourceId: refDataSourceDetails?.[0]?._id,
               errorType: ERROR_CODES.INVALID_REFERENCE.type,
               errorCode: ERROR_CODES.INVALID_REFERENCE.code,
