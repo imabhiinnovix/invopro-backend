@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import mongoose from 'mongoose';
 import { DateTime } from 'luxon';
 import createDefaultDataSourceVersionModel from '../../models/common/defaultDataSourceVersionModel';

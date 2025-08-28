@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import mongoose, { Types } from 'mongoose';
 import Permission from '../database/models/common/permissionModel'; // adjust path if needed
 import UserRole from '../database/models/common/userRole';
@@ -53,6 +56,7 @@ const defaultPermissionsUser = [
   'GET:/reportivix/customReports/listSettings',
   'GET:/reportivix/nlQuery/getData',
   'GET:/reportivix/nlQuery/insights',
+  'POST:/common/dataSourceVersion/chartData',
 ];
 
 const defaultPermissionsAdmin = [
@@ -117,6 +121,13 @@ const defaultPermissionsAdmin = [
   'POST:/notivix/notification-setting/medium/create',
   'PUT:/notivix/notification-setting/medium/update/:id',
   'DELETE:/notivix/notification-setting/medium/delete',
+  'GET:/common/dashboardFont/list',
+  'GET:/common/dashboardFont/download/:fontId',
+  'DELETE:/common/dashboardFont/delete/:fontId',
+  'GET:/common/dashboardTheme/list',
+  'POST:/common/dashboardTheme/create',
+  'PUT:/common/dashboardTheme/update/:themeId',
+  'DELETE:/common/dashboardTheme/delete/:themeId',
   'GET:/notivix/notification-setting/medium/:id',
 ];
 

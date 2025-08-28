@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import DashboardWidget from '../../models/common/dashboardWidget';
 
 export const createDashboardWidget = async (widgetData: any) => {

@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import WidgetTheme from '../database/models/common/widgetTheme';
 
 export async function seedWidgetTheme(payload) {

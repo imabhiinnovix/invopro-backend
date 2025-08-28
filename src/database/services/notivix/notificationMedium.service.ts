@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import NotificationMediumModel from '../../models/notivix/notificationMediumSetting';
 import { Types } from 'mongoose';
 

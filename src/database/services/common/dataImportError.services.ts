@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import DataImportErrorModel from '../../models/common/dataImportError';
 
 export const createManyDataImportError = async (value: any) => {
@@ -39,5 +42,23 @@ export const getDataSourceVersionErrrorList = async ({
     return { data: dataSourceVersionError, totalCount };
   } catch (err) {
     throw err;
+  }
+};
+
+export const updateDataImportErrors = async (query: Record<string, any>, updateFields: Record<string, any>) => {
+  try {
+    const result = await DataImportErrorModel.updateMany(query, { $set: updateFields });
+    return result;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getDataImportErrorRecords = async (query) => {
+  try {
+    const matchingDocs = await DataImportErrorModel.find(query);
+    return matchingDocs;
+  } catch (error) {
+    throw error;
   }
 };

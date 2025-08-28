@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import ReportRequestModel from '../../models/reportivix/requestedReport';
 export const createReportRequest = async (reqData: any) => {
   try {

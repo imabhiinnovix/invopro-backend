@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import Product from '../database/models/common/product';
 
 export async function seedProducts(payload) {

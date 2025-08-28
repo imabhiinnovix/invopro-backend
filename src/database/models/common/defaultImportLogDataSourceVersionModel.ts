@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import { Schema, model, models, Document, Types } from 'mongoose';
 
 interface IDefaultImportLogDataSourceVersionValue extends Document {

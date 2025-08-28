@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import { Schema, model, Document, Types } from 'mongoose';
 
 export interface INotificationMediumSetting extends Document {

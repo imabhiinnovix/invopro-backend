@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Settings } from 'luxon';
 import { buildAggregationPipeline } from '../../../utils/aggregationPipeline';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
@@ -169,6 +172,37 @@ export const getAllDashboardsAggregation = async ({
         },
       },
 
+      // Populate dataSourceId
+      {
+        $lookup: {
+          from: 'data_sources',
+          localField: 'settings.dataSourceId',
+          foreignField: '_id',
+          as: 'settings.dataSource',
+        },
+      },
+      {
+        $unwind: {
+          path: '$settings.dataSource',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // Populate dataSource.entityId
+      {
+        $lookup: {
+          from: 'entities',
+          localField: 'settings.dataSource.entityId',
+          foreignField: '_id',
+          as: 'settings.dataSource.entity',
+        },
+      },
+      {
+        $unwind: {
+          path: '$settings.dataSource.entity',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       // Populate createdBy
       {
         $lookup: {

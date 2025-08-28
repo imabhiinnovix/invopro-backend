@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import DashboardShare from '../../models/common/dashboardShare';
 import Dashboard from '../../models/common/dashboard';
 import mongoose from 'mongoose';

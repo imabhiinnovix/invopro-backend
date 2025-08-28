@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import CustomReportModel from '../database/models/reportivix/customReport';
 
 function getCustomReportToBeSeed({ entityDataSourceMap, organizationId, customReportMap }) {

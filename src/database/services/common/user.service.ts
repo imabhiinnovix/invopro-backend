@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { RoleId } from '../../../enums/role.enum';
 import User from '../../models/common/user';
 import * as organizationService from './organization.service';

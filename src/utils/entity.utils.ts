@@ -13,9 +13,9 @@ const modelCache = new Map<string, Model<Document>>();
 export async function getModelForEntity(entityId: string) {
   const idStr = new Types.ObjectId(entityId).toHexString();
 
-  if (modelCache.has(idStr)) {
-    return modelCache.get(idStr)!;
-  }
+  // if (modelCache.has(idStr)) {
+  //   return modelCache.get(idStr)!;
+  // }
 
   const dataSource = await getDataSourcePopulate({ entityId }, [
     {
@@ -23,6 +23,8 @@ export async function getModelForEntity(entityId: string) {
       select: 'name code', // Specify the fields to populate
     },
   ]);
+
+  // console.log(dataSource);
   if (!dataSource || !dataSource.entityId) {
     throw new Error(`No DataSource found for entityId ${entityId}`);
   }
@@ -43,10 +45,19 @@ export async function getEntityAttribute(entityId: string, attributeId: string) 
   return attribute;
 }
 
-export async function resolveFieldPath(cond: any, entityAttributes: any[]): Promise<string> {
-  const attrMapById = Object.fromEntries(
-    entityAttributes.map(attr => [attr._id.toString(), attr])
+export async function getAttributeByName(entityId: string, attributeName: string) {
+  const refEntity: any = await findEntityById(entityId);
+  if (!refEntity?.attributes) return undefined;
+
+  const attribute = refEntity.attributes.find(
+    (attr) => attr.name?.toString() === attributeName.toString()
   );
+
+  return attribute;
+}
+
+export async function resolveFieldPath(cond: any, entityAttributes: any[]): Promise<string> {
+  const attrMapById = Object.fromEntries(entityAttributes.map((attr) => [attr._id.toString(), attr]));
 
   const mainAttr = attrMapById[cond.fieldId?.toString()];
   if (!mainAttr) return '';
@@ -58,10 +69,13 @@ export async function resolveFieldPath(cond: any, entityAttributes: any[]): Prom
     const refEntity: any = await findEntityById(refEntityId);
     if (!refEntity || !Array.isArray(refEntity.attributes)) return '';
 
-    const refAttrMap: Record<string, any> = refEntity.attributes.reduce((acc, attr) => {
-      acc[attr._id.toString()] = attr;
-      return acc;
-    }, {} as Record<string, any>);
+    const refAttrMap: Record<string, any> = refEntity.attributes.reduce(
+      (acc, attr) => {
+        acc[attr._id.toString()] = attr;
+        return acc;
+      },
+      {} as Record<string, any>
+    );
 
     const refAttr = refAttrMap[cond.refFieldId?.toString()];
     if (!refAttr) return '';
@@ -73,5 +87,3 @@ export async function resolveFieldPath(cond: any, entityAttributes: any[]): Prom
   // For non-reference fields
   return `rowData.${mainAttr.name}`;
 }
-
-

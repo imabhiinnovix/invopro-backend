@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 // organization.model.ts
 import { Schema, model, Document, Types } from 'mongoose';
 

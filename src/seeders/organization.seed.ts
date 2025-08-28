@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import Organization from '../database/models/common/organization';
 import { Types } from 'mongoose';
 

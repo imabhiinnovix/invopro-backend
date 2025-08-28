@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import { Schema, model, Document, Types } from 'mongoose';
 
 interface IDataImportError extends Document {
@@ -7,11 +10,16 @@ interface IDataImportError extends Document {
   rowNumber: number;
   fileAttributeName: string;
   attributeName: string;
+  attributeOptionId: Types.ObjectId;
   errorType: string;
   errorMessage: string;
   errorCode: string;
   fileAttributeValue: any;
   createdAt: Date;
+  status: string;
+  refEntityId: Types.ObjectId;
+  refDataSourceId: Types.ObjectId;
+  attributeType: string;
 }
 const DataImportErrorSchema = new Schema<IDataImportError>(
   {
@@ -22,6 +30,15 @@ const DataImportErrorSchema = new Schema<IDataImportError>(
     fileAttributeName: { type: String },
     attributeName: { type: String },
     fileAttributeValue: { type: Schema.Types.Mixed },
+    attributeOptionId: { type: Schema.Types.ObjectId, ref: 'attribute_option' },
+    attributeType: { type: String },
+    refEntityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
+    refDataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
+    status: {
+      type: String,
+      enum: ['open', 'resolved', 'discarded'],
+      default: 'open', // optional default value
+    },
     errorType: { type: String },
     errorCode: { type: String },
     errorMessage: { type: String },

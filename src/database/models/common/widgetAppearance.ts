@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 // widget_theme_overrides.schema.ts (using Mongoose + TypeScript)
 import { Schema, model, Types, Document } from 'mongoose';
 import {

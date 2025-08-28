@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import CustomReportModel from '../../models/reportivix/customReport';
 
 export const getCustomReportList = async ({

@@ -91,16 +91,40 @@ export const updateOrganization = async (req: Request, res: Response, next: Next
       ...(status && { status }),
     });
 
-    // 2. Delete previous product subscriptions
-    await organizationProductSubscription.deleteManyOrganizationProductSubscription(organizationId);
+    if (Array.isArray(productSubscriptions)) {
+      // 1. Fetch existing subscriptions
+      const { data: existingSubs }: any = await organizationProductSubscription.getOrganizationProductsSubscription({
+        query: { organizationId },
+        limit: 0, // fetch all
+      });
 
-    // 3. Insert new product subscriptions (if provided)
-    if (Array.isArray(productSubscriptions) && productSubscriptions.length > 0) {
-      const subscriptionsToInsert = productSubscriptions.map((sub) => ({
-        ...sub,
-        organizationId,
-      }));
-      await organizationProductSubscription.createManyOrganizationProductSubscription(subscriptionsToInsert);
+      const incomingIds = productSubscriptions
+        .filter((sub) => sub.organizationProductSubscriptionId)
+        .map((sub) => sub.organizationProductSubscriptionId.toString());
+
+      // 2. Delete subscriptions that are in DB but not in incoming
+      const toDelete = existingSubs.filter((s) => !incomingIds.includes(s._id.toString()));
+      if (toDelete.length > 0) {
+        await organizationProductSubscription.deleteOrganizationProductSubscriptions(toDelete.map((s) => s._id));
+      }
+
+      // 3. Update or create
+      for (const sub of productSubscriptions) {
+        if (sub.organizationProductSubscriptionId) {
+          await organizationProductSubscription.updateOrganizationProductSubscription(
+            sub.organizationProductSubscriptionId,
+            {
+              ...sub,
+              organizationId,
+            }
+          );
+        } else {
+          await organizationProductSubscription.createOrganizationProductSubscription({
+            ...sub,
+            organizationId,
+          });
+        }
+      }
     }
 
     res.status(200).json({

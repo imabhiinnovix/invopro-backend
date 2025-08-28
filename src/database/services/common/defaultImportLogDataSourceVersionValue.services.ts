@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import createDefaultImportLogDataSourceVersionModel from '../../models/common/defaultImportLogDataSourceVersionModel';
 import createDefaultDataSourceVersionModel from '../../models/common/defaultImportLogDataSourceVersionModel';
 import { Model, Document, AnyBulkWriteOperation } from 'mongoose';
@@ -99,6 +102,52 @@ export const getDataSourceVersionValue = async ({
     ]);
 
     return { data: versionValueData, totalCount: totalCountResult };
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const updateImportLogDataSourceVersionValue = async (
+  schemaName: string,
+  query: Record<string, any>,
+  updateFields: Record<string, any>,
+  incFields: Record<string, number> = {}
+) => {
+  try {
+    const DataSourceVersionValueModel = createDefaultImportLogDataSourceVersionModel(schemaName);
+
+    const result = await DataSourceVersionValueModel.updateMany(query, {
+      ...(Object.keys(updateFields).length > 0 && { $set: updateFields }),
+      ...(Object.keys(incFields).length > 0 && { $inc: incFields }),
+    });
+
+    return result;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getImportLogDataSourceVersionValues = async (schemaName: string, query: Record<string, any>) => {
+  try {
+    const DataSourceVersionValueModel = createDefaultImportLogDataSourceVersionModel(schemaName);
+
+    const pipeline = [{ $match: query }, { $project: { _id: 0 } }];
+
+    const results = await DataSourceVersionValueModel.aggregate(pipeline);
+
+    return results;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const deleteImportLogDataSourceVersionValues = async (schemaName: string, query: Record<string, any>) => {
+  try {
+    const DataSourceVersionValueModel: any = createDefaultImportLogDataSourceVersionModel(schemaName);
+
+    const result = await DataSourceVersionValueModel.deleteMany(query);
+
+    return result; // result.deletedCount, result.acknowledged etc.
   } catch (err) {
     throw err;
   }

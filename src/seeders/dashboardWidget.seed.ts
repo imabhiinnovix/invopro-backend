@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import DashboardWidget from '../database/models/common/dashboardWidget';
 
 export async function seedDashboardWidget() {

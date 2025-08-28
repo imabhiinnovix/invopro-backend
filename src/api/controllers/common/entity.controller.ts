@@ -58,10 +58,10 @@ export const listEntity = async (req: Request, res: Response, next: NextFunction
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
     const { organizationId } = req.user;
-    const query: any = {};
+    const query: any = { organizationId };
     if (search) query.name = { $regex: search, $options: 'i' };
 
-    let result: any = { organizationId };
+    let result: any = {};
     if (paginate) {
       result = await entityService.getEntityList({
         query,

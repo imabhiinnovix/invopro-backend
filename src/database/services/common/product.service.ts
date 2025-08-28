@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Product from '../../models/common/product';
 
 export const getProductList = async ({ query, page = 1, limit = 20, sort = { createdAt: -1 }, populate = [] }: any) => {

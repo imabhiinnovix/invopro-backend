@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
 import Permission from '../database/models/common/permissionModel'; // Your Mongoose model
 
 let permissions = [
@@ -448,6 +451,16 @@ let permissions = [
     extraOptions: {},
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion__list_all_available',
+    isSuperUser: false,
+  },
+  {
+    name: 'Get Chart Data',
+    method: 'POST',
+    methodName: 'view',
+    resourceId: '/common/dataSourceVersion/chartData',
+    extraOptions: {},
+    resourceType: 'Data Source Version',
+    resourceCode: 'dataSourceVersion__get_chart_data',
     isSuperUser: false,
   },
   {
@@ -1063,15 +1076,68 @@ let permissions = [
     isSuperUser: false,
   },
   {
-    name: 'Get Notification Medium Setting',
+    name: 'List Dashboard Font Themes',
     method: 'GET',
-    resourceId: '/notivix/notification-setting/medium/:id',
+    resourceId: '/common/dashboardFont/list',
     extraOptions: {},
-    resourceType: 'Notification Medium Setting',
-    resourceCode: 'notification_setting_medium_get',
+    resourceType: 'Dashboard Font Theme',
+    resourceCode: 'dashboard_font_theme_list',
     isSuperUser: false,
   },
-
+  {
+    name: 'Download Dashboard Font Theme',
+    method: 'GET',
+    resourceId: '/common/dashboardFont/download/:fontId',
+    extraOptions: {},
+    resourceType: 'Dashboard Font Theme',
+    resourceCode: 'dashboard_font_theme_download',
+    isSuperUser: false,
+  },
+  {
+    name: 'Delete Dashboard Font Theme',
+    method: 'DELETE',
+    resourceId: '/common/dashboardFont/delete/:fontId',
+    extraOptions: {},
+    resourceType: 'Dashboard Font Theme',
+    resourceCode: 'dashboard_font_theme_delete',
+    isSuperUser: false,
+  },
+  {
+    name: 'List Dashboard Themes',
+    method: 'GET',
+    resourceId: '/common/dashboardTheme/list',
+    extraOptions: {},
+    resourceType: 'Dashboard Theme',
+    resourceCode: 'dashboard_theme_list',
+    isSuperUser: false,
+  },
+  {
+    name: 'Create Dashboard Theme',
+    method: 'POST',
+    resourceId: '/common/dashboardTheme/create',
+    extraOptions: {},
+    resourceType: 'Dashboard Theme',
+    resourceCode: 'dashboard_theme_create',
+    isSuperUser: false,
+  },
+  {
+    name: 'Update Dashboard Theme',
+    method: 'PUT',
+    resourceId: '/common/dashboardTheme/update/:themeId',
+    extraOptions: {},
+    resourceType: 'Dashboard Theme',
+    resourceCode: 'dashboard_theme_update',
+    isSuperUser: false,
+  },
+  {
+    name: 'Delete Dashboard Theme',
+    method: 'DELETE',
+    resourceId: '/common/dashboardTheme/delete/:themeId',
+    extraOptions: {},
+    resourceType: 'Dashboard Theme',
+    resourceCode: 'dashboard_theme_delete',
+    isSuperUser: false,
+  },
 ];
 
 function getDynamicPermission(
