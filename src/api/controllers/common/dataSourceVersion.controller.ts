@@ -434,6 +434,8 @@ async function validateFileData({
               fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
               fileAttributeValue: value,
               attributeName: attrName,
+              refEntityId: refEntityField,
+              refDataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
               errorType: ERROR_CODES.INVALID_REFERENCE.message,
               errorCode: ERROR_CODES.INVALID_REFERENCE.code,
               errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value}, but it could not be resolved from the reference entity for the attribute ${attrName}.`,
