@@ -200,91 +200,102 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
       ? await Promise.all(
           result.data.map(async (ds: any) => {
             const attributeMap = new Map<string, any>();
-            if (ds.entityId?.attributes?.length) {
-              for (const attr of ds.entityId.attributes) {
-                // Ensure default only if not already set
-                if (attr.isReferenceField === undefined) {
-                  const ref = attr.referenceEntitySetting;
-                  attr.isReferenceField = !!(
-                    ref?.refEntityId &&
-                    !["mapping_many_to_one", "mapping_one_to_one"].includes(ref.relationType)
-                  );
-                }
+           if (ds.entityId?.attributes?.length) {
+  for (const attr of ds.entityId.attributes) {
+    // Ensure default only if not already set
+    if (attr.isReferenceField === undefined) {
+      const ref = attr.referenceEntitySetting;
+      attr.isReferenceField = !!(
+        ref?.refEntityId &&
+        !["mapping_many_to_one", "mapping_one_to_one"].includes(ref.relationType)
+      );
+    }
 
-                attributeMap.set(String(attr._id), attr);
-               if (attr.referenceEntitySetting?.refEntityId) {
-  // fetch referenced entity (level 1)
-  const refEntity: any = await entityService.findEntityById(
-    attr.referenceEntitySetting.refEntityId.toString()
-  );
+    attributeMap.set(String(attr._id), attr);
 
-  if (refEntity?.attributes?.length) {
-    for (const refAttr of refEntity.attributes) {
-      // Only include subfields marked as isReferenceEdit
-      // if (!refAttr.isReferenceEditable) continue;
+    const refSetting = attr.referenceEntitySetting;
 
-      // Skip the main reference field itself (the join/display field)
-      if (
-        String(refAttr._id) ===
-        String(attr.referenceEntitySetting.refEntityField)
-      ) continue;
+    // Only dive into reference entity if relationType is mapping_*
+    if (
+      refSetting?.refEntityId &&
+      ["mapping_many_to_one", "mapping_one_to_one"].includes(
+        refSetting.relationType
+      )
+    ) {
+      // fetch referenced entity (level 1)
+      const refEntity: any = await entityService.findEntityById(
+        refSetting.refEntityId.toString()
+      );
 
-      const refAttrId = refAttr._id.toString();
-      if (attributeMap.has(refAttrId)) continue;
+      if (refEntity?.attributes?.length) {
+        for (const refAttr of refEntity.attributes) {
+          // Skip the main reference field itself (the join/display field)
+          if (
+            String(refAttr._id) === String(refSetting.refEntityField)
+          )
+            continue;
 
-      // Start with parent + first-level sub-attr
-      let computedName = `${attr.name}.${refAttr.name}`;
+          const refAttrId = refAttr._id.toString();
+          if (attributeMap.has(refAttrId)) continue;
 
-      // If this first-level sub-attr is itself a reference, append ONLY its display field name
-      const subRef = refAttr.referenceEntitySetting;
-      if (subRef?.refEntityId && subRef?.refEntityField) {
-        const subEntity: any = await entityService.findEntityById(
-          subRef.refEntityId.toString()
-        );
+          // Start with parent + first-level sub-attr
+          let computedName = `${attr.name}.${refAttr.name}`;
 
-        const displayAttr =
-          subEntity?.attributes?.find(
-            (a: any) => String(a._id) === String(subRef.refEntityField)
-          );
+          // If this sub-attr is itself a reference, append ONLY its display field name
+          const subRef = refAttr.referenceEntitySetting;
+          if (subRef?.refEntityId && subRef?.refEntityField) {
+            const subEntity: any = await entityService.findEntityById(
+              subRef.refEntityId.toString()
+            );
 
-        if (displayAttr?.name) {
-          // Append display field name once and STOP (one extra level only)
-          computedName = `${computedName}.${displayAttr.name}`;
+            const displayAttr = subEntity?.attributes?.find(
+              (a: any) => String(a._id) === String(subRef.refEntityField)
+            );
+
+            if (displayAttr?.name) {
+              // Append display field name once and STOP
+              computedName = `${computedName}.${displayAttr.name}`;
+            }
+          }
+
+          // Clone and adjust
+          const newAttr = { ...(refAttr.toObject?.() || refAttr) };
+          newAttr.name = computedName;
+          newAttr.isReferenceField = true;
+
+          attributeMap.set(refAttrId, newAttr);
+          ds.entityId.attributes.push(newAttr);
         }
       }
-
-      // Copy attr and set the computed one-level (or one-level+display) name
-      const newAttr = { ...(refAttr.toObject?.() || refAttr) };
-      newAttr.name = computedName;
-      // Always mark derived ones as reference
-      newAttr.isReferenceField = true;
-
-      attributeMap.set(refAttrId, newAttr);
-      ds.entityId.attributes.push(newAttr);
     }
   }
 }
 
 
-
-
-
-              }
-            }
-
-            if (Array.isArray(ds.entityId?.attributes) && Array.isArray(ds.fieldSettings)) {
+           if (Array.isArray(ds.entityId?.attributes) && Array.isArray(ds.fieldSettings)) {
             for (const attr of ds.entityId.attributes) {
-              const matchField = ds.fieldSettings.find(
-                (f: any) => String(f.attributeId) === String(attr._id)
-              );
+
+              const matchField = ds.fieldSettings.find((f: any) => {
+                if (attr.referenceEntitySetting) {
+                  // refAttributeId is always array → pick last element
+                  const lastRef = f.refAttributeId?.[f.refAttributeId.length - 1];
+                  return String(lastRef) === String(attr._id);
+                } else {
+                  // Direct match with attributeId
+                  return String(f.attributeId) === String(attr._id);
+                }
+              });
+
 
               attr.label = matchField?.label || attr.name;
+
               // Ensure default false if still undefined
               if (attr.isReferenceField === undefined) {
                 attr.isReferenceField = false;
               }
             }
           }
+
 
 
            // Precompute all field options for this entity
