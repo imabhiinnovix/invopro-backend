@@ -9,6 +9,7 @@ import * as importLogDataSourceVersionValueService from '../../../database/servi
 import mongoose from 'mongoose';
 import * as attributeOptionService from '../../../database/services/common/attributeOption.services';
 import * as dataSourceVersionValueService from '../../../database/services/common/defaultDataSourceVersionValue.services';
+import { updateCustomDataSourceVersionIsCurrentFunction } from './dataSourceVersion.controller';
 const ObjectId = mongoose.Types.ObjectId;
 
 export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
@@ -126,6 +127,8 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
         dataSourceVersionId: new ObjectId(dataSourceVersionId),
         isErrorLog: 0,
       });
+
+      await updateCustomDataSourceVersionIsCurrentFunction({ dataSourceVersionId });
     } else if (action === 'update') {
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         errorSchemaName,
@@ -192,6 +195,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
         dataSourceVersionId: new ObjectId(dataSourceVersionId),
         isErrorLog: 0,
       });
+      await updateCustomDataSourceVersionIsCurrentFunction({ dataSourceVersionId });
     } else if (action === 'unique') {
       await dataImportErrorServices.updateDataImportErrors(
         { dataSourceVersionId: dataSourceVersionId, rowNumber: rowNumber },

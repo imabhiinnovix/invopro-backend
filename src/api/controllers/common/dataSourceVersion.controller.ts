@@ -1205,6 +1205,34 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
   }
 };
 
+export const updateCustomDataSourceVersionIsCurrentFunction = async ({
+  dataSourceVersionId,
+}: {
+  dataSourceVersionId: string;
+}) => {
+  try {
+    const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionDetailBasedOnId({
+      _id: new Types.ObjectId(dataSourceVersionId),
+    });
+    if (dataSourceVersionDetails && dataSourceVersionDetails.dataSourceId) {
+      await dataSourceVersionService.updateDataSourceVersions({
+        query: {
+          dataSourceId: dataSourceVersionDetails.dataSourceId,
+          versionValue: dataSourceVersionDetails.versionValue,
+        },
+        updateFields: { isCurrent: false },
+      });
+      await dataSourceVersionService.updateDataSourceVersion(dataSourceVersionDetails._id as string, {
+        status: 'completed',
+        isCurrent: true,
+      });
+    }
+  } catch (e) {
+    console.log('Error in createUpdateCustomDataSourceVersionValueFunction.', e);
+    throw e;
+  }
+};
+
 export const createUpdateCustomDataSourceVersionValue = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { dataSourceId, versionValue, versionData } = req.body;
