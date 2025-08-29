@@ -13,7 +13,7 @@ import NotificationFrequencySetting from "../database/models/notivix/notificatio
 import NotificationAcknowledge from "../database/models/notivix/notificationAcknowledge";
 import PreparedNotification from "../database/models/notivix/preparedNotification";
 import NotificationTriggerModel from "../database/models/notivix/notificationTrigger";
-import { getModelForEntity } from "../utils/entity.utils";
+import { getAttributeByName, getEntityAttribute, getModelForEntity } from "../utils/entity.utils";
 import { findEntityById } from "../database/services/common/entity.services";
 import createDefaultDataSourceVersionModel from "../database/models/common/defaultDataSourceVersionModel";
 import { listNotificationFrequency } from "../database/services/notivix/notificationFrequency.service";
@@ -135,24 +135,20 @@ async function resolveRecipientsFromSetting(
   for (const recipient of recipients) {
     // Custom emails
     if (recipient.customEmails && recipient.customEmails.length > 0) {
-      for (const email of recipient.customEmails) {
-        if (email) emails.add(email.trim().toLowerCase());
-      }
+      recipient.customEmails.forEach(email => email && emails.add(email.trim().toLowerCase()));
       continue;
     }
 
-    // Attribute resolution
     if (recipient.attributeId) {
       const attr = attributeMap.get(String(recipient.attributeId));
       if (!attr) continue;
-
-      // Resolve full dot path
       const fieldPath = await resolveFieldPath(attr, recipient.refAttributeId || []);
-
-      // Get value from flattened rowData
       const val = getNestedValue(caseData.rowData, fieldPath);
 
-      if (typeof val === "string" && val.trim() !== "") {
+      // If array (like FOName.FOEmail), add each element
+      if (Array.isArray(val)) {
+        val.forEach((v: string) => v && emails.add(v.trim().toLowerCase()));
+      } else if (typeof val === "string" && val.trim() !== "") {
         emails.add(val.trim().toLowerCase());
       }
     }
@@ -160,6 +156,7 @@ async function resolveRecipientsFromSetting(
 
   return Array.from(emails);
 }
+
 
 
 // Wrapper to match PreparedNotification schema
@@ -429,10 +426,7 @@ async function processBatchedMatchingCases({
   const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
 
   // Map by attribute name
-  const attributesMap: Record<string, any> = entity.attributes.reduce((acc: any, attr: any) => {
-    acc[attr.name] = attr;
-    return acc;
-  }, {});
+  const attributesMap: Record<string, any> = await buildExtendedAttributeMap(entity);
 
   // --- Recursive $lookup generator ---
 async function generateLookupsForAllReferences(
@@ -587,6 +581,80 @@ async function flattenAllResolved(rowData: Record<string, any>): Promise<Record<
   return input;
 }
 
+async function resolveRefAttribute(
+  attr: any,
+  refResolved: any,
+  key: string,
+  rowData: Record<string, any>,
+  currentAttr?: any
+) {
+  if (!refResolved) return;
+
+  let displayField: string | undefined;
+  if (attr.referenceEntitySetting?.refEntityField) {
+    const refFieldAttr = await getEntityAttribute(attr.referenceEntitySetting.refEntityId, attr.referenceEntitySetting.refEntityField);
+    displayField = refFieldAttr?.name;
+  }
+
+  // Handle mapping relations
+  if (currentAttr && ["mapping_one_to_one", "mapping_many_to_one"].includes(currentAttr.referenceEntitySetting?.relationType)) {
+    const refFieldAttr = await getEntityAttribute(attr.referenceEntitySetting.refEntityId, attr.referenceEntitySetting.refEntityField);
+    const refFieldName = refFieldAttr?.name;
+    if (refFieldName && refResolved?.rowData?.[refFieldName]) {
+      const refValue = refResolved.rowData[refFieldName];
+      const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
+      const relatedDocs: any[] = await RefModel.find({ _id: refValue }).lean();
+
+      if(currentAttr.referenceEntitySetting?.relationType === "mapping_one_to_one"){
+        for (const r of relatedDocs) {
+          for (const subKey in r.rowData) {
+            const arrayKey = `${key}.${subKey}`;
+            const value = r.rowData[subKey];
+            if (value !== undefined) rowData[arrayKey] = value;
+          }
+        }
+      } else { // mapping_many_to_one
+        for (const r of relatedDocs) {
+          for (const subKey in r.rowData) {
+            const arrayKey = `${key}.${subKey}`;
+            if (!Array.isArray(rowData[arrayKey])) rowData[arrayKey] = [];
+            const value = r.rowData[subKey];
+            if (Array.isArray(value)) rowData[arrayKey].push(...value);
+            else if (value !== undefined) rowData[arrayKey].push(value);
+            rowData[arrayKey] = Array.from(new Set(rowData[arrayKey]));
+          }
+        }
+      }
+    }
+  }
+  // Default handling
+  else if (Array.isArray(refResolved)) {
+    const displayValues: string[] = [];
+    for (const ref of refResolved) {
+      if (!ref?.rowData) continue;
+      for (const subKey in ref.rowData) {
+        const arrayKey = `${key}.${subKey}`;
+        if (!Array.isArray(rowData[arrayKey])) rowData[arrayKey] = [];
+        const value = ref.rowData[subKey];
+        if (Array.isArray(value)) rowData[arrayKey].push(...value);
+        else if (value !== undefined) rowData[arrayKey].push(value);
+      }
+      const displayVal = displayField && ref.rowData[displayField] !== undefined
+        ? ref.rowData[displayField]
+        : Object.values(ref.rowData)[0];
+      displayValues.push(displayVal);
+    }
+    rowData[key] = displayValues;
+  } else if (refResolved && refResolved.rowData) {
+    const refRowData = refResolved.rowData;
+    for (const subKey in refRowData) rowData[`${key}.${subKey}`] = refRowData[subKey];
+    rowData[key] = displayField && refRowData[displayField] !== undefined
+      ? refRowData[displayField]
+      : Object.values(refRowData)[0];
+  }
+}
+
+
 
 
   function toAggregationFieldPath(fieldPath: string): string {
@@ -605,31 +673,107 @@ async function flattenAllResolved(rowData: Record<string, any>): Promise<Record<
 
   // --- Pagination loop ---
   let skip = 0;
-  const lookups = await generateLookupsForAllReferences(attributesMap);
- console.log('lookups final',lookups);
- console.log('filters',JSON.stringify(transformFilterForAggregation(filters)));
-  while (true) {
-    const aggregationPipeline: any[] = [...lookups];
+const lookups = await generateLookupsForAllReferences(attributesMap);
 
-    if (filters && Object.keys(filters).length > 0) {
-      aggregationPipeline.push({ $match: transformFilterForAggregation(filters) });
-    }
+while (true) {
+  const aggregationPipeline: any[] = [...lookups];
 
-    aggregationPipeline.push({ $skip: skip }, { $limit: batchSize });
-
-    const rawData = await DataSourceVersionValue.aggregate(aggregationPipeline).exec();
-    if (rawData.length === 0) break;
-    console.log('rawData',rawData);
-    const processedData = await Promise.all(
-      rawData.map(async doc => {
-        const flatRowData = await flattenAllResolved(doc.rowData);
-        return { ...doc, rowData: flatRowData };
-      })
-    );
-    console.log('processedData',processedData);
-    await processBatch(processedData);
-    skip += batchSize;
+  if (filters && Object.keys(filters).length > 0) {
+    aggregationPipeline.push({ $match: transformFilterForAggregation(filters) });
   }
+
+  aggregationPipeline.push({ $skip: skip }, { $limit: batchSize });
+
+  const versionValueData = await DataSourceVersionValue.aggregate(aggregationPipeline).exec();
+  if (versionValueData.length === 0) break;
+        console.log('attributesMap',attributesMap);
+
+  const transformedData = await Promise.all(
+    versionValueData.map(async (doc: any) => {
+      const newDoc = { ...doc };
+      const rowData: Record<string, any> = { ...doc.rowData };
+      for (const key in attributesMap) {
+        const attr = attributesMap[key];
+        // --------- Mapping attributes logic ---------
+        if (attr.referenceEntitySetting?.relationType?.startsWith("mapping_") && rowData[key] != null) {
+          const isMany = attr.referenceEntitySetting.relationType === "mapping_many_to_one";
+
+          const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
+          console.log('RefModel',RefModel,doc);
+          // Get display field name from reference setting
+          const refFieldAttr = await getEntityAttribute(
+            attr.referenceEntitySetting.refEntityId,
+            attr.referenceEntitySetting.refEntityField
+          );
+          const displayField = refFieldAttr?.name;
+          if (!displayField) continue;
+
+          const rowIds: any[] = [];
+          const subValuesMap: Record<string, any[]> = {};
+          const topLevelAttribute = await getTopLevelAttribute(key);
+          console.log('doc.rowData.${topLevelAttribute}_resolved._id',`doc.rowData.${topLevelAttribute}_resolved`);
+          // Find the document(s) where display field matches parent _id
+          const resolvedObj = doc.rowData[`${topLevelAttribute}_resolved`];
+          if (!resolvedObj) continue;
+
+          const parentId = resolvedObj._id; // this is the ObjectId you want
+
+          const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: parentId }).lean();
+          console.log('relatedDocs',relatedDocs);
+          for (const r of relatedDocs) {
+            if (!r?.rowData) continue;
+
+            rowIds.push(r._id);
+
+            // Collect subValues for each subKey
+            for (const subKey in r.rowData) {
+              if (subKey === displayField) continue;
+
+              const refAttr = await getAttributeByName(attr.referenceEntitySetting.refEntityId, subKey);
+              if (!refAttr?.referenceEntitySetting) continue;
+
+              if (!subValuesMap[subKey]) subValuesMap[subKey] = [];
+              subValuesMap[subKey].push(r.rowData[subKey]);
+            }
+          }
+
+          // Resolve subValues in batch
+          for (const subKey in subValuesMap) {
+            const refAttr = await getAttributeByName(attr.referenceEntitySetting.refEntityId, subKey);
+            const subValues = subValuesMap[subKey];
+
+            await resolveRefAttribute(
+              { referenceEntitySetting: refAttr.referenceEntitySetting },
+              { rowData: { [subKey]: isMany ? subValues : subValues[0] } },
+              `${key}.${subKey}`,
+              rowData,
+              attr
+            );
+          }
+
+          // Assign main field ObjectId(s) if needed
+          // rowData[key] = isMany ? rowIds : rowIds[0];
+        }
+        // --------- Already resolved references from aggregation pipeline ---------
+        else if (rowData.hasOwnProperty(`${key}_resolved`)) {
+          const refResolved = rowData[`${key}_resolved`];
+          await resolveRefAttribute(attr, refResolved, key, rowData);
+          delete rowData[`${key}_resolved`];
+        }
+      }
+
+      // Flatten resolved nested fields
+      const flatRowData = await flattenAllResolved(rowData);
+      newDoc.rowData = flatRowData;
+
+      return newDoc;
+    })
+  );
+  console.log('transformedData',transformedData);
+  await processBatch(transformedData);
+  skip += batchSize;
+}
+
 }
 
 
@@ -693,28 +837,44 @@ export async function groupCasesByFields(
   groupBy: any[],
   attributeMap: Map<string, any>
 ) {
-  // Resolve field paths in order
+  // Resolve field paths in order and filter out non-existing fields
   const resolvedGroupBy: any[] = [];
   for (const gb of groupBy) {
     const attr = attributeMap.get(String(gb.attributeId));
     if (!attr) continue;
+
     const fieldPath = await resolveFieldPath(attr, gb.refAttributeId);
+
+    // Only include if at least one row has this field
+    const existsInData = cases.some(
+      item => getNestedValue(item.rowData, fieldPath) !== undefined
+    );
+    if (!existsInData) continue;
+
     resolvedGroupBy.push({ ...gb, fieldPath });
   }
 
   // Recursive function for ordered grouping
-  function groupRecursive(data: any[], level: number): Record<string, any> {
+  function groupRecursive(data: any[], level: number): Record<string, any> | any[] {
     if (level >= resolvedGroupBy.length) {
       return data; // no more levels, return cases array
     }
 
     const fieldPath = resolvedGroupBy[level].fieldPath;
     const grouped: Record<string, any> = {};
-    // console.log('fieldPath',fieldPath);
+
     for (const item of data) {
       let key = getNestedValue(item.rowData, fieldPath);
-      console.log('key', key, item.rowData, fieldPath);
-      key = key != null ? String(key) : "Unknown";
+
+      // If the key is missing or null, skip this level
+      if (key === undefined || key === null) {
+        key = "Unknown";
+      } else if (Array.isArray(key)) {
+        // If multiple values exist, join them as string
+        key = key.join(", ");
+      } else {
+        key = String(key);
+      }
 
       if (!grouped[key]) {
         grouped[key] = [];
@@ -733,6 +893,32 @@ export async function groupCasesByFields(
   return groupRecursive(cases, 0);
 }
 
+function getTopLevelAttribute(dotKey: string): string {
+  return dotKey.split('.')[0]; // take everything before first dot
+}
+async function buildExtendedAttributeMap(entity: any): Promise<Record<string, any>> {
+  const attributesMap: Record<string, any> = {};
+
+  // Add direct attributes
+  for (const attr of entity.attributes) {
+    attributesMap[attr.name] = attr;
+
+    // If this is a mapping relation, fetch referenced attributes
+      if(attr?.referenceEntitySetting?.refEntityId){
+      const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
+      const refEntity: any = await findEntityById(refEntityId);
+      if (refEntity?.attributes) {
+        for (const refAttr of refEntity.attributes) {
+          // Avoid overwriting original key, prefix with mapping key
+          const mapKey = `${attr.name}.${refAttr.name}`;
+          attributesMap[mapKey] = refAttr;
+        }
+      }
+    }
+  }
+
+  return attributesMap;
+}
 
 
 // Main function to prepare today's notifications
