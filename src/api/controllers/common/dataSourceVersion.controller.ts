@@ -261,7 +261,7 @@ async function validateAndConvert({
     const convertedValue = new Date(value);
     return {
       isValid: !isNaN(convertedValue.getTime()),
-      convertedValue: !isNaN(convertedValue.getTime()) ? convertedValue.toISOString() : null,
+      convertedValue: !isNaN(convertedValue.getTime()) ? convertedValue : null,
     };
   }
 

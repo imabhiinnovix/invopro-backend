@@ -658,7 +658,7 @@ export function excelDateToJSDate(serial: number) {
     hours,
     minutes,
     seconds
-  ).toISOString();
+  );
 }
 
 interface ReportSettings {
