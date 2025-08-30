@@ -20,6 +20,7 @@ interface IDataImportError extends Document {
   refEntityId: Types.ObjectId;
   refDataSourceId: Types.ObjectId;
   attributeType: string;
+  refAttributeId: Types.ObjectId;
 }
 const DataImportErrorSchema = new Schema<IDataImportError>(
   {
@@ -32,6 +33,7 @@ const DataImportErrorSchema = new Schema<IDataImportError>(
     fileAttributeValue: { type: Schema.Types.Mixed },
     attributeOptionId: { type: Schema.Types.ObjectId, ref: 'attribute_option' },
     attributeType: { type: String },
+    refAttributeId: { type: Schema.Types.ObjectId },
     refEntityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     refDataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
     status: {

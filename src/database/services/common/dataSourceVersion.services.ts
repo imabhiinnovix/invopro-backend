@@ -354,3 +354,12 @@ export const getDataSourceVersionGroupedList = async ({
     throw err;
   }
 };
+
+export const getDataSourceVersionDetailBasedOnId = async (query: any) => {
+  try {
+    const record = await DataSourceVersion.findOne(query);
+    return record;
+  } catch (err) {
+    throw err;
+  }
+};

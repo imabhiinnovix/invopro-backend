@@ -9,6 +9,7 @@ import * as importLogDataSourceVersionValueService from '../../../database/servi
 import mongoose from 'mongoose';
 import * as attributeOptionService from '../../../database/services/common/attributeOption.services';
 import * as dataSourceVersionValueService from '../../../database/services/common/defaultDataSourceVersionValue.services';
+import { updateCustomDataSourceVersionIsCurrentFunction } from './dataSourceVersion.controller';
 const ObjectId = mongoose.Types.ObjectId;
 
 export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
@@ -42,6 +43,12 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
       success: true,
       message: 'Data Import Error Fetched Successfully',
       data: result.data,
+      pagination: {
+        page: page,
+        limit,
+        totalPage: Math.ceil(result.totalCount / limit),
+        totalRecords: result.totalCount,
+      },
       totalCount: result.totalCount,
     });
   } catch (err) {
@@ -120,6 +127,8 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
         dataSourceVersionId: new ObjectId(dataSourceVersionId),
         isErrorLog: 0,
       });
+
+      await updateCustomDataSourceVersionIsCurrentFunction({ dataSourceVersionId });
     } else if (action === 'update') {
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         errorSchemaName,
@@ -186,6 +195,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
         dataSourceVersionId: new ObjectId(dataSourceVersionId),
         isErrorLog: 0,
       });
+      await updateCustomDataSourceVersionIsCurrentFunction({ dataSourceVersionId });
     } else if (action === 'unique') {
       await dataImportErrorServices.updateDataImportErrors(
         { dataSourceVersionId: dataSourceVersionId, rowNumber: rowNumber },
@@ -227,9 +237,9 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
         }
       );
     } else {
-      return res.status(400).json({ message: 'Not valid action.' });
+      return res.status(400).json({ success: false, message: 'Not valid action.' });
     }
-    return res.status(200).json({ message: 'Action Applied.' });
+    return res.status(200).json({ success: true, message: 'Action Applied.', data: { dataSourceId } });
   } catch (err) {
     next(err);
   }

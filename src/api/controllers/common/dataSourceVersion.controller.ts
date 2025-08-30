@@ -182,7 +182,11 @@ export async function validateFileDataCondition({ fileData, attributeSetting, co
       const attr = attributeSetting?.find((a) => a.name === baseField);
 
       // Check for reference resolution
-      if (attr?.referenceEntitySetting?.refEntityId && attr?.referenceEntitySetting?.refEntityField && ['one_to_one','many_to_one'].includes(attr.referenceEntitySetting?.relationType)) {
+      if (
+        attr?.referenceEntitySetting?.refEntityId &&
+        attr?.referenceEntitySetting?.refEntityField &&
+        ['one_to_one', 'many_to_one'].includes(attr.referenceEntitySetting?.relationType)
+      ) {
         const refEntityId: string = attr.referenceEntitySetting.refEntityId;
         const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
 
@@ -257,7 +261,7 @@ async function validateAndConvert({
     const convertedValue = new Date(value);
     return {
       isValid: !isNaN(convertedValue.getTime()),
-      convertedValue: !isNaN(convertedValue.getTime()) ? convertedValue.toISOString() : null,
+      convertedValue: !isNaN(convertedValue.getTime()) ? convertedValue : null,
     };
   }
 
@@ -361,6 +365,7 @@ async function validateFileData({
   );
 
   for (const [index, row] of fileData.entries()) {
+    console.log('Processing Index:', index);
     const newRow = {
       dataSourceId,
       entityId,
@@ -399,10 +404,11 @@ async function validateFileData({
           dataSourceId: dataSourceId,
           dataSourceVersionId: dataSourceVersionId,
           rowNumber: index + 1,
-          fileAttributeName: fileKey,
+          fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
           attributeName: attrName,
           attributeType: attr.type,
           attributeOptionId: attr.optionAttributeId ? attr.optionAttributeId : null,
+          refAttributeId: attr._id,
           errorType: ERROR_CODES.MANDATORY_MISSING.type,
           errorCode: ERROR_CODES.MANDATORY_MISSING.code,
           status: 'open',
@@ -410,7 +416,10 @@ async function validateFileData({
         });
         newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
       } else if (value !== undefined && value != null && value) {
-        if (attr.referenceEntitySetting?.refEntityId && ['one_to_one','many_to_one'].includes(attr.referenceEntitySetting?.relationType)) {
+        if (
+          attr.referenceEntitySetting?.refEntityId &&
+          ['one_to_one', 'many_to_one'].includes(attr.referenceEntitySetting?.relationType)
+        ) {
           const refEntityId = attr.referenceEntitySetting.refEntityId;
           const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
 
@@ -425,19 +434,25 @@ async function validateFileData({
           });
 
           if (!referencedDoc) {
+            const refDataSourceDetails = await dataSourceService.findDataSourcesByEntityId(refEntityId);
             errors.push({
               entityId: entityId,
               dataSourceId: dataSourceId,
               dataSourceVersionId: dataSourceVersionId,
               rowNumber: index + 1,
-              fileAttributeName: fileKey,
+              fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
               fileAttributeValue: value,
               attributeName: attrName,
-              errorType: 'Reference Error',
-              errorCode: '404',
+              attributeType: attr.type,
+              refEntityId,
+              refAttributeId: refEntityFieldId,
+              refDataSourceId: refDataSourceDetails?.[0]?._id,
+              errorType: ERROR_CODES.INVALID_REFERENCE.type,
+              errorCode: ERROR_CODES.INVALID_REFERENCE.code,
+              status: 'open',
               errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value}, but it could not be resolved from the reference entity for the attribute ${attrName}.`,
             });
-            newRow.isErrorLog = 1;
+            newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
           } else {
             newRow.rowData[attrName] = referencedDoc._id;
           }
@@ -456,11 +471,12 @@ async function validateFileData({
                 dataSourceId: dataSourceId,
                 dataSourceVersionId: dataSourceVersionId,
                 rowNumber: index + 1,
-                fileAttributeName: fileKey,
+                fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
                 fileAttributeValue: value,
                 attributeName: attrName,
                 attributeType: attr.type,
                 attributeOptionId: attr.optionAttributeId,
+                refAttributeId: attr._id,
                 errorType: ERROR_CODES.INVALID_OPTION.type,
                 errorCode: ERROR_CODES.INVALID_OPTION.code,
                 status: 'open',
@@ -472,11 +488,12 @@ async function validateFileData({
                 dataSourceId: dataSourceId,
                 dataSourceVersionId: dataSourceVersionId,
                 rowNumber: index + 1,
-                fileAttributeName: fileKey,
+                fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
                 fileAttributeValue: value,
                 attributeName: attrName,
                 attributeType: attr.type,
                 status: 'open',
+                refAttributeId: attr._id,
                 errorType: ERROR_CODES.INVALID_TYPE.type,
                 errorCode: ERROR_CODES.INVALID_TYPE.code,
                 errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value} of type ${typeof value}, but a value of type ${attr.type} was expected for the settings attribute ${attrName}.`,
@@ -574,7 +591,10 @@ export async function validateRowData({
     }
 
     // 2️⃣ Reference resolution
-    if (attr.referenceEntitySetting?.refEntityId && ['one_to_one','many_to_one'].includes(attr.referenceEntitySetting?.relationType)) {
+    if (
+      attr.referenceEntitySetting?.refEntityId &&
+      ['one_to_one', 'many_to_one'].includes(attr.referenceEntitySetting?.relationType)
+    ) {
       const refEntityId = attr.referenceEntitySetting.refEntityId;
       const refFieldId = attr.referenceEntitySetting.refEntityField;
       const refEntityField = await getEntityAttribute(refEntityId, refFieldId);
@@ -646,6 +666,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
     let combinedMimType = '';
     let combinedSize = 0;
     let combinedData: any[] = [];
+    let dataSourceVersionId;
     for (const file of files) {
       const { originalname, path: tempPath, size, mimetype } = file;
       const fileName = originalname;
@@ -704,6 +725,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
         isCurrent: false,
       });
 
+      dataSourceVersionId = dataSourceVersion._id;
       debounceManager.debounce(dataSourceVersion._id as string, async () => {
         try {
           const entityDetails = dataSourceDetails.entityId as any;
@@ -737,6 +759,8 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
             entityId: dataSourceDetails.entityId._id,
             uniqueAttributeRules: dataSourceDetails.uniqueAttributeRules,
           });
+
+          console.log('validatedData:', validatedData);
 
           if (validatedData.errors.length > 0) {
             await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
@@ -788,6 +812,8 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
     return res.status(200).json({
       success: true,
       message: 'Data upload is in progress.',
+      dataSourceVersionId,
+      status: 'pending',
     });
   } catch (e) {
     next(e);
@@ -1179,6 +1205,34 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
   }
 };
 
+export const updateCustomDataSourceVersionIsCurrentFunction = async ({
+  dataSourceVersionId,
+}: {
+  dataSourceVersionId: string;
+}) => {
+  try {
+    const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionDetailBasedOnId({
+      _id: new Types.ObjectId(dataSourceVersionId),
+    });
+    if (dataSourceVersionDetails && dataSourceVersionDetails.dataSourceId) {
+      await dataSourceVersionService.updateDataSourceVersions({
+        query: {
+          dataSourceId: dataSourceVersionDetails.dataSourceId,
+          versionValue: dataSourceVersionDetails.versionValue,
+        },
+        updateFields: { isCurrent: false },
+      });
+      await dataSourceVersionService.updateDataSourceVersion(dataSourceVersionDetails._id as string, {
+        status: 'completed',
+        isCurrent: true,
+      });
+    }
+  } catch (e) {
+    console.log('Error in createUpdateCustomDataSourceVersionValueFunction.', e);
+    throw e;
+  }
+};
+
 export const createUpdateCustomDataSourceVersionValue = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { dataSourceId, versionValue, versionData } = req.body;
@@ -1303,7 +1357,7 @@ async function handleReferenceSubFields({
   userId,
   organizationId,
 }) {
-  const dottedKeys = Object.keys(rowData).filter(key => key.includes('.'));
+  const dottedKeys = Object.keys(rowData).filter((key) => key.includes('.'));
   for (const key of dottedKeys) {
     if (!key.includes('.')) continue; // Only dotted keys
 
@@ -1311,7 +1365,7 @@ async function handleReferenceSubFields({
 
     // Find attribute whose subfield matches the dotted key
     const attr = attributes.find(
-      a => a.referenceEntitySetting?.refEntityId && a.referenceEntitySetting?.refEntityField && subAttrName
+      (a) => a.referenceEntitySetting?.refEntityId && a.referenceEntitySetting?.refEntityField && subAttrName
     );
     if (!attr || !attr.referenceEntitySetting) continue;
 
@@ -1322,7 +1376,7 @@ async function handleReferenceSubFields({
     if (!refEntity) continue;
 
     // Find subfield marked as isReferenceEdit
-    const subAttr = refEntity.attributes.find(a => a.name === subAttrName && a.isReferenceEditable == 'EDIT');
+    const subAttr = refEntity.attributes.find((a) => a.name === subAttrName && a.isReferenceEditable == 'EDIT');
     if (!subAttr) continue;
 
     // Reference model for sub-entity (used for mapping)
@@ -1330,7 +1384,7 @@ async function handleReferenceSubFields({
 
     // Get reference field name
     const refFieldAttr = refEntity.attributes.find(
-      a => String(a._id) === String(attr.referenceEntitySetting.refEntityField)
+      (a) => String(a._id) === String(attr.referenceEntitySetting.refEntityField)
     );
     if (!refFieldAttr) continue;
     const refFieldName = refFieldAttr.name;
@@ -1341,103 +1395,97 @@ async function handleReferenceSubFields({
     // -------------------------------
     // 1️⃣ Mapping reference logic
     // -------------------------------
-    console.log('relationType',relationType);
+    console.log('relationType', relationType);
     if (['mapping_one_to_one', 'mapping_many_to_one'].includes(relationType)) {
-  // 1️⃣ Resolve parent doc (_id) → AttorneyName
-  const parentRefFieldAttr = await getEntityAttribute(
-    attr.referenceEntitySetting.refEntityId,
-    attr.referenceEntitySetting.refEntityField
-  );
-  const parentRefFieldName = parentRefFieldAttr?.name;
-  const parentRefModel = await getModelForEntity(parentRefFieldAttr.referenceEntitySetting?.refEntityId);
-  console.log('parentRefFieldName',parentValue,parentRefModel);
-  const parentDoc = await parentRefModel.findOne({
-    [`rowData.${parentRefFieldName}`]: parentValue,
-  });
-  if (!parentDoc) continue;
-  const parentId = parentDoc._id;
-
-  // -------------------------------
-  // Mark existing mappings as inactive
-  // -------------------------------
-  console.log('refFieldName',refFieldName,parentId,RefModel,versionId);
-  await RefModel.deleteMany(
-    { [`rowData.${refFieldName}`]: parentId }
-  );
-
-  // 2️⃣ Resolve subfield doc (_id) → FOName
-  const subRefModel = await getModelForEntity(subAttr.referenceEntitySetting.refEntityId);
-
-  if (relationType === 'mapping_many_to_one') {
-    const subValuesArray = Array.isArray(subValue) ? subValue : [subValue];
-
-    for (const val of subValuesArray) {
-      console.log('val',val,subAttr.name);
-      const escapedValue = escapeRegExp(val.trim());
-      const regex = new RegExp(`^${escapedValue}$`, 'i'); // ✅ use RegExp object
-      const subRefDoc = await subRefModel.findOne({ [`rowData.${subAttr.name}`]: regex });
-      console.log('subRefDoc',subRefDoc,regex,parentId);
-      if (!subRefDoc) continue;
-      const subId = subRefDoc._id;
-
-      // 3️⃣ Upsert mapping table
-      await RefModel.updateOne(
-        { [`rowData.${refFieldName}`]: parentId, [`rowData.${subAttr.name}`]: subId },
-        {
-          $set: {
-            [`rowData.${refFieldName}`]: parentId,
-            [`rowData.${subAttr.name}`]: subId,
-            status: 'active',
-            dataSourceId,
-            dataSourceVersionId: versionId,
-            versionValue,
-            createdBy: userId,
-            organizationId,
-            updatedAt: new Date(),
-          },
-        },
-        { upsert: true }
+      // 1️⃣ Resolve parent doc (_id) → AttorneyName
+      const parentRefFieldAttr = await getEntityAttribute(
+        attr.referenceEntitySetting.refEntityId,
+        attr.referenceEntitySetting.refEntityField
       );
+      const parentRefFieldName = parentRefFieldAttr?.name;
+      const parentRefModel = await getModelForEntity(parentRefFieldAttr.referenceEntitySetting?.refEntityId);
+      console.log('parentRefFieldName', parentValue, parentRefModel);
+      const parentDoc = await parentRefModel.findOne({
+        [`rowData.${parentRefFieldName}`]: parentValue,
+      });
+      if (!parentDoc) continue;
+      const parentId = parentDoc._id;
+
+      // -------------------------------
+      // Mark existing mappings as inactive
+      // -------------------------------
+      console.log('refFieldName', refFieldName, parentId, RefModel, versionId);
+      await RefModel.deleteMany({ [`rowData.${refFieldName}`]: parentId });
+
+      // 2️⃣ Resolve subfield doc (_id) → FOName
+      const subRefModel = await getModelForEntity(subAttr.referenceEntitySetting.refEntityId);
+
+      if (relationType === 'mapping_many_to_one') {
+        const subValuesArray = Array.isArray(subValue) ? subValue : [subValue];
+
+        for (const val of subValuesArray) {
+          console.log('val', val, subAttr.name);
+          const escapedValue = escapeRegExp(val.trim());
+          const regex = new RegExp(`^${escapedValue}$`, 'i'); // ✅ use RegExp object
+          const subRefDoc = await subRefModel.findOne({ [`rowData.${subAttr.name}`]: regex });
+          console.log('subRefDoc', subRefDoc, regex, parentId);
+          if (!subRefDoc) continue;
+          const subId = subRefDoc._id;
+
+          // 3️⃣ Upsert mapping table
+          await RefModel.updateOne(
+            { [`rowData.${refFieldName}`]: parentId, [`rowData.${subAttr.name}`]: subId },
+            {
+              $set: {
+                [`rowData.${refFieldName}`]: parentId,
+                [`rowData.${subAttr.name}`]: subId,
+                status: 'active',
+                dataSourceId,
+                dataSourceVersionId: versionId,
+                versionValue,
+                createdBy: userId,
+                organizationId,
+                updatedAt: new Date(),
+              },
+            },
+            { upsert: true }
+          );
+        }
+      } else {
+        // mapping_one_to_one → single subValue
+        const escapedValue = escapeRegExp(subValue.trim());
+        const regex = new RegExp(`^${escapedValue}$`, 'i'); // ✅ use RegExp object
+        const subRefDoc = await subRefModel.findOne({ [`rowData.${subAttr.name}`]: regex });
+        if (!subRefDoc) continue;
+        const subId = subRefDoc._id;
+
+        await RefModel.updateOne(
+          { [`rowData.${refFieldName}`]: parentId },
+          {
+            $set: {
+              [`rowData.${refFieldName}`]: parentId,
+              [`rowData.${subAttr.name}`]: subId,
+              status: 'active',
+              dataSourceId,
+              dataSourceVersionId: versionId,
+              versionValue,
+              createdBy: userId,
+              organizationId,
+              updatedAt: new Date(),
+            },
+          },
+          { upsert: true }
+        );
+      }
+      // ✅ Remove dotted key from rowData in parent document
+      console.log('parentRefModel', parentRefModel, parentId, key);
+      const doc: any = await parentRefModel.findById(parentId);
+      if (doc && doc.rowData && key in doc.rowData) {
+        delete doc.rowData[key]; // remove the literal key with dots
+        await parentRefModel.updateOne({ _id: parentId }, { $set: { rowData: doc.rowData } });
+      }
+      continue; // done with mapping case
     }
-  } else {
-    // mapping_one_to_one → single subValue
-    const escapedValue = escapeRegExp(subValue.trim());
-    const regex = new RegExp(`^${escapedValue}$`, 'i'); // ✅ use RegExp object
-    const subRefDoc = await subRefModel.findOne({ [`rowData.${subAttr.name}`]: regex });
-    if (!subRefDoc) continue;
-    const subId = subRefDoc._id;
-
-    await RefModel.updateOne(
-      { [`rowData.${refFieldName}`]: parentId },
-      {
-        $set: {
-          [`rowData.${refFieldName}`]: parentId,
-          [`rowData.${subAttr.name}`]: subId,
-          status: 'active',
-          dataSourceId,
-          dataSourceVersionId: versionId,
-          versionValue,
-          createdBy: userId,
-          organizationId,
-          updatedAt: new Date(),
-        },
-      },
-      { upsert: true }
-    );
-  }
-  // ✅ Remove dotted key from rowData in parent document
-  console.log('parentRefModel',parentRefModel,parentId,key);
-    const doc: any = await parentRefModel.findById(parentId);
-if (doc && doc.rowData && key in doc.rowData) {
-  delete doc.rowData[key]; // remove the literal key with dots
-  await parentRefModel.updateOne(
-    { _id: parentId },
-    { $set: { rowData: doc.rowData } }
-  );
-}
-  continue; // done with mapping case
-}
-
 
     // -------------------------------
     // 2️⃣ Normal reference logic
@@ -1447,12 +1495,12 @@ if (doc && doc.rowData && key in doc.rowData) {
       const parentValuesArray = Array.isArray(parentValue) ? parentValue : [parentValue];
 
       parentValueResolved = await Promise.all(
-        parentValuesArray.map(async v => {
+        parentValuesArray.map(async (v) => {
           const existingRow: any = await RefModel.findById(v);
           return existingRow ? existingRow.rowData[refFieldName] : null;
         })
       );
-      parentValueResolved = parentValueResolved.filter(v => v != null);
+      parentValueResolved = parentValueResolved.filter((v) => v != null);
       if (!parentValueResolved.length) continue;
 
       const subValues = Array.isArray(subValue) ? subValue : [subValue];
@@ -1524,12 +1572,6 @@ if (doc && doc.rowData && key in doc.rowData) {
   }
 }
 
-
-
-
-
-
-
 export const createSingleRowVersionValue = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
@@ -1537,9 +1579,10 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       versionValue,
       rowData,
       isErrorResolved,
-      rowNumber,
       errorDataSourceVersionId,
       errorDataSourceId,
+      attributeName,
+      fileAttributeValue,
     } = req.body;
     const { userId, organizationId, orgCode } = req.user;
 
@@ -1605,8 +1648,6 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       return res.status(400).json({ success: false, errors });
     }
 
-    
-
     const newRow = {
       dataSourceId,
       versionValue: version.versionValue,
@@ -1614,11 +1655,11 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       dataSourceVersionId: version._id,
       rowData: validatedRowData,
       createdBy: userId,
-      status:'active',
+      status: 'active',
     };
 
     await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, [newRow]);
-    
+
     // 🔹 Handle reference subfields
     await handleReferenceSubFields({
       rowData: validatedRowData,
@@ -1637,15 +1678,33 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
         versionCode: errorDataSourceDetails?.code!,
       });
 
+      const refrenceRecords = await dataImportErrorServices.getDataImportErrorRecords({
+        dataSourceVersionId: errorDataSourceVersionId,
+        attributeName,
+        fileAttributeValue,
+        status: 'open',
+      });
+
+      const rowNumbersToUpdate = refrenceRecords.map((record) => record.rowNumber);
+
+      console.log('rowNumbersToUpdate', rowNumbersToUpdate);
       await dataImportErrorServices.updateDataImportErrors(
-        { dataSourceVersionId: errorDataSourceVersionId, rowNumber },
+        {
+          dataSourceVersionId: errorDataSourceVersionId,
+          attributeName,
+          fileAttributeValue,
+          rowNumber: { $in: rowNumbersToUpdate },
+        },
         { status: 'resolved' }
       );
+
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         errorSchema,
-        { dataSourceVersionId: new Schema.Types.ObjectId(errorDataSourceVersionId), rowNumber },
+        { dataSourceVersionId: new ObjectId(errorDataSourceVersionId), rowNumber: { $in: rowNumbersToUpdate } },
         {},
-        { isErrorLog: -1 }
+        {
+          isErrorLog: -1,
+        }
       );
     }
 
@@ -1726,8 +1785,6 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       return res.status(400).json({ success: false, errors });
     }
 
-   
-
     await dataSourceVersionValueService.updateOne(
       schemaName,
       { _id: rowId },
@@ -1737,7 +1794,7 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       }
     );
 
-     // 🔹 Handle reference subfields
+    // 🔹 Handle reference subfields
     await handleReferenceSubFields({
       rowData: validatedRowData,
       attributes: entity.attributes,
@@ -1754,7 +1811,6 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     next(e);
   }
 };
-
 
 export const deleteMultipleRowsFromVersion = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -1985,5 +2041,23 @@ export const getNewChartData = async (req: Request, res: Response, next: NextFun
   } catch (e) {
     console.log('Error in getNotivixChartData:', e);
     next(e);
+  }
+};
+
+export const getDataSourceVersionDetailsBasedOnId = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dataSourceVersionId } = req.params;
+
+    const result = await dataSourceVersionService.getDataSourceVersionDetailBasedOnId({
+      _id: new Types.ObjectId(dataSourceVersionId),
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Data Source Version Details Fetched Successfully',
+      data: result,
+    });
+  } catch (err) {
+    next(err);
   }
 };
