@@ -105,6 +105,52 @@ function parseTemplate(template: string, context: Record<string, any>): string {
 }
 
 
+// 🔧 Utility: format today's date
+function formatDate(date): string {
+  return date
+    .toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+    .replace(/ /g, "-"); // e.g. "30-Aug-2025"
+}
+
+
+/**
+ * Extracts a friendly recipient name from email or full name.
+ * @param input - email or full name string
+ * @returns first name or fallback string
+ */
+export function getRecipientName(input: string): string {
+  if (!input) return "User";
+
+  // Case 1: If input contains '@', treat as email
+  if (input.includes("@")) {
+    const localPart = input.split("@")[0];
+    const nameParts = localPart.split(/[._-]/); // split on ., _, -
+    return capitalize(nameParts[0]);
+  }
+
+  // Case 2: If input is a full name with comma
+  // Example: "Chakravarti, Aditya (IND-TEC) (700004507)"
+  const commaParts = input.split(",");
+  if (commaParts.length > 1) {
+    const firstNamePart = commaParts[1].trim().split(" ")[0]; // take first word after comma
+    return capitalize(firstNamePart);
+  }
+
+  // Case 3: Fallback to first word
+  return capitalize(input.split(" ")[0]);
+}
+
+/**
+ * Capitalizes first letter
+ */
+function capitalize(str: string) {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
 
 
 export async function triggerPreparedNotifications() {
@@ -118,38 +164,55 @@ export async function triggerPreparedNotifications() {
 
     console.log(`📬 Preparing to send ${notifications.length} notifications`);
 
+    const isLocal = process.env.NODE_ENV !== "production";
+    const todayDate = formatDate(new Date());
     for (const notif of notifications) {
       try {
         const template = notif.templateId as unknown as INotificationTemplate | null;
         if (!template) {
-          console.warn(`⚠️  Notification ${notif._id} has no template. Skipping.`);
+          console.warn(`⚠️ Notification ${notif._id} has no template. Skipping.`);
           continue;
         }
 
-        const recipientTo: string[] = ["abhishek@innovix-labs.com"];
-        const recipientCc: string[] = ["abhishek@innovix-labs.com"];
+        // Resolve recipients based on environment
+        const recipientTo: string[] = isLocal
+          ? ["abhishek@innovix-labs.com"]
+          : notif.recipients?.recipient_to || [];
+        const recipientCc: string[] = isLocal
+          ? [""] // blank for local/dev
+          : notif.recipients?.recipient_cc || [];
 
         if (recipientTo.length === 0 && recipientCc.length === 0) {
-          console.warn(`⚠️  Notification ${notif._id} has no recipients. Skipping.`);
+          console.warn(`⚠️ Notification ${notif._id} has no recipients. Skipping.`);
           continue;
         }
 
+        // SINGLE type template
         if (template.type === "single") {
           const rowKey = Object.keys(notif.payload || {})[0];
           const rowData = notif.payload[rowKey]?.[0]?.rowData || {};
+          const baseContext = { ...rowData, todayDate };
 
-          const subject = parseTemplate(template.subject, rowData);
-          const body = parseTemplate(template.body, rowData);
+          // Format DueDate in baseContext once
+          if (baseContext.DueDate) baseContext.DueDate = formatDate(new Date(baseContext.DueDate));
 
-          await sendToQueue({
-            to: recipientTo,
-            cc: recipientCc,
-            subject,
-            body,
-            notificationId: notif._id,
-          });
+          for (const to of recipientTo) {
+            const context = { ...baseContext, recipientName: getRecipientName(to) };
+            const subject = parseTemplate(template.subject, context);
+            const body = parseTemplate(template.body, context);
 
-        } else if (template.type === "overall") {
+            await sendToQueue({
+              to: [to],
+              cc: recipientCc,
+              subject,
+              body,
+              notificationId: notif._id,
+            });
+          }
+
+        } 
+        // OVERALL type template
+        else if (template.type === "overall") {
           const groups: Array<{ groupKey: string; rows: Record<string, any>[] }> = [];
           let firstRow: Record<string, any> | null = null;
 
@@ -157,7 +220,7 @@ export async function triggerPreparedNotifications() {
             const rowArray = rows as Array<{ rowData: Record<string, any> }>;
 
             if (!firstRow && rowArray.length > 0) {
-              firstRow = flattenObject(rowArray[0].rowData); // flatten first row for greeting
+              firstRow = flattenObject(rowArray[0].rowData);
             }
 
             groups.push({
@@ -165,41 +228,32 @@ export async function triggerPreparedNotifications() {
               rows: rowArray.map(r => {
                 const rd = r.rowData || {};
                 const flattened = flattenObject(rd);
-
                 const dueDate = rd.DueDate ? new Date(rd.DueDate) : null;
                 const daysRemaining = dueDate
                   ? Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
                   : null;
 
-                return {
-                  ...flattened, // allows {{CaseNumber}} and {{Attorney.AttorneyName}} to work
-                  DaysRemaining: daysRemaining,
-                  AssignedTo: rd.Assignedto || "-"
-                };
+                return { ...flattened, DaysRemaining: daysRemaining, AssignedTo: rd.Assignedto || "-", DueDate: dueDate ? formatDate(dueDate) : null,};
               }),
             });
           }
 
-          const templateContext = {
-            ...(firstRow || {}),
-            groups
-          };
+          const baseContext = { ...(firstRow || {}), groups, todayDate };
 
-          console.log("First row in groups:", JSON.stringify(groups[0].rows[0], null, 2));
+          for (const to of recipientTo) {
+            const context = { ...baseContext, recipientName: getRecipientName(to) };
+            const subject = parseTemplate(template.subject, context);
+            const body = parseTemplate(template.body, context);
 
-          const subject = parseTemplate(template.subject, templateContext);
-          const body = parseTemplate(template.body, templateContext);
-
-          console.log("✉️ Rendered Email Body Preview:");
-          console.log(body);
-
-          await sendToQueue({
-            to: recipientTo,
-            cc: recipientCc,
-            subject,
-            body,
-            notificationId: notif._id,
-          });
+            console.log(`✉️ Sending to ${to}: ${subject}`);
+            await sendToQueue({
+              to: [to],
+              cc: recipientCc,
+              subject,
+              body,
+              notificationId: notif._id,
+            });
+          }
 
           console.log(`✅ Overall notification queued: ${notif._id}`);
         }
@@ -220,6 +274,7 @@ export async function triggerPreparedNotifications() {
     console.error("❌ Error running prepared notification cron:", err);
   }
 }
+
 
 
 // Optional: run immediately if executed directly
