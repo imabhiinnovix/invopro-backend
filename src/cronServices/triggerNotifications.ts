@@ -153,6 +153,7 @@ function capitalize(str: string) {
 }
 
 function resolveRecipientEmail(realEmail: string): string {
+  return "abhishek@innovix-labs.com";
   if (process.env.NODE_ENV !== "production") {
     return "abhishek@innovix-labs.com"; // local/dev override
   }
@@ -160,6 +161,7 @@ function resolveRecipientEmail(realEmail: string): string {
 }
 
 function resolveCcEmails(realCc: string[]): string[] {
+  return ["siddharth@innovix-labs.com", "kishan@innovix-labs.com"];
   if (process.env.NODE_ENV !== "production") {
     return [""]; // local/dev CC (can be multiple test emails)
   }
