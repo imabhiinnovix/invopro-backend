@@ -152,9 +152,24 @@ function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
+function resolveRecipientEmail(realEmail: string): string {
+  if (process.env.NODE_ENV !== "production") {
+    return "abhishek@innovix-labs.com"; // local/dev override
+  }
+  return realEmail; // production uses actual email
+}
+
+function resolveCcEmails(realCc: string[]): string[] {
+  if (process.env.NODE_ENV !== "production") {
+    return [""]; // local/dev CC (can be multiple test emails)
+  }
+  return realCc;
+}
+
+
 
 export async function triggerPreparedNotifications() {
-  const conn = await mongoose.connect(config.MONGO_URI!);
+  const conn = await mongoose.connect(process.env.MONGO_URI!);
   console.info(`MongoDB Connected: ${conn.connection.host}`);
 
   try {
@@ -164,8 +179,8 @@ export async function triggerPreparedNotifications() {
 
     console.log(`📬 Preparing to send ${notifications.length} notifications`);
 
-    const isLocal = process.env.NODE_ENV !== "production";
     const todayDate = formatDate(new Date());
+
     for (const notif of notifications) {
       try {
         const template = notif.templateId as unknown as INotificationTemplate | null;
@@ -174,15 +189,11 @@ export async function triggerPreparedNotifications() {
           continue;
         }
 
-        // Resolve recipients based on environment
-        const recipientTo: string[] = isLocal
-          ? ["abhishek@innovix-labs.com"]
-          : notif.recipients?.recipient_to || [];
-        const recipientCc: string[] = isLocal
-          ? [""] // blank for local/dev
-          : notif.recipients?.recipient_cc || [];
+        // Real recipients
+        const realRecipientTo: string[] = notif.recipients?.recipient_to || [];
+        const realRecipientCc: string[] = notif.recipients?.recipient_cc || [];
 
-        if (recipientTo.length === 0 && recipientCc.length === 0) {
+        if (realRecipientTo.length === 0 && realRecipientCc.length === 0) {
           console.warn(`⚠️ Notification ${notif._id} has no recipients. Skipping.`);
           continue;
         }
@@ -193,24 +204,25 @@ export async function triggerPreparedNotifications() {
           const rowData = notif.payload[rowKey]?.[0]?.rowData || {};
           const baseContext = { ...rowData, todayDate };
 
-          // Format DueDate in baseContext once
           if (baseContext.DueDate) baseContext.DueDate = formatDate(new Date(baseContext.DueDate));
 
-          for (const to of recipientTo) {
-            const context = { ...baseContext, recipientName: getRecipientName(to) };
+          for (const realTo of realRecipientTo) {
+            const toEmail = resolveRecipientEmail(realTo);
+            const ccEmails = resolveCcEmails(realRecipientCc);
+            const context = { ...baseContext, recipientName: getRecipientName(realTo) };
             const subject = parseTemplate(template.subject, context);
             const body = parseTemplate(template.body, context);
 
             await sendToQueue({
-              to: [to],
-              cc: recipientCc,
+              to: [toEmail],
+              cc: ccEmails,
               subject,
               body,
               notificationId: notif._id,
             });
           }
+        }
 
-        } 
         // OVERALL type template
         else if (template.type === "overall") {
           const groups: Array<{ groupKey: string; rows: Record<string, any>[] }> = [];
@@ -233,22 +245,29 @@ export async function triggerPreparedNotifications() {
                   ? Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
                   : null;
 
-                return { ...flattened, DaysRemaining: daysRemaining, AssignedTo: rd.Assignedto || "-", DueDate: dueDate ? formatDate(dueDate) : null,};
+                return {
+                  ...flattened,
+                  DaysRemaining: daysRemaining,
+                  AssignedTo: rd.Assignedto || "-",
+                  DueDate: dueDate ? formatDate(dueDate) : null,
+                };
               }),
             });
           }
 
           const baseContext = { ...(firstRow || {}), groups, todayDate };
 
-          for (const to of recipientTo) {
-            const context = { ...baseContext, recipientName: getRecipientName(to) };
+          for (const realTo of realRecipientTo) {
+            const toEmail = resolveRecipientEmail(realTo);
+            const ccEmails = resolveCcEmails(realRecipientCc);
+            const context = { ...baseContext, recipientName: getRecipientName(realTo) };
             const subject = parseTemplate(template.subject, context);
             const body = parseTemplate(template.body, context);
 
-            console.log(`✉️ Sending to ${to}: ${subject}`);
+            console.log(`✉️ Sending to ${toEmail}: ${subject}`);
             await sendToQueue({
-              to: [to],
-              cc: recipientCc,
+              to: [toEmail],
+              cc: ccEmails,
               subject,
               body,
               notificationId: notif._id,
@@ -261,7 +280,6 @@ export async function triggerPreparedNotifications() {
         notif.status = "sent";
         notif.lastAttemptAt = new Date();
         await notif.save();
-
       } catch (err) {
         console.error(`❌ Failed to queue notification ${notif._id}:`, err);
         notif.status = "failed";
@@ -274,7 +292,6 @@ export async function triggerPreparedNotifications() {
     console.error("❌ Error running prepared notification cron:", err);
   }
 }
-
 
 
 // Optional: run immediately if executed directly
