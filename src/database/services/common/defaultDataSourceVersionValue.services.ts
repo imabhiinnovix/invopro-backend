@@ -163,6 +163,7 @@ export const getDataSourceVersionValueV1 = async ({
     // }, {} as Record<string, any>);
 
   const attributesMap: Record<string, any> = {};
+  const refAttributesMap: Record<string, any> = {};
 
   // Add direct attributes
   for (const attr of entity.attributes) {
@@ -176,7 +177,9 @@ export const getDataSourceVersionValueV1 = async ({
         for (const refAttr of refEntity.attributes) {
           // Avoid overwriting original key, prefix with mapping key
           const mapKey = `${attr.name}.${refAttr.name}`;
-          attributesMap[mapKey] = refAttr;
+          if(refAttr?.referenceEntitySetting?.relationType.startsWith("mapping_")){
+            refAttributesMap[mapKey] = refAttr;
+          }
         }
       }
     }
@@ -370,6 +373,74 @@ export const getDataSourceVersionValueV1 = async ({
 
         for (const key in attributesMap) {
           const attr = attributesMap[key];
+          console.log('attr',attr);
+          // --------- Mapping attributes logic ---------
+                if (attr.referenceEntitySetting?.relationType?.startsWith("mapping_") && rowData[key] != null) {
+  const isMany = attr.referenceEntitySetting.relationType === "mapping_many_to_one";
+
+  const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
+
+  // Get display field name from reference setting
+  const refFieldAttr = await getEntityAttribute(
+    attr.referenceEntitySetting.refEntityId,
+    attr.referenceEntitySetting.refEntityField
+  );
+  const displayField = refFieldAttr?.name;
+
+  if (!displayField) return;
+
+  const rowIds: any[] = [];
+  const subValuesMap: Record<string, any[]> = {};
+    // Find the document(s) where display field matches text
+    const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: doc._id }).lean();
+   
+     for (const doc of relatedDocs) {
+    if (!doc?.rowData) continue;
+
+    rowIds.push(doc._id);
+
+    // Collect subValues for each subKey
+    for (const subKey in doc.rowData) {
+      if (subKey === displayField) continue;
+      console.log('attr.referenceEntitySetting.refEntityId',attr.referenceEntitySetting.refEntityId,subKey);
+      const refAttr = await getAttributeByName(attr.referenceEntitySetting.refEntityId, subKey);
+      if (!refAttr?.referenceEntitySetting) continue;
+
+      if (!subValuesMap[subKey]) subValuesMap[subKey] = [];
+      subValuesMap[subKey].push(doc.rowData[subKey]);
+    }
+  }
+
+  // 🔹 Now resolve subValues in batch
+  for (const subKey in subValuesMap) {
+    const refAttr = await getAttributeByName(attr.referenceEntitySetting.refEntityId, subKey);
+
+    const subValues = subValuesMap[subKey];
+    await resolveRefAttribute(
+      { referenceEntitySetting: refAttr.referenceEntitySetting },
+      { rowData: { [subKey]: isMany ? subValues : subValues[0] } },
+      `${key}.${subKey}`,
+      rowData,
+      attr,
+    );
+  }
+
+  // 🔹 Assign main field with ObjectId(s)
+  // rowData[key] = isMany ? rowIds : rowIds[0];
+
+  // Assign main field to ObjectId(s)
+  // rowData[key] = isMany ? rowIds : rowIds[0];
+}
+          // --------- Resolved references logic ---------
+          else if (rowData.hasOwnProperty(`${key}_resolved`)) {
+            const refResolved = rowData[`${key}_resolved`];
+            await resolveRefAttribute(attr, refResolved, key, rowData);
+            delete rowData[`${key}_resolved`];
+          }
+        }
+
+         for (const key in refAttributesMap) {
+          const attr = refAttributesMap[key];
           console.log('attr',attr);
           // --------- Mapping attributes logic ---------
                 if (attr.referenceEntitySetting?.relationType?.startsWith("mapping_") && rowData[key] != null) {
