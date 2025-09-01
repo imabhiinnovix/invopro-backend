@@ -157,10 +157,30 @@ export const getDataSourceVersionValueV1 = async ({
     const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
     const entity: any = await findEntityById(entityId);
 
-    const attributesMap: Record<string, any> = entity.attributes.reduce((acc, attr) => {
-      acc[attr.name] = attr;
-      return acc;
-    }, {} as Record<string, any>);
+    // const attributesMap: Record<string, any> = entity.attributes.reduce((acc, attr) => {
+    //   acc[attr.name] = attr;
+    //   return acc;
+    // }, {} as Record<string, any>);
+
+  const attributesMap: Record<string, any> = {};
+
+  // Add direct attributes
+  for (const attr of entity.attributes) {
+    attributesMap[attr.name] = attr;
+
+    // If this is a mapping relation, fetch referenced attributes
+      if(attr?.referenceEntitySetting?.refEntityId){
+      const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
+      const refEntity: any = await findEntityById(refEntityId);
+      if (refEntity?.attributes) {
+        for (const refAttr of refEntity.attributes) {
+          // Avoid overwriting original key, prefix with mapping key
+          const mapKey = `${attr.name}.${refAttr.name}`;
+          attributesMap[mapKey] = refAttr;
+        }
+      }
+    }
+  }
 
     const aggregationPipeline: any[] = [{ $match: query }];
 
@@ -338,6 +358,9 @@ export const getDataSourceVersionValueV1 = async ({
           : Object.values(refRowData)[0];
       }
     }
+    function getTopLevelAttribute(dotKey: string): string {
+  return dotKey.split('.')[0]; // take everything before first dot
+}
 
     // Step 6: Transform
     const transformedData = await Promise.all(
@@ -347,7 +370,7 @@ export const getDataSourceVersionValueV1 = async ({
 
         for (const key in attributesMap) {
           const attr = attributesMap[key];
-
+          console.log('attr',attr);
           // --------- Mapping attributes logic ---------
                 if (attr.referenceEntitySetting?.relationType?.startsWith("mapping_") && rowData[key] != null) {
   const isMany = attr.referenceEntitySetting.relationType === "mapping_many_to_one";
@@ -366,8 +389,17 @@ export const getDataSourceVersionValueV1 = async ({
   const rowIds: any[] = [];
   const subValuesMap: Record<string, any[]> = {};
     // Find the document(s) where display field matches text
-    const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: doc._id }).lean();
+    // const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: doc._id }).lean();
+    const topLevelAttribute = await getTopLevelAttribute(key);
+          console.log('doc.rowData.${topLevelAttribute}_resolved._id',`doc.rowData.${topLevelAttribute}_resolved`);
+          // Find the document(s) where display field matches parent _id
+          const resolvedObj = doc.rowData[`${topLevelAttribute}_resolved`];
+          if (!resolvedObj) continue;
 
+          const parentId = resolvedObj._id; // this is the ObjectId you want
+
+          const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: parentId }).lean();
+          console.log('relatedDocs',relatedDocs);
      for (const doc of relatedDocs) {
     if (!doc?.rowData) continue;
 
