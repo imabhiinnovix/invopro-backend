@@ -738,7 +738,7 @@ export const getDataSourceVersionValueV2 = async ({
           },
         },
         {
-          $replaceRoot: { newRoot: { data: '$data', total: '$total' } },
+          $replaceRoot: { newRoot: { widgetData: '$data', totalCount: '$total' } },
         }
       );
     } else {
