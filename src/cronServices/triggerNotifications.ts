@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import PreparedNotification, { IPreparedNotification } from "../database/models/notivix/preparedNotification";
 import NotificationTemplate, { INotificationTemplate } from "../database/models/notivix/notificationTemplate";
 import "../database/models/notivix/notificationFrequencySetting";
+import "../database/models/notivix/notificationTrigger";
 import { sendToQueue } from "./emailQueue";
 import config from '../config';
 import "../database/models/notivix/notificationTemplate";
@@ -273,7 +274,8 @@ export async function triggerPreparedNotifications() {
       status: "pending",
     })
     .populate("templateId")
-    .populate("frequencySettingId"); // populate frequency setting
+    .populate("frequencySettingId") // populate frequency setting
+    .populate("notificationTriggerId"); // populate frequency setting
 
     console.log(`📬 Preparing to send ${notifications.length} notifications`);
 
@@ -283,10 +285,16 @@ export async function triggerPreparedNotifications() {
       try {
         const template = notif.templateId as unknown as INotificationTemplate | null;
         const freqSetting = notif.frequencySettingId as any; // assuming Mongoose document
+        const trigger = notif.notificationTriggerId as any; // populated NotificationTrigger
 
         if (!template || !freqSetting) {
           console.warn(`⚠️ Notification ${notif._id} missing template or frequency setting. Skipping.`);
           continue;
+        }
+
+        let lastUploadedDate: string | null = null;
+        if (trigger?.actionsLastUploadedDate) {
+          lastUploadedDate = formatDate(new Date(trigger?.actionsLastUploadedDate));
         }
 
         // ✅ Generate attachments only if frequency setting requires
@@ -308,7 +316,7 @@ export async function triggerPreparedNotifications() {
         if (template.type === "single") {
           const rowKey = Object.keys(notif.payload || {})[0];
           const rowData = notif.payload[rowKey]?.[0]?.rowData || {};
-          const baseContext = { ...rowData, todayDate };
+          const baseContext = { ...rowData, todayDate, lastUploadedDate };
 
           if (baseContext.DueDate) baseContext.DueDate = formatDate(new Date(baseContext.DueDate));
 
@@ -362,7 +370,7 @@ export async function triggerPreparedNotifications() {
             });
           }
 
-          const baseContext = { ...(firstRow || {}), groups, todayDate };
+          const baseContext = { ...(firstRow || {}), groups, todayDate, lastUploadedDate };
 
           for (const realTo of realRecipientTo) {
             const toEmail = resolveRecipientEmail(realTo);

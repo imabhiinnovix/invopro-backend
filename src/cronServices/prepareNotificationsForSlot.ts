@@ -19,6 +19,7 @@ import createDefaultDataSourceVersionModel from "../database/models/common/defau
 import { listNotificationFrequency } from "../database/services/notivix/notificationFrequency.service";
 import { findDataSourceById } from "../database/services/common/dataSource.services";
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from "../utils/common.utils";
+import { getCurrentDataSourceVersion } from "../database/services/common/dataSourceVersion.services";
 
 
 
@@ -999,9 +1000,10 @@ export async function prepareTodayNotifications() {
       }
 
       console.log("🛠 Creating notification trigger...");
+      const dataSourceVersion: any = await getCurrentDataSourceVersion(dataSourceDetails._id);
       trigger = await NotificationTriggerModel.create({
-        notificationTypeId: notifType._id,
-        frequencySettingId: setting._id,
+        organizationId:notifType.organizationId,
+        actionsLastUploadedDate: dataSourceVersion?.createdAt,
         source: "cron",
       });
 

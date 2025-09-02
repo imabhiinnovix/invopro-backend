@@ -9,7 +9,7 @@ export interface INotificationTrigger extends Document {
   source?: NotificationTriggerSource;
   isDryRun?: boolean;
   simulationDate?: Date;
-  dataSourceVersionId?: Types.ObjectId;    
+  actionsLastUploadedDate?: Date;    
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -31,7 +31,7 @@ const notificationTriggerSchema = new Schema<INotificationTrigger>(
     simulationDate: { type: Date, index: true },
 
     // link to data source version used for this trigger
-    dataSourceVersionId: { type: Schema.Types.ObjectId, ref: "data_source_version" },
+    actionsLastUploadedDate: { type: Date },
   },
   {
     timestamps: true,
