@@ -1,9 +1,103 @@
 import mongoose from "mongoose";
 import PreparedNotification, { IPreparedNotification } from "../database/models/notivix/preparedNotification";
 import NotificationTemplate, { INotificationTemplate } from "../database/models/notivix/notificationTemplate";
+import "../database/models/notivix/notificationFrequencySetting";
 import { sendToQueue } from "./emailQueue";
 import config from '../config';
 import "../database/models/notivix/notificationTemplate";
+import ExcelJS from "exceljs";
+import path from "path";
+import fs from "fs";
+import { getAttachmentFieldNames } from "../utils/excel.utils";
+import { getDataSourceById } from "../api/controllers/common/dataSource.controller";
+import { findDataSourceById } from "../database/services/common/dataSource.services";
+
+export async function generateNotificationAttachments(
+  notif: IPreparedNotification,
+  template: INotificationTemplate
+): Promise<{ fileName: string; filePath: string }[]> {
+  if (!notif || !template || !template.attachmentSettings?.length) return [];
+
+  const attachments: { fileName: string; filePath: string }[] = [];
+
+  // Compute todayDate for subject using formatDate
+  const todayDate = formatDate(new Date());
+
+  // Replace {{todayDate}} in subject
+  let emailSubject = template.subject || "Notification";
+  emailSubject = emailSubject.replace("{{todayDate}}", todayDate);
+
+  // Sanitize for file name
+  const sanitizedSubject = emailSubject.replace(/[<>:"/\\|?*]/g, "").trim();
+
+  for (const attachmentSetting of template.attachmentSettings) {
+    if (!attachmentSetting?.type) continue;
+
+    if (attachmentSetting.type === "excel") {
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Sheet1");
+
+      const dataSource = await findDataSourceById(template.dataSourceId.toString());
+
+      // fieldNames: [{ name, type }]
+      const fieldNames = await getAttachmentFieldNames(attachmentSetting, dataSource?.entityId);
+      console.log('fieldNames', fieldNames);
+
+      // Define columns
+      sheet.columns = fieldNames.map(f => ({ header: f.name, key: f.name }));
+
+      // Populate rows from notif.payload
+      for (const [_, rows] of Object.entries(notif.payload || {})) {
+        for (const r of rows as Array<{ rowData: Record<string, any> }>) {
+          const row: Record<string, any> = {};
+          for (const f of fieldNames) {
+            let value = r.rowData[f.name];
+
+            // Format date fields
+            if (f.type === "date" && value) {
+              value = formatDate(new Date(value));
+            }
+
+            row[f.name] = value;
+          }
+          sheet.addRow(row);
+        }
+      }
+
+      const fileName = `${sanitizedSubject}.xlsx`;
+      const filePath = path.join(process.cwd(), "tmp", fileName);
+
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      await workbook.xlsx.writeFile(filePath);
+
+      attachments.push({ fileName, filePath });
+    }
+
+    else if (attachmentSetting.type === "pdf" || attachmentSetting.type === "image") {
+      // ✅ Just link existing static files (assume they’re in /assets or /public)
+      const sourcePath = path.join(process.cwd(), "assets", attachmentSetting.fileName);
+
+      if (fs.existsSync(sourcePath)) {
+        const fileName = attachmentSetting.fileName;
+        const filePath = path.join(process.cwd(), "tmp", `${Date.now()}-${fileName}`);
+
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        fs.copyFileSync(sourcePath, filePath);
+
+        attachments.push({ fileName, filePath });
+      } else {
+        console.warn(`Attachment file not found: ${sourcePath}`);
+      }
+    }
+
+    else {
+      console.warn(`Unsupported attachment type: ${attachmentSetting.type}`);
+    }
+  }
+
+  return attachments;
+}
+
 
 
 // ------------------- Helpers -------------------
@@ -177,7 +271,9 @@ export async function triggerPreparedNotifications() {
   try {
     const notifications: IPreparedNotification[] = await PreparedNotification.find({
       status: "pending",
-    }).populate("templateId");
+    })
+    .populate("templateId")
+    .populate("frequencySettingId"); // populate frequency setting
 
     console.log(`📬 Preparing to send ${notifications.length} notifications`);
 
@@ -186,9 +282,17 @@ export async function triggerPreparedNotifications() {
     for (const notif of notifications) {
       try {
         const template = notif.templateId as unknown as INotificationTemplate | null;
-        if (!template) {
-          console.warn(`⚠️ Notification ${notif._id} has no template. Skipping.`);
+        const freqSetting = notif.frequencySettingId as any; // assuming Mongoose document
+
+        if (!template || !freqSetting) {
+          console.warn(`⚠️ Notification ${notif._id} missing template or frequency setting. Skipping.`);
           continue;
+        }
+
+        // ✅ Generate attachments only if frequency setting requires
+        let attachments: { fileName: string; filePath: string }[] = [];
+        if (freqSetting.attachmentRequired) {
+          attachments = await generateNotificationAttachments(notif, template);
         }
 
         // Real recipients
@@ -220,6 +324,7 @@ export async function triggerPreparedNotifications() {
               cc: ccEmails,
               subject,
               body,
+              attachments, // Attach files if any
               notificationId: notif._id,
             });
           }
@@ -272,6 +377,7 @@ export async function triggerPreparedNotifications() {
               cc: ccEmails,
               subject,
               body,
+              attachments, // Attach files if any
               notificationId: notif._id,
             });
           }
