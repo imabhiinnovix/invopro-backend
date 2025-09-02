@@ -16,7 +16,7 @@ export const createAttribute = async (req: Request, res: Response, next: NextFun
     }
     const attribute = await attributeOptionService.createAttribute({
       attributeName,
-      attributeValue: (attributeValue || []).map((val: string) => ({ value: val })),
+      attributeValue: attributeValue || [],
       organizationId,
       createdBy: userId,
       isActive: true,
