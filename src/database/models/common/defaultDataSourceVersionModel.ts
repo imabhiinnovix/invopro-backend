@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* @ts-nocheck */
 
-import { Schema, model, models, Document, Types } from 'mongoose';
+import { Schema, model, models, connection, Document, Types } from 'mongoose';
 
 interface IDefaultDataSourceVersionValue extends Document {
   entityId: Types.ObjectId;
@@ -9,13 +9,13 @@ interface IDefaultDataSourceVersionValue extends Document {
   dataSourceVersionId: Types.ObjectId;
   versionValue: string;
   rowData: Record<string, any>;
-  status: 'active' | 'in-active'; // ✅ added status
+  status: 'active' | 'in-active';
   createdBy?: Types.ObjectId;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-// Mongoose Schema
+// Schema
 const defaultDataSourceVersionSchema = new Schema<IDefaultDataSourceVersionValue>(
   {
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
@@ -25,7 +25,7 @@ const defaultDataSourceVersionSchema = new Schema<IDefaultDataSourceVersionValue
     rowData: { type: Schema.Types.Mixed },
     status: {
       type: String,
-      enum: ['active', 'in-active'], // ✅ enum constraint
+      enum: ['active', 'in-active'],
       default: 'active',
     },
     createdBy: { type: Schema.Types.ObjectId },
@@ -33,17 +33,35 @@ const defaultDataSourceVersionSchema = new Schema<IDefaultDataSourceVersionValue
     updatedAt: { type: Date, default: () => new Date() },
   },
   {
-    timestamps: false, // you are manually handling createdAt/updatedAt
+    timestamps: false, // manual createdAt/updatedAt
   }
 );
 
 defaultDataSourceVersionSchema.index({ dataSourceVersionId: 1 });
 
-// Function to create a model with a dynamic schema name
+// Expected top-level fields
+const expectedFields = Object.keys(defaultDataSourceVersionSchema.paths);
+
+// Function to create a model with dynamic schema name
 const createDefaultDataSourceVersionModel = (schemaName: string) => {
-  if (models[schemaName]) {
-    return models[schemaName];
+  const existingModel = models[schemaName];
+
+  if (existingModel) {
+    const existingFields = Object.keys(existingModel.schema.paths);
+
+    // ✅ Only check for missing fields
+    const missingFields = expectedFields.filter((f) => !existingFields.includes(f));
+
+    if (missingFields.length > 0) {
+      console.warn(
+        `Schema for ${schemaName} is missing fields: ${missingFields.join(', ')}, refreshing model...`
+      );
+      connection.deleteModel(schemaName);
+    } else {
+      return existingModel; // reuse safely
+    }
   }
+
   return model<IDefaultDataSourceVersionValue>(schemaName, defaultDataSourceVersionSchema);
 };
 
