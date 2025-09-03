@@ -1276,10 +1276,12 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
       filters?: string;
       search?: string;
     };
-    console.log(search);
+
     const pageNumber = page ? parseInt(page, 10) : 1;
     const limitNumber = limit ? parseInt(limit, 10) : 10;
     const { orgCode } = req.user;
+
+    const searchFilters = {};
 
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
 
@@ -1288,7 +1290,16 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     }
 
     const entityFieldOptions = await entityService.getEntityFieldOptions(String(dataSourceDetails.entityId._id));
-    console.log(entityFieldOptions);
+    if (search && search.length > 0) {
+      for (let i = 0; i < entityFieldOptions.length; i++) {
+        const entityOption = entityFieldOptions[i];
+        if (entityOption.value.isDerived) {
+          searchFilters[`Derived.${entityOption.label}`] = search;
+        } else {
+          searchFilters[entityOption.label] = search;
+        }
+      }
+    }
     const versionQuery: any = {
       dataSourceId,
       isCurrent: true, // Always filter for current version
@@ -1331,6 +1342,7 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
       sort: parsedSort,
       filters: parsedFilters,
       entityId: dataSourceDetails.entityId,
+      searchFilters,
     });
     const data = result?.data ?? [];
     const totalCount = result?.totalCount ?? 0;

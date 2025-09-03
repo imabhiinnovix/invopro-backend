@@ -5,7 +5,12 @@
 import createDefaultDataSourceVersionModel from '../../models/common/defaultDataSourceVersionModel';
 import { Model, Document, AnyBulkWriteOperation, Types } from 'mongoose';
 import { findEntityById } from './entity.services';
-import { getAttributeByName, getEntityAttribute, getModelForEntity, resolveFieldPath } from '../../../utils/entity.utils';
+import {
+  getAttributeByName,
+  getEntityAttribute,
+  getModelForEntity,
+  resolveFieldPath,
+} from '../../../utils/entity.utils';
 import { getDerivedField } from './derivedField.services';
 import { processFieldConditions } from '../../../utils/conditionProcessor';
 
@@ -143,6 +148,7 @@ export const getDataSourceVersionValueV1 = async ({
   sort = {},
   filters = {},
   entityId = '',
+  searchFilters = {},
 }: {
   schemaName: string;
   query: any;
@@ -151,16 +157,20 @@ export const getDataSourceVersionValueV1 = async ({
   limit: number;
   sort?: Record<string, 1 | -1>;
   filters?: Record<string, any>;
+  searchFilters?: Record<string, any>;
   entityId: any;
 }) => {
   try {
     const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
     const entity: any = await findEntityById(entityId);
 
-    const attributesMap: Record<string, any> = entity.attributes.reduce((acc, attr) => {
-      acc[attr.name] = attr;
-      return acc;
-    }, {} as Record<string, any>);
+    const attributesMap: Record<string, any> = entity.attributes.reduce(
+      (acc, attr) => {
+        acc[attr.name] = attr;
+        return acc;
+      },
+      {} as Record<string, any>
+    );
 
     const aggregationPipeline: any[] = [{ $match: query }];
 
@@ -214,12 +224,13 @@ export const getDataSourceVersionValueV1 = async ({
             else if (cond.operator === 'not_exists') conditionExpressions.push({ [path]: { $in: [null, undefined] } });
           }
           if (conditionExpressions.length > 0) {
-            derivedRuleConditions.push(rule.conditionOperator === 'OR' ? { $or: conditionExpressions } : { $and: conditionExpressions });
+            derivedRuleConditions.push(
+              rule.conditionOperator === 'OR' ? { $or: conditionExpressions } : { $and: conditionExpressions }
+            );
           }
         }
 
         if (derivedRuleConditions.length > 0) filterConditions.push({ $or: derivedRuleConditions });
-
       } else if (key.includes('.')) {
         const [refField, subField] = key.split('.');
         const asField = `rowData.${refField}_resolved`;
@@ -230,7 +241,61 @@ export const getDataSourceVersionValueV1 = async ({
     }
 
     if (filterConditions.length > 0) aggregationPipeline.push({ $match: { $and: filterConditions } });
+    // Step 3: Search Filters (add this after filter conditions)
+    const searchConditions: any[] = [];
 
+    if (Object.keys(searchFilters).length > 0) {
+      for (const [key, searchValue] of Object.entries(searchFilters)) {
+        if (!searchValue || (typeof searchValue === 'string' && searchValue.trim().length === 0)) continue;
+
+        const searchRegex = { $regex: searchValue, $options: 'i' }; // Case-insensitive regex
+
+        if (key.startsWith('Derived.')) {
+          const derivedName = key.split('.')[1];
+          const derivedField = await getDerivedField({ name: derivedName, entityId });
+          if (!derivedField) continue;
+
+          // For derived fields, we need to check against the actual field paths
+          // that would generate the derived values
+          const derivedSearchConditions: any[] = [];
+
+          for (const rule of derivedField.valueRules) {
+            const ruleConditions: any[] = [];
+            for (const cond of rule.conditions || []) {
+              const path = await resolveFieldPath(cond, entity.attributes);
+              if (!path) continue;
+
+              // Add regex search condition for this path
+              ruleConditions.push({ [path]: searchRegex });
+            }
+
+            if (ruleConditions.length > 0) {
+              derivedSearchConditions.push(
+                rule.conditionOperator === 'OR' ? { $or: ruleConditions } : { $and: ruleConditions }
+              );
+            }
+          }
+
+          if (derivedSearchConditions.length > 0) {
+            searchConditions.push({ $or: derivedSearchConditions });
+          }
+        } else if (key.includes('.')) {
+          // Handle reference field search (e.g., "refField.subField")
+          const [refField, subField] = key.split('.');
+          const asField = `rowData.${refField}_resolved`;
+          searchConditions.push({ [`${asField}.rowData.${subField}`]: searchRegex });
+        } else {
+          // Handle regular field search
+          searchConditions.push({ [`rowData.${key}`]: searchRegex });
+        }
+      }
+    }
+
+    // Add search conditions to pipeline if any exist
+    if (searchConditions.length > 0) {
+      // Use $or to match any of the search conditions (if any field matches, return the document)
+      aggregationPipeline.push({ $match: { $or: searchConditions } });
+    }
     // Step 3: Sort
     const finalSort: Record<string, 1 | -1> = {};
     if (sort && Object.keys(sort).length > 0) {
@@ -241,7 +306,10 @@ export const getDataSourceVersionValueV1 = async ({
 
     // Step 4: Projection
     if (select) {
-      const projectionFields = select.split(' ').reduce((acc: any, field: string) => { acc[field] = 1; return acc; }, {});
+      const projectionFields = select.split(' ').reduce((acc: any, field: string) => {
+        acc[field] = 1;
+        return acc;
+      }, {});
       aggregationPipeline.push({ $project: projectionFields });
     }
 
@@ -251,18 +319,33 @@ export const getDataSourceVersionValueV1 = async ({
     // -------------------------
     // Helper: Resolve reference/mapping attributes (reuse your original logic)
     // -------------------------
-    async function resolveRefAttribute(attr: any, refResolved: any, key: string, rowData: Record<string, any>, currentAttr?: any) {
+    async function resolveRefAttribute(
+      attr: any,
+      refResolved: any,
+      key: string,
+      rowData: Record<string, any>,
+      currentAttr?: any
+    ) {
       if (!refResolved) return;
 
       let displayField: string | undefined;
       if (attr.referenceEntitySetting?.refEntityField) {
-        const refFieldAttr = await getEntityAttribute(attr.referenceEntitySetting.refEntityId, attr.referenceEntitySetting.refEntityField);
+        const refFieldAttr = await getEntityAttribute(
+          attr.referenceEntitySetting.refEntityId,
+          attr.referenceEntitySetting.refEntityField
+        );
         displayField = refFieldAttr?.name;
       }
       // console.log('attr',attr);
       // Original many-to-one logic
-      if (currentAttr && ["mapping_one_to_one", "mapping_many_to_one"].includes(currentAttr?.referenceEntitySetting?.relationType)) {
-        const refFieldAttr = await getEntityAttribute(attr.referenceEntitySetting.refEntityId, attr.referenceEntitySetting.refEntityField);
+      if (
+        currentAttr &&
+        ['mapping_one_to_one', 'mapping_many_to_one'].includes(currentAttr?.referenceEntitySetting?.relationType)
+      ) {
+        const refFieldAttr = await getEntityAttribute(
+          attr.referenceEntitySetting.refEntityId,
+          attr.referenceEntitySetting.refEntityField
+        );
         const refFieldName = refFieldAttr?.name;
         // console.log('refFieldName',refFieldName,refResolved?.rowData);
         if (refFieldName && refResolved?.rowData?.[refFieldName]) {
@@ -271,34 +354,34 @@ export const getDataSourceVersionValueV1 = async ({
           // console.log('refFieldName',refFieldName, refValue);
           const relatedDocs: any[] = await RefModel.find({ _id: refValue }).lean();
           // console.log('relatedDocs',relatedDocs);
-          if(currentAttr.referenceEntitySetting?.relationType == "mapping_one_to_one"){
+          if (currentAttr.referenceEntitySetting?.relationType == 'mapping_one_to_one') {
             for (const r of relatedDocs) {
-            for (const subKey in r.rowData) {
-              // console.log('subKey',refFieldName,key );
-              // if (subKey === refFieldName) continue;
-              const arrayKey = `${key}.${subKey}`;
-              // console.log('arrayKey',arrayKey);
+              for (const subKey in r.rowData) {
+                // console.log('subKey',refFieldName,key );
+                // if (subKey === refFieldName) continue;
+                const arrayKey = `${key}.${subKey}`;
+                // console.log('arrayKey',arrayKey);
                 const value = r.rowData[subKey];
-              if (value !== undefined) rowData[arrayKey] = value;
+                if (value !== undefined) rowData[arrayKey] = value;
+              }
+            }
+          } else {
+            for (const r of relatedDocs) {
+              for (const subKey in r.rowData) {
+                // console.log('subKey',refFieldName,key );
+                // if (subKey === refFieldName) continue;
+                const arrayKey = `${key}.${subKey}`;
+                // console.log('arrayKey',arrayKey);
+                if (!Array.isArray(rowData[arrayKey])) rowData[arrayKey] = [];
+                const value = r.rowData[subKey];
+                // console.log('value',value, subKey);
+                if (Array.isArray(value)) rowData[arrayKey].push(...value);
+                else if (value !== undefined) rowData[arrayKey].push(value);
+                // remove duplicates
+                rowData[arrayKey] = Array.from(new Set(rowData[arrayKey]));
+              }
             }
           }
-          }else{
-          for (const r of relatedDocs) {
-            for (const subKey in r.rowData) {
-              // console.log('subKey',refFieldName,key );
-              // if (subKey === refFieldName) continue;
-              const arrayKey = `${key}.${subKey}`;
-              // console.log('arrayKey',arrayKey);
-              if (!Array.isArray(rowData[arrayKey])) rowData[arrayKey] = [];
-              const value = r.rowData[subKey];
-              // console.log('value',value, subKey);
-              if (Array.isArray(value)) rowData[arrayKey].push(...value);
-              else if (value !== undefined) rowData[arrayKey].push(value);
-              // remove duplicates
-              rowData[arrayKey] = Array.from(new Set(rowData[arrayKey]));
-            }
-          }
-        }
           // console.log('rowData',rowData);
           // Remove duplicates
           // for (const subKey in rowData) {
@@ -324,18 +407,20 @@ export const getDataSourceVersionValueV1 = async ({
             if (Array.isArray(value)) rowData[arrayKey].push(...value);
             else if (value !== undefined) rowData[arrayKey].push(value);
           }
-          const displayVal = displayField && ref.rowData[displayField] !== undefined
-            ? ref.rowData[displayField]
-            : Object.values(ref.rowData)[0];
+          const displayVal =
+            displayField && ref.rowData[displayField] !== undefined
+              ? ref.rowData[displayField]
+              : Object.values(ref.rowData)[0];
           displayValues.push(displayVal);
         }
         rowData[key] = displayValues;
       } else if (refResolved && refResolved.rowData) {
         const refRowData = refResolved.rowData;
         for (const subKey in refRowData) rowData[`${key}.${subKey}`] = refRowData[subKey];
-        rowData[key] = displayField && refRowData[displayField] !== undefined
-          ? refRowData[displayField]
-          : Object.values(refRowData)[0];
+        rowData[key] =
+          displayField && refRowData[displayField] !== undefined
+            ? refRowData[displayField]
+            : Object.values(refRowData)[0];
       }
     }
 
@@ -349,62 +434,62 @@ export const getDataSourceVersionValueV1 = async ({
           const attr = attributesMap[key];
 
           // --------- Mapping attributes logic ---------
-                if (attr.referenceEntitySetting?.relationType?.startsWith("mapping_") && rowData[key] != null) {
-  const isMany = attr.referenceEntitySetting.relationType === "mapping_many_to_one";
+          if (attr.referenceEntitySetting?.relationType?.startsWith('mapping_') && rowData[key] != null) {
+            const isMany = attr.referenceEntitySetting.relationType === 'mapping_many_to_one';
 
-  const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
+            const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
 
-  // Get display field name from reference setting
-  const refFieldAttr = await getEntityAttribute(
-    attr.referenceEntitySetting.refEntityId,
-    attr.referenceEntitySetting.refEntityField
-  );
-  const displayField = refFieldAttr?.name;
+            // Get display field name from reference setting
+            const refFieldAttr = await getEntityAttribute(
+              attr.referenceEntitySetting.refEntityId,
+              attr.referenceEntitySetting.refEntityField
+            );
+            const displayField = refFieldAttr?.name;
 
-  if (!displayField) return;
+            if (!displayField) return;
 
-  const rowIds: any[] = [];
-  const subValuesMap: Record<string, any[]> = {};
-    // Find the document(s) where display field matches text
-    const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: doc._id }).lean();
+            const rowIds: any[] = [];
+            const subValuesMap: Record<string, any[]> = {};
+            // Find the document(s) where display field matches text
+            const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: doc._id }).lean();
 
-     for (const doc of relatedDocs) {
-    if (!doc?.rowData) continue;
+            for (const doc of relatedDocs) {
+              if (!doc?.rowData) continue;
 
-    rowIds.push(doc._id);
+              rowIds.push(doc._id);
 
-    // Collect subValues for each subKey
-    for (const subKey in doc.rowData) {
-      if (subKey === displayField) continue;
-      console.log('attr.referenceEntitySetting.refEntityId',attr.referenceEntitySetting.refEntityId,subKey);
-      const refAttr = await getAttributeByName(attr.referenceEntitySetting.refEntityId, subKey);
-      if (!refAttr?.referenceEntitySetting) continue;
+              // Collect subValues for each subKey
+              for (const subKey in doc.rowData) {
+                if (subKey === displayField) continue;
+                console.log('attr.referenceEntitySetting.refEntityId', attr.referenceEntitySetting.refEntityId, subKey);
+                const refAttr = await getAttributeByName(attr.referenceEntitySetting.refEntityId, subKey);
+                if (!refAttr?.referenceEntitySetting) continue;
 
-      if (!subValuesMap[subKey]) subValuesMap[subKey] = [];
-      subValuesMap[subKey].push(doc.rowData[subKey]);
-    }
-  }
+                if (!subValuesMap[subKey]) subValuesMap[subKey] = [];
+                subValuesMap[subKey].push(doc.rowData[subKey]);
+              }
+            }
 
-  // 🔹 Now resolve subValues in batch
-  for (const subKey in subValuesMap) {
-    const refAttr = await getAttributeByName(attr.referenceEntitySetting.refEntityId, subKey);
+            // 🔹 Now resolve subValues in batch
+            for (const subKey in subValuesMap) {
+              const refAttr = await getAttributeByName(attr.referenceEntitySetting.refEntityId, subKey);
 
-    const subValues = subValuesMap[subKey];
-    await resolveRefAttribute(
-      { referenceEntitySetting: refAttr.referenceEntitySetting },
-      { rowData: { [subKey]: isMany ? subValues : subValues[0] } },
-      `${key}.${subKey}`,
-      rowData,
-      attr,
-    );
-  }
+              const subValues = subValuesMap[subKey];
+              await resolveRefAttribute(
+                { referenceEntitySetting: refAttr.referenceEntitySetting },
+                { rowData: { [subKey]: isMany ? subValues : subValues[0] } },
+                `${key}.${subKey}`,
+                rowData,
+                attr
+              );
+            }
 
-  // 🔹 Assign main field with ObjectId(s)
-  // rowData[key] = isMany ? rowIds : rowIds[0];
+            // 🔹 Assign main field with ObjectId(s)
+            // rowData[key] = isMany ? rowIds : rowIds[0];
 
-  // Assign main field to ObjectId(s)
-  // rowData[key] = isMany ? rowIds : rowIds[0];
-}
+            // Assign main field to ObjectId(s)
+            // rowData[key] = isMany ? rowIds : rowIds[0];
+          }
           // --------- Resolved references logic ---------
           else if (rowData.hasOwnProperty(`${key}_resolved`)) {
             const refResolved = rowData[`${key}_resolved`];
@@ -419,19 +504,18 @@ export const getDataSourceVersionValueV1 = async ({
     );
 
     // Step 7: Count
-    const countPipeline = aggregationPipeline.filter((stage) => !('$skip' in stage || '$limit' in stage || '$project' in stage));
+    const countPipeline = aggregationPipeline.filter(
+      (stage) => !('$skip' in stage || '$limit' in stage || '$project' in stage)
+    );
     countPipeline.push({ $count: 'totalCount' });
     const countResult = await DataSourceVersionValue.aggregate(countPipeline).exec();
     const totalCount = countResult?.[0]?.totalCount || 0;
 
     return { data: transformedData, totalCount };
-
   } catch (err) {
     throw err;
   }
 };
-
-
 
 export const getDataSourceVersionValueV2 = async ({
   schemaName,
