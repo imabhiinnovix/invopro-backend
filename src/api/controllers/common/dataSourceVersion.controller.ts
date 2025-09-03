@@ -366,6 +366,9 @@ async function validateFileData({
 
   for (const [index, row] of fileData.entries()) {
     console.log('Processing Index:', index);
+    const parts = row.fileRowNumber.split(':');
+    const rowNum = parts.pop(); // last part → row number
+    const fileName = parts.join(':');
     const newRow = {
       dataSourceId,
       entityId,
@@ -398,7 +401,11 @@ async function validateFileData({
         value = value.text;
       }
       newRow.rowData[attrName] = value;
-      if (attr.required === 'Mandatory' && (value === undefined || value === null || value === '')) {
+
+      if (
+        (attr.required === 'Mandatory' || attr.required === true) &&
+        (value === undefined || value === null || value === '')
+      ) {
         errors.push({
           entityId: entityId,
           dataSourceId: dataSourceId,
@@ -412,7 +419,9 @@ async function validateFileData({
           errorType: ERROR_CODES.MANDATORY_MISSING.type,
           errorCode: ERROR_CODES.MANDATORY_MISSING.code,
           status: 'open',
-          errorMessage: `Error: Row ${index + 1} - The attribute "${attrName}" is required but is missing.`,
+          fileRowNumber: rowNum,
+          fileName,
+          errorMessage: `Error: File ${fileName}, Row ${rowNum} - The attribute "${attrName}" is required but is missing.`,
         });
         newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
       } else if (value !== undefined && value != null && value) {
@@ -449,8 +458,10 @@ async function validateFileData({
               refDataSourceId: refDataSourceDetails?.[0]?._id,
               errorType: ERROR_CODES.INVALID_REFERENCE.type,
               errorCode: ERROR_CODES.INVALID_REFERENCE.code,
+              fileRowNumber: rowNum,
+              fileName,
               status: 'open',
-              errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value}, but it could not be resolved from the reference entity for the attribute ${attrName}.`,
+              errorMessage: `Error: File ${fileName}, Row ${rowNum} - ${fileKey}, has a value ${value}, but it could not be resolved from the reference entity for the attribute ${attrName}.`,
             });
             newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
           } else {
@@ -480,7 +491,9 @@ async function validateFileData({
                 errorType: ERROR_CODES.INVALID_OPTION.type,
                 errorCode: ERROR_CODES.INVALID_OPTION.code,
                 status: 'open',
-                errorMessage: `Error: Row ${index + 1} - ${fileKey} has a value ${value}, but a value of type ${attr.type} was expected from one of the valid settings attribute(${attrName}) options ${attributeOptionValue}.`,
+                fileRowNumber: rowNum,
+                fileName,
+                errorMessage: `Error: File ${fileName}, Row ${rowNum} - ${fileKey} has a value ${value}, but a value of type ${attr.type} was expected from one of the valid settings attribute(${attrName}) options ${attributeOptionValue}.`,
               });
             } else {
               errors.push({
@@ -496,7 +509,9 @@ async function validateFileData({
                 refAttributeId: attr._id,
                 errorType: ERROR_CODES.INVALID_TYPE.type,
                 errorCode: ERROR_CODES.INVALID_TYPE.code,
-                errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value} of type ${typeof value}, but a value of type ${attr.type} was expected for the settings attribute ${attrName}.`,
+                fileRowNumber: rowNum,
+                fileName,
+                errorMessage: `Error: File ${fileName}, Row ${rowNum} - ${fileKey}, has a value ${value} of type ${typeof value}, but a value of type ${attr.type} was expected for the settings attribute ${attrName}.`,
               });
             }
             newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
@@ -540,7 +555,9 @@ async function validateFileData({
               errorType: ERROR_CODES.DUPLICATE_ENTRY.type,
               errorCode: ERROR_CODES.DUPLICATE_ENTRY.code,
               fileAttributeValue: compositeKey,
-              errorMessage: `Error: Row ${index + 1} - Duplicate combination found for unique keys: ${compositeKey}.`,
+              fileRowNumber: rowNum,
+              fileName,
+              errorMessage: `Error: File ${fileName}, Row ${rowNum} - Duplicate combination found for unique keys: ${compositeKey}.`,
             });
             newRow.isErrorLog = 1;
           } else {
@@ -684,7 +701,12 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
 
       if (fileExtension && ['xlsx', 'xls'].includes(fileExtension)) {
         const fileData = await readExcelFile(newFilePath);
-        combinedData = [...combinedData, ...fileData];
+        // 🔹 Add fileRowNumber field for each row
+        const fileDataWithRowNumber = fileData.map((row, index) => ({
+          ...row,
+          fileRowNumber: `${fileName}:${index + 2}`, // +1 to make it 1-based instead of 0-based
+        }));
+        combinedData = [...combinedData, ...fileDataWithRowNumber];
         combinedFileName = combinedFileName ? `${combinedFileName}|${fileName}` : fileName;
         combinedFilePath = combinedFilePath ? `${combinedFilePath}|${newFilePath}` : newFilePath;
         combinedMimType = combinedMimType ? `${combinedMimType}|${mimetype}` : mimetype;
@@ -759,8 +781,6 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
             entityId: dataSourceDetails.entityId._id,
             uniqueAttributeRules: dataSourceDetails.uniqueAttributeRules,
           });
-
-          console.log('validatedData:', validatedData);
 
           if (validatedData.errors.length > 0) {
             await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
