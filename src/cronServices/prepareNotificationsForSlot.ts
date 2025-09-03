@@ -18,7 +18,7 @@ import { findEntityById } from "../database/services/common/entity.services";
 import createDefaultDataSourceVersionModel from "../database/models/common/defaultDataSourceVersionModel";
 import { listNotificationFrequency } from "../database/services/notivix/notificationFrequency.service";
 import { findDataSourceById } from "../database/services/common/dataSource.services";
-import { getSchemaNameBasedOnVersionCodeAndOrgCode } from "../utils/common.utils";
+import { getSchemaNameBasedOnVersionCodeAndOrgCode, uniqueCode } from "../utils/common.utils";
 import { getCurrentDataSourceVersion } from "../database/services/common/dataSourceVersion.services";
 
 
@@ -164,6 +164,12 @@ async function resolveRecipientsFromSetting(
 async function resolveRecipients(caseData: any, freqSetting: any, attributeMap: any) {
   const to = await resolveRecipientsFromSetting(caseData, freqSetting.recipients_to, attributeMap);
   const cc = await resolveRecipientsFromSetting(caseData, freqSetting.recipients_cc, attributeMap);
+  return { recipient_to: to, recipient_cc: cc };
+}
+
+async function resolveAckRecipients(caseData: any, freqSetting: any, attributeMap: any) {
+  const to = await resolveRecipientsFromSetting(caseData, freqSetting.acknowledge_to, attributeMap);
+  const cc = await resolveRecipientsFromSetting(caseData, freqSetting.recipients_to, attributeMap);
   return { recipient_to: to, recipient_cc: cc };
 }
 
@@ -1006,20 +1012,22 @@ export async function prepareTodayNotifications() {
         actionsLastUploadedDate: dataSourceVersion?.createdAt,
         source: "cron",
       });
-
+      
       if (template.type === "single") {
         console.log("📬 Preparing single notifications");
         const preparedDocs: any = [];
 
         for (const caseData of allMatchingCases) {
           let ackId: any;
-
-          if (notifType.requiresAcknowledgment) {
+          if (Array.isArray(setting.acknowledge_to) && setting.acknowledge_to.length > 0) {
+            let sender = await resolveRecipientsFromSetting(caseData, [setting.targetEntity], attributeMap);
             console.log(`🔑 Creating acknowledgment for case ${caseData._id}`);
             const ack = await NotificationAcknowledge.create({
-              status: "pending",
-              caseId: caseData._id,
-              notificationTypeId: notifType._id,
+              organizationId: notifType.organizationId,
+              senderId: sender.length ? sender[0] : null ,
+              notificationTriggerId: trigger._id,
+              recipients: await resolveAckRecipients(caseData, setting, attributeMap),
+              identifierKey: uniqueCode(20)
             });
             ackId = ack._id;
           }
@@ -1055,13 +1063,15 @@ export async function prepareTodayNotifications() {
           if(groupKey == 'Unknown')
             continue;  
           let ackId: any;
-
-          if (notifType.requiresAcknowledgment) {
+          if (Array.isArray(setting.acknowledge_to) && setting.acknowledge_to.length > 0) {
+            let sender = await resolveRecipientsFromSetting(groupCases[0], [setting.targetEntity], attributeMap);
             console.log(`🔑 Creating acknowledgment for group ${groupKey}`);
             const ack = await NotificationAcknowledge.create({
-              status: "pending",
-              caseId: groupCases[0]._id,
-              notificationTypeId: notifType._id,
+              organizationId: notifType.organizationId,
+              senderId: sender.length ? sender[0] : null,
+              notificationTriggerId: trigger._id,
+              recipients: await resolveAckRecipients(groupCases[0], setting, attributeMap),
+              identifierKey: uniqueCode(20)
             });
             ackId = ack._id;
           }
