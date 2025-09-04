@@ -1980,7 +1980,7 @@ export const listAllAvailableDataSourceVersionValue = async (req: Request, res: 
 
 export const getNewChartData = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { dataSourceId, filters, versionValue, dimension, groupBy, aggregation, conditions, widgetType } = req.body;
+    const { dataSourceId, filters, versionValue, dimensions, groupBy, aggregation, conditions, widgetType } = req.body;
 
     const { orgCode } = req.user;
 
@@ -2001,7 +2001,6 @@ export const getNewChartData = async (req: Request, res: Response, next: NextFun
     const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
       query: versionQuery,
     });
-    console.log('dataSourceVersionDetails', dataSourceVersionDetails, versionQuery);
 
     if (!dataSourceVersionDetails?.data?.length) {
       return res.status(200).json({
@@ -2025,7 +2024,7 @@ export const getNewChartData = async (req: Request, res: Response, next: NextFun
       query,
       filters,
       entityId: dataSourceDetails.entityId,
-      dimension,
+      dimension: dimensions,
       groupBy,
       aggregation,
       conditions,
