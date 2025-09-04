@@ -71,7 +71,7 @@ export const createNotificationTemplate = async (req: Request, res: Response, ne
         await fsPromises.rename(matched.path, newFilePath);
 
         // store filePath (use leading slash if desired)
-        attachment.filePath = `/${newFilePath.replace(/\\/g, '/')}`;
+        attachment.filePath = `${newFilePath.replace(/\\/g, '/')}`;
         // ensure fileName stored is original name
         attachment.fileName = matched.originalname;
       }
@@ -192,7 +192,7 @@ export const updateNotificationTemplate = async (req: Request, res: Response, ne
         await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
         await fsPromises.rename(matched.path, newFilePath);
 
-        attachment.filePath = `/${newFilePath.replace(/\\/g, '/')}`;
+        attachment.filePath = `${newFilePath.replace(/\\/g, '/')}`;
         attachment.fileName = matched.originalname;
       }
     }
