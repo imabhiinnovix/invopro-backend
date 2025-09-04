@@ -148,6 +148,7 @@ export const getDataSourceVersionValueV1 = async ({
   sort = {},
   filters = {},
   entityId = '',
+  searchFilters = {},
 }: {
   schemaName: string;
   query: any;
@@ -156,6 +157,7 @@ export const getDataSourceVersionValueV1 = async ({
   limit: number;
   sort?: Record<string, 1 | -1>;
   filters?: Record<string, any>;
+  searchFilters?: Record<string, any>;
   entityId: any;
 }) => {
   try {
@@ -239,7 +241,61 @@ export const getDataSourceVersionValueV1 = async ({
     }
 
     if (filterConditions.length > 0) aggregationPipeline.push({ $match: { $and: filterConditions } });
+    // Step 3: Search Filters (add this after filter conditions)
+    const searchConditions: any[] = [];
 
+    if (Object.keys(searchFilters).length > 0) {
+      for (const [key, searchValue] of Object.entries(searchFilters)) {
+        if (!searchValue || (typeof searchValue === 'string' && searchValue.trim().length === 0)) continue;
+
+        const searchRegex = { $regex: searchValue, $options: 'i' }; // Case-insensitive regex
+
+        if (key.startsWith('Derived.')) {
+          const derivedName = key.split('.')[1];
+          const derivedField = await getDerivedField({ name: derivedName, entityId });
+          if (!derivedField) continue;
+
+          // For derived fields, we need to check against the actual field paths
+          // that would generate the derived values
+          const derivedSearchConditions: any[] = [];
+
+          for (const rule of derivedField.valueRules) {
+            const ruleConditions: any[] = [];
+            for (const cond of rule.conditions || []) {
+              const path = await resolveFieldPath(cond, entity.attributes);
+              if (!path) continue;
+
+              // Add regex search condition for this path
+              ruleConditions.push({ [path]: searchRegex });
+            }
+
+            if (ruleConditions.length > 0) {
+              derivedSearchConditions.push(
+                rule.conditionOperator === 'OR' ? { $or: ruleConditions } : { $and: ruleConditions }
+              );
+            }
+          }
+
+          if (derivedSearchConditions.length > 0) {
+            searchConditions.push({ $or: derivedSearchConditions });
+          }
+        } else if (key.includes('.')) {
+          // Handle reference field search (e.g., "refField.subField")
+          const [refField, subField] = key.split('.');
+          const asField = `rowData.${refField}_resolved`;
+          searchConditions.push({ [`${asField}.rowData.${subField}`]: searchRegex });
+        } else {
+          // Handle regular field search
+          searchConditions.push({ [`rowData.${key}`]: searchRegex });
+        }
+      }
+    }
+
+    // Add search conditions to pipeline if any exist
+    if (searchConditions.length > 0) {
+      // Use $or to match any of the search conditions (if any field matches, return the document)
+      aggregationPipeline.push({ $match: { $or: searchConditions } });
+    }
     // Step 3: Sort
     const finalSort: Record<string, 1 | -1> = {};
     if (sort && Object.keys(sort).length > 0) {

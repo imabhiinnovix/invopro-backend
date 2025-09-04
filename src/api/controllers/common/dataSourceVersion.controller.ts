@@ -26,6 +26,7 @@ import { getEntityAttribute, getModelForEntity } from '../../../utils/entity.uti
 import { Types } from 'mongoose';
 import { findEntityById } from '../../../database/services/common/entity.services';
 import { autoPopulateAttributeOption, autoPopulateAttributeOptionFromRow } from '../../../utils/attributeOption.utils';
+import * as entityService from '../../../database/services/common/entity.services';
 const ObjectId = mongoose.Types.ObjectId;
 
 export const ERROR_CODES = {
@@ -1286,24 +1287,39 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
   next: NextFunction
 ) => {
   try {
-    const { dataSourceId, versionValue, page, limit, sort, filters } = req.query as {
+    const { dataSourceId, versionValue, page, limit, sort, filters, search } = req.query as {
       dataSourceId: string;
       versionValue: string;
       page?: string;
       limit?: string;
       sort?: string;
       filters?: string;
+      search?: string;
     };
 
     const pageNumber = page ? parseInt(page, 10) : 1;
     const limitNumber = limit ? parseInt(limit, 10) : 10;
     const { orgCode } = req.user;
 
+    const searchFilters = {};
+
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+
     if (!dataSourceDetails) {
       return res.status(404).json({ success: false, message: 'Data source not found.' });
     }
 
+    const entityFieldOptions = await entityService.getEntityFieldOptions(String(dataSourceDetails.entityId._id));
+    if (search && search.length > 0) {
+      for (let i = 0; i < entityFieldOptions.length; i++) {
+        const entityOption = entityFieldOptions[i];
+        if (entityOption.value.isDerived) {
+          searchFilters[`Derived.${entityOption.label}`] = search;
+        } else {
+          searchFilters[entityOption.label] = search;
+        }
+      }
+    }
     const versionQuery: any = {
       dataSourceId,
       isCurrent: true, // Always filter for current version
@@ -1346,6 +1362,7 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
       sort: parsedSort,
       filters: parsedFilters,
       entityId: dataSourceDetails.entityId,
+      searchFilters,
     });
     const data = result?.data ?? [];
     const totalCount = result?.totalCount ?? 0;

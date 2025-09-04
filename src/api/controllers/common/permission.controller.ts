@@ -15,7 +15,7 @@ export const getPermissionList = async (req: Request, res: Response, next: NextF
     const query: any = {
       $or: [{ organizationId: { $exists: false } }, { organizationId: new Types.ObjectId(organizationId) }],
     };
-    if (search) query.name = { $regex: name, $options: 'i' };
+    if (search) query.name = { $regex: search, $options: 'i' };
     if (name) {
       query.name = name;
     }
