@@ -26,6 +26,7 @@ import { getEntityAttribute, getModelForEntity } from '../../../utils/entity.uti
 import { Types } from 'mongoose';
 import { findEntityById } from '../../../database/services/common/entity.services';
 import { autoPopulateAttributeOption, autoPopulateAttributeOptionFromRow } from '../../../utils/attributeOption.utils';
+import * as entityService from '../../../database/services/common/entity.services';
 const ObjectId = mongoose.Types.ObjectId;
 
 export const ERROR_CODES = {
@@ -366,6 +367,9 @@ async function validateFileData({
 
   for (const [index, row] of fileData.entries()) {
     console.log('Processing Index:', index);
+    const parts = row.fileRowNumber.split(':');
+    const rowNum = parts.pop(); // last part → row number
+    const fileName = parts.join(':');
     const newRow = {
       dataSourceId,
       entityId,
@@ -398,7 +402,11 @@ async function validateFileData({
         value = value.text;
       }
       newRow.rowData[attrName] = value;
-      if (attr.required === 'Mandatory' && (value === undefined || value === null || value === '')) {
+
+      if (
+        (attr.required === 'Mandatory' || attr.required === true) &&
+        (value === undefined || value === null || value === '')
+      ) {
         errors.push({
           entityId: entityId,
           dataSourceId: dataSourceId,
@@ -412,7 +420,9 @@ async function validateFileData({
           errorType: ERROR_CODES.MANDATORY_MISSING.type,
           errorCode: ERROR_CODES.MANDATORY_MISSING.code,
           status: 'open',
-          errorMessage: `Error: Row ${index + 1} - The attribute "${attrName}" is required but is missing.`,
+          fileRowNumber: rowNum,
+          fileName,
+          errorMessage: `Error: File ${fileName}, Row ${rowNum} - The attribute "${attrName}" is required but is missing.`,
         });
         newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
       } else if (value !== undefined && value != null && value) {
@@ -449,8 +459,10 @@ async function validateFileData({
               refDataSourceId: refDataSourceDetails?.[0]?._id,
               errorType: ERROR_CODES.INVALID_REFERENCE.type,
               errorCode: ERROR_CODES.INVALID_REFERENCE.code,
+              fileRowNumber: rowNum,
+              fileName,
               status: 'open',
-              errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value}, but it could not be resolved from the reference entity for the attribute ${attrName}.`,
+              errorMessage: `Error: File ${fileName}, Row ${rowNum} - ${fileKey}, has a value ${value}, but it could not be resolved from the reference entity for the attribute ${attrName}.`,
             });
             newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
           } else {
@@ -480,7 +492,9 @@ async function validateFileData({
                 errorType: ERROR_CODES.INVALID_OPTION.type,
                 errorCode: ERROR_CODES.INVALID_OPTION.code,
                 status: 'open',
-                errorMessage: `Error: Row ${index + 1} - ${fileKey} has a value ${value}, but a value of type ${attr.type} was expected from one of the valid settings attribute(${attrName}) options ${attributeOptionValue}.`,
+                fileRowNumber: rowNum,
+                fileName,
+                errorMessage: `Error: File ${fileName}, Row ${rowNum} - ${fileKey} has a value ${value}, but a value of type ${attr.type} was expected from one of the valid settings attribute(${attrName}) options ${attributeOptionValue}.`,
               });
             } else {
               errors.push({
@@ -496,7 +510,9 @@ async function validateFileData({
                 refAttributeId: attr._id,
                 errorType: ERROR_CODES.INVALID_TYPE.type,
                 errorCode: ERROR_CODES.INVALID_TYPE.code,
-                errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value} of type ${typeof value}, but a value of type ${attr.type} was expected for the settings attribute ${attrName}.`,
+                fileRowNumber: rowNum,
+                fileName,
+                errorMessage: `Error: File ${fileName}, Row ${rowNum} - ${fileKey}, has a value ${value} of type ${typeof value}, but a value of type ${attr.type} was expected for the settings attribute ${attrName}.`,
               });
             }
             newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
@@ -540,7 +556,9 @@ async function validateFileData({
               errorType: ERROR_CODES.DUPLICATE_ENTRY.type,
               errorCode: ERROR_CODES.DUPLICATE_ENTRY.code,
               fileAttributeValue: compositeKey,
-              errorMessage: `Error: Row ${index + 1} - Duplicate combination found for unique keys: ${compositeKey}.`,
+              fileRowNumber: rowNum,
+              fileName,
+              errorMessage: `Error: File ${fileName}, Row ${rowNum} - Duplicate combination found for unique keys: ${compositeKey}.`,
             });
             newRow.isErrorLog = 1;
           } else {
@@ -684,7 +702,12 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
 
       if (fileExtension && ['xlsx', 'xls'].includes(fileExtension)) {
         const fileData = await readExcelFile(newFilePath);
-        combinedData = [...combinedData, ...fileData];
+        // 🔹 Add fileRowNumber field for each row
+        const fileDataWithRowNumber = fileData.map((row, index) => ({
+          ...row,
+          fileRowNumber: `${fileName}:${index + 2}`, // +1 to make it 1-based instead of 0-based
+        }));
+        combinedData = [...combinedData, ...fileDataWithRowNumber];
         combinedFileName = combinedFileName ? `${combinedFileName}|${fileName}` : fileName;
         combinedFilePath = combinedFilePath ? `${combinedFilePath}|${newFilePath}` : newFilePath;
         combinedMimType = combinedMimType ? `${combinedMimType}|${mimetype}` : mimetype;
@@ -759,8 +782,6 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
             entityId: dataSourceDetails.entityId._id,
             uniqueAttributeRules: dataSourceDetails.uniqueAttributeRules,
           });
-
-          console.log('validatedData:', validatedData);
 
           if (validatedData.errors.length > 0) {
             await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
@@ -1266,24 +1287,39 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
   next: NextFunction
 ) => {
   try {
-    const { dataSourceId, versionValue, page, limit, sort, filters } = req.query as {
+    const { dataSourceId, versionValue, page, limit, sort, filters, search } = req.query as {
       dataSourceId: string;
       versionValue: string;
       page?: string;
       limit?: string;
       sort?: string;
       filters?: string;
+      search?: string;
     };
 
     const pageNumber = page ? parseInt(page, 10) : 1;
     const limitNumber = limit ? parseInt(limit, 10) : 10;
     const { orgCode } = req.user;
 
+    const searchFilters = {};
+
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+
     if (!dataSourceDetails) {
       return res.status(404).json({ success: false, message: 'Data source not found.' });
     }
 
+    const entityFieldOptions = await entityService.getEntityFieldOptions(String(dataSourceDetails.entityId._id));
+    if (search && search.length > 0) {
+      for (let i = 0; i < entityFieldOptions.length; i++) {
+        const entityOption = entityFieldOptions[i];
+        if (entityOption.value.isDerived) {
+          searchFilters[`Derived.${entityOption.label}`] = search;
+        } else {
+          searchFilters[entityOption.label] = search;
+        }
+      }
+    }
     const versionQuery: any = {
       dataSourceId,
       isCurrent: true, // Always filter for current version
@@ -1326,6 +1362,7 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
       sort: parsedSort,
       filters: parsedFilters,
       entityId: dataSourceDetails.entityId,
+      searchFilters,
     });
     const data = result?.data ?? [];
     const totalCount = result?.totalCount ?? 0;
@@ -1980,7 +2017,7 @@ export const listAllAvailableDataSourceVersionValue = async (req: Request, res: 
 
 export const getNewChartData = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { dataSourceId, filters, versionValue, dimension, groupBy, aggregation, conditions, widgetType } = req.body;
+    const { dataSourceId, filters, versionValue, dimensions, groupBy, aggregation, conditions, widgetType } = req.body;
 
     const { orgCode } = req.user;
 
@@ -2001,7 +2038,6 @@ export const getNewChartData = async (req: Request, res: Response, next: NextFun
     const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
       query: versionQuery,
     });
-    console.log('dataSourceVersionDetails', dataSourceVersionDetails, versionQuery);
 
     if (!dataSourceVersionDetails?.data?.length) {
       return res.status(200).json({
@@ -2025,7 +2061,7 @@ export const getNewChartData = async (req: Request, res: Response, next: NextFun
       query,
       filters,
       entityId: dataSourceDetails.entityId,
-      dimension,
+      dimension: dimensions,
       groupBy,
       aggregation,
       conditions,
