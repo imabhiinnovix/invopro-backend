@@ -3,12 +3,7 @@ import * as NotificationTypeService from '../../../database/services/notivix/not
 
 export const createNotificationType = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const {
-      name,
-      dataSourceId,
-      triggerFieldId,
-      conditionGroups,
-    } = req.body;
+    const { name, dataSourceId, triggerFieldId, conditionGroups } = req.body;
 
     const { organizationId, userId } = req.user;
     const data = await NotificationTypeService.createNotificationType({
@@ -30,15 +25,9 @@ export const createNotificationType = async (req: Request, res: Response, next: 
   }
 };
 
-
 export const updateNotificationType = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const {
-      name,
-      dataSourceId,
-      triggerFieldId,
-      conditionGroups,
-    } = req.body;
+    const { name, dataSourceId, triggerFieldId, conditionGroups } = req.body;
 
     const { organizationId, userId } = req.user;
 
@@ -63,8 +52,6 @@ export const updateNotificationType = async (req: Request, res: Response, next: 
   }
 };
 
-
-
 export const deleteNotificationType = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { organizationId } = req.user;
@@ -83,20 +70,18 @@ export const deleteNotificationType = async (req: Request, res: Response, next: 
   }
 };
 
-
-
 export const listNotificationType = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { organizationId } = req.user;
-    const { name, dataSourceId, page = 1, limit = 10, sort } = req.query;
+    const { search, dataSourceId, page = 1, limit = 10, sort } = req.query;
 
     const parsedPage = parseInt(page as string, 10) || 1;
     const parsedLimit = parseInt(limit as string, 10) || 10;
 
     const query: any = { organizationId };
 
-    if (name) {
-      query.name = { $regex: name, $options: 'i' };
+    if (search) {
+      query.name = { $regex: search, $options: 'i' };
     }
 
     if (dataSourceId) {
@@ -129,7 +114,6 @@ export const listNotificationType = async (req: Request, res: Response, next: Ne
   }
 };
 
-
 export const getNotificationType = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { organizationId } = req.user;
@@ -148,4 +132,3 @@ export const getNotificationType = async (req: Request, res: Response, next: Nex
     next(err);
   }
 };
-

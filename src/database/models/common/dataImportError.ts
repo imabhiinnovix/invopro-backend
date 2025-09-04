@@ -21,6 +21,8 @@ interface IDataImportError extends Document {
   refDataSourceId: Types.ObjectId;
   attributeType: string;
   refAttributeId: Types.ObjectId;
+  fileRowNumber: String;
+  fileName: String;
 }
 const DataImportErrorSchema = new Schema<IDataImportError>(
   {
@@ -28,6 +30,8 @@ const DataImportErrorSchema = new Schema<IDataImportError>(
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
     dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'data_source_version' },
     rowNumber: { type: Number },
+    fileRowNumber: { type: String },
+    fileName: { type: String },
     fileAttributeName: { type: String },
     attributeName: { type: String },
     fileAttributeValue: { type: Schema.Types.Mixed },
