@@ -19,25 +19,14 @@ export interface IReferenceEntitySetting {
 export interface IAttribute {
   name: string;
   mappingName: string;
-  type:
-    | 'number'
-    | 'text'
-    | 'date'
-    | 'boolean'
-    | 'richtext'
-    | 'url'
-    | 'option'
-    | 'multioption'
-    | 'user'
-    | 'email'
-    | 'text-with-option';
+  type: 'number' | 'text' | 'date' | 'boolean' | 'richtext' | 'url' | 'option' | 'multioption' | 'user' | 'email' | 'text-with-option';
   required: any;
   validation?: string[];
   transformations?: string[];
   optionAttributeId?: string;
   cleaner?: string[];
   referenceEntitySetting?: IReferenceEntitySetting;
-  isReferenceEdit?: boolean; // ✅ Added
+  isReferenceEditable?: string; // ✅ Added
 }
 
 // ---------------------------
@@ -90,7 +79,7 @@ const attributeSchema = new Schema<IAttribute>(
     required: {
       type: Boolean,
       required: true,
-      get: (value: boolean) => (value ? 'Mandatory' : 'Not Mandatory'),
+      get: (value: boolean) => (value ? true : false),
     },
     validation: { type: [String] },
     transformations: { type: [String] },
@@ -105,7 +94,11 @@ const attributeSchema = new Schema<IAttribute>(
       type: referenceEntitySettingSchema,
       required: false,
     },
-    isReferenceEdit: { type: Boolean, default: false }, // ✅ Added
+    isReferenceEditable: {
+      type: String,
+      enum: ["EDIT", "VIEW", "HIDE"], // enum values
+      default: "EDIT"
+    }, // ✅ Added
   },
   { _id: true, toJSON: { getters: true }, toObject: { getters: true } }
 );

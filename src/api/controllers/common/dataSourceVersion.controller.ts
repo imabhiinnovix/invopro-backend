@@ -261,7 +261,7 @@ async function validateAndConvert({
     const convertedValue = new Date(value);
     return {
       isValid: !isNaN(convertedValue.getTime()),
-      convertedValue: !isNaN(convertedValue.getTime()) ? convertedValue.toISOString() : null,
+      convertedValue: !isNaN(convertedValue.getTime()) ? convertedValue : null,
     };
   }
 
@@ -365,6 +365,7 @@ async function validateFileData({
   );
 
   for (const [index, row] of fileData.entries()) {
+    console.log('Processing Index:', index);
     const newRow = {
       dataSourceId,
       entityId,
@@ -403,10 +404,11 @@ async function validateFileData({
           dataSourceId: dataSourceId,
           dataSourceVersionId: dataSourceVersionId,
           rowNumber: index + 1,
-          fileAttributeName: fileKey,
+          fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
           attributeName: attrName,
           attributeType: attr.type,
           attributeOptionId: attr.optionAttributeId ? attr.optionAttributeId : null,
+          refAttributeId: attr._id,
           errorType: ERROR_CODES.MANDATORY_MISSING.type,
           errorCode: ERROR_CODES.MANDATORY_MISSING.code,
           status: 'open',
@@ -432,19 +434,25 @@ async function validateFileData({
           });
 
           if (!referencedDoc) {
+            const refDataSourceDetails = await dataSourceService.findDataSourcesByEntityId(refEntityId);
             errors.push({
               entityId: entityId,
               dataSourceId: dataSourceId,
               dataSourceVersionId: dataSourceVersionId,
               rowNumber: index + 1,
-              fileAttributeName: fileKey,
+              fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
               fileAttributeValue: value,
               attributeName: attrName,
-              errorType: 'Reference Error',
-              errorCode: '404',
+              attributeType: attr.type,
+              refEntityId,
+              refAttributeId: refEntityFieldId,
+              refDataSourceId: refDataSourceDetails?.[0]?._id,
+              errorType: ERROR_CODES.INVALID_REFERENCE.type,
+              errorCode: ERROR_CODES.INVALID_REFERENCE.code,
+              status: 'open',
               errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value}, but it could not be resolved from the reference entity for the attribute ${attrName}.`,
             });
-            newRow.isErrorLog = 1;
+            newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
           } else {
             newRow.rowData[attrName] = referencedDoc._id;
           }
@@ -463,11 +471,12 @@ async function validateFileData({
                 dataSourceId: dataSourceId,
                 dataSourceVersionId: dataSourceVersionId,
                 rowNumber: index + 1,
-                fileAttributeName: fileKey,
+                fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
                 fileAttributeValue: value,
                 attributeName: attrName,
                 attributeType: attr.type,
                 attributeOptionId: attr.optionAttributeId,
+                refAttributeId: attr._id,
                 errorType: ERROR_CODES.INVALID_OPTION.type,
                 errorCode: ERROR_CODES.INVALID_OPTION.code,
                 status: 'open',
@@ -479,11 +488,12 @@ async function validateFileData({
                 dataSourceId: dataSourceId,
                 dataSourceVersionId: dataSourceVersionId,
                 rowNumber: index + 1,
-                fileAttributeName: fileKey,
+                fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
                 fileAttributeValue: value,
                 attributeName: attrName,
                 attributeType: attr.type,
                 status: 'open',
+                refAttributeId: attr._id,
                 errorType: ERROR_CODES.INVALID_TYPE.type,
                 errorCode: ERROR_CODES.INVALID_TYPE.code,
                 errorMessage: `Error: Row ${index + 1} - ${fileKey}, has a value ${value} of type ${typeof value}, but a value of type ${attr.type} was expected for the settings attribute ${attrName}.`,
@@ -656,6 +666,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
     let combinedMimType = '';
     let combinedSize = 0;
     let combinedData: any[] = [];
+    let dataSourceVersionId;
     for (const file of files) {
       const { originalname, path: tempPath, size, mimetype } = file;
       const fileName = originalname;
@@ -714,6 +725,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
         isCurrent: false,
       });
 
+      dataSourceVersionId = dataSourceVersion._id;
       debounceManager.debounce(dataSourceVersion._id as string, async () => {
         try {
           const entityDetails = dataSourceDetails.entityId as any;
@@ -747,6 +759,8 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
             entityId: dataSourceDetails.entityId._id,
             uniqueAttributeRules: dataSourceDetails.uniqueAttributeRules,
           });
+
+          console.log('validatedData:', validatedData);
 
           if (validatedData.errors.length > 0) {
             await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
@@ -798,6 +812,8 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
     return res.status(200).json({
       success: true,
       message: 'Data upload is in progress.',
+      dataSourceVersionId,
+      status: 'pending',
     });
   } catch (e) {
     next(e);
@@ -1189,6 +1205,34 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
   }
 };
 
+export const updateCustomDataSourceVersionIsCurrentFunction = async ({
+  dataSourceVersionId,
+}: {
+  dataSourceVersionId: string;
+}) => {
+  try {
+    const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionDetailBasedOnId({
+      _id: new Types.ObjectId(dataSourceVersionId),
+    });
+    if (dataSourceVersionDetails && dataSourceVersionDetails.dataSourceId) {
+      await dataSourceVersionService.updateDataSourceVersions({
+        query: {
+          dataSourceId: dataSourceVersionDetails.dataSourceId,
+          versionValue: dataSourceVersionDetails.versionValue,
+        },
+        updateFields: { isCurrent: false },
+      });
+      await dataSourceVersionService.updateDataSourceVersion(dataSourceVersionDetails._id as string, {
+        status: 'completed',
+        isCurrent: true,
+      });
+    }
+  } catch (e) {
+    console.log('Error in createUpdateCustomDataSourceVersionValueFunction.', e);
+    throw e;
+  }
+};
+
 export const createUpdateCustomDataSourceVersionValue = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { dataSourceId, versionValue, versionData } = req.body;
@@ -1332,7 +1376,7 @@ async function handleReferenceSubFields({
     if (!refEntity) continue;
 
     // Find subfield marked as isReferenceEdit
-    const subAttr = refEntity.attributes.find((a) => a.name === subAttrName && a.isReferenceEdit);
+    const subAttr = refEntity.attributes.find((a) => a.name === subAttrName && a.isReferenceEditable == 'EDIT');
     if (!subAttr) continue;
 
     // Reference model for sub-entity (used for mapping)
@@ -1535,9 +1579,10 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       versionValue,
       rowData,
       isErrorResolved,
-      rowNumber,
       errorDataSourceVersionId,
       errorDataSourceId,
+      attributeName,
+      fileAttributeValue,
     } = req.body;
     const { userId, organizationId, orgCode } = req.user;
 
@@ -1633,15 +1678,33 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
         versionCode: errorDataSourceDetails?.code!,
       });
 
+      const refrenceRecords = await dataImportErrorServices.getDataImportErrorRecords({
+        dataSourceVersionId: errorDataSourceVersionId,
+        attributeName,
+        fileAttributeValue,
+        status: 'open',
+      });
+
+      const rowNumbersToUpdate = refrenceRecords.map((record) => record.rowNumber);
+
+      console.log('rowNumbersToUpdate', rowNumbersToUpdate);
       await dataImportErrorServices.updateDataImportErrors(
-        { dataSourceVersionId: errorDataSourceVersionId, rowNumber },
+        {
+          dataSourceVersionId: errorDataSourceVersionId,
+          attributeName,
+          fileAttributeValue,
+          rowNumber: { $in: rowNumbersToUpdate },
+        },
         { status: 'resolved' }
       );
+
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         errorSchema,
-        { dataSourceVersionId: new Schema.Types.ObjectId(errorDataSourceVersionId), rowNumber },
+        { dataSourceVersionId: new ObjectId(errorDataSourceVersionId), rowNumber: { $in: rowNumbersToUpdate } },
         {},
-        { isErrorLog: -1 }
+        {
+          isErrorLog: -1,
+        }
       );
     }
 
@@ -1977,5 +2040,23 @@ export const getNewChartData = async (req: Request, res: Response, next: NextFun
   } catch (e) {
     console.log('Error in getNotivixChartData:', e);
     next(e);
+  }
+};
+
+export const getDataSourceVersionDetailsBasedOnId = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dataSourceVersionId } = req.params;
+
+    const result = await dataSourceVersionService.getDataSourceVersionDetailBasedOnId({
+      _id: new Types.ObjectId(dataSourceVersionId),
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Data Source Version Details Fetched Successfully',
+      data: result,
+    });
+  } catch (err) {
+    next(err);
   }
 };
