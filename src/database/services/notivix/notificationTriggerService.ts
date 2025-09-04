@@ -123,7 +123,7 @@ export async function processNotification(notif: IPreparedNotification, extraCon
     }
 
     // Mark notification as sent
-    notif.status = "sent";
+    notif.status = extraContext?.acknowledgeEmail == true ? "acknowledged" : "sent";
     notif.lastAttemptAt = new Date();
     await notif.save();
 

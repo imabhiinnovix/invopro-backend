@@ -30,7 +30,7 @@ export const sendAcknowledge = async (req: Request, res: Response, next: NextFun
       acknowledgeData.identifierKey !== identifierKey ||
       acknowledgeData.processingStatus !== "pending"
     ) {
-      return res.status(404).json({
+      return res.status(400).json({
         success: false,
         message: "Page Expired or Not Found",
       });
@@ -45,7 +45,7 @@ export const sendAcknowledge = async (req: Request, res: Response, next: NextFun
     // 3️⃣ Get related active prepared notification
     const notification = await getActivePreparedNotificationByAck(ackId,["templateId","frequencySettingId","notificationTriggerId","acknowledgeId"]);
     if (!notification) {
-      return res.status(404).json({
+      return res.status(400).json({
         success: false,
         message: "Page Expired or Not Found",
       });
@@ -57,7 +57,7 @@ export const sendAcknowledge = async (req: Request, res: Response, next: NextFun
     // 6️⃣ Mark acknowledge as completed
     await markNotificationAcknowledgeCompleted(ackId);
 
-    return res.json({
+    res.status(201).json({
       success: true,
       message: "Acknowledgement Email has been sent successfully",
     });
