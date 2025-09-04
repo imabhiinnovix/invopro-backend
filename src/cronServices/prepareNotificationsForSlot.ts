@@ -20,13 +20,12 @@ import { listNotificationFrequency } from "../database/services/notivix/notifica
 import { findDataSourceById } from "../database/services/common/dataSource.services";
 import { getSchemaNameBasedOnVersionCodeAndOrgCode, uniqueCode } from "../utils/common.utils";
 import { getCurrentDataSourceVersion } from "../database/services/common/dataSourceVersion.services";
-
+import { scheduleEmail } from "../utils/notification.utils";
 
 
 // --------------------
 // Helpers
 // --------------------
-
 
 // Combine Date and Time string to Date object
 function combineDateAndTime(date: Date, triggerTime?: string): Date {
@@ -1096,9 +1095,17 @@ export async function prepareTodayNotifications() {
           });
         }
 
-        await PreparedNotification.insertMany(preparedDocs);
-        totalPrepared += preparedDocs.length;
-        console.log(`✅ Inserted ${preparedDocs.length} grouped notifications`);
+        if (preparedDocs.length > 0) {
+          const inserted = await PreparedNotification.insertMany(preparedDocs);
+          totalPrepared += inserted.length;
+
+          // ✅ Schedule each prepared notification in BullMQ
+          for (const notif of inserted) {
+            await scheduleEmail(notif);
+          }
+
+          console.log(`✅ Inserted & scheduled ${inserted.length} notifications`);
+        }
       }
     } catch (error) {
       console.error(`❌ Error preparing notifications for setting ${setting._id}:`, error);

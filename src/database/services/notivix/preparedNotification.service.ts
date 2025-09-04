@@ -55,12 +55,9 @@ export const listPreparedNotifications = async ({
  */
 export const getPreparedNotification = async (
   id: string,
-  {
-    organizationId,
-    populate = [],
-  }: { organizationId: string; populate?: string[] }
+ populate: string[],
 ) => {
-  let query = PreparedNotification.findOne({ _id: id, organizationId });
+  let query = PreparedNotification.findById(id);
 
   populate.forEach((field) => {
     query = query.populate(field);

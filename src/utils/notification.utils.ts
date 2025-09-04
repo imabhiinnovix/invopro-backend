@@ -5,6 +5,8 @@ import { IPreparedNotification } from "../database/models/notivix/preparedNotifi
 import { INotificationTemplate } from "../database/models/notivix/notificationTemplate";
 import { findDataSourceById } from "../database/services/common/dataSource.services";
 import { findEntityById } from "../database/services/common/entity.services";
+import { Queue } from "bullmq";
+import  redisConnection  from "../redis-connection";
 
 // ------------------- Attachment Generator -------------------
 export async function generateNotificationAttachments(
@@ -253,4 +255,25 @@ export async function getAttachmentFieldNames(
 
   // Convert Map to array of objects
   return Array.from(fieldNamesMap.entries()).map(([name, type]) => ({ name, type }));
+}
+
+// Email queue
+export const emailQueue = new Queue("emailQueue", { connection: {
+      host: 'redis',
+    }, });
+
+export async function scheduleEmail(preparedNotification: any) {
+  const delay = new Date(preparedNotification.sentAt).getTime() - Date.now();
+  console.log('delay',delay);
+  await emailQueue.add(
+    "sendEmail",
+    { notificationId: preparedNotification._id }, // use _id from MongoDB
+    {
+      jobId: preparedNotification._id.toString(), // stable ID for rescheduling
+      delay: delay > 0 ? delay : 0,
+      removeOnComplete: true,
+      attempts: 3,
+      backoff: { type: "exponential", delay: 5000 }
+    }
+  );
 }
