@@ -40,19 +40,31 @@ export async function sendToQueue(payload: EmailQueuePayload) {
     }
 
     // Attachments
+    const attachmentsToDelete: string[] = [];
     if (payload.attachments && payload.attachments.length > 0) {
       data.attachment = payload.attachments
         .filter(a => a.filePath && fs.existsSync(a.filePath))
-        .map(a =>
-          mg.Attachment({
+        .map(a => {
+          attachmentsToDelete.push(a.filePath!); // mark for deletion
+          return new mg.Attachment({
             data: fs.createReadStream(path.resolve(a.filePath!)),
             filename: a.fileName,
-          })
-        );
+          });
+        });
     }
 
     const response = await mg.messages().send(data);
     console.log(`✉️  Email sent for notification ${payload.notificationId}:`, response.id);
+
+    // Clean up temporary files
+    for (const filePath of attachmentsToDelete) {
+      try {
+        fs.unlinkSync(filePath);
+        console.log(`🗑️  Deleted temporary attachment: ${filePath}`);
+      } catch (err) {
+        console.warn(`⚠️ Failed to delete temp file ${filePath}:`, err);
+      }
+    }
 
     return response;
   } catch (err) {

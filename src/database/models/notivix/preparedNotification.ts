@@ -25,7 +25,7 @@ export interface IPreparedNotification extends Document {
   timezone?: string;
 
   payload?: any;
-  recipients: IPreparedRecipient[];
+  recipients: IPreparedRecipient;
 
   attachmentPaths?: { filePath: string; fileName?: string }[];
 
@@ -87,7 +87,7 @@ const preparedNotificationSchema = new Schema<IPreparedNotification>(
 
     payload: { type: Schema.Types.Mixed, default: {} },
 
-    recipients: { type: [preparedRecipientSchema], default: [] },
+    recipients: { type: preparedRecipientSchema, default: {} },
 
     attachmentPaths: { type: [attachmentPathSchema], default: [] },
 

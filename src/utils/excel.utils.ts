@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import { DataItem } from '../database/services/reportivix/monthlyipReport.services';
 import * as xlsx from 'xlsx';
+import { findEntityById } from '../database/services/common/entity.services';
 
 interface KeywordPosition {
   page: number;
@@ -1187,3 +1188,61 @@ export async function extractUniqueColumnValuesByNamesFromXLSX({
 
   return Object.fromEntries(Object.entries(result).map(([key, val]) => [key, Array.from(val)]));
 }
+
+/**
+ * Extracts all field names (flattened) for an attachment setting
+ * Uses entity attributes + mapping/reference attributes recursively
+ */
+export async function getAttachmentFieldNames(
+  attachmentSetting: any, // your attachmentSetting object
+  entity: any,            // entity containing attributes
+): Promise<{ name: string; type: string }[]> {
+  const fieldNamesMap = new Map<string, string>(); // key = field name, value = type
+
+  const attributesMap: Record<string, any> = {}; // keyed by ID
+
+  // Build attributesMap
+  for (const attr of entity.attributes) {
+    attributesMap[attr._id.toString()] = attr; // <-- use ID as key
+    console.log('attr.name', attr.name);
+  }
+
+  async function extractFieldNames(attr: any, prefix = "") {
+    const key = prefix ? `${prefix}.${attr.name}` : attr.name;
+
+    // Store name and type
+    fieldNamesMap.set(key, attr.type || "string");
+
+    if (attr.referenceEntitySetting?.refEntityId && attr.referenceEntitySetting.relationType?.startsWith("mapping_")) {
+      const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
+      const refEntity: any = await findEntityById(refEntityId);
+      if (!refEntity?.attributes) return;
+
+      for (const refAttr of refEntity.attributes) {
+        const mapKey = `${key}.${refAttr.name}`;
+        fieldNamesMap.set(mapKey, refAttr.type || "string");
+
+        if (refAttr.referenceEntitySetting?.relationType?.startsWith("mapping_")) {
+          await extractFieldNames(refAttr, key);
+        }
+      }
+    }
+  }
+
+  // Use ID lookup
+  if (attachmentSetting.fieldList?.length) {
+    for (const field of attachmentSetting.fieldList) {
+      if (field.attributeId) {
+        const attr = attributesMap[field.attributeId.toString()] || null;
+        if (attr) {
+          await extractFieldNames(attr);
+        }
+      }
+    }
+  }
+
+  // Convert Map to array of objects
+  return Array.from(fieldNamesMap.entries()).map(([name, type]) => ({ name, type }));
+}
+
+

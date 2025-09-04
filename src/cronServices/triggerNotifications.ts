@@ -1,9 +1,104 @@
 import mongoose from "mongoose";
 import PreparedNotification, { IPreparedNotification } from "../database/models/notivix/preparedNotification";
 import NotificationTemplate, { INotificationTemplate } from "../database/models/notivix/notificationTemplate";
+import "../database/models/notivix/notificationFrequencySetting";
+import "../database/models/notivix/notificationTrigger";
 import { sendToQueue } from "./emailQueue";
 import config from '../config';
 import "../database/models/notivix/notificationTemplate";
+import ExcelJS from "exceljs";
+import path from "path";
+import fs from "fs";
+import { getAttachmentFieldNames } from "../utils/excel.utils";
+import { getDataSourceById } from "../api/controllers/common/dataSource.controller";
+import { findDataSourceById } from "../database/services/common/dataSource.services";
+
+export async function generateNotificationAttachments(
+  notif: IPreparedNotification,
+  template: INotificationTemplate
+): Promise<{ fileName: string; filePath: string }[]> {
+  if (!notif || !template || !template.attachmentSettings?.length) return [];
+
+  const attachments: { fileName: string; filePath: string }[] = [];
+
+  // Compute todayDate for subject using formatDate
+  const todayDate = formatDate(new Date());
+
+  // Replace {{todayDate}} in subject
+  let emailSubject = template.subject || "Notification";
+  emailSubject = emailSubject.replace("{{todayDate}}", todayDate);
+
+  // Sanitize for file name
+  const sanitizedSubject = emailSubject.replace(/[<>:"/\\|?*]/g, "").trim();
+
+  for (const attachmentSetting of template.attachmentSettings) {
+    if (!attachmentSetting?.type) continue;
+
+    if (attachmentSetting.type === "excel") {
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Sheet1");
+
+      const dataSource = await findDataSourceById(template.dataSourceId.toString());
+
+      // fieldNames: [{ name, type }]
+      const fieldNames = await getAttachmentFieldNames(attachmentSetting, dataSource?.entityId);
+      console.log('fieldNames', fieldNames);
+
+      // Define columns
+      sheet.columns = fieldNames.map(f => ({ header: f.name, key: f.name }));
+
+      // Populate rows from notif.payload
+      for (const [_, rows] of Object.entries(notif.payload || {})) {
+        for (const r of rows as Array<{ rowData: Record<string, any> }>) {
+          const row: Record<string, any> = {};
+          for (const f of fieldNames) {
+            let value = r.rowData[f.name];
+
+            // Format date fields
+            if (f.type === "date" && value) {
+              value = formatDate(new Date(value));
+            }
+
+            row[f.name] = value;
+          }
+          sheet.addRow(row);
+        }
+      }
+
+      const fileName = `${sanitizedSubject}.xlsx`;
+      const filePath = path.join(process.cwd(), "tmp", fileName);
+
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      await workbook.xlsx.writeFile(filePath);
+
+      attachments.push({ fileName, filePath });
+    }
+
+    else if (attachmentSetting.type === "pdf" || attachmentSetting.type === "image") {
+      // ✅ Just link existing static files (assume they’re in /assets or /public)
+      const sourcePath = path.join(process.cwd(), "assets", attachmentSetting.fileName);
+
+      if (fs.existsSync(sourcePath)) {
+        const fileName = attachmentSetting.fileName;
+        const filePath = path.join(process.cwd(), "tmp", `${Date.now()}-${fileName}`);
+
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        fs.copyFileSync(sourcePath, filePath);
+
+        attachments.push({ fileName, filePath });
+      } else {
+        console.warn(`Attachment file not found: ${sourcePath}`);
+      }
+    }
+
+    else {
+      console.warn(`Unsupported attachment type: ${attachmentSetting.type}`);
+    }
+  }
+
+  return attachments;
+}
+
 
 
 // ------------------- Helpers -------------------
@@ -105,51 +200,146 @@ function parseTemplate(template: string, context: Record<string, any>): string {
 }
 
 
+// 🔧 Utility: format today's date
+function formatDate(date): string {
+  return date
+    .toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+    .replace(/ /g, "-"); // e.g. "30-Aug-2025"
+}
+
+
+/**
+ * Extracts a friendly recipient name from email or full name.
+ * @param input - email or full name string
+ * @returns first name or fallback string
+ */
+export function getRecipientName(input: string): string {
+  if (!input) return "User";
+
+  // Case 1: If input contains '@', treat as email
+  if (input.includes("@")) {
+    const localPart = input.split("@")[0];
+    const nameParts = localPart.split(/[._-]/); // split on ., _, -
+    return capitalize(nameParts[0]);
+  }
+
+  // Case 2: If input is a full name with comma
+  // Example: "Chakravarti, Aditya (IND-TEC) (700004507)"
+  const commaParts = input.split(",");
+  if (commaParts.length > 1) {
+    const firstNamePart = commaParts[1].trim().split(" ")[0]; // take first word after comma
+    return capitalize(firstNamePart);
+  }
+
+  // Case 3: Fallback to first word
+  return capitalize(input.split(" ")[0]);
+}
+
+/**
+ * Capitalizes first letter
+ */
+function capitalize(str: string) {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
+function resolveRecipientEmail(realEmail: string): string {
+  return "abhishek@innovix-labs.com";
+  if (process.env.NODE_ENV !== "production") {
+    return "abhishek@innovix-labs.com"; // local/dev override
+  }
+  return realEmail; // production uses actual email
+}
+
+function resolveCcEmails(realCc: string[]): string[] {
+  return ["siddharth@innovix-labs.com", "kishan@innovix-labs.com"];
+  if (process.env.NODE_ENV !== "production") {
+    return [""]; // local/dev CC (can be multiple test emails)
+  }
+  return realCc;
+}
+
 
 
 export async function triggerPreparedNotifications() {
-  const conn = await mongoose.connect(config.MONGO_URI!);
+  const conn = await mongoose.connect(process.env.MONGO_URI!);
   console.info(`MongoDB Connected: ${conn.connection.host}`);
 
   try {
     const notifications: IPreparedNotification[] = await PreparedNotification.find({
       status: "pending",
-    }).populate("templateId");
+    })
+    .populate("templateId")
+    .populate("frequencySettingId") // populate frequency setting
+    .populate("notificationTriggerId"); // populate frequency setting
 
     console.log(`📬 Preparing to send ${notifications.length} notifications`);
+
+    const todayDate = formatDate(new Date());
 
     for (const notif of notifications) {
       try {
         const template = notif.templateId as unknown as INotificationTemplate | null;
-        if (!template) {
-          console.warn(`⚠️  Notification ${notif._id} has no template. Skipping.`);
+        const freqSetting = notif.frequencySettingId as any; // assuming Mongoose document
+        const trigger = notif.notificationTriggerId as any; // populated NotificationTrigger
+
+        if (!template || !freqSetting) {
+          console.warn(`⚠️ Notification ${notif._id} missing template or frequency setting. Skipping.`);
           continue;
         }
 
-        const recipientTo: string[] = ["abhishek@innovix-labs.com"];
-        const recipientCc: string[] = ["abhishek@innovix-labs.com"];
+        let lastUploadedDate: string | null = null;
+        if (trigger?.actionsLastUploadedDate) {
+          lastUploadedDate = formatDate(new Date(trigger?.actionsLastUploadedDate));
+        }
 
-        if (recipientTo.length === 0 && recipientCc.length === 0) {
-          console.warn(`⚠️  Notification ${notif._id} has no recipients. Skipping.`);
+        // ✅ Generate attachments only if frequency setting requires
+        let attachments: { fileName: string; filePath: string }[] = [];
+        if (freqSetting.attachmentRequired) {
+          attachments = await generateNotificationAttachments(notif, template);
+        }
+
+        // Real recipients
+        const realRecipientTo: string[] = notif.recipients?.recipient_to || [];
+        const realRecipientCc: string[] = notif.recipients?.recipient_cc || [];
+
+        if (realRecipientTo.length === 0 && realRecipientCc.length === 0) {
+          console.warn(`⚠️ Notification ${notif._id} has no recipients. Skipping.`);
           continue;
         }
 
+        // SINGLE type template
         if (template.type === "single") {
           const rowKey = Object.keys(notif.payload || {})[0];
           const rowData = notif.payload[rowKey]?.[0]?.rowData || {};
+          const baseContext = { ...rowData, todayDate, lastUploadedDate };
 
-          const subject = parseTemplate(template.subject, rowData);
-          const body = parseTemplate(template.body, rowData);
+          if (baseContext.DueDate) baseContext.DueDate = formatDate(new Date(baseContext.DueDate));
 
-          await sendToQueue({
-            to: recipientTo,
-            cc: recipientCc,
-            subject,
-            body,
-            notificationId: notif._id,
-          });
+          for (const realTo of realRecipientTo) {
+            const toEmail = resolveRecipientEmail(realTo);
+            const ccEmails = resolveCcEmails(realRecipientCc);
+            const context = { ...baseContext, recipientName: getRecipientName(realTo) };
+            const subject = parseTemplate(template.subject, context);
+            const body = parseTemplate(template.body, context);
 
-        } else if (template.type === "overall") {
+            await sendToQueue({
+              to: [toEmail],
+              cc: ccEmails,
+              subject,
+              body,
+              attachments, // Attach files if any
+              notificationId: notif._id,
+            });
+          }
+        }
+
+        // OVERALL type template
+        else if (template.type === "overall") {
           const groups: Array<{ groupKey: string; rows: Record<string, any>[] }> = [];
           let firstRow: Record<string, any> | null = null;
 
@@ -157,7 +347,7 @@ export async function triggerPreparedNotifications() {
             const rowArray = rows as Array<{ rowData: Record<string, any> }>;
 
             if (!firstRow && rowArray.length > 0) {
-              firstRow = flattenObject(rowArray[0].rowData); // flatten first row for greeting
+              firstRow = flattenObject(rowArray[0].rowData);
             }
 
             groups.push({
@@ -165,41 +355,40 @@ export async function triggerPreparedNotifications() {
               rows: rowArray.map(r => {
                 const rd = r.rowData || {};
                 const flattened = flattenObject(rd);
-
                 const dueDate = rd.DueDate ? new Date(rd.DueDate) : null;
                 const daysRemaining = dueDate
                   ? Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
                   : null;
 
                 return {
-                  ...flattened, // allows {{CaseNumber}} and {{Attorney.AttorneyName}} to work
+                  ...flattened,
                   DaysRemaining: daysRemaining,
-                  AssignedTo: rd.Assignedto || "-"
+                  AssignedTo: rd.Assignedto || "-",
+                  DueDate: dueDate ? formatDate(dueDate) : null,
                 };
               }),
             });
           }
 
-          const templateContext = {
-            ...(firstRow || {}),
-            groups
-          };
+          const baseContext = { ...(firstRow || {}), groups, todayDate, lastUploadedDate };
 
-          console.log("First row in groups:", JSON.stringify(groups[0].rows[0], null, 2));
+          for (const realTo of realRecipientTo) {
+            const toEmail = resolveRecipientEmail(realTo);
+            const ccEmails = resolveCcEmails(realRecipientCc);
+            const context = { ...baseContext, recipientName: getRecipientName(realTo) };
+            const subject = parseTemplate(template.subject, context);
+            const body = parseTemplate(template.body, context);
 
-          const subject = parseTemplate(template.subject, templateContext);
-          const body = parseTemplate(template.body, templateContext);
-
-          console.log("✉️ Rendered Email Body Preview:");
-          console.log(body);
-
-          await sendToQueue({
-            to: recipientTo,
-            cc: recipientCc,
-            subject,
-            body,
-            notificationId: notif._id,
-          });
+            console.log(`✉️ Sending to ${toEmail}: ${subject}`);
+            await sendToQueue({
+              to: [toEmail],
+              cc: ccEmails,
+              subject,
+              body,
+              attachments, // Attach files if any
+              notificationId: notif._id,
+            });
+          }
 
           console.log(`✅ Overall notification queued: ${notif._id}`);
         }
@@ -207,7 +396,6 @@ export async function triggerPreparedNotifications() {
         notif.status = "sent";
         notif.lastAttemptAt = new Date();
         await notif.save();
-
       } catch (err) {
         console.error(`❌ Failed to queue notification ${notif._id}:`, err);
         notif.status = "failed";
