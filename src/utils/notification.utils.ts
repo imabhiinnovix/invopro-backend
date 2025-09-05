@@ -259,21 +259,32 @@ export async function getAttachmentFieldNames(
 
 // Email queue
 export const emailQueue = new Queue("emailQueue", { connection: {
-      host: 'redis',
+        host: "redis",
     }, });
 
 export async function scheduleEmail(preparedNotification: any) {
-  const delay = new Date(preparedNotification.sentAt).getTime() - Date.now();
-  console.log('delay',delay);
+  // sentAt is stored in Mongo as UTC
+  const sentAtUtc = new Date(preparedNotification.sentAt);
+
+  // Subtract 5h30m to align with IST input
+  const sentAtAdjusted = new Date(sentAtUtc.getTime() - 5.5 * 60 * 60 * 1000);
+
+  // Calculate delay from "now"
+  const delay = sentAtAdjusted.getTime() - Date.now();
+
+  console.log('sentAt (Mongo UTC):', sentAtUtc.toISOString());
+  console.log('sentAt Adjusted (IST matching):', sentAtAdjusted.toISOString());
+  console.log('Calculated delay (ms):', delay);
+
   await emailQueue.add(
     "sendEmail",
-    { notificationId: preparedNotification._id }, // use _id from MongoDB
+    { notificationId: preparedNotification._id },
     {
-      jobId: preparedNotification._id.toString(), // stable ID for rescheduling
+      jobId: preparedNotification._id.toString(),
       delay: delay > 0 ? delay : 0,
       removeOnComplete: true,
       attempts: 3,
-      backoff: { type: "exponential", delay: 5000 }
+      backoff: { type: "exponential", delay: 5000 },
     }
   );
 }
