@@ -319,7 +319,11 @@ case "notcontains":
   case "before":
   case "onOrBefore":
   case "after":
-  case "onOrAfter": {
+  case "onOrAfter":
+  case "beforePast":
+  case "onOrBeforePast":
+  case "afterPast":
+  case "onOrAfterPast": {
     const numVal = Number(cond.value);
     if (cond.timeUnit && !isNaN(numVal)) {
       const now = new Date();
@@ -328,7 +332,7 @@ case "notcontains":
         cond.timeUnit === "h" ? 3600000 : 1000;
 
       let targetDate: Date;
-      if (cond.operator === "before" || cond.operator === "onOrBefore") {
+      if (cond.operator === "before" || cond.operator === "onOrBefore" || cond.operator === "after" || cond.operator === "onOrAfter") {
         // before = now + offset
         targetDate = new Date(now.getTime() + numVal * multiplier);
       } else {
@@ -336,24 +340,24 @@ case "notcontains":
         targetDate = new Date(now.getTime() - numVal * multiplier);
       }
 
-      if (cond.operator === "before") {
+      if (cond.operator === "before" || cond.operator === "beforePast") {
         mongoCond = { $lt: targetDate };
-      } else if (cond.operator === "onOrBefore") {
+      } else if (cond.operator === "onOrBefore" || cond.operator === "onOrBeforePast") {
         mongoCond = { $lte: targetDate };
-      } else if (cond.operator === "after") {
+      } else if (cond.operator === "after" || cond.operator === "afterPast") {
         mongoCond = { $gt: targetDate };
-      } else if (cond.operator === "onOrAfter") {
+      } else if (cond.operator === "onOrAfter" || cond.operator === "onOrAfterPast") {
         mongoCond = { $gte: targetDate };
       }
     } else {
       // fallback plain date (no timeUnit math)
-      if (cond.operator === "before") {
+      if (cond.operator === "before" || cond.operator === "beforePast") {
         mongoCond = { $lt: new Date(cond.value) };
-      } else if (cond.operator === "onOrBefore") {
+      } else if (cond.operator === "onOrBefore" || cond.operator === "onOrBeforePast") {
         mongoCond = { $lte: new Date(cond.value) };
-      } else if (cond.operator === "after") {
+      } else if (cond.operator === "after" || cond.operator === "afterPast") {
         mongoCond = { $gt: new Date(cond.value) };
-      } else if (cond.operator === "onOrAfter") {
+      } else if (cond.operator === "onOrAfter" || cond.operator === "onOrAfterPast") {
         mongoCond = { $gte: new Date(cond.value) };
       }
     }
