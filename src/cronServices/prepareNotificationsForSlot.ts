@@ -1114,3 +1114,6 @@ export async function prepareTodayNotifications() {
 
   console.log(`🏁 Finished. Total notifications prepared: ${totalPrepared}`);
 }
+
+// Run directly if executed as standalone script
+prepareTodayNotifications();
