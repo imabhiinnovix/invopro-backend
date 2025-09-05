@@ -1114,5 +1114,3 @@ export async function prepareTodayNotifications() {
 
   console.log(`🏁 Finished. Total notifications prepared: ${totalPrepared}`);
 }
-
-prepareTodayNotifications();
