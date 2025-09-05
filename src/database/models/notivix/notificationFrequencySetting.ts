@@ -25,7 +25,7 @@ export interface INotificationFrequencySetting extends Document {
   monthOfYear?: number;
   dayOfYearMonth?: number;
   repeatAnnually: boolean;
-  acknowledgeRequired: boolean;
+  acknowledge_to: INotificationRecipient[];
   attachmentRequired: boolean;
   targetEntity: INotificationRecipient,
   recipients_to: INotificationRecipient[];  // <-- To list
@@ -71,7 +71,7 @@ const notificationFrequencySettingSchema = new Schema<INotificationFrequencySett
     dayOfYearMonth: { type: Number },
 
     repeatAnnually: { type: Boolean, default: false },
-    acknowledgeRequired: { type: Boolean, default: false },
+    acknowledge_to: {  type: [notificationRecipientSchema], default: [] },
     attachmentRequired: { type: Boolean, default: false },
     targetEntity: { type: notificationRecipientSchema },
     recipients_to: { type: [notificationRecipientSchema], default: [] },

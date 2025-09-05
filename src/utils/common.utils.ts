@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+const crypto = require('crypto');
 
 export function getSchemaNameBasedOnVersionCodeAndOrgCode({
   orgCode,
@@ -40,5 +41,13 @@ export const safeFileName = (name: string) => name.replace(/[^a-zA-Z0-9._-]/g, '
 
 export const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+
+export function uniqueCode(length = 20) {
+  return crypto
+    .randomBytes(Math.ceil(length * 0.75)) // enough entropy for desired length
+    .toString('base64')                    // convert to base64
+    .replace(/[+/=]/g, '')                 // make it URL/file-name safe
+    .slice(0, length);                     // trim to exact length
+}
 
 

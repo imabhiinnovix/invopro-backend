@@ -22,7 +22,7 @@ export interface EmailQueuePayload {
   cc?: string[];
   subject: string;
   body: string;
-  attachments?: { fileName: string; filePath?: string }[];
+  attachments?: { fileName: string; filePath?: string, isDeleted?: boolean }[];
   notificationId?: any;
 }
 
@@ -45,7 +45,8 @@ export async function sendToQueue(payload: EmailQueuePayload) {
       data.attachment = payload.attachments
         .filter(a => a.filePath && fs.existsSync(a.filePath))
         .map(a => {
-          attachmentsToDelete.push(a.filePath!); // mark for deletion
+          if(a.isDeleted == true)
+            attachmentsToDelete.push(a.filePath!); // mark for deletion
           return new mg.Attachment({
             data: fs.createReadStream(path.resolve(a.filePath!)),
             filename: a.fileName,
