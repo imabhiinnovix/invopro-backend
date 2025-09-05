@@ -52,7 +52,7 @@ export async function processNotification(notif: IPreparedNotification, extraCon
     if (template.type === "single") {
       const rowKey = Object.keys(notif.payload || {})[0];
       const rowData = notif.payload[rowKey]?.[0]?.rowData || {};
-      const baseContext: Record<string, any> = { ...rowData, todayDate, lastUploadedDate, acknowledgeIdentifierKey: acknowledge.identifierKey, acknowledgeId: acknowledge._id, baseFrontendUrl: process.env.BASE_FRONTEND_URL };
+      const baseContext: Record<string, any> = { ...rowData, todayDate, lastUploadedDate, acknowledgeIdentifierKey: acknowledge?.identifierKey, acknowledgeId: acknowledge?._id, baseFrontendUrl: process.env.BASE_FRONTEND_URL };
       // merge extraContext if provided
       if (extraContext) Object.assign(baseContext, extraContext);
 
@@ -102,7 +102,7 @@ export async function processNotification(notif: IPreparedNotification, extraCon
         });
       }
 
-      const baseContext = { ...(firstRow || {}), groups, todayDate, lastUploadedDate, acknowledgeIdentifierKey: acknowledge.identifierKey, acknowledgeId: acknowledge._id, baseFrontendUrl: process.env.BASE_FRONTEND_URL };
+      const baseContext = { ...(firstRow || {}), groups, todayDate, lastUploadedDate, acknowledgeIdentifierKey: acknowledge?.identifierKey, acknowledgeId: acknowledge?._id, baseFrontendUrl: process.env.BASE_FRONTEND_URL };
       // merge extraContext if provided
       if (extraContext) Object.assign(baseContext, extraContext);
 
