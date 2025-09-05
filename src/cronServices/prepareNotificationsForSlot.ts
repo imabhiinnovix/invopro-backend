@@ -1116,4 +1116,4 @@ export async function prepareTodayNotifications() {
 }
 
 // Run directly if executed as standalone script
-prepareTodayNotifications();
+// prepareTodayNotifications();
