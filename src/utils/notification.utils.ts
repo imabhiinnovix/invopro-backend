@@ -193,10 +193,12 @@ function capitalize(str: string) {
 }
 
 export function resolveRecipientEmail(realEmail: string): string {
+  return "abhishek@innovix-labs.com";  
   return process.env.NODE_ENV !== "production" ? "abhishek@innovix-labs.com" : realEmail;
 }
 
 export function resolveCcEmails(realCc: string[]): string[] {
+  return ["siddarth@innovix-labs.com","amitoj@innovix-labs.com","avirup@innovix-labs.com"];  
   return process.env.NODE_ENV !== "production"
     ? [""]
     : realCc;
