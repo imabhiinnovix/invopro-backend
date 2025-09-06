@@ -57,11 +57,21 @@ export const updateOperator = async (req: Request, res: Response, next: NextFunc
   try {
     const { fieldType, operators } = req.body;
 
-    await operatorService.getOperatorById(req.params.operatorId);
+    // Ensure operator exists first
+    const existingOperator = await operatorService.getOperatorById(req.params.operatorId);
+    if (!existingOperator) {
+      return res.status(404).json({
+        success: false,
+        message: "Operator not found",
+      });
+    }
 
+    // Duplicate check (excluding current operator)
     if (fieldType) {
       const operatorExist = await operatorService.getOperator({ fieldType });
-      if (operatorExist) throw new Error('Duplicate Operator field found. Please remove or modify the entry.');
+      if (operatorExist && operatorExist._id.toString() !== req.params.operatorId) {
+        throw new Error("Duplicate Operator field found. Please remove or modify the entry.");
+      }
     }
 
     const update: any = {
@@ -70,9 +80,10 @@ export const updateOperator = async (req: Request, res: Response, next: NextFunc
     };
 
     const updatedData = await operatorService.updateOperatorById(req.params.operatorId, update);
+
     res.status(200).json({
       success: true,
-      message: 'Operator updated successfully',
+      message: "Operator updated successfully",
       data: updatedData,
     });
   } catch (err) {

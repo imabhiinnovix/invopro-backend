@@ -37,6 +37,7 @@ import {
 
 } from '../../controllers/notivix/notificationMedium.controller';
 import { uploadMultipleFile } from '../../../middlewares/upload.middleware';
+import { triggerPrepareTodayNotifications } from '../../controllers/notivix/notificationPrepared.controller';
 
 const router = Router();
 
@@ -67,5 +68,7 @@ router.put('/medium/update/:id', permissionMiddleware(), updateNotificationMediu
 router.delete('/medium/delete', permissionMiddleware(), deleteNotificationMedium);
 router.get('/medium/list', permissionMiddleware(), listNotificationMediums);
 router.get('/medium/:id', permissionMiddleware(), getNotificationMedium);
+
+router.post("/prepared/trigger", triggerPrepareTodayNotifications);
 
 export default router;

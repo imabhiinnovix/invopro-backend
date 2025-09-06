@@ -18,15 +18,14 @@ import { findEntityById } from "../database/services/common/entity.services";
 import createDefaultDataSourceVersionModel from "../database/models/common/defaultDataSourceVersionModel";
 import { listNotificationFrequency } from "../database/services/notivix/notificationFrequency.service";
 import { findDataSourceById } from "../database/services/common/dataSource.services";
-import { getSchemaNameBasedOnVersionCodeAndOrgCode } from "../utils/common.utils";
+import { getSchemaNameBasedOnVersionCodeAndOrgCode, uniqueCode } from "../utils/common.utils";
 import { getCurrentDataSourceVersion } from "../database/services/common/dataSourceVersion.services";
-
+import { scheduleEmail } from "../utils/notification.utils";
 
 
 // --------------------
 // Helpers
 // --------------------
-
 
 // Combine Date and Time string to Date object
 function combineDateAndTime(date: Date, triggerTime?: string): Date {
@@ -164,6 +163,12 @@ async function resolveRecipientsFromSetting(
 async function resolveRecipients(caseData: any, freqSetting: any, attributeMap: any) {
   const to = await resolveRecipientsFromSetting(caseData, freqSetting.recipients_to, attributeMap);
   const cc = await resolveRecipientsFromSetting(caseData, freqSetting.recipients_cc, attributeMap);
+  return { recipient_to: to, recipient_cc: cc };
+}
+
+async function resolveAckRecipients(caseData: any, freqSetting: any, attributeMap: any) {
+  const to = await resolveRecipientsFromSetting(caseData, freqSetting.acknowledge_to, attributeMap);
+  const cc = await resolveRecipientsFromSetting(caseData, freqSetting.recipients_to, attributeMap);
   return { recipient_to: to, recipient_cc: cc };
 }
 
@@ -314,7 +319,11 @@ case "notcontains":
   case "before":
   case "onOrBefore":
   case "after":
-  case "onOrAfter": {
+  case "onOrAfter":
+  case "beforePast":
+  case "onOrBeforePast":
+  case "afterPast":
+  case "onOrAfterPast": {
     const numVal = Number(cond.value);
     if (cond.timeUnit && !isNaN(numVal)) {
       const now = new Date();
@@ -323,7 +332,7 @@ case "notcontains":
         cond.timeUnit === "h" ? 3600000 : 1000;
 
       let targetDate: Date;
-      if (cond.operator === "before" || cond.operator === "onOrBefore") {
+      if (cond.operator === "before" || cond.operator === "onOrBefore" || cond.operator === "after" || cond.operator === "onOrAfter") {
         // before = now + offset
         targetDate = new Date(now.getTime() + numVal * multiplier);
       } else {
@@ -331,24 +340,24 @@ case "notcontains":
         targetDate = new Date(now.getTime() - numVal * multiplier);
       }
 
-      if (cond.operator === "before") {
+      if (cond.operator === "before" || cond.operator === "beforePast") {
         mongoCond = { $lt: targetDate };
-      } else if (cond.operator === "onOrBefore") {
+      } else if (cond.operator === "onOrBefore" || cond.operator === "onOrBeforePast") {
         mongoCond = { $lte: targetDate };
-      } else if (cond.operator === "after") {
+      } else if (cond.operator === "after" || cond.operator === "afterPast") {
         mongoCond = { $gt: targetDate };
-      } else if (cond.operator === "onOrAfter") {
+      } else if (cond.operator === "onOrAfter" || cond.operator === "onOrAfterPast") {
         mongoCond = { $gte: targetDate };
       }
     } else {
       // fallback plain date (no timeUnit math)
-      if (cond.operator === "before") {
+      if (cond.operator === "before" || cond.operator === "beforePast") {
         mongoCond = { $lt: new Date(cond.value) };
-      } else if (cond.operator === "onOrBefore") {
+      } else if (cond.operator === "onOrBefore" || cond.operator === "onOrBeforePast") {
         mongoCond = { $lte: new Date(cond.value) };
-      } else if (cond.operator === "after") {
+      } else if (cond.operator === "after" || cond.operator === "afterPast") {
         mongoCond = { $gt: new Date(cond.value) };
-      } else if (cond.operator === "onOrAfter") {
+      } else if (cond.operator === "onOrAfter" || cond.operator === "onOrAfterPast") {
         mongoCond = { $gte: new Date(cond.value) };
       }
     }
@@ -1006,20 +1015,22 @@ export async function prepareTodayNotifications() {
         actionsLastUploadedDate: dataSourceVersion?.createdAt,
         source: "cron",
       });
-
+      
       if (template.type === "single") {
         console.log("📬 Preparing single notifications");
         const preparedDocs: any = [];
 
         for (const caseData of allMatchingCases) {
           let ackId: any;
-
-          if (notifType.requiresAcknowledgment) {
+          if (Array.isArray(setting.acknowledge_to) && setting.acknowledge_to.length > 0) {
+            let sender = await resolveRecipientsFromSetting(caseData, [setting.targetEntity], attributeMap);
             console.log(`🔑 Creating acknowledgment for case ${caseData._id}`);
             const ack = await NotificationAcknowledge.create({
-              status: "pending",
-              caseId: caseData._id,
-              notificationTypeId: notifType._id,
+              organizationId: notifType.organizationId,
+              senderId: sender.length ? sender[0] : null ,
+              notificationTriggerId: trigger._id,
+              recipients: await resolveAckRecipients(caseData, setting, attributeMap),
+              identifierKey: uniqueCode(20)
             });
             ackId = ack._id;
           }
@@ -1055,13 +1066,15 @@ export async function prepareTodayNotifications() {
           if(groupKey == 'Unknown')
             continue;  
           let ackId: any;
-
-          if (notifType.requiresAcknowledgment) {
+          if (Array.isArray(setting.acknowledge_to) && setting.acknowledge_to.length > 0) {
+            let sender = await resolveRecipientsFromSetting(groupCases[0], [setting.targetEntity], attributeMap);
             console.log(`🔑 Creating acknowledgment for group ${groupKey}`);
             const ack = await NotificationAcknowledge.create({
-              status: "pending",
-              caseId: groupCases[0]._id,
-              notificationTypeId: notifType._id,
+              organizationId: notifType.organizationId,
+              senderId: sender.length ? sender[0] : null,
+              notificationTriggerId: trigger._id,
+              recipients: await resolveAckRecipients(groupCases[0], setting, attributeMap),
+              identifierKey: uniqueCode(20)
             });
             ackId = ack._id;
           }
@@ -1086,9 +1099,17 @@ export async function prepareTodayNotifications() {
           });
         }
 
-        await PreparedNotification.insertMany(preparedDocs);
-        totalPrepared += preparedDocs.length;
-        console.log(`✅ Inserted ${preparedDocs.length} grouped notifications`);
+        if (preparedDocs.length > 0) {
+          const inserted = await PreparedNotification.insertMany(preparedDocs);
+          totalPrepared += inserted.length;
+
+          // ✅ Schedule each prepared notification in BullMQ
+          for (const notif of inserted) {
+            await scheduleEmail(notif);
+          }
+
+          console.log(`✅ Inserted & scheduled ${inserted.length} notifications`);
+        }
       }
     } catch (error) {
       console.error(`❌ Error preparing notifications for setting ${setting._id}:`, error);
@@ -1098,4 +1119,5 @@ export async function prepareTodayNotifications() {
   console.log(`🏁 Finished. Total notifications prepared: ${totalPrepared}`);
 }
 
-prepareTodayNotifications();
+// Run directly if executed as standalone script
+// prepareTodayNotifications();
