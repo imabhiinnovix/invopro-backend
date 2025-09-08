@@ -1053,11 +1053,15 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                       }
 
                       const fileData = await readExcelFile(newFilePath, readSheetName);
+                      const fileDataWithRowNumber = fileData.map((row, index) => ({
+                        ...row,
+                        fileRowNumber: `${fileName}:${index + 2}`, // +1 to make it 1-based instead of 0-based
+                      }));
 
                       const attributes = entityDetails?.attributes || [];
 
                       const validatedData = await validateFileData({
-                        fileData,
+                        fileData: fileDataWithRowNumber,
                         attributes,
                         versionValue,
                         mapping: jsonMapping,
