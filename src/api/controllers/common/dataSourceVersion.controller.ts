@@ -1350,8 +1350,11 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
 
     const parsedSort = sort ? JSON.parse(sort) : {};
     const parsedFilters = filters ? JSON.parse(filters) : {};
-
-    const query = { dataSourceVersionId, status: 'active' };
+    let query = { status: 'active' };
+    if(dataSourceDetails.versionType != 'constant'){
+      query['dataSourceVersionId'] = dataSourceVersionId;
+    }
+    
 
     const result = await dataSourceVersionValueService.getDataSourceVersionValueV1({
       schemaName,
