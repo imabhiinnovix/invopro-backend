@@ -1895,7 +1895,7 @@ export const deleteMultipleRowsFromVersion = async (req: Request, res: Response,
     });
     await dataSourceVersionValueService.deleteVersionValues(schemaName, {
       _id: { $in: ids.map((id: string) => new Types.ObjectId(id)) },
-      dataSourceVersionId: versionDetails._id,
+      // dataSourceVersionId: versionDetails._id,
     });
 
     return res.status(200).json({
