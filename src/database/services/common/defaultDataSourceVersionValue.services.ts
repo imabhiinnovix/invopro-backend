@@ -64,6 +64,7 @@ export const updateDataSourceVersionValue = async (
           $set: {
             ...row,
             updatedAt: new Date(),
+            status: "active"
           },
         },
         upsert: true,
