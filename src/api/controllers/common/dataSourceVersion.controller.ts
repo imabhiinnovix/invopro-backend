@@ -20,8 +20,7 @@ import * as customReportServices from '../../../database/services/reportivix/cus
 import { generateCustomReportsFunction } from '../reportivix/customReport.controller';
 import * as reportRequestService from '../../../database/services/reportivix/reportRequest.services';
 import { DateTime } from 'luxon';
-import mongoose, { Schema } from 'mongoose';
-import { version } from 'os';
+import mongoose from 'mongoose';
 import { getEntityAttribute, getModelForEntity } from '../../../utils/entity.utils';
 import { Types } from 'mongoose';
 import { findEntityById } from '../../../database/services/common/entity.services';
@@ -56,175 +55,6 @@ export const ERROR_CODES = {
     message: 'Duplicate combination of unique keys found.',
   },
 };
-
-function evaluateCondition(fieldValue: any, operator: string, expectedValue: any, fieldType: string): boolean {
-  if (fieldValue === undefined || fieldValue === null) {
-    if (operator === 'blank') return true;
-    if (operator === 'notblank') return false;
-    fieldValue = '';
-  }
-
-  switch (fieldType) {
-    case 'number':
-      fieldValue = parseFloat(fieldValue);
-      expectedValue = parseFloat(expectedValue);
-      switch (operator) {
-        case 'lt':
-          return fieldValue < expectedValue;
-        case 'lte':
-          return fieldValue <= expectedValue;
-        case 'gt':
-          return fieldValue > expectedValue;
-        case 'gte':
-          return fieldValue >= expectedValue;
-        case 'eq':
-          return fieldValue === expectedValue;
-        case 'ne':
-          return fieldValue !== expectedValue;
-        case 'blank':
-          return isNaN(fieldValue);
-        case 'notblank':
-          return !isNaN(fieldValue);
-      }
-      break;
-
-    case 'date':
-      const dateValue = new Date(fieldValue);
-      const dateExpected = new Date(expectedValue);
-      switch (operator) {
-        case 'before':
-          return dateValue < dateExpected;
-        case 'after':
-          return dateValue > dateExpected;
-        case 'on':
-          return dateValue.toDateString() === dateExpected.toDateString();
-        case 'noton':
-          return dateValue.toDateString() !== dateExpected.toDateString();
-        case 'blank':
-          return isNaN(dateValue.getTime());
-        case 'notblank':
-          return !isNaN(dateValue.getTime());
-      }
-      break;
-
-    case 'boolean':
-      fieldValue = fieldValue === 'true' || fieldValue === true;
-      expectedValue = expectedValue === 'true' || expectedValue === true;
-      switch (operator) {
-        case 'eq':
-          return fieldValue === expectedValue;
-        case 'ne':
-          return fieldValue !== expectedValue;
-        case 'blank':
-          return fieldValue === null || fieldValue === undefined;
-        case 'notblank':
-          return fieldValue !== null && fieldValue !== undefined;
-      }
-      break;
-
-    case 'text':
-    case 'richtext':
-    case 'url':
-    case 'option':
-    case 'multioption':
-    case 'user':
-    default:
-      const stringVal = String(fieldValue).toLowerCase();
-      const expected = String(expectedValue).toLowerCase();
-      switch (operator) {
-        case 'contains':
-          return stringVal.includes(expected);
-        case 'notcontains':
-          return !stringVal.includes(expected);
-        case 'eq':
-          return stringVal === expected;
-        case 'ne':
-          return stringVal !== expected;
-        case 'startswith':
-          return stringVal.startsWith(expected);
-        case 'endswith':
-          return stringVal.endsWith(expected);
-        case 'blank':
-          return stringVal.trim() === '';
-        case 'notblank':
-          return stringVal.trim() !== '';
-      }
-  }
-
-  return false;
-}
-export async function validateFileDataCondition({ fileData, attributeSetting, conditions, jsonMapping }) {
-  if (!conditions || conditions.length === 0) return fileData;
-
-  const filteredData: Record<string, any>[] = [];
-
-  for (const row of fileData) {
-    let allConditionsMet = true;
-
-    for (const condition of conditions) {
-      const baseField = condition.field.split('.')[0];
-      const mappedField = jsonMapping[baseField];
-
-      // Resolve fieldValue based on whether mapping is a string or array
-      let fieldValue: any;
-      if (Array.isArray(mappedField)) {
-        for (const key of mappedField) {
-          const candidate = row[key];
-          if (candidate !== undefined && candidate !== null && candidate !== '') {
-            fieldValue = candidate;
-            break;
-          }
-        }
-      } else {
-        fieldValue = row[mappedField];
-      }
-
-      // Find the attribute setting for this condition.field
-      const attr = attributeSetting?.find((a) => a.name === baseField);
-
-      // Check for reference resolution
-      if (
-        attr?.referenceEntitySetting?.refEntityId &&
-        attr?.referenceEntitySetting?.refEntityField &&
-        ['one_to_one', 'many_to_one'].includes(attr.referenceEntitySetting?.relationType)
-      ) {
-        const refEntityId: string = attr.referenceEntitySetting.refEntityId;
-        const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
-
-        const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
-        const RefModel = await getModelForEntity(refEntityId);
-
-        const referencedDoc: any = await RefModel.findOne({
-          [`rowData.${refEntityField.name}`]: {
-            $regex: `^${fieldValue}$`,
-            $options: 'i',
-          },
-        });
-
-        // If reference is found, replace fieldValue with resolved value
-        if (referencedDoc) {
-          const subField = condition.field.split('.')[1];
-          fieldValue = referencedDoc?.rowData?.[subField];
-        } else {
-          allConditionsMet = false;
-          break;
-        }
-      }
-
-      const result = evaluateCondition(fieldValue, condition.operator, condition.value, condition.fieldType);
-      if (!result) {
-        allConditionsMet = false;
-        break;
-      }
-    }
-
-    if (allConditionsMet) {
-      filteredData.push(row);
-    }
-  }
-
-  return filteredData;
-}
 
 async function validateAndConvert({
   value,
@@ -754,14 +584,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
           const entityDetails = dataSourceDetails.entityId as any;
           let attributes = entityDetails?.attributes || [];
           const versionValueData = versionValue;
-
-          const fileData = await validateFileDataCondition({
-            fileData: combinedData,
-            attributeSetting: attributes,
-            conditions: dataSourceDetails.condition,
-            jsonMapping,
-          });
-
+          const fileData = combinedData;
           attributes = await autoPopulateAttributeOption({
             fileData: fileData,
             entityId: dataSourceDetails?.entityId || '',
