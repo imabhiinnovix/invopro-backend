@@ -179,6 +179,9 @@ export async function validateFileDataCondition({ fileData, attributeSetting, co
         fieldValue = row[mappedField];
       }
 
+      if(!fieldValue)
+        continue;
+
       // Find the attribute setting for this condition.field
       const attr = attributeSetting?.find((a) => a.name === baseField);
 
