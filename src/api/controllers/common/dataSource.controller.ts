@@ -26,6 +26,7 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       uniqueAttributeRules,
       isShowMenu,
       fieldSettings = [],
+      condition = [],
     } = req.body;
 
     const { organizationId, userId, orgCode } = req.user;
@@ -53,6 +54,7 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       description,
       uniqueAttributeRules,
       isShowMenu,
+      condition,
       fieldSettings, // save directly
     });
 
@@ -74,7 +76,15 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
 
 export const updateDataSource = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, versionType, description, uniqueAttributeRules, isShowMenu, fieldSettings = [] } = req.body;
+    const {
+      name,
+      versionType,
+      description,
+      uniqueAttributeRules,
+      isShowMenu,
+      fieldSettings = [],
+      condition = [],
+    } = req.body;
 
     const { userId } = req.user;
 
@@ -85,6 +95,7 @@ export const updateDataSource = async (req: Request, res: Response, next: NextFu
       description,
       uniqueAttributeRules,
       isShowMenu,
+      condition,
       fieldSettings, // save directly
     });
 
