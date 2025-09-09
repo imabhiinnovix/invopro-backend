@@ -331,7 +331,24 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
                 )
               : [];
 
-            return ds;
+             // ---------- NEW: fetch version info ----------
+            const latestVersion = await dataSourceVersionService.getDataSourceVersion({
+              query: { dataSourceId: ds._id },
+              populate: [],
+              sort: { createdAt: -1 },
+            });
+
+            const lastUploadedVersion: any = await dataSourceVersionService.getDataSourceVersion({
+              query: { dataSourceId: ds._id, status: 'completed', isCurrent: true },
+              populate: [],
+              sort: { createdAt: -1 },
+            });
+
+            return {
+              ...ds.toObject?.() || ds,
+              dataSourceVersion: latestVersion || null,
+              lastUploadedDate: lastUploadedVersion ? lastUploadedVersion.createdAt : null,
+            };
           })
         )
       : [];
@@ -359,28 +376,10 @@ export const getDataSourceById = async (req: Request, res: Response, next: NextF
       });
     }
 
-    // fetch latest version (any status)
-    const latestVersion = await dataSourceVersionService.getDataSourceVersion({
-      query: { dataSourceId: dataSourceDetails._id },
-      populate: [],
-      sort: { createdAt: -1 },
-    });
-
-    // fetch last uploaded (completed + isCurrent)
-    const lastUploadedVersion: any = await dataSourceVersionService.getDataSourceVersion({
-      query: { dataSourceId: dataSourceDetails._id, status: 'completed', isCurrent: true },
-      populate: [],
-      sort: { createdAt: -1 },
-    });
-
     res.status(200).json({
       success: true,
       message: 'Data Source Details Fetched Successfully',
-      data: {
-        ...dataSourceDetails.toObject(),
-        dataSourceVersion: latestVersion || null,
-        lastUploadedDate: lastUploadedVersion ? lastUploadedVersion.createdAt : null,
-      },
+      data: dataSourceDetails
     });
   } catch (err) {
     next(err);
