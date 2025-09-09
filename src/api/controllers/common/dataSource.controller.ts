@@ -338,16 +338,44 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
 
 export const getDataSourceById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const dataSourceDetails = await dataSourceService.findDataSourceById(req.params.dataSourceId);
+    // existing call to service
+    const dataSourceDetails: any = await dataSourceService.findDataSourceById(req.params.dataSourceId);
+
+    if (!dataSourceDetails) {
+      return res.status(404).json({
+        success: false,
+        message: 'Data Source not found',
+      });
+    }
+
+    // fetch latest version (any status)
+    const latestVersion = await dataSourceVersionService.getDataSourceVersion({
+      query: { dataSourceId: dataSourceDetails._id },
+      populate: [],
+      sort: { createdAt: -1 },
+    });
+
+    // fetch last uploaded (completed + isCurrent)
+    const lastUploadedVersion: any = await dataSourceVersionService.getDataSourceVersion({
+      query: { dataSourceId: dataSourceDetails._id, status: 'completed', isCurrent: true },
+      populate: [],
+      sort: { createdAt: -1 },
+    });
+
     res.status(200).json({
       success: true,
       message: 'Data Source Details Fetched Successfully',
-      data: dataSourceDetails,
+      data: {
+        ...dataSourceDetails.toObject(),
+        dataSourceVersion: latestVersion || null,
+        lastUploadedDate: lastUploadedVersion ? lastUploadedVersion.createdAt : null,
+      },
     });
   } catch (err) {
     next(err);
   }
 };
+
 
 export const getDataSourceWithFieldOptionDetails = async (req: Request, res: Response, next: NextFunction) => {
   try {
