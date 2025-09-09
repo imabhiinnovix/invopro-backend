@@ -965,16 +965,24 @@ export async function seedDataSource({ organizationId, createdBy, updatedBy, ent
   });
 
   for (const dataSource of dataSources) {
-    // Check if the datasource already exists
-    const existingDataSource = await DataSource.findById(dataSource._id);
-    if (!existingDataSource) {
-      // If it doesn't exist, create a new data source
-      const newDataSource = new DataSource(dataSource);
+  const existingDataSource = await DataSource.findOne({
+    $or: [
+      { _id: dataSource._id },
+      { name: dataSource.name, organizationId: dataSource.organizationId },
+    ],
+  });
 
-      await newDataSource.save();
-      console.info(`New data source with payload ${dataSource} created successfully.`);
-    } else {
-      console.info(`New data source with datasource id ${dataSource._id} already exists.`);
-    }
+  if (!existingDataSource) {
+    const newDataSource = new DataSource(dataSource);
+    await newDataSource.save();
+    console.info(
+      `New data source '${dataSource.name}' created successfully for org ${dataSource.organizationId}.`
+    );
+  } else {
+    console.info(
+      `Data source '${dataSource.name}' already exists for org ${dataSource.organizationId}. Skipping.`
+    );
   }
+}
+
 }
