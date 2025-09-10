@@ -121,87 +121,87 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
           isErrorLog: 0,
         }
       );
-      const entityDetails = dataSourceDetails?.entityId as any;
-      const attributes = entityDetails?.attributes || [];
-      const uniqueAttributeRules = dataSourceDetails?.uniqueAttributeRules || [];
+      // const entityDetails = dataSourceDetails?.entityId as any;
+      // const attributes = entityDetails?.attributes || [];
+      // const uniqueAttributeRules = dataSourceDetails?.uniqueAttributeRules || [];
 
-      if (uniqueAttributeRules.length > 0 && allProcessedVersionValue.length > 0) {
-        // ✅ build quick lookup map from attributeId → attributeName
-        const attributeIdToNameMap = attributes.reduce(
-          (acc, attr) => {
-            acc[attr._id.toString()] = attr.name;
-            return acc;
-          },
-          {} as Record<string, string>
-        );
-        const seenKeys = new Set<string>();
-        const validRows: any[] = [];
-        const duplicateRowNumbers: number[] = [];
+      // if (uniqueAttributeRules.length > 0 && allProcessedVersionValue.length > 0) {
+      //   // ✅ build quick lookup map from attributeId → attributeName
+      //   const attributeIdToNameMap = attributes.reduce(
+      //     (acc, attr) => {
+      //       acc[attr._id.toString()] = attr.name;
+      //       return acc;
+      //     },
+      //     {} as Record<string, string>
+      //   );
+      //   const seenKeys = new Set<string>();
+      //   const validRows: any[] = [];
+      //   const duplicateRowNumbers: number[] = [];
 
-        for (const row of allProcessedVersionValue) {
-          let compositeKey = '';
+      //   for (const row of allProcessedVersionValue) {
+      //     let compositeKey = '';
 
-          for (const rule of uniqueAttributeRules) {
-            const keyValues: string[] = [];
-            let validRule = true;
+      //     for (const rule of uniqueAttributeRules) {
+      //       const keyValues: string[] = [];
+      //       let validRule = true;
 
-            for (const attrId of rule) {
-              const attrName = attributeIdToNameMap[attrId.toString()];
-              if (!attrName) {
-                validRule = false;
-                break;
-              }
+      //       for (const attrId of rule) {
+      //         const attrName = attributeIdToNameMap[attrId.toString()];
+      //         if (!attrName) {
+      //           validRule = false;
+      //           break;
+      //         }
 
-              const val = row.rowData?.[attrName];
-              if (val === undefined || val === null || val === '') {
-                validRule = false;
-                break;
-              }
+      //         const val = row.rowData?.[attrName];
+      //         if (val === undefined || val === null || val === '') {
+      //           validRule = false;
+      //           break;
+      //         }
 
-              keyValues.push(String(val).toLowerCase().trim());
-            }
+      //         keyValues.push(String(val).toLowerCase().trim());
+      //       }
 
-            if (validRule) {
-              compositeKey = keyValues.join('|');
-              break;
-            }
-          }
+      //       if (validRule) {
+      //         compositeKey = keyValues.join('|');
+      //         break;
+      //       }
+      //     }
 
-          if (compositeKey) {
-            if (seenKeys.has(compositeKey)) {
-              duplicateRowNumbers.push(row.rowNumber);
-            } else {
-              seenKeys.add(compositeKey);
-              validRows.push(row);
-            }
-          } else {
-            // no valid composite key → just keep row
-            validRows.push(row);
-          }
-        }
+      //     if (compositeKey) {
+      //       if (seenKeys.has(compositeKey)) {
+      //         duplicateRowNumbers.push(row.rowNumber);
+      //       } else {
+      //         seenKeys.add(compositeKey);
+      //         validRows.push(row);
+      //       }
+      //     } else {
+      //       // no valid composite key → just keep row
+      //       validRows.push(row);
+      //     }
+      //   }
 
-        // ✅ discard duplicates
-        if (duplicateRowNumbers.length > 0) {
-          await dataImportErrorServices.updateDataImportErrors(
-            {
-              dataSourceVersionId,
-              rowNumber: { $in: duplicateRowNumbers },
-            },
-            { status: 'discarded' }
-          );
+      //   // ✅ discard duplicates
+      //   if (duplicateRowNumbers.length > 0) {
+      //     await dataImportErrorServices.updateDataImportErrors(
+      //       {
+      //         dataSourceVersionId,
+      //         rowNumber: { $in: duplicateRowNumbers },
+      //       },
+      //       { status: 'discarded' }
+      //     );
 
-          await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
-            errorSchemaName,
-            {
-              dataSourceVersionId: new ObjectId(dataSourceVersionId),
-              rowNumber: { $in: duplicateRowNumbers },
-            },
-            { isErrorLog: 1000 }
-          );
-        }
+      //     await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+      //       errorSchemaName,
+      //       {
+      //         dataSourceVersionId: new ObjectId(dataSourceVersionId),
+      //         rowNumber: { $in: duplicateRowNumbers },
+      //       },
+      //       { isErrorLog: 1000 }
+      //     );
+      //   }
 
-        allProcessedVersionValue = validRows;
-      }
+      //   allProcessedVersionValue = validRows;
+      // }
 
       if (allProcessedVersionValue.length > 0) {
         await dataSourceVersionValueService.createDataSourceVersionValue(mainTableSchemaName, allProcessedVersionValue);
