@@ -83,21 +83,27 @@ export const updateDataSource = async (req: Request, res: Response, next: NextFu
       uniqueAttributeRules,
       isShowMenu,
       fieldSettings = [],
-      condition = [],
+      condition, // don't default here
     } = req.body;
 
     const { userId } = req.user;
 
-    await dataSourceService.updateDataSource(req.params.dataSourceId, {
+    const updatePayload: any = {
       name,
       versionType,
       updatedBy: userId,
       description,
       uniqueAttributeRules,
       isShowMenu,
-      condition,
-      fieldSettings, // save directly
-    });
+      fieldSettings,
+    };
+
+    // only set condition if it’s present in the body
+    if (condition !== undefined) {
+      updatePayload.condition = condition;
+    }
+
+    await dataSourceService.updateDataSource(req.params.dataSourceId, updatePayload);
 
     res.status(201).json({
       success: true,
