@@ -160,6 +160,7 @@ export async function validateFileDataCondition({ fileData, attributeSetting, co
 
   for (const row of fileData) {
     let allConditionsMet = true;
+    let hasUnresolved = false; // internal only
 
     for (const condition of conditions) {
       const baseField = condition.field.split('.')[0];
@@ -179,8 +180,10 @@ export async function validateFileDataCondition({ fileData, attributeSetting, co
         fieldValue = row[mappedField];
       }
 
-      if(!fieldValue)
+      // If missing → mark unresolved and skip this condition
+      if (!fieldValue) {
         continue;
+      }
 
       // Find the attribute setting for this condition.field
       const attr = attributeSetting?.find((a) => a.name === baseField);
@@ -198,22 +201,22 @@ export async function validateFileDataCondition({ fileData, attributeSetting, co
         const RefModel = await getModelForEntity(refEntityId);
 
         const escapedValue = escapeRegExp(fieldValue.trim());
-        const regex = new RegExp(`^${escapedValue}$`, 'i'); // ✅ use RegExp object
+        const regex = new RegExp(`^${escapedValue}$`, 'i');
 
         const referencedDoc: any = await RefModel.findOne({
           [`rowData.${refEntityField.name}`]: regex,
         });
 
-        // If reference is found, replace fieldValue with resolved value
         if (referencedDoc) {
           const subField = condition.field.split('.')[1];
           fieldValue = referencedDoc?.rowData?.[subField];
         } else {
-          allConditionsMet = false;
-          break;
+          hasUnresolved = true;
+          continue;
         }
       }
 
+      // Run condition only if value resolved
       const result = evaluateCondition(fieldValue, condition.operator, condition.value, condition.fieldType);
       if (!result) {
         allConditionsMet = false;
@@ -221,13 +224,17 @@ export async function validateFileDataCondition({ fileData, attributeSetting, co
       }
     }
 
-    if (allConditionsMet) {
+    // Keep row if:
+    //  - All conditions are met, OR
+    //  - Some unresolved conditions exist
+    if (allConditionsMet || hasUnresolved) {
       filteredData.push(row);
     }
   }
 
   return filteredData;
 }
+
 
 async function validateAndConvert({
   value,
