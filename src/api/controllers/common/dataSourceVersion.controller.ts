@@ -390,6 +390,9 @@ async function validateFileData({
       rowNumber: index + 1,
     };
 
+    // track temporary __display keys for cleanup later
+    const tempDisplayAttrs: string[] = [];
+
     for (const attr of attributes) {
       const attrName = attr.name;
       const fileKey = mapping[attrName];
@@ -418,9 +421,9 @@ async function validateFileData({
         (value === undefined || value === null || value === '')
       ) {
         errors.push({
-          entityId: entityId,
-          dataSourceId: dataSourceId,
-          dataSourceVersionId: dataSourceVersionId,
+          entityId,
+          dataSourceId,
+          dataSourceVersionId,
           rowNumber: index + 1,
           fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
           attributeName: attrName,
@@ -447,18 +450,18 @@ async function validateFileData({
           const RefModel = await getModelForEntity(refEntityId);
 
           const escapedValue = escapeRegExp(value.trim());
-          const regex = new RegExp(`^${escapedValue}$`, 'i'); // ✅ use RegExp object
+          const regex = new RegExp(`^${escapedValue}$`, 'i');
 
-          const referencedDoc = await RefModel.findOne({
+          const referencedDoc: any = await RefModel.findOne({
             [`rowData.${refEntityField.name}`]: regex,
           });
 
           if (!referencedDoc) {
             const refDataSourceDetails = await dataSourceService.findDataSourcesByEntityId(refEntityId);
             errors.push({
-              entityId: entityId,
-              dataSourceId: dataSourceId,
-              dataSourceVersionId: dataSourceVersionId,
+              entityId,
+              dataSourceId,
+              dataSourceVersionId,
               rowNumber: index + 1,
               fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
               fileAttributeValue: value,
@@ -477,6 +480,8 @@ async function validateFileData({
             newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
           } else {
             newRow.rowData[attrName] = referencedDoc._id;
+            newRow.rowData[`${attrName}__display`] = referencedDoc.rowData?.[refEntityField.name];
+            tempDisplayAttrs.push(`${attrName}__display`); // ✅ track for cleanup
           }
         } else {
           const { isValid, convertedValue, attributeOptionValue } = await validateAndConvert({
@@ -489,9 +494,9 @@ async function validateFileData({
           if (!isValid) {
             if (['option', 'multioption'].includes(attr.type)) {
               errors.push({
-                entityId: entityId,
-                dataSourceId: dataSourceId,
-                dataSourceVersionId: dataSourceVersionId,
+                entityId,
+                dataSourceId,
+                dataSourceVersionId,
                 rowNumber: index + 1,
                 fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
                 fileAttributeValue: value,
@@ -508,9 +513,9 @@ async function validateFileData({
               });
             } else {
               errors.push({
-                entityId: entityId,
-                dataSourceId: dataSourceId,
-                dataSourceVersionId: dataSourceVersionId,
+                entityId,
+                dataSourceId,
+                dataSourceVersionId,
                 rowNumber: index + 1,
                 fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
                 fileAttributeValue: value,
@@ -532,9 +537,12 @@ async function validateFileData({
         }
       }
     }
+
+    // handle unique attribute validation
     if (Array.isArray(uniqueAttributeRules) && uniqueAttributeRules.length > 0) {
       for (const rule of uniqueAttributeRules) {
         const keyValues: string[] = [];
+        const displayKeyValues: string[] = [];
 
         let isValidCombination = true;
 
@@ -546,16 +554,21 @@ async function validateFileData({
           }
 
           const val = newRow.rowData[attrName];
-
           if (val === undefined || val === null || `${val}`.trim() === '') {
             isValidCombination = false;
             break;
           }
+
           keyValues.push(`${val}`.toLowerCase().trim());
+
+          const displayKey = `${attrName}__display`;
+          const displayValue = newRow.rowData[displayKey] ?? val;
+          displayKeyValues.push(`${displayValue}`.trim());
         }
 
         if (isValidCombination) {
           const compositeKey = keyValues.join('|');
+          const displayCompositeKey = displayKeyValues.join('|');
 
           if (seenCompositeKeys.has(compositeKey)) {
             errors.push({
@@ -565,20 +578,25 @@ async function validateFileData({
               rowNumber: index + 1,
               errorType: ERROR_CODES.DUPLICATE_ENTRY.type,
               errorCode: ERROR_CODES.DUPLICATE_ENTRY.code,
-              fileAttributeValue: compositeKey,
+              fileAttributeValue: displayCompositeKey,
               fileRowNumber: rowNum,
               fileName,
-              errorMessage: `Error: File ${fileName}, Row ${rowNum} - Duplicate combination found for unique keys: ${compositeKey}.`,
+              errorMessage: `Error: File ${fileName}, Row ${rowNum} - Duplicate combination found for unique keys: ${displayCompositeKey}.`,
             });
             newRow.isErrorLog = 1;
           } else {
             seenCompositeKeys.add(compositeKey);
           }
 
-          // ✅ apply only first valid rule, skip others
+          // apply only first valid rule, skip others
           break;
         }
       }
+    }
+
+    // ✅ cleanup temporary __display keys (always, not just for unique)
+    for (const tempKey of tempDisplayAttrs) {
+      delete newRow.rowData[tempKey];
     }
 
     newRowData.push(newRow);
@@ -589,6 +607,7 @@ async function validateFileData({
     newRowData,
   };
 }
+
 
 export async function validateRowData({
   rowData,
