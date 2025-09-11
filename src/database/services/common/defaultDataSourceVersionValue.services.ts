@@ -456,7 +456,7 @@ export const getDataSourceVersionValueV1 = async ({
 
         for (const key in attributesMap) {
           const attr = attributesMap[key];
-          console.log('attr', attr);
+          // console.log('attr', attr);
           // --------- Mapping attributes logic ---------
           if (attr.referenceEntitySetting?.relationType?.startsWith('mapping_') && rowData[key] != null) {
             const isMany = attr.referenceEntitySetting.relationType === 'mapping_many_to_one';
@@ -485,7 +485,7 @@ export const getDataSourceVersionValueV1 = async ({
               // Collect subValues for each subKey
               for (const subKey in doc.rowData) {
                 if (subKey === displayField) continue;
-                console.log('attr.referenceEntitySetting.refEntityId', attr.referenceEntitySetting.refEntityId, subKey);
+                // console.log('attr.referenceEntitySetting.refEntityId', attr.referenceEntitySetting.refEntityId, subKey);
                 const refAttr = await getAttributeByName(attr.referenceEntitySetting.refEntityId, subKey);
                 if (!refAttr?.referenceEntitySetting) continue;
 
@@ -524,7 +524,7 @@ export const getDataSourceVersionValueV1 = async ({
 
         for (const key in refAttributesMap) {
           const attr = refAttributesMap[key];
-          console.log('attr', attr);
+          // console.log('attr', attr);
           // --------- Mapping attributes logic ---------
           if (attr.referenceEntitySetting?.relationType?.startsWith('mapping_') && rowData[key] != null) {
             const isMany = attr.referenceEntitySetting.relationType === 'mapping_many_to_one';
@@ -553,7 +553,7 @@ export const getDataSourceVersionValueV1 = async ({
             const parentId = resolvedObj._id; // this is the ObjectId you want
 
             const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: parentId }).lean();
-            console.log('relatedDocs', relatedDocs);
+            // console.log('relatedDocs', relatedDocs);
             for (const doc of relatedDocs) {
               if (!doc?.rowData) continue;
 
@@ -562,7 +562,7 @@ export const getDataSourceVersionValueV1 = async ({
               // Collect subValues for each subKey
               for (const subKey in doc.rowData) {
                 if (subKey === displayField) continue;
-                console.log('attr.referenceEntitySetting.refEntityId', attr.referenceEntitySetting.refEntityId, subKey);
+                // console.log('attr.referenceEntitySetting.refEntityId', attr.referenceEntitySetting.refEntityId, subKey);
                 const refAttr = await getAttributeByName(attr.referenceEntitySetting.refEntityId, subKey);
                 if (!refAttr?.referenceEntitySetting) continue;
 

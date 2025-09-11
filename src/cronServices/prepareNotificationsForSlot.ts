@@ -249,171 +249,143 @@ async function buildLeafFilter(cond: any, attributeMap: Map<string, any>): Promi
   // Resolve field path, including refAttributeId chain if any
   const fieldPath = await resolveFieldPath(attr, cond.refAttributeId);
 
-  // Map operator
+  // Escape regex for exact match
+  function escapeRegExp(str: string) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  // Trim a value or array of values
+  function trimValues(values: any): string[] {
+    if (!values) return [];
+    if (!Array.isArray(values)) values = [values];
+    return values
+      .flatMap(v => (typeof v === "string" && v.includes(",") ? v.split(",") : v))
+      .map(v => (typeof v === "string" ? v.trim() : v))
+      .filter(v => v !== "");
+  }
+
+  // Build regex filter for multiple values
+  function buildRegexOr(values: string[], negate = false) {
+    if (values.length === 1) {
+      return negate
+        ? { [fieldPath]: { $not: { $regex: `^${escapeRegExp(values[0])}$`, $options: "i" } } }
+        : { [fieldPath]: { $regex: `^${escapeRegExp(values[0])}$`, $options: "i" } };
+    }
+    const conditions = values.map(v => ({
+      [fieldPath]: negate
+        ? { $not: { $regex: `^${escapeRegExp(v)}$`, $options: "i" } }
+        : { $regex: `^${escapeRegExp(v)}$`, $options: "i" },
+    }));
+    return negate ? { $and: conditions } : { $or: conditions };
+  }
+
   let mongoCond: any;
- switch (cond.operator) {
-  // Equality
-  case "eq":
-    mongoCond = { $eq: cond.value };
-    break;
-  case "ne":
-    mongoCond = { $ne: cond.value };
-    break;
 
-  // Range (numeric / date)
-  // case "lt":
-  // case "lte":
-  // case "gt":
-  // case "gte": {
-  //   const numVal = Number(cond.value);
-  //   if (cond.timeUnit && !isNaN(numVal)) {
-  //     const now = new Date();
-  //     const multiplier =
-  //       cond.timeUnit === "d" ? 86400000 :
-  //       cond.timeUnit === "h" ? 3600000 : 1000;
-  //     const targetDate = new Date(now.getTime() + numVal * multiplier);
-  //     mongoCond = { [`$${cond.operator}`]: targetDate };
-  //   } else {
-  //     mongoCond = { [`$${cond.operator}`]: cond.value };
-  //   }
-  //   break;
-  // }
+  switch (cond.operator) {
+    case "eq":
+      mongoCond = buildRegexOr(trimValues(cond.value), false);
+      break;
 
-  // Text / array checks
-case "contains":
-  mongoCond = { 
-    $in: Array.isArray(cond.value) 
-      ? cond.value.flatMap(v => typeof v === 'string' && v.includes(',') ? v.split(',').map(s => s.trim()) : v) 
-      : (typeof cond.value === 'string' && cond.value.includes(',') 
-          ? cond.value.split(',').map(s => s.trim()) 
-          : [cond.value]) 
-  };
-  break;
+    case "ne":
+      mongoCond = buildRegexOr(trimValues(cond.value), true);
+      break;
 
-case "notcontains":
-  mongoCond = { 
-    $nin: Array.isArray(cond.value) 
-      ? cond.value.flatMap(v => typeof v === 'string' && v.includes(',') ? v.split(',').map(s => s.trim()) : v) 
-      : (typeof cond.value === 'string' && cond.value.includes(',') 
-          ? cond.value.split(',').map(s => s.trim()) 
-          : [cond.value]) 
-  };
-  break;
+    case "contains":
+      mongoCond = buildRegexOr(trimValues(cond.value), false);
+      break;
 
-  case "startswith":
-    mongoCond = { $regex: `^${cond.value}`, $options: "i" };
-    break;
-  case "endswith":
-    mongoCond = { $regex: `${cond.value}$`, $options: "i" };
-    break;
+    case "notcontains":
+      mongoCond = buildRegexOr(trimValues(cond.value), true);
+      break;
 
-  // Blank / Not Blank
-  case "blank":
-    mongoCond = { $in: [null, ""] };
-    break;
-  case "notblank":
-    mongoCond = { $nin: [null, ""] };
-    break;
+    case "startswith":
+      mongoCond = { [fieldPath]: { $regex: `^${escapeRegExp(trimValues(cond.value)[0])}`, $options: "i" } };
+      break;
 
-  // Relative Date Operators (with timeUnit support)
-  case "before":
-  case "onOrBefore":
-  case "after":
-  case "onOrAfter":
-  case "beforePast":
-  case "onOrBeforePast":
-  case "afterPast":
-  case "onOrAfterPast": {
-    const numVal = Number(cond.value);
-    if (cond.timeUnit && !isNaN(numVal)) {
+    case "endswith":
+      mongoCond = { [fieldPath]: { $regex: `${escapeRegExp(trimValues(cond.value)[0])}$`, $options: "i" } };
+      break;
+
+    case "blank":
+      mongoCond = { [fieldPath]: { $in: [null, ""] } };
+      break;
+
+    case "notblank":
+      mongoCond = { [fieldPath]: { $nin: [null, ""] } };
+      break;
+
+    // Date operators
+    case "before":
+    case "onOrBefore":
+    case "after":
+    case "onOrAfter":
+    case "beforePast":
+    case "onOrBeforePast":
+    case "afterPast":
+    case "onOrAfterPast": {
+      const numVal = Number(cond.value);
       const now = new Date();
-      const multiplier =
-        cond.timeUnit === "d" ? 86400000 :
-        cond.timeUnit === "h" ? 3600000 : 1000;
-
+      const multiplier = cond.timeUnit === "d" ? 86400000 : cond.timeUnit === "h" ? 3600000 : 1000;
       let targetDate: Date;
-      if (cond.operator === "before" || cond.operator === "onOrBefore" || cond.operator === "after" || cond.operator === "onOrAfter") {
-        // before = now + offset
+
+      if (["before", "onOrBefore", "after", "onOrAfter"].includes(cond.operator)) {
         targetDate = new Date(now.getTime() + numVal * multiplier);
       } else {
-        // after = now - offset
         targetDate = new Date(now.getTime() - numVal * multiplier);
       }
 
-      if (cond.operator === "before" || cond.operator === "beforePast") {
-        mongoCond = { $lt: targetDate };
-      } else if (cond.operator === "onOrBefore" || cond.operator === "onOrBeforePast") {
-        mongoCond = { $lte: targetDate };
-      } else if (cond.operator === "after" || cond.operator === "afterPast") {
-        mongoCond = { $gt: targetDate };
-      } else if (cond.operator === "onOrAfter" || cond.operator === "onOrAfterPast") {
-        mongoCond = { $gte: targetDate };
-      }
-    } else {
-      // fallback plain date (no timeUnit math)
-      if (cond.operator === "before" || cond.operator === "beforePast") {
-        mongoCond = { $lt: new Date(cond.value) };
-      } else if (cond.operator === "onOrBefore" || cond.operator === "onOrBeforePast") {
-        mongoCond = { $lte: new Date(cond.value) };
-      } else if (cond.operator === "after" || cond.operator === "afterPast") {
-        mongoCond = { $gt: new Date(cond.value) };
-      } else if (cond.operator === "onOrAfter" || cond.operator === "onOrAfterPast") {
-        mongoCond = { $gte: new Date(cond.value) };
-      }
+      if (cond.operator === "before" || cond.operator === "beforePast") mongoCond = { [fieldPath]: { $lt: targetDate } };
+      else if (cond.operator === "onOrBefore" || cond.operator === "onOrBeforePast") mongoCond = { [fieldPath]: { $lte: targetDate } };
+      else if (cond.operator === "after" || cond.operator === "afterPast") mongoCond = { [fieldPath]: { $gt: targetDate } };
+      else if (cond.operator === "onOrAfter" || cond.operator === "onOrAfterPast") mongoCond = { [fieldPath]: { $gte: targetDate } };
+      break;
     }
-    break;
+
+    case "on":
+      mongoCond = { [fieldPath]: { $gte: new Date(cond.value), $lt: new Date(new Date(cond.value).getTime() + 86400000) } };
+      break;
+
+    case "noton":
+      mongoCond = { [fieldPath]: { $not: { $gte: new Date(cond.value), $lt: new Date(new Date(cond.value).getTime() + 86400000) } } };
+      break;
+
+    case "onOrAfterToday": {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      mongoCond = { [fieldPath]: { $gte: today } };
+      break;
+    }
+
+    case "onOrBeforeToday": {
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      mongoCond = { [fieldPath]: { $lte: today } };
+      break;
+    }
+
+    case "afterToday": {
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      mongoCond = { [fieldPath]: { $gt: today } };
+      break;
+    }
+
+    case "beforeToday": {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      mongoCond = { [fieldPath]: { $lt: today } };
+      break;
+    }
+
+    default:
+      mongoCond = { [fieldPath]: cond.value };
   }
 
-  // Absolute Date operators
-  case "on":
-    mongoCond = {
-      $gte: new Date(cond.value),
-      $lt: new Date(new Date(cond.value).getTime() + 86400000),
-    };
-    break;
-  case "noton":
-    mongoCond = {
-      $not: {
-        $gte: new Date(cond.value),
-        $lt: new Date(new Date(cond.value).getTime() + 86400000),
-      },
-    };
-    break;
-
-  // Relative to Today
-  case "onOrAfterToday": {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    mongoCond = { $gte: today };
-    break;
-  }
-  case "onOrBeforeToday": {
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    mongoCond = { $lte: today };
-    break;
-  }
-  case "afterToday": {
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    mongoCond = { $gt: today };
-    break;
-  }
-  case "beforeToday": {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    mongoCond = { $lt: today };
-    break;
-  }
-
-  default:
-    mongoCond = cond.value;
+  return mongoCond;
 }
 
-console.log('mongoCond',mongoCond);
 
-  return { [fieldPath]: mongoCond };
-}
+
 
 
 
@@ -557,24 +529,28 @@ async function flattenAllResolved(rowData: Record<string, any>): Promise<Record<
 
 
   // --- Transform filters for aggregation ---
- function transformFilterForAggregation(input: any): any {
-  if (Array.isArray(input)) return input.map(transformFilterForAggregation);
+async function transformFilterForAggregation(input: any): Promise<any> {
+  if (Array.isArray(input)) {
+    return Promise.all(input.map((item) => transformFilterForAggregation(item)));
+  }
 
   // Treat Date and ObjectId (or any non-plain object) as primitives
-  if (input instanceof Date || input?.constructor?.name === "ObjectId") return input;
+  if (input instanceof Date || input?.constructor?.name === "ObjectId") {
+    return input;
+  }
 
   if (input && typeof input === "object") {
     const keys = Object.keys(input);
 
     // Already a MongoDB operator object like {$lt: Date} or {$in: [...]}
-    const isMongoOpObject = keys.every(k => k.startsWith("$"));
+    const isMongoOpObject = keys.every((k) => k.startsWith("$"));
     if (isMongoOpObject) {
       const out: any = {};
       for (const k of keys) {
         const val = input[k];
         out[k] = Array.isArray(val)
-          ? val.map(transformFilterForAggregation)
-          : transformFilterForAggregation(val);
+          ? await Promise.all(val.map((v) => transformFilterForAggregation(v)))
+          : await transformFilterForAggregation(val);
       }
       return out;
     }
@@ -582,7 +558,8 @@ async function flattenAllResolved(rowData: Record<string, any>): Promise<Record<
     // Normal object: transform fields recursively
     const out: any = {};
     for (const [fieldPath, cond] of Object.entries(input)) {
-      out[toAggregationFieldPath(fieldPath)] = transformFilterForAggregation(cond);
+      const aggPath = await toAggregationFieldPath(fieldPath);
+      out[aggPath] = await transformFilterForAggregation(cond);
     }
     return out;
   }
@@ -590,6 +567,7 @@ async function flattenAllResolved(rowData: Record<string, any>): Promise<Record<
   // Primitive value (string, number, boolean)
   return input;
 }
+
 
 async function resolveRefAttribute(
   attr: any,
@@ -667,19 +645,30 @@ async function resolveRefAttribute(
 
 
 
-  function toAggregationFieldPath(fieldPath: string): string {
-    const parts = fieldPath.split(".");
-    const first = parts[0];
-    const rest = parts.slice(1);
-    const attr = attributesMap[first];
-    const isRef = !!attr?.referenceEntitySetting?.refEntityId;
+  async function toAggregationFieldPath(fieldPath: string): Promise<string> {
+  const parts = fieldPath.split(".");
+  const first = parts[0];
+  const rest = parts.slice(1);
+  const attr = attributesMap[first];
+  const isRef = !!attr?.referenceEntitySetting?.refEntityId;
 
-    if (isRef && rest.length > 0) {
+  if (isRef) {
+    if (rest.length > 0) {
       return `rowData.${first}_resolved.rowData.${rest.join(".")}`;
     }
+    // fallback: use configured refEntityField
+    const refField = attr.referenceEntitySetting?.refEntityField;
+    const refFieldAttr = await getEntityAttribute(attr.referenceEntitySetting?.refEntityId, refField);
 
-    return `rowData.${fieldPath}`;
+    return refFieldAttr
+      ? `rowData.${first}_resolved.rowData.${refFieldAttr.name}`
+      : `rowData.${first}_resolved._id`;
   }
+
+  return `rowData.${fieldPath}`;
+}
+
+
 
   // --- Pagination loop ---
   let skip = 0;
@@ -689,14 +678,14 @@ while (true) {
   const aggregationPipeline: any[] = [...lookups];
 
   if (filters && Object.keys(filters).length > 0) {
-    aggregationPipeline.push({ $match: transformFilterForAggregation(filters) });
+    aggregationPipeline.push({ $match: await transformFilterForAggregation(filters) });
   }
 
   aggregationPipeline.push({ $skip: skip }, { $limit: batchSize });
-
+  console.log('final aggregationPipeline',JSON.stringify(aggregationPipeline));
   const versionValueData = await DataSourceVersionValue.aggregate(aggregationPipeline).exec();
   if (versionValueData.length === 0) break;
-        console.log('attributesMap',attributesMap);
+        // console.log('attributesMap',attributesMap);
 
   const transformedData = await Promise.all(
     versionValueData.map(async (doc: any) => {
@@ -709,7 +698,7 @@ while (true) {
           const isMany = attr.referenceEntitySetting.relationType === "mapping_many_to_one";
 
           const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
-          console.log('RefModel',RefModel,doc);
+          // console.log('RefModel',RefModel,doc);
           // Get display field name from reference setting
           const refFieldAttr = await getEntityAttribute(
             attr.referenceEntitySetting.refEntityId,
@@ -721,7 +710,7 @@ while (true) {
           const rowIds: any[] = [];
           const subValuesMap: Record<string, any[]> = {};
           const topLevelAttribute = await getTopLevelAttribute(key);
-          console.log('doc.rowData.${topLevelAttribute}_resolved._id',`doc.rowData.${topLevelAttribute}_resolved`);
+          // console.log('doc.rowData.${topLevelAttribute}_resolved._id',`doc.rowData.${topLevelAttribute}_resolved`);
           // Find the document(s) where display field matches parent _id
           const resolvedObj = doc.rowData[`${topLevelAttribute}_resolved`];
           if (!resolvedObj) continue;
@@ -729,7 +718,7 @@ while (true) {
           const parentId = resolvedObj._id; // this is the ObjectId you want
 
           const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: parentId }).lean();
-          console.log('relatedDocs',relatedDocs);
+          // console.log('relatedDocs',relatedDocs);
           for (const r of relatedDocs) {
             if (!r?.rowData) continue;
 
@@ -779,7 +768,7 @@ while (true) {
       return newDoc;
     })
   );
-  console.log('transformedData',transformedData);
+  // console.log('transformedData',transformedData);
   await processBatch(transformedData);
   skip += batchSize;
 }
@@ -791,7 +780,7 @@ while (true) {
 // Group cases by template.groupBy fields, handling nested refs
 async function resolveFieldPath(attr: any, refAttributeId: (string | Types.ObjectId)[] = []) {
   let fieldPath = attr.name;
-  console.log('refAttributeId', refAttributeId);
+  // console.log('refAttributeId', refAttributeId);
 
   if (Array.isArray(refAttributeId) && refAttributeId.length > 0) {
     let currentEntityId = attr.referenceEntitySetting?.refEntityId?.toString();
@@ -819,7 +808,7 @@ async function resolveFieldPath(attr: any, refAttributeId: (string | Types.Objec
     fieldPath = mappedName;
   }
 
-  console.log('fieldPath', fieldPath);
+  // console.log('fieldPath', fieldPath);
   return fieldPath;
 }
 
@@ -1078,7 +1067,7 @@ export async function prepareTodayNotifications() {
             });
             ackId = ack._id;
           }
-          console.log('groupKey',groupKey);
+          // console.log('groupKey',groupKey);
         //   const caseDataForPayload = {
         //     ...groupCases[0],
         //     groupCases,
