@@ -394,12 +394,14 @@ async function buildLeafFilter(cond: any, attributeMap: Map<string, any>): Promi
 // Batch fetch matching cases with recursive lookups and flattening
 async function processBatchedMatchingCases({
   schemaName,
+  dataSourceVersion,
   entity,
   filters = {},
   batchSize = 100,
   processBatch,
 }: {
   schemaName: string;
+  dataSourceVersion: Record<string, any>;
   entity: Record<string, any>;
   filters?: Record<string, any>;
   batchSize?: number;
@@ -678,8 +680,13 @@ while (true) {
   const aggregationPipeline: any[] = [...lookups];
 
   if (filters && Object.keys(filters).length > 0) {
-    aggregationPipeline.push({ $match: await transformFilterForAggregation(filters) });
+    const transformedFilters = await transformFilterForAggregation(filters);
+    transformedFilters["dataSourceVersionId"] = dataSourceVersion._id;
+    aggregationPipeline.push({ $match: transformedFilters });
+  } else {
+    aggregationPipeline.push({ $match: { dataSourceVersionId: dataSourceVersion._id } });
   }
+
 
   aggregationPipeline.push({ $skip: skip }, { $limit: batchSize });
   console.log('final aggregationPipeline',JSON.stringify(aggregationPipeline));
@@ -979,12 +986,13 @@ export async function prepareTodayNotifications() {
                   orgCode : 'reportivix',
                   versionCode: dataSourceDetails.code,
                 });
-
+      const dataSourceVersion: any = await getCurrentDataSourceVersion(dataSourceDetails._id);
       await processBatchedMatchingCases({
         schemaName,
+        dataSourceVersion,
         entity,
         filters,
-        batchSize: 100,
+        batchSize: 1000,
         processBatch: async (casesBatch) => {
           console.log(`📝 Processing batch of ${casesBatch.length} cases`);
           allMatchingCases.push(...casesBatch);
@@ -998,7 +1006,7 @@ export async function prepareTodayNotifications() {
       }
 
       console.log("🛠 Creating notification trigger...");
-      const dataSourceVersion: any = await getCurrentDataSourceVersion(dataSourceDetails._id);
+      
       trigger = await NotificationTriggerModel.create({
         organizationId:notifType.organizationId,
         actionsLastUploadedDate: dataSourceVersion?.createdAt,
