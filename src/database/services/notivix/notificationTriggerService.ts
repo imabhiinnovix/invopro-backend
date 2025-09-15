@@ -52,11 +52,23 @@ export async function processNotification(notif: IPreparedNotification, extraCon
     if (template.type === "single") {
       const rowKey = Object.keys(notif.payload || {})[0];
       const rowData = notif.payload[rowKey]?.[0]?.rowData || {};
-      const baseContext: Record<string, any> = { ...rowData, todayDate, lastUploadedDate, acknowledgeIdentifierKey: acknowledge?.identifierKey, acknowledgeId: acknowledge?._id, baseFrontendUrl: process.env.BASE_FRONTEND_URL };
+      const baseContext: Record<string, any> = { ...rowData, todayDate, lastUploadedDate, acknowledgeIdentifierKey: acknowledge?.identifierKey, acknowledgeId: acknowledge?._id, baseFrontendUrl: process.env.BASE_FRONTEND_URL, DaysRemaining: null, DaysPassed: null };
       // merge extraContext if provided
       if (extraContext) Object.assign(baseContext, extraContext);
 
-      if (baseContext.DueDate) baseContext.DueDate = formatDate(new Date(baseContext.DueDate));
+      // if (baseContext.DueDate) baseContext.DueDate = formatDate(new Date(baseContext.DueDate));
+
+      if (baseContext.DueDate) {
+        const dueDate = new Date(baseContext.DueDate);
+        baseContext.DueDate = formatDate(dueDate);
+
+        const diffDays = Math.floor((Date.now() - dueDate.getTime()) / 86400000);
+        if (diffDays < 0) {
+          baseContext.DaysRemaining = Math.abs(diffDays);
+        } else {
+          baseContext.DaysPassed = diffDays;
+        }
+      }
 
       for (const realTo of realRecipientTo) {
         const context = { ...baseContext, recipientName: getRecipientName(realTo) };
@@ -90,11 +102,19 @@ export async function processNotification(notif: IPreparedNotification, extraCon
             const rd = r.rowData || {};
             const flattened = flattenObject(rd);
             const dueDate = rd.DueDate ? new Date(rd.DueDate) : null;
-            const daysRemaining = dueDate ? Math.ceil((dueDate.getTime() - Date.now()) / 86400000) : null;
+            // const daysRemaining = dueDate ? Math.ceil((dueDate.getTime() - Date.now()) / 86400000) : null;
+            let DaysRemaining: number | null = null;
+            let DaysPassed: number | null = null;
+            if (dueDate) {
+              const diffDays = Math.floor((Date.now() - dueDate.getTime()) / 86400000);
+              if (diffDays < 0) DaysRemaining = Math.abs(diffDays);
+              else DaysPassed = diffDays;
+            }
 
             return {
               ...flattened,
-              DaysRemaining: daysRemaining,
+              DaysRemaining,
+              DaysPassed,
               AssignedTo: rd.Assignedto || "-",
               DueDate: dueDate ? formatDate(dueDate) : null
             };
