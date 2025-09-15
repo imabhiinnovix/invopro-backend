@@ -84,6 +84,16 @@ const fieldSettingSchema = new Schema<IFieldSetting>(
   { _id: false }
 );
 
+const dataUploadConditionSchema = new Schema<IDataUploadCondition>(
+  {
+    field: { type: String, required: true },
+    operator: { type: String, required: true },
+    value: { type: Schema.Types.Mixed, required: true },
+    fieldType: { type: String, required: true },
+  },
+  { _id: false }
+);
+
 // DataSource Schema
 const dataSourceSchema = new Schema<IDataSource>(
   {
@@ -102,7 +112,10 @@ const dataSourceSchema = new Schema<IDataSource>(
       default: [],
     },
     isVisible: { type: Boolean, default: true },
-
+    condition: {
+      type: [dataUploadConditionSchema],
+      default: [],
+    },
     // Replacing filterFields/sortFields/displayFields with unified fieldSettings
     fieldSettings: {
       type: [fieldSettingSchema],

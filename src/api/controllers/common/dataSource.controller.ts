@@ -26,6 +26,7 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       uniqueAttributeRules,
       isShowMenu,
       fieldSettings = [],
+      condition = [],
     } = req.body;
 
     const { organizationId, userId, orgCode } = req.user;
@@ -53,6 +54,7 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       description,
       uniqueAttributeRules,
       isShowMenu,
+      condition,
       fieldSettings, // save directly
     });
 
@@ -74,19 +76,34 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
 
 export const updateDataSource = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, versionType, description, uniqueAttributeRules, isShowMenu, fieldSettings = [] } = req.body;
+    const {
+      name,
+      versionType,
+      description,
+      uniqueAttributeRules,
+      isShowMenu,
+      fieldSettings = [],
+      condition, // don't default here
+    } = req.body;
 
     const { userId } = req.user;
 
-    await dataSourceService.updateDataSource(req.params.dataSourceId, {
+    const updatePayload: any = {
       name,
       versionType,
       updatedBy: userId,
       description,
       uniqueAttributeRules,
       isShowMenu,
-      fieldSettings, // save directly
-    });
+      fieldSettings,
+    };
+
+    // only set condition if it’s present in the body
+    if (condition !== undefined) {
+      updatePayload.condition = condition;
+    }
+
+    await dataSourceService.updateDataSource(req.params.dataSourceId, updatePayload);
 
     res.status(201).json({
       success: true,
@@ -320,7 +337,24 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
                 )
               : [];
 
-            return ds;
+             // ---------- NEW: fetch version info ----------
+            const latestVersion = await dataSourceVersionService.getDataSourceVersion({
+              query: { dataSourceId: ds._id },
+              populate: [],
+              sort: { createdAt: -1 },
+            });
+
+            const lastUploadedVersion: any = await dataSourceVersionService.getDataSourceVersion({
+              query: { dataSourceId: ds._id, status: 'completed', isCurrent: true },
+              populate: [],
+              sort: { createdAt: -1 },
+            });
+
+            return {
+              ...ds.toObject?.() || ds,
+              dataSourceVersion: latestVersion || null,
+              lastUploadedDate: lastUploadedVersion ? lastUploadedVersion.createdAt : null,
+            };
           })
         )
       : [];
@@ -338,16 +372,26 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
 
 export const getDataSourceById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const dataSourceDetails = await dataSourceService.findDataSourceById(req.params.dataSourceId);
+    // existing call to service
+    const dataSourceDetails: any = await dataSourceService.findDataSourceById(req.params.dataSourceId);
+
+    if (!dataSourceDetails) {
+      return res.status(404).json({
+        success: false,
+        message: 'Data Source not found',
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: 'Data Source Details Fetched Successfully',
-      data: dataSourceDetails,
+      data: dataSourceDetails
     });
   } catch (err) {
     next(err);
   }
 };
+
 
 export const getDataSourceWithFieldOptionDetails = async (req: Request, res: Response, next: NextFunction) => {
   try {

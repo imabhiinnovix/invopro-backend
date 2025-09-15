@@ -56,6 +56,186 @@ export const ERROR_CODES = {
   },
 };
 
+function evaluateCondition(fieldValue: any, operator: string, expectedValue: any, fieldType: string): boolean {
+  if (fieldValue === undefined || fieldValue === null) {
+    if (operator === 'blank') return true;
+    if (operator === 'notblank') return false;
+    fieldValue = '';
+  }
+
+  switch (fieldType) {
+    case 'number':
+      fieldValue = parseFloat(fieldValue);
+      expectedValue = parseFloat(expectedValue);
+      switch (operator) {
+        case 'lt':
+          return fieldValue < expectedValue;
+        case 'lte':
+          return fieldValue <= expectedValue;
+        case 'gt':
+          return fieldValue > expectedValue;
+        case 'gte':
+          return fieldValue >= expectedValue;
+        case 'eq':
+          return fieldValue === expectedValue;
+        case 'ne':
+          return fieldValue !== expectedValue;
+        case 'blank':
+          return isNaN(fieldValue);
+        case 'notblank':
+          return !isNaN(fieldValue);
+      }
+      break;
+
+    case 'date':
+      const dateValue = new Date(fieldValue);
+      const dateExpected = new Date(expectedValue);
+      switch (operator) {
+        case 'before':
+          return dateValue < dateExpected;
+        case 'after':
+          return dateValue > dateExpected;
+        case 'on':
+          return dateValue.toDateString() === dateExpected.toDateString();
+        case 'noton':
+          return dateValue.toDateString() !== dateExpected.toDateString();
+        case 'blank':
+          return isNaN(dateValue.getTime());
+        case 'notblank':
+          return !isNaN(dateValue.getTime());
+      }
+      break;
+
+    case 'boolean':
+      fieldValue = fieldValue === 'true' || fieldValue === true;
+      expectedValue = expectedValue === 'true' || expectedValue === true;
+      switch (operator) {
+        case 'eq':
+          return fieldValue === expectedValue;
+        case 'ne':
+          return fieldValue !== expectedValue;
+        case 'blank':
+          return fieldValue === null || fieldValue === undefined;
+        case 'notblank':
+          return fieldValue !== null && fieldValue !== undefined;
+      }
+      break;
+
+    case 'text':
+    case 'richtext':
+    case 'url':
+    case 'option':
+    case 'multioption':
+    case 'user':
+    default:
+      const stringVal = String(fieldValue).toLowerCase();
+      const expected = String(expectedValue).toLowerCase();
+      switch (operator) {
+        case 'contains':
+          return stringVal.includes(expected);
+        case 'notcontains':
+          return !stringVal.includes(expected);
+        case 'eq':
+          return stringVal === expected;
+        case 'ne':
+          return stringVal !== expected;
+        case 'startswith':
+          return stringVal.startsWith(expected);
+        case 'endswith':
+          return stringVal.endsWith(expected);
+        case 'blank':
+          return stringVal.trim() === '';
+        case 'notblank':
+          return stringVal.trim() !== '';
+      }
+  }
+
+  return false;
+}
+
+export async function validateFileDataCondition({ fileData, attributeSetting, conditions, jsonMapping }) {
+  if (!conditions || conditions.length === 0) return fileData;
+
+  const filteredData: Record<string, any>[] = [];
+
+  for (const row of fileData) {
+    let allConditionsMet = true;
+    let hasUnresolved = false; // internal only
+
+    for (const condition of conditions) {
+      const baseField = condition.field.split('.')[0];
+      const mappedField = jsonMapping[baseField];
+
+      // Resolve fieldValue based on whether mapping is a string or array
+      let fieldValue: any;
+      if (Array.isArray(mappedField)) {
+        for (const key of mappedField) {
+          const candidate = row[key];
+          if (candidate !== undefined && candidate !== null && candidate !== '') {
+            fieldValue = candidate;
+            break;
+          }
+        }
+      } else {
+        fieldValue = row[mappedField];
+      }
+
+      // If missing → mark unresolved and skip this condition
+      if (!fieldValue) {
+        continue;
+      }
+
+      // Find the attribute setting for this condition.field
+      const attr = attributeSetting?.find((a) => a.name === baseField);
+
+      // Check for reference resolution
+      if (
+        attr?.referenceEntitySetting?.refEntityId &&
+        attr?.referenceEntitySetting?.refEntityField &&
+        ['one_to_one', 'many_to_one'].includes(attr.referenceEntitySetting?.relationType)
+      ) {
+        const refEntityId: string = attr.referenceEntitySetting.refEntityId;
+        const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
+
+        const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
+        const RefModel = await getModelForEntity(refEntityId);
+
+        const escapedValue = escapeRegExp(fieldValue.trim());
+        const regex = new RegExp(`^${escapedValue}$`, 'i');
+
+        const referencedDoc: any = await RefModel.findOne({
+          [`rowData.${refEntityField.name}`]: regex,
+        });
+
+        if (referencedDoc) {
+          const subField = condition.field.split('.')[1];
+          fieldValue = referencedDoc?.rowData?.[subField];
+        } else {
+          hasUnresolved = true;
+          continue;
+        }
+      }
+
+      // Run condition only if value resolved
+      const result = evaluateCondition(fieldValue, condition.operator, condition.value, condition.fieldType);
+      if (!result) {
+        allConditionsMet = false;
+        break;
+      }
+    }
+
+    // Keep row if:
+    //  - All conditions are met, OR
+    //  - Some unresolved conditions exist
+    if (allConditionsMet || hasUnresolved) {
+      filteredData.push(row);
+    }
+  }
+
+  return filteredData;
+}
+
+
 async function validateAndConvert({
   value,
   type,
@@ -210,6 +390,9 @@ async function validateFileData({
       rowNumber: index + 1,
     };
 
+    // track temporary __display keys for cleanup later
+    const tempDisplayAttrs: string[] = [];
+
     for (const attr of attributes) {
       const attrName = attr.name;
       const fileKey = mapping[attrName];
@@ -238,9 +421,9 @@ async function validateFileData({
         (value === undefined || value === null || value === '')
       ) {
         errors.push({
-          entityId: entityId,
-          dataSourceId: dataSourceId,
-          dataSourceVersionId: dataSourceVersionId,
+          entityId,
+          dataSourceId,
+          dataSourceVersionId,
           rowNumber: index + 1,
           fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
           attributeName: attrName,
@@ -267,18 +450,18 @@ async function validateFileData({
           const RefModel = await getModelForEntity(refEntityId);
 
           const escapedValue = escapeRegExp(value.trim());
-          const regex = new RegExp(`^${escapedValue}$`, 'i'); // ✅ use RegExp object
+          const regex = new RegExp(`^${escapedValue}$`, 'i');
 
-          const referencedDoc = await RefModel.findOne({
+          const referencedDoc: any = await RefModel.findOne({
             [`rowData.${refEntityField.name}`]: regex,
           });
 
           if (!referencedDoc) {
             const refDataSourceDetails = await dataSourceService.findDataSourcesByEntityId(refEntityId);
             errors.push({
-              entityId: entityId,
-              dataSourceId: dataSourceId,
-              dataSourceVersionId: dataSourceVersionId,
+              entityId,
+              dataSourceId,
+              dataSourceVersionId,
               rowNumber: index + 1,
               fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
               fileAttributeValue: value,
@@ -297,6 +480,8 @@ async function validateFileData({
             newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
           } else {
             newRow.rowData[attrName] = referencedDoc._id;
+            newRow.rowData[`${attrName}__display`] = referencedDoc.rowData?.[refEntityField.name];
+            tempDisplayAttrs.push(`${attrName}__display`); // ✅ track for cleanup
           }
         } else {
           const { isValid, convertedValue, attributeOptionValue } = await validateAndConvert({
@@ -309,9 +494,9 @@ async function validateFileData({
           if (!isValid) {
             if (['option', 'multioption'].includes(attr.type)) {
               errors.push({
-                entityId: entityId,
-                dataSourceId: dataSourceId,
-                dataSourceVersionId: dataSourceVersionId,
+                entityId,
+                dataSourceId,
+                dataSourceVersionId,
                 rowNumber: index + 1,
                 fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
                 fileAttributeValue: value,
@@ -328,9 +513,9 @@ async function validateFileData({
               });
             } else {
               errors.push({
-                entityId: entityId,
-                dataSourceId: dataSourceId,
-                dataSourceVersionId: dataSourceVersionId,
+                entityId,
+                dataSourceId,
+                dataSourceVersionId,
                 rowNumber: index + 1,
                 fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
                 fileAttributeValue: value,
@@ -352,9 +537,12 @@ async function validateFileData({
         }
       }
     }
+
+    // handle unique attribute validation
     if (Array.isArray(uniqueAttributeRules) && uniqueAttributeRules.length > 0) {
       for (const rule of uniqueAttributeRules) {
         const keyValues: string[] = [];
+        const displayKeyValues: string[] = [];
 
         let isValidCombination = true;
 
@@ -366,16 +554,21 @@ async function validateFileData({
           }
 
           const val = newRow.rowData[attrName];
-
           if (val === undefined || val === null || `${val}`.trim() === '') {
             isValidCombination = false;
             break;
           }
+
           keyValues.push(`${val}`.toLowerCase().trim());
+
+          const displayKey = `${attrName}__display`;
+          const displayValue = newRow.rowData[displayKey] ?? val;
+          displayKeyValues.push(`${displayValue}`.trim());
         }
 
         if (isValidCombination) {
           const compositeKey = keyValues.join('|');
+          const displayCompositeKey = displayKeyValues.join('|');
 
           if (seenCompositeKeys.has(compositeKey)) {
             errors.push({
@@ -385,20 +578,25 @@ async function validateFileData({
               rowNumber: index + 1,
               errorType: ERROR_CODES.DUPLICATE_ENTRY.type,
               errorCode: ERROR_CODES.DUPLICATE_ENTRY.code,
-              fileAttributeValue: compositeKey,
+              fileAttributeValue: displayCompositeKey,
               fileRowNumber: rowNum,
               fileName,
-              errorMessage: `Error: File ${fileName}, Row ${rowNum} - Duplicate combination found for unique keys: ${compositeKey}.`,
+              errorMessage: `Error: File ${fileName}, Row ${rowNum} - Duplicate combination found for unique keys: ${displayCompositeKey}.`,
             });
             newRow.isErrorLog = 1;
           } else {
             seenCompositeKeys.add(compositeKey);
           }
 
-          // ✅ apply only first valid rule, skip others
+          // apply only first valid rule, skip others
           break;
         }
       }
+    }
+
+    // ✅ cleanup temporary __display keys (always, not just for unique)
+    for (const tempKey of tempDisplayAttrs) {
+      delete newRow.rowData[tempKey];
     }
 
     newRowData.push(newRow);
@@ -409,6 +607,7 @@ async function validateFileData({
     newRowData,
   };
 }
+
 
 export async function validateRowData({
   rowData,
@@ -584,7 +783,14 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
           const entityDetails = dataSourceDetails.entityId as any;
           let attributes = entityDetails?.attributes || [];
           const versionValueData = versionValue;
-          const fileData = combinedData;
+
+          const fileData = await validateFileDataCondition({
+            fileData: combinedData,
+            attributeSetting: attributes,
+            conditions: dataSourceDetails.condition,
+            jsonMapping,
+          });
+
           attributes = await autoPopulateAttributeOption({
             fileData: fileData,
             entityId: dataSourceDetails?.entityId || '',
@@ -1178,10 +1384,9 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     const parsedSort = sort ? JSON.parse(sort) : {};
     const parsedFilters = filters ? JSON.parse(filters) : {};
     let query = { status: 'active' };
-    if(dataSourceDetails.versionType != 'constant'){
+    if (dataSourceDetails.versionType != 'constant') {
       query['dataSourceVersionId'] = dataSourceVersionId;
     }
-    
 
     const result = await dataSourceVersionValueService.getDataSourceVersionValueV1({
       schemaName,
