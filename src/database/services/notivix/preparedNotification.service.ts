@@ -37,11 +37,20 @@ export const deletePreparedNotification = async (id: string, organizationId: str
 export const listPreparedNotifications = async ({
   query = {},
   populate = [],
+  skip = 0,
+  limit = 20,
+  sort = {},
 }: {
   query?: Record<string, any>;
   populate?: string[];
+  skip?: number;
+  limit?: number;
+  sort?: Record<string, 1 | -1>;
 }) => {
-  let dbQuery = PreparedNotification.find(query);
+  let dbQuery = PreparedNotification.find(query)
+    .sort(sort)
+    .skip(skip)
+    .limit(limit);
 
   populate.forEach((field) => {
     dbQuery = dbQuery.populate(field);
@@ -83,4 +92,8 @@ export const getActivePreparedNotificationByAck = async (ackId: string, populate
   if (!result) throw new Error("Prepared Notification not found");
 
   return result;
+};
+
+export const countPreparedNotifications = async (query: Record<string, any> = {}) => {
+  return PreparedNotification.countDocuments(query);
 };
