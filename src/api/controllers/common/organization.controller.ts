@@ -6,6 +6,7 @@ import * as organizationProductSubscription from '../../../database/services/com
 import { populate } from 'dotenv';
 import { stat } from 'fs';
 import { Types } from 'mongoose';
+import { seedRolesAndPermissions } from '../../../seeders/seedRoleAndPermission';
 
 export const createOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -13,13 +14,15 @@ export const createOrganization = async (req: Request, res: Response, next: Next
     const { userId } = req.user;
 
     // 1. Create the organization
-    const organization = await organizationService.createOrganization({
+    const organization: Record<string, any> = await organizationService.createOrganization({
       name,
       description,
       owner: userId,
       domain,
       code,
     });
+
+    await seedRolesAndPermissions({ organizationId: [organization?._id] });
 
     if ((productSubscriptions && Array.isArray(productSubscriptions)) || productSubscriptions.length > 0) {
       const productDetails: any = [];
