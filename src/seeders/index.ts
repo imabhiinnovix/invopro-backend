@@ -603,6 +603,13 @@ export async function seedDatabase() {
       },
     ]);
 
+    console.info('\n====> Seeding Widget Theme <====');
+    await seedWidgetTheme({
+      ...payload,
+      organizationId: payload.reportivixOrganizationId,
+      superAdminUserId: payload.reportivixSuperAdminUserId,
+    });
+
     await seedProducts(payload);
 
     await seedPermissions([
@@ -785,9 +792,6 @@ export async function seedDatabase() {
 
     console.info('\n====> Seeding Operators <====');
     await seedOperators();
-
-    console.info('\n====> Seeding Widget Theme <====');
-    await seedWidgetTheme({...payload,organizationId:payload.reportivixOrganizationId,superAdminUserId:payload.reportivixSuperAdminUserId});
 
     // console.info('\n====> Seeding Dashboard Widget <====');
     // await seedDashboardWidget();
