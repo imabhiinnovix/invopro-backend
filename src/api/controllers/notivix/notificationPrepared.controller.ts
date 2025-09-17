@@ -185,11 +185,13 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
 
     res.status(200).json({
       success: true,
-      page: Number(page),
-      limit: Number(limit),
-      total,
-      totalPages: Math.ceil(total / Number(limit)),
       data,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit)),
+        totalRecords: total,
+      },
     });
   } catch (err) {
     console.error(`[${new Date().toISOString()}] Failed to fetch prepared notifications`, err);
