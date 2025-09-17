@@ -11,7 +11,9 @@ export const triggerPrepareTodayNotifications = async (
   try {
     console.log(`[${new Date().toISOString()}] On-demand trigger called`);
 
-    await prepareTodayNotifications();
+    const { isForce = false } = req.body;
+
+    await prepareTodayNotifications(isForce);
 
     res.status(200).json({
       success: true,
@@ -80,6 +82,7 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
         const acknowledge = notif.acknowledgeId;
 
         let alert_content = "";
+        let subject = "";
 
         const lastUploadedDate = trigger?.actionsLastUploadedDate
           ? formatDate(new Date(trigger.actionsLastUploadedDate))
@@ -118,9 +121,10 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
             }
           }
 
-          const subject = parseTemplate(template.subject, context);
+          const parseSubject = parseTemplate(template.subject, context);
           const body = parseTemplate(template.body, context);
           alert_content = body;
+          subject = parseSubject;
         }
 
         /* -------- OVERALL template -------- */
@@ -170,13 +174,15 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
             recipientName: getRecipientName(recipientTo),
           };
 
-          const subject = parseTemplate(template.subject, context);
+          const parseSubject = parseTemplate(template.subject, context);
           const body = parseTemplate(template.body, context);
           alert_content = body;
+          subject = parseSubject;
         }
 
         return {
           ...(notif.toObject?.() || notif),
+          subject,
           alert_content,
           // attachments, // return attachments
         };
