@@ -6707,17 +6707,24 @@ export async function seedEntities({ organizationId, createdBy, updatedBy, entit
     updatedBy,
   });
 
-  for (const enitity of entities) {
-    // Check if the entity already exists
-    const existingEntity = await Entity.findById(enitity._id);
-    if (!existingEntity) {
-      // If it doesn't exist, create a new entity
-      const newEntity = new Entity(enitity);
+  for (const entity of entities) {
+  // check both id and unique keys (name + orgId)
+  const existingEntity = await Entity.findOne({
+    $or: [
+      { _id: entity._id },
+      { name: entity.name, organizationId: entity.organizationId },
+    ],
+  });
 
-      await newEntity.save();
-      console.info(`New entity with payload ${enitity} created successfully.`);
-    } else {
-      console.info(`New entity with entity id ${enitity._id} already exists.`);
-    }
+  if (!existingEntity) {
+    const newEntity = new Entity(entity);
+    await newEntity.save();
+    console.info(`New entity '${entity.name}' created successfully.`);
+  } else {
+    console.info(
+      `Entity '${entity.name}' already exists for org ${entity.organizationId}. Skipping.`
+    );
   }
+}
+
 }
