@@ -13,6 +13,7 @@ import {
 } from '../../../utils/entity.utils';
 import { getDerivedField } from './derivedField.services';
 import { processFieldConditions } from '../../../utils/conditionProcessor';
+import { escapeRegExp } from '../../../utils/common.utils';
 
 export const updateDataSourceVersionValue = async (
   schemaName: string,
@@ -218,6 +219,113 @@ export const getDataSourceVersionValueV1 = async ({
         }
       }
     }
+async function buildNestedLookups({
+  entityId,
+  pathSegments,
+  prefix = "rowData",
+  pipeline,
+  visited = new Set<string>(), // Tracks added lookups
+}: {
+  entityId: string;
+  pathSegments: string[];
+  prefix?: string;
+  pipeline: any[];
+  visited?: Set<string>;
+}) {
+  if (!pathSegments.length) return;
+
+  const field = pathSegments[0];
+  const attr = await getAttributeByName(entityId, field);
+  if (!attr) return;
+
+  const localField = `${prefix}.${field}`;
+  const asField = `${prefix}.${field}_resolved`;
+
+  // Avoid duplicate lookups
+  const lookupKey = `${entityId}:${asField}`;
+  if (visited.has(lookupKey)) return;
+  visited.add(lookupKey);
+
+  // ------------------------------
+  // CASE 1: Mapping reference
+  // ------------------------------
+  if (attr.referenceEntitySetting?.relationType?.startsWith("mapping_")) {
+    const mappingEntityId = attr.referenceEntitySetting.refEntityId.toString();
+    const mappingModel = await getModelForEntity(mappingEntityId);
+
+    const parentField = attr.referenceEntitySetting.refEntityField;
+    pipeline.push({
+      $lookup: {
+        from: mappingModel.collection.name,
+        localField: `${prefix}._id`,
+        foreignField: `rowData.${parentField}`,
+        as: asField,
+      },
+    });
+    pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
+
+    if (pathSegments.length > 1) {
+      const nextField = pathSegments[1];
+      const nextAttr = await getAttributeByName(mappingEntityId, nextField);
+      if (nextAttr?.referenceEntitySetting?.refEntityId) {
+        const targetEntityId = nextAttr.referenceEntitySetting.refEntityId.toString();
+        const targetModel = await getModelForEntity(targetEntityId);
+        const targetAsField = `${asField}.rowData.${nextField}_resolved`;
+
+        pipeline.push({
+          $lookup: {
+            from: targetModel.collection.name,
+            localField: `${asField}.rowData.${nextField}`,
+            foreignField: "_id",
+            as: targetAsField,
+          },
+        });
+        pipeline.push({ $unwind: { path: `$${targetAsField}`, preserveNullAndEmptyArrays: true } });
+
+        if (pathSegments.length > 2) {
+          await buildNestedLookups({
+            entityId: targetEntityId,
+            pathSegments: pathSegments.slice(2),
+            prefix: `${targetAsField}.rowData`,
+            pipeline,
+            visited,
+          });
+        }
+      }
+    }
+  }
+
+  // ------------------------------
+  // CASE 2: Normal reference
+  // ------------------------------
+  else if (attr.referenceEntitySetting?.refEntityId) {
+    const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
+    const refModel = await getModelForEntity(refEntityId);
+
+    pipeline.push({
+      $lookup: { from: refModel.collection.name, localField, foreignField: "_id", as: asField },
+    });
+    pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
+
+    if (pathSegments.length > 1) {
+      await buildNestedLookups({
+        entityId: refEntityId,
+        pathSegments: pathSegments.slice(1),
+        prefix: `${asField}.rowData`,
+        pipeline,
+        visited,
+      });
+    }
+  }
+}
+
+
+
+
+
+
+
+
 
     // Step 2: Filters (unchanged)
     const filterConditions: any[] = [];
@@ -252,15 +360,87 @@ export const getDataSourceVersionValueV1 = async ({
         }
 
         if (derivedRuleConditions.length > 0) filterConditions.push({ $or: derivedRuleConditions });
-      } else if (key.includes('.')) {
-        const [refField, subField] = key.split('.');
-        const asField = `rowData.${refField}_resolved`;
-        filterConditions.push({ [`${asField}.rowData.${subField}`]: Array.isArray(val) ? { $in: val } : val });
+     } else if (key.includes('.')) {
+  const pathSegments = key.split('.'); // e.g. ["Attorney","AttorneyName","FOName","FOEmail"]
+
+  // Build lookups recursively
+  await buildNestedLookups({
+    entityId,
+    pathSegments: pathSegments.slice(0, -1), // all but last
+    pipeline: aggregationPipeline,
+  });
+
+  // Build correct resolved path
+  function buildResolvedPath(pathSegments: string[]): string {
+    let path = "rowData";
+    for (let i = 0; i < pathSegments.length; i++) {
+      const seg = pathSegments[i];
+      if (i < pathSegments.length - 1) {
+        path += `.${seg}_resolved.rowData`;
       } else {
-        filterConditions.push({ [`rowData.${key}`]: Array.isArray(val) ? { $in: val } : val });
+        path += `.${seg}`;
       }
     }
+    return path;
+  }
 
+  const fieldPath = buildResolvedPath(pathSegments);
+
+   const buildFilterForValue = (v: any) => {
+   if (typeof v === 'string') {
+    const escapedValue = escapeRegExp(v.trim());
+    return { $regex: `^${escapedValue}$`, $options: 'i' }; // exact match, case-insensitive
+  }
+  return v;
+};
+filterConditions.push({
+  [fieldPath]: Array.isArray(val)
+    ? { $or: val.map((v) => buildFilterForValue(v)) } // match any value in array
+    : buildFilterForValue(val),
+});
+
+  console.log("Resolved filter path:", fieldPath);
+}
+
+      // Top-level attribute (primitive or reference)
+       else {
+    const attr = attributesMap[key];
+    if (attr?.referenceEntitySetting?.refEntityId) {
+      const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
+      const refModel = await getModelForEntity(refEntityId);
+
+      const localField = `rowData.${key}`;
+      const asField = `rowData.${key}_resolved`;
+
+      // Add lookup if not already present
+      if (!aggregationPipeline.some((stage) => stage.$lookup?.as === asField)) {
+        aggregationPipeline.push({
+          $lookup: {
+            from: refModel.collection.name,
+            localField,
+            foreignField: "_id",
+            as: asField,
+          },
+        });
+        aggregationPipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
+      }
+
+      // ✅ Resolve actual attribute name from reference entity
+      const refFieldAttr = await getEntityAttribute(
+        attr.referenceEntitySetting.refEntityId,
+        attr.referenceEntitySetting.refEntityField
+      );
+      const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
+
+      filterConditions.push({
+        [`${asField}.rowData.${displayField}`]: Array.isArray(val) ? { $in: val } : val,
+      });
+    } else {
+      filterConditions.push({ [`rowData.${key}`]: Array.isArray(val) ? { $in: val } : val });
+    }
+      }
+    }
+    console.log('filterConditions', JSON.stringify(filterConditions));
     if (filterConditions.length > 0) aggregationPipeline.push({ $match: { $and: filterConditions } });
     // Step 3: Search Filters (add this after filter conditions)
     const searchConditions: any[] = [];
@@ -333,7 +513,7 @@ export const getDataSourceVersionValueV1 = async ({
       }, {});
       aggregationPipeline.push({ $project: projectionFields });
     }
-
+    console.log('aggregationPipeline',JSON.stringify(aggregationPipeline));
     // Step 5: Execute aggregation
     const versionValueData = await DataSourceVersionValue.aggregate(aggregationPipeline).exec();
 
