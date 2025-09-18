@@ -31,7 +31,7 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
     const {
       page = 1,
       limit = 10,
-      sortBy = "scheduledAt",
+      sortBy = "sentAt",
       sortOrder = "desc",
       status,
       organizationId,
