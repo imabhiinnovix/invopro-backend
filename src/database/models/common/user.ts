@@ -15,6 +15,13 @@ export interface IUser extends Document {
   isVerified: boolean;
   status: 'active' | 'inactive';
   organizationProductSubscriptionIds?: Types.ObjectId[];
+  departmentId?: Types.ObjectId;
+  designationId?: Types.ObjectId;
+  address?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  postalCode?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -72,6 +79,36 @@ const userSchema = new Schema<IUser>(
         ref: 'organization_product_subscription',
       },
     ],
+    departmentId: {
+      type: Schema.Types.ObjectId,
+      required: false,
+      ref: 'Department',
+    },
+    designationId: {
+      type: Schema.Types.ObjectId,
+      required: false,
+      ref: 'Designation',
+    },
+    address: {
+      type: String,
+      required: false,
+    },
+    country: {
+      type: String,
+      required: false,
+    },
+    state: {
+      type: String,
+      required: false,
+    },
+    city: {
+      type: String,
+      required: false,
+    },
+    postalCode: {
+      type: String,
+      required: false,
+    },
   },
   {
     timestamps: true,

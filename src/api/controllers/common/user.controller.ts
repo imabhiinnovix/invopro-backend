@@ -16,8 +16,23 @@ import { populate } from 'dotenv';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let { email, password, moblie, organizationId, firstName, lastName, roleIds, organizationProductSubscriptionIds } =
-      req.body;
+    let {
+      email,
+      password,
+      moblie,
+      organizationId,
+      firstName,
+      lastName,
+      roleIds,
+      organizationProductSubscriptionIds,
+      departmentId,
+      designationId,
+      address,
+      country,
+      state,
+      city,
+      postalCode,
+    } = req.body;
 
     const validationResult = validateUserInput({ email, password, firstName, isUpdate: false });
 
@@ -118,6 +133,13 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       status: 'active',
       isVerified: true,
       organizationProductSubscriptionIds,
+      departmentId,
+      designationId,
+      address,
+      country,
+      state,
+      city,
+      postalCode,
     });
 
     return res.status(201).json({ success: true, message: 'User created successfully' });
@@ -262,7 +284,7 @@ export const updateCurrentUser = async (req: Request, res: Response, next: NextF
   try {
     const { userId } = req.user;
 
-    const { firstName, lastName, mobile } = req.body;
+    const { firstName, lastName, mobile, address, country, state, city } = req.body;
     const validationResult = validateUserInput({ firstName, isUpdate: true });
 
     if (!validationResult.valid) {
@@ -273,6 +295,10 @@ export const updateCurrentUser = async (req: Request, res: Response, next: NextF
       ...(firstName && { firstName }),
       ...(lastName && { lastName }),
       ...(mobile && { mobile }),
+      ...(address && { address }),
+      ...(country && { country }),
+      ...(state && { state }),
+      ...(city && { city }),
     };
 
     await userService.updateUser(userId, updateUser);
@@ -295,6 +321,13 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
       password,
       organizationProductSubscriptionIds,
       organizationId: bodyOrgId,
+      departmentId,
+      designationId,
+      address,
+      country,
+      state,
+      city,
+      postalCode,
     } = req.body;
 
     const validationResult = validateUserInput({ firstName, password, isUpdate: true });
@@ -395,7 +428,27 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
     if (password) updateData.password = await hashPassword(password);
     if (organizationProductSubscriptionIds)
       updateData.organizationProductSubscriptionIds = organizationProductSubscriptionIds;
-
+    if (departmentId) {
+      updateData.departmentId = departmentId;
+    }
+    if (designationId) {
+      updateData.designationId = designationId;
+    }
+    if (address) {
+      updateData.address = address;
+    }
+    if (country) {
+      updateData.country = country;
+    }
+    if (state) {
+      updateData.state = state;
+    }
+    if (city) {
+      updateData.city = city;
+    }
+    if (postalCode) {
+      updateData.postalCode = postalCode;
+    }
     // Step 3: Update user
     await userService.updateUser(userId, updateData);
 
