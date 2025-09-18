@@ -171,6 +171,21 @@ export const getDataSourceVersionValueV1 = async ({
     //   return acc;
     // }, {} as Record<string, any>);
 
+    // ----------------- Cache -----------------
+    const modelCache: Record<string, any> = {};
+    const attrCache: Record<string, any> = {};
+
+    const getCachedModel = async (entityId: string) => {
+      if (!modelCache[entityId]) modelCache[entityId] = await getModelForEntity(entityId);
+      return modelCache[entityId];
+    };
+
+    const getCachedAttr = async (entityId: string, name: string) => {
+      const key = `${entityId}:${name}`;
+      if (!attrCache[key]) attrCache[key] = await getAttributeByName(entityId, name);
+      return attrCache[key];
+    };
+
     const attributesMap: Record<string, any> = {};
     const refAttributesMap: Record<string, any> = {};
 
@@ -222,98 +237,152 @@ export const getDataSourceVersionValueV1 = async ({
 async function buildNestedLookups({
   entityId,
   pathSegments,
-  prefix = "rowData",
+  prefix = 'rowData',
   pipeline,
-  visited = new Set<string>(), // Tracks added lookups
+  visited,
+  filtersForLookup = {},
+  depth = 0,
 }: {
   entityId: string;
   pathSegments: string[];
   prefix?: string;
   pipeline: any[];
-  visited?: Set<string>;
+  visited: Set<string>;
+  filtersForLookup?: Record<string, any>;
+  depth?: number;
 }) {
-  if (!pathSegments.length) return;
+  if (!pathSegments.length || depth > 10) return;
 
   const field = pathSegments[0];
-  const attr = await getAttributeByName(entityId, field);
+  const attr = await getCachedAttr(entityId, field);
   if (!attr) return;
 
   const localField = `${prefix}.${field}`;
   const asField = `${prefix}.${field}_resolved`;
+  const fullPath = [...pathSegments].join('.');
+  const filterString = filtersForLookup[field] ? JSON.stringify(filtersForLookup[field]) : '';
+  const lookupKey = `${entityId}:${fullPath}:${filterString}`;
 
-  // Avoid duplicate lookups
-  const lookupKey = `${entityId}:${asField}`;
   if (visited.has(lookupKey)) return;
   visited.add(lookupKey);
 
-  // ------------------------------
-  // CASE 1: Mapping reference
-  // ------------------------------
-  if (attr.referenceEntitySetting?.relationType?.startsWith("mapping_")) {
+  const alreadyHaveLookup = (asName: string) =>
+    pipeline.some((stage: any) => stage.$lookup?.as === asName);
+
+  // -------- mapping reference --------
+  if (attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
     const mappingEntityId = attr.referenceEntitySetting.refEntityId.toString();
-    const mappingModel = await getModelForEntity(mappingEntityId);
+    const mappingModel = await getCachedModel(mappingEntityId);
 
-    const parentField = attr.referenceEntitySetting.refEntityField;
-    pipeline.push({
-      $lookup: {
-        from: mappingModel.collection.name,
-        localField: `${prefix}._id`,
-        foreignField: `rowData.${parentField}`,
-        as: asField,
-      },
-    });
-    pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
+    const refFieldAttr = await getEntityAttribute(
+      attr.referenceEntitySetting.refEntityId,
+      attr.referenceEntitySetting.refEntityField
+    );
+    const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
 
-    if (pathSegments.length > 1) {
-      const nextField = pathSegments[1];
-      const nextAttr = await getAttributeByName(mappingEntityId, nextField);
-      if (nextAttr?.referenceEntitySetting?.refEntityId) {
-        const targetEntityId = nextAttr.referenceEntitySetting.refEntityId.toString();
-        const targetModel = await getModelForEntity(targetEntityId);
-        const targetAsField = `${asField}.rowData.${nextField}_resolved`;
+    if (!alreadyHaveLookup(asField)) {
+      pipeline.push({
+        $lookup: {
+          from: mappingModel.collection.name,
+          localField: `${prefix}._id`,
+          foreignField: `rowData.${displayField}`,
+          as: asField,
+          // pipeline: [{ $project: { _id: 1, rowData: 1 } }],
+        },
+      });
+      pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
+    }
 
-        pipeline.push({
-          $lookup: {
-            from: targetModel.collection.name,
-            localField: `${asField}.rowData.${nextField}`,
-            foreignField: "_id",
-            as: targetAsField,
-          },
-        });
-        pipeline.push({ $unwind: { path: `$${targetAsField}`, preserveNullAndEmptyArrays: true } });
-
-        if (pathSegments.length > 2) {
-          await buildNestedLookups({
-            entityId: targetEntityId,
-            pathSegments: pathSegments.slice(2),
-            prefix: `${targetAsField}.rowData`,
-            pipeline,
-            visited,
-          });
-        }
+    // ✅ Apply filters at root level
+    if (pathSegments.length === 1 && filtersForLookup) {
+      for (const [filterField, filterValue] of Object.entries(filtersForLookup)) {
+        const matchField = `${asField}.rowData.${filterField}`;
+        pipeline.push({ $match: { [matchField]: filterValue } });
       }
     }
-  }
-
-  // ------------------------------
-  // CASE 2: Normal reference
-  // ------------------------------
-  else if (attr.referenceEntitySetting?.refEntityId) {
-    const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
-    const refModel = await getModelForEntity(refEntityId);
-
-    pipeline.push({
-      $lookup: { from: refModel.collection.name, localField, foreignField: "_id", as: asField },
-    });
-    pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
 
     if (pathSegments.length > 1) {
       await buildNestedLookups({
-        entityId: refEntityId,
+        entityId: mappingEntityId,
         pathSegments: pathSegments.slice(1),
-        prefix: `${asField}.rowData`,
+        prefix: `${asField}`,
         pipeline,
         visited,
+        filtersForLookup,
+        depth: depth + 1,
+      });
+    }
+    return;
+  }
+
+  // -------- normal reference --------
+  if (attr.referenceEntitySetting?.refEntityId) {
+    const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
+    const refModel = await getCachedModel(refEntityId);
+    const isLast = pathSegments.length === 1;
+
+    if (!alreadyHaveLookup(asField)) {
+      pipeline.push({
+        $lookup: {
+          from: refModel.collection.name,
+          localField: `${prefix}.rowData.${field}`,
+          foreignField: '_id',
+          as: asField,
+        },
+      });
+        pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
+    }
+
+    // ✅ Apply filters at root level
+  if (isLast && filtersForLookup) {
+  const matchConditions: Record<string, any> = {};
+
+  for (const [filterField, filterValue] of Object.entries(filtersForLookup)) {
+    const matchField = `${asField}.rowData.${filterField}`;
+
+    if (
+      typeof filterValue === "object" &&
+      filterValue !== null &&
+      !Array.isArray(filterValue)
+    ) {
+      const keys = Object.keys(filterValue);
+
+      if (keys.length === 1 && keys[0].startsWith("$")) {
+        // ✅ Direct Mongo operator
+        matchConditions[matchField] = filterValue;
+      } else if (
+        keys.length === 1 &&
+        !keys[0].startsWith("$") &&
+        keys[0].includes(".")
+      ) {
+        // ✅ Case like { "rowData.FOEmail": { $regex: ... } }
+        matchConditions[matchField] = filterValue[keys[0]];
+      } else {
+        // ✅ Plain object (multiple operators)
+        matchConditions[matchField] = filterValue;
+      }
+    } else {
+      // ✅ Simple equality
+      matchConditions[matchField] = filterValue;
+    }
+  }
+
+  if (Object.keys(matchConditions).length > 0) {
+    pipeline.push({ $match: matchConditions });
+  }
+}
+
+
+
+    if (!isLast) {
+      await buildNestedLookups({
+        entityId: refEntityId,
+        pathSegments: pathSegments.slice(1),
+        prefix: `${asField}`,
+        pipeline,
+        visited,
+        filtersForLookup,
+        depth: depth + 1,
       });
     }
   }
@@ -327,8 +396,18 @@ async function buildNestedLookups({
 
 
 
+
+
+
+
+
+
+
+
+
     // Step 2: Filters (unchanged)
     const filterConditions: any[] = [];
+    const visited = new Set<string>();
     for (const [key, val] of Object.entries(filters)) {
       if (key.startsWith('Derived.')) {
         const derivedName = key.split('.')[1];
@@ -360,46 +439,33 @@ async function buildNestedLookups({
         }
 
         if (derivedRuleConditions.length > 0) filterConditions.push({ $or: derivedRuleConditions });
-     } else if (key.includes('.')) {
-  const pathSegments = key.split('.'); // e.g. ["Attorney","AttorneyName","FOName","FOEmail"]
+     } else if (key.includes(".")) {
+  const pathSegments = key.split(".");
+  const lastField = pathSegments[pathSegments.length - 1];
 
-  // Build lookups recursively
+  // Helper to build filter value (regex for strings)
+  const buildFilterForValue = (v: any) =>
+    typeof v === "string"
+      ? { $regex: `^${escapeRegExp(v.trim())}$`, $options: "i" }
+      : v;
+
+  // Full filter path inside the nested document
+  const filterCondition = Array.isArray(val)
+    ? {
+        $or: val.map((v) => ({
+          [`rowData.${lastField}`]: buildFilterForValue(v),
+        })),
+      }
+    : { [`rowData.${lastField}`]: buildFilterForValue(val) };
+
+  // Pass filter into buildNestedLookups for correct nested $lookup pipeline
   await buildNestedLookups({
     entityId,
-    pathSegments: pathSegments.slice(0, -1), // all but last
+    pathSegments: pathSegments.slice(0, -1), // all except last
     pipeline: aggregationPipeline,
+    visited,
+    filtersForLookup: { [lastField]: filterCondition },
   });
-
-  // Build correct resolved path
-  function buildResolvedPath(pathSegments: string[]): string {
-    let path = "rowData";
-    for (let i = 0; i < pathSegments.length; i++) {
-      const seg = pathSegments[i];
-      if (i < pathSegments.length - 1) {
-        path += `.${seg}_resolved.rowData`;
-      } else {
-        path += `.${seg}`;
-      }
-    }
-    return path;
-  }
-
-  const fieldPath = buildResolvedPath(pathSegments);
-
-   const buildFilterForValue = (v: any) => {
-   if (typeof v === 'string') {
-    const escapedValue = escapeRegExp(v.trim());
-    return { $regex: `^${escapedValue}$`, $options: 'i' }; // exact match, case-insensitive
-  }
-  return v;
-};
-filterConditions.push({
-  [fieldPath]: Array.isArray(val)
-    ? { $or: val.map((v) => buildFilterForValue(v)) } // match any value in array
-    : buildFilterForValue(val),
-});
-
-  console.log("Resolved filter path:", fieldPath);
 }
 
       // Top-level attribute (primitive or reference)
