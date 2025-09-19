@@ -729,12 +729,6 @@ async function buildNestedLookupsForSearch({
           const pathSegments = key.split(".");
           const lastField = pathSegments[pathSegments.length - 1];
 
-          // Helper to build filter value (regex for strings)
-          const buildFilterForValue = (v: any) =>
-            typeof v === "string"
-              ? { $regex: `^${escapeRegExp(v.trim())}$`, $options: "i" }
-              : v;
-
           // Full filter path inside the nested document
           const searchCondition = Array.isArray(searchValue)
             ? {
@@ -784,11 +778,26 @@ async function buildNestedLookupsForSearch({
       );
       const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
 
-      searchConditions.push({
-        [`${asField}.rowData.${displayField}`]: Array.isArray(searchValue) ? { $in: searchValue } : searchValue,
-      });
+
+      const searchCondition = Array.isArray(searchValue)
+      ? {
+          $or: searchValue.map((v) => ({
+            [`${asField}.rowData.${displayField}`]: buildFilterForValue(v),
+          })),
+        }
+      : { [`${asField}.rowData.${displayField}`]: buildFilterForValue(searchValue) };
+
+      searchConditions.push(searchCondition);
     } else {
-      searchConditions.push({ [`rowData.${key}`]: Array.isArray(searchValue) ? { $in: searchValue } : searchValue });
+      const searchCondition = Array.isArray(searchValue)
+      ? {
+          $or: searchValue.map((v) => ({
+            [`rowData.${key}`]: buildFilterForValue(v),
+          })),
+        }
+      : { [`rowData.${key}`]: buildFilterForValue(searchValue) };
+
+      searchConditions.push(searchCondition);
     }
 
         }
