@@ -26,6 +26,7 @@ import { Types } from 'mongoose';
 import { findEntityById } from '../../../database/services/common/entity.services';
 import { autoPopulateAttributeOption, autoPopulateAttributeOptionFromRow } from '../../../utils/attributeOption.utils';
 import * as entityService from '../../../database/services/common/entity.services';
+import { findDerivedFieldById } from '../../../database/services/common/derivedField.services';
 const ObjectId = mongoose.Types.ObjectId;
 
 export const ERROR_CODES = {
@@ -1336,23 +1337,57 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
 
     const searchFilters = {};
 
-    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+    const dataSourceDetails: any = await dataSourceService.findDataSourceById(dataSourceId, true);
 
     if (!dataSourceDetails) {
       return res.status(404).json({ success: false, message: 'Data source not found.' });
     }
 
-    const entityFieldOptions = await entityService.getEntityFieldOptions(String(dataSourceDetails.entityId._id));
-    if (search && search.length > 0) {
-      for (let i = 0; i < entityFieldOptions.length; i++) {
-        const entityOption = entityFieldOptions[i];
-        if (entityOption.value.isDerived) {
-          searchFilters[`Derived.${entityOption.label}`] = search;
-        } else {
-          searchFilters[entityOption.label] = search;
-        }
+    // 🔹 Precompute field mappings
+const fieldOptions = await entityService.getEntityFieldOptions(
+  String(dataSourceDetails.entityId._id)
+);
+
+if (Array.isArray(dataSourceDetails.fieldSettings)) {
+  for (const field of dataSourceDetails.fieldSettings) {
+    // Derived fields
+    if (field.isDerived && field.attributeId) {
+      const derived = await findDerivedFieldById(field.attributeId);
+      if (derived) {
+        field.mappedAttributeName = `Derived.${derived.name}`;
+        field.values = Array.isArray(derived.valueRules)
+          ? derived.valueRules.map((vr) => vr.value)
+          : [];
       }
+      continue;
     }
+
+    // Normal fields → look up in fieldOptions
+    const match = fieldOptions.find(
+      (opt) =>
+        String(opt.value.attributeId) === String(field.attributeId) &&
+        JSON.stringify(opt.value.refAttributeId || []) ===
+          JSON.stringify(field.refAttributeId || [])
+    );
+
+    if (match) {
+      field.mappedAttributeName = match.label;
+    } else {
+      field.mappedAttributeName = "Unknown";
+    }
+  }
+}
+
+// 🔹 Build search filters using mappedAttributeName
+if (search && search.length > 0) {
+  for (const field of dataSourceDetails.fieldSettings) {
+    if (!field.mappedAttributeName || field.mappedAttributeName === "Unknown")
+      continue;
+
+    searchFilters[field.mappedAttributeName] = search;
+  }
+}
+
     const versionQuery: any = {
       dataSourceId,
       isCurrent: true, // Always filter for current version

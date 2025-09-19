@@ -220,14 +220,25 @@ export const getDataSourceVersionValueV1 = async ({
         const refModel = await getModelForEntity(refEntityId);
 
         if (!aggregationPipeline.some((stage) => stage.$lookup?.as === asField)) {
-          aggregationPipeline.push({
-            $lookup: {
-              from: refModel.collection.name,
-              localField,
-              foreignField: '_id',
-              as: asField,
-            },
-          });
+          if (attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
+             aggregationPipeline.push({
+              $lookup: {
+                from: refModel.collection.name,
+                localField: '_id',
+                foreignField: localField,
+                as: asField,
+              },
+            });
+          }else{
+            aggregationPipeline.push({
+              $lookup: {
+                from: refModel.collection.name,
+                localField,
+                foreignField: '_id',
+                as: asField,
+              },
+            });
+          }
           aggregationPipeline.push({
             $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true },
           });
@@ -270,7 +281,7 @@ async function buildNestedLookups({
 
   const alreadyHaveLookup = (asName: string) =>
     pipeline.some((stage: any) => stage.$lookup?.as === asName);
-
+  console.log('attr',attr);
   // -------- mapping reference --------
   if (attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
     const mappingEntityId = attr.referenceEntitySetting.refEntityId.toString();
@@ -281,17 +292,28 @@ async function buildNestedLookups({
       attr.referenceEntitySetting.refEntityField
     );
     const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
-
     if (!alreadyHaveLookup(asField)) {
-      pipeline.push({
-        $lookup: {
-          from: mappingModel.collection.name,
-          localField: `${prefix}._id`,
-          foreignField: `rowData.${displayField}`,
-          as: asField,
-          // pipeline: [{ $project: { _id: 1, rowData: 1 } }],
-        },
-      });
+      if(prefix?.endsWith('_resolved')){
+        pipeline.push({
+          $lookup: {
+            from: mappingModel.collection.name,
+            localField: `${prefix}._id`,
+            foreignField: `rowData.${displayField}`,
+            as: asField,
+            // pipeline: [{ $project: { _id: 1, rowData: 1 } }],
+          },
+        });
+      }else{
+        pipeline.push({
+          $lookup: {
+            from: mappingModel.collection.name,
+            localField: `_id`,
+            foreignField: `rowData.${displayField}`,
+            as: asField,
+            // pipeline: [{ $project: { _id: 1, rowData: 1 } }],
+          },
+        });
+      }
       pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
     }
 
@@ -558,6 +580,12 @@ async function buildNestedLookupsForSearch({
       ? { $regex: `^${escapeRegExp(v.trim())}$`, $options: "i" }
       : v;
 
+  const buildFilterForValueForSearch = (v: any) =>
+  typeof v === "string"
+    ? { $regex: `^${escapeRegExp(v.trim())}`, $options: "i" } // removed $
+    : v;
+    
+
 
 
 
@@ -631,7 +659,7 @@ async function buildNestedLookupsForSearch({
       // Top-level attribute (primitive or reference)
        else {
     const attr = attributesMap[key];
-    if (attr?.referenceEntitySetting?.refEntityId) {
+    if (attr?.referenceEntitySetting?.refEntityId && !attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
       const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
       const refModel = await getModelForEntity(refEntityId);
 
@@ -733,10 +761,10 @@ async function buildNestedLookupsForSearch({
           const searchCondition = Array.isArray(searchValue)
             ? {
                 $or: searchValue.map((v) => ({
-                  [`rowData.${lastField}`]: buildFilterForValue(v),
+                  [`rowData.${lastField}`]: buildFilterForValueForSearch(v),
                 })),
               }
-            : { [`rowData.${lastField}`]: buildFilterForValue(searchValue) };
+            : { [`rowData.${lastField}`]: buildFilterForValueForSearch(searchValue) };
 
           // Pass filter into buildNestedLookups for correct nested $lookup pipeline
           await buildNestedLookupsForSearch({
@@ -751,7 +779,7 @@ async function buildNestedLookupsForSearch({
           // Handle regular field search
           // searchConditions.push({ [`rowData.${key}`]: searchRegex });
           const attr = attributesMap[key];
-    if (attr?.referenceEntitySetting?.refEntityId) {
+    if (attr?.referenceEntitySetting?.refEntityId && !attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
       const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
       const refModel = await getModelForEntity(refEntityId);
 
@@ -782,20 +810,20 @@ async function buildNestedLookupsForSearch({
       const searchCondition = Array.isArray(searchValue)
       ? {
           $or: searchValue.map((v) => ({
-            [`${asField}.rowData.${displayField}`]: buildFilterForValue(v),
+            [`${asField}.rowData.${displayField}`]: buildFilterForValueForSearch(v),
           })),
         }
-      : { [`${asField}.rowData.${displayField}`]: buildFilterForValue(searchValue) };
+      : { [`${asField}.rowData.${displayField}`]: buildFilterForValueForSearch(searchValue) };
 
       searchConditions.push(searchCondition);
     } else {
       const searchCondition = Array.isArray(searchValue)
       ? {
           $or: searchValue.map((v) => ({
-            [`rowData.${key}`]: buildFilterForValue(v),
+            [`rowData.${key}`]: buildFilterForValueForSearch(v),
           })),
         }
-      : { [`rowData.${key}`]: buildFilterForValue(searchValue) };
+      : { [`rowData.${key}`]: buildFilterForValueForSearch(searchValue) };
 
       searchConditions.push(searchCondition);
     }
