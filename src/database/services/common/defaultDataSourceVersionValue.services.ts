@@ -871,7 +871,15 @@ async function buildNestedLookupsForSearch({
   }
 
 
-    
+    // before pagination
+aggregationPipeline.push({
+  $group: {
+    _id: "$_id",
+    doc: { $first: "$$ROOT" }
+  }
+});
+aggregationPipeline.push({ $replaceRoot: { newRoot: "$doc" } });
+
     // Step 3: Sort
     const finalSort: Record<string, 1 | -1> = {};
     if (sort && Object.keys(sort).length > 0) {
