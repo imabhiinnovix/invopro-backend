@@ -11,6 +11,8 @@ interface IDesignation extends Document {
   name: string;
   description?: string;
   status: string;
+  createdBy: Types.ObjectId;
+  updatedBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +29,8 @@ const designationSchema = new Schema<IDesignation>(
       enum: ['active', 'inactive'],
       default: 'active',
     },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'user' },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'user' },
   },
   { timestamps: true }
 );
