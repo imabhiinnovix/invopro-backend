@@ -39,8 +39,8 @@ export async function getAgreementSigned({
 }) {
   try {
     const yearDateRange = {
-      $gte: `${currentYear}-01-01T00:00:00.000Z`,
-      $lte: `${currentYear}-12-31T00:00:00.000Z`,
+      $gte: new Date(`${currentYear}-01-01T00:00:00.000Z`),
+      $lte: new Date(`${currentYear}-12-31T00:00:00.000Z`),
     };
 
     const sabicContractDetails = await customReportModel.DataSourceVersionValueSabicContracts.aggregate([
@@ -565,8 +565,8 @@ export async function getAccoladeMappingSheet({
 }) {
   try {
     const yearDateRange = {
-      $gte: `${currentYear}-01-01T00:00:00.000Z`,
-      $lte: `${currentYear}-12-31T00:00:00.000Z`,
+      $gte: new Date(`${currentYear}-01-01T00:00:00.000Z`),
+      $lte: new Date(`${currentYear}-12-31T00:00:00.000Z`),
     };
 
     const activeApplicationRawData = await customReportModel.DataSourceVersionValuePortfolio.aggregate([
