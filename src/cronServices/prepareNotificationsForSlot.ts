@@ -928,7 +928,7 @@ async function buildExtendedAttributeMap(entity: any): Promise<Record<string, an
 
 
 // Main function to prepare today's notifications
-export async function prepareTodayNotifications() {
+export async function prepareTodayNotifications(isForce = false) {
   // Connect to MongoDB
     const conn = await mongoose.connect(config.MONGO_URI!);
     console.info(`MongoDB Connected: ${conn.connection.host}`);  
@@ -953,7 +953,7 @@ export async function prepareTodayNotifications() {
     try {
       console.log(`\n🔹 Processing frequency setting ${setting._id}`);
 
-      if (!isDueToday(setting, today)) {
+      if (!isDueToday(setting, today) && !isForce) {
         console.log("⏭ Not due today, skipping");
         continue;
       }
