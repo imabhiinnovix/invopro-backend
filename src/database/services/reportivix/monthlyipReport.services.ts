@@ -281,8 +281,8 @@ export async function getCurrentYearNewApplicationFiled({
     matchCondition['rowData.SBU'] = { $in: sbuHeaders };
 
     const yearDateRange = {
-      $gte: `${currentYear}-01-01T00:00:00.000Z`,
-      $lte: `${currentYear}-12-31T00:00:00.000Z`,
+      $gte: new Date(`${currentYear}-01-01T00:00:00.000Z`),
+      $lte: new Date(`${currentYear}-12-31T00:00:00.000Z`),
     };
 
     if (isCurrentYearUSIssued || isCurrentYearINTIssued) {
@@ -385,7 +385,7 @@ export async function getCurrentYearNewApplicationFiled({
           },
           $or: [
             {
-              'rowData.Grant Date': { $exists: false }, // Checks if Grant Date is null
+              'rowData.Grant Date': { $eq: null }, // Checks if Grant Date is null
             },
             {
               $and: [
@@ -416,7 +416,7 @@ export async function getCurrentYearNewApplicationFiled({
                   },
                 },
                 {
-                  'rowData.Grant Date': { $exists: true }, // Ensures Grant Date is not null
+                  'rowData.Grant Date': { $ne: null, $exists: true }, // Ensures Grant Date is not null
                 },
               ],
             },
@@ -502,8 +502,8 @@ export async function getDisclosureCount({
 }) {
   try {
     const yearDateRange = {
-      $gte: `${currentYear}-01-01T00:00:00.000Z`,
-      $lte: `${currentYear}-12-31T00:00:00.000Z`,
+      $gte: new Date(`${currentYear}-01-01T00:00:00.000Z`),
+      $lte: new Date(`${currentYear}-12-31T00:00:00.000Z`),
     };
 
     const matchCondition = {
@@ -617,8 +617,8 @@ export async function getProjectBasedOnStcs({
 }) {
   try {
     const yearDateRange = {
-      $gte: `${currentYear}-01-01T00:00:00.000Z`,
-      $lte: `${currentYear}-12-31T00:00:00.000Z`,
+      $gte: new Date(`${currentYear}-01-01T00:00:00.000Z`),
+      $lte: new Date(`${currentYear}-12-31T00:00:00.000Z`),
     };
 
     const matchCondition = {
@@ -804,8 +804,8 @@ export async function getAppsFiledBasedOnStc({
     };
 
     const yearDateRange = {
-      $gte: `${currentYear}-01-01T00:00:00.000Z`,
-      $lte: `${currentYear}-12-31T00:00:00.000Z`,
+      $gte: new Date(`${currentYear}-01-01T00:00:00.000Z`),
+      $lte: new Date(`${currentYear}-12-31T00:00:00.000Z`),
     };
 
     if (isCurrentYearUSIssued || isCurrentYearINTIssued) {
@@ -908,7 +908,7 @@ export async function getAppsFiledBasedOnStc({
           },
           $or: [
             {
-              'rowData.Grant Date': { $exists: false }, // Checks if Grant Date is null
+              'rowData.Grant Date': { $eq: null }, // Checks if Grant Date is null
             },
             {
               $and: [
@@ -939,7 +939,7 @@ export async function getAppsFiledBasedOnStc({
                   },
                 },
                 {
-                  'rowData.Grant Date': { $exists: true }, // Ensures Grant Date is not null
+                  'rowData.Grant Date': { $ne: null, $exists: true }, // Ensures Grant Date is not null
                 },
               ],
             },
@@ -1182,8 +1182,8 @@ export async function getCurrentYearRenewalDue({
 }) {
   try {
     const yearDateRange = {
-      $gte: `${currentYear}-01-01T00:00:00.000Z`,
-      $lte: `${currentYear}-12-31T00:00:00.000Z`,
+      $gte: new Date(`${currentYear}-01-01T00:00:00.000Z`),
+      $lte: new Date(`${currentYear}-12-31T00:00:00.000Z`),
     };
 
     const sabicipData = await customReportModel.DataSourceVersionValueSabicips.aggregate([
@@ -1191,7 +1191,7 @@ export async function getCurrentYearRenewalDue({
         $match: {
           dataSourceVersionId: new ObjectId(sabicipDataSourceVersionId),
           'rowData.Renewal Date During Budget Period': yearDateRange,
-          'rowData.Clients reference': { $exists: true },
+          'rowData.Clients reference': { $ne: null, $exists: true },
         },
       },
       {
@@ -1277,7 +1277,7 @@ export async function getCurrentYearRenewalDue({
         $match: {
           dataSourceVersionId: new ObjectId(ctclinsabDataSourceVersionId),
           'rowData.Renewal Date During Budget Period': yearDateRange, // Ensure yearDateRange is properly defined
-          'rowData.File number': { $exists: true },
+          'rowData.File number': { $ne: null, $exists: true },
         },
       },
 
@@ -1339,7 +1339,7 @@ export async function getCurrentYearRenewalDue({
         $match: {
           dataSourceVersionId: new ObjectId(annuitiesbDataSourceVersionId),
           'rowData.Due Date': yearDateRange,
-          // 'rowData.Other Reference No': { $exists: true },
+          // 'rowData.Other Reference No': {  $ne: null, $exists: true },
         },
       },
       {
@@ -1514,8 +1514,8 @@ export async function getReductions({
     }
 
     const yearDateRange = {
-      $gte: `${currentYear}-01-01T00:00:00.000Z`,
-      $lte: `${currentYear}-12-31T00:00:00.000Z`,
+      $gte: new Date(`${currentYear}-01-01T00:00:00.000Z`),
+      $lte: new Date(`${currentYear}-12-31T00:00:00.000Z`),
     };
 
     const currentStatus = ['Abandoned', 'Withdrawn', 'Inactive'];
@@ -1844,8 +1844,8 @@ export async function getAnnuitySavingsFromReductions({
 }) {
   try {
     const yearDateRange = {
-      $gte: `${currentYear}-01-01T00:00:00.000Z`,
-      $lte: `${currentYear}-12-31T00:00:00.000Z`,
+      $gte: new Date(`${currentYear}-01-01T00:00:00.000Z`),
+      $lte: new Date(`${currentYear}-12-31T00:00:00.000Z`),
     };
 
     const combinedDrops = [...annuityDrop, ...priorityDrop, ...pctDrop, ...prosecutionDrop];

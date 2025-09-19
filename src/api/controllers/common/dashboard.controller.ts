@@ -434,8 +434,10 @@ export const getWidgetChartData = async ({
       },
       sort: { versionValue: -1 },
     })) as DataSourceVersion;
-    labelVersionValue = dataSourceVersion.versionValue;
-    dataSourceVersion = [dataSourceVersion];
+    if (dataSourceVersion) {
+      labelVersionValue = dataSourceVersion?.versionValue;
+      dataSourceVersion = [dataSourceVersion];
+    }
   }
 
   if (!dataSourceVersion || dataSourceVersion.length === 0) {

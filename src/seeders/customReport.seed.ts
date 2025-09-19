@@ -36,29 +36,41 @@ function getCustomReportToBeSeed({ entityDataSourceMap, organizationId, customRe
         {
           code: 'sabicip',
           dataSourceId: entityDataSourceMap.sabicip.dataSourceId,
-          isRequired: true,
+          isRequired: false,
           fileDetails: [{ name: 'AnnuitiesDueList_SHPP', isRequired: false }],
           entityId: entityDataSourceMap.sabicip.entityId,
         },
         {
           code: 'ctclinsab',
           dataSourceId: entityDataSourceMap.ctclinsab.dataSourceId,
-          isRequired: true,
-          fileDetails: [{ name: 'AnnuitiesDueList_Linde', isRequired: true }],
+          isRequired: false,
+          fileDetails: [{ name: 'AnnuitiesDueList_Linde', isRequired: false }],
           entityId: entityDataSourceMap.ctclinsab.entityId,
         },
         {
           code: 'annuities',
           dataSourceId: entityDataSourceMap.annuities.dataSourceId,
           isRequired: true,
-          fileDetails: [{ name: 'AnnuitiesDueList_CPi', isRequired: true }],
+          fileDetails: [
+            { name: 'AnnuitiesDueList_CPi', isRequired: true },
+            {
+              name: 'AnnuitiesDueList_SHPP (ALL)',
+              isRequired: true,
+            },
+          ],
           entityId: entityDataSourceMap.annuities.entityId,
         },
         {
           code: 'annuities_outstanding',
           dataSourceId: entityDataSourceMap.annuities_outstanding.dataSourceId,
           isRequired: true,
-          fileDetails: [{ name: 'AnnuitiesDueList (Outstanding)', isRequired: true }],
+          fileDetails: [
+            { name: 'AnnuitiesDueList (Outstanding)', isRequired: true },
+            {
+              name: 'AnnuitiesDueList_SHPP(Outstanding)',
+              isRequired: true,
+            },
+          ],
           entityId: entityDataSourceMap.annuities_outstanding.entityId,
         },
         {
@@ -1066,22 +1078,28 @@ function getCustomReportToBeSeed({ entityDataSourceMap, organizationId, customRe
         {
           code: 'sabicip',
           dataSourceId: entityDataSourceMap.sabicip.dataSourceId,
-          isRequired: true,
+          isRequired: false,
           fileDetails: [{ name: 'AnnuitiesDueList_SHPP', isRequired: false }],
           entityId: entityDataSourceMap.sabicip.entityId,
         },
         {
           code: 'ctclinsab',
           dataSourceId: entityDataSourceMap.ctclinsab.dataSourceId,
-          isRequired: true,
-          fileDetails: [{ name: 'AnnuitiesDueList_Linde', isRequired: true }],
+          isRequired: false,
+          fileDetails: [{ name: 'AnnuitiesDueList_Linde', isRequired: false }],
           entityId: entityDataSourceMap.ctclinsab.entityId,
         },
         {
           code: 'annuities',
           dataSourceId: entityDataSourceMap.annuities.dataSourceId,
           isRequired: true,
-          fileDetails: [{ name: 'AnnuitiesDueList_CPi', isRequired: true }],
+          fileDetails: [
+            { name: 'AnnuitiesDueList_CPi', isRequired: true },
+            {
+              name: 'AnnuitiesDueList_SHPP (ALL)',
+              isRequired: true,
+            },
+          ],
           entityId: entityDataSourceMap.annuities.entityId,
         },
         {
@@ -2899,7 +2917,7 @@ function getCustomReportToBeSeed({ entityDataSourceMap, organizationId, customRe
     },
     {
       _id: customReportMap.intermediatemonthlyip.reportId,
-      reportName: 'Intermediate Monthly Ip',
+      reportName: 'Intermediate Monthly IP',
       reportCode: 'intermediatemonthlyip',
       functionName: 'generateMonthlyIpReport',
       sampleFilePath: 'reports/sample/sample-monthly-ip-report.xlsx',
@@ -2927,22 +2945,28 @@ function getCustomReportToBeSeed({ entityDataSourceMap, organizationId, customRe
         {
           code: 'sabicip',
           dataSourceId: entityDataSourceMap.sabicip.dataSourceId,
-          isRequired: true,
+          isRequired: false,
           fileDetails: [{ name: 'AnnuitiesDueList_SHPP', isRequired: false }],
           entityId: entityDataSourceMap.sabicip.entityId,
         },
         {
           code: 'ctclinsab',
           dataSourceId: entityDataSourceMap.ctclinsab.dataSourceId,
-          isRequired: true,
-          fileDetails: [{ name: 'AnnuitiesDueList_Linde', isRequired: true }],
+          isRequired: false,
+          fileDetails: [{ name: 'AnnuitiesDueList_Linde', isRequired: false }],
           entityId: entityDataSourceMap.ctclinsab.entityId,
         },
         {
           code: 'annuities',
           dataSourceId: entityDataSourceMap.annuities.dataSourceId,
           isRequired: true,
-          fileDetails: [{ name: 'AnnuitiesDueList_CPi', isRequired: true }],
+          fileDetails: [
+            { name: 'AnnuitiesDueList_CPi', isRequired: true },
+            {
+              name: 'AnnuitiesDueList_SHPP (ALL)',
+              isRequired: true,
+            },
+          ],
           entityId: entityDataSourceMap.annuities.entityId,
         },
         {
@@ -15312,253 +15336,31 @@ export async function seedCustomReports({ organizationId, entityDataSourceMap, c
   });
 
   for (const customReport of customReports) {
-    // Check if the custom report already exists
-    const existingCustomReport = await CustomReportModel.findById(customReport._id);
+    try {
+      // Use findByIdAndUpdate with upsert option
+      const result = await CustomReportModel.findByIdAndUpdate(
+        customReport._id,
+        {
+          ...customReport,
+        },
+        {
+          upsert: true, // Create if doesn't exist
+          new: true, // Return the updated document
+          runValidators: true, // Run schema validations
+        }
+      );
 
-    if (!existingCustomReport) {
-      // If it doesn't exist, create a new custom report
-      const newCustomReport = new CustomReportModel(customReport);
-
-      await newCustomReport.save();
-      console.info(`New custom report with payload ${customReport} created successfully.`);
-    } else {
-      console.info(`New custom report with custom report id ${customReport._id} already exists.`);
+      if (result.isNew) {
+        console.info(`New custom report created with ID: ${customReport._id}`);
+      } else {
+        console.info(`Custom report updated with ID: ${customReport._id}`);
+      }
+    } catch (error) {
+      console.error(`Error upserting custom report with ID ${customReport._id}:`, error);
     }
   }
 
-  await CustomReportModel.updateMany({ reportName: 'Monthly Ip' }, { $set: { reportName: 'Monthly IP' } });
-  await CustomReportModel.updateMany({ reportName: 'Supplemental Ip' }, { $set: { reportName: 'Supplemental IP' } });
-  await CustomReportModel.updateMany(
-    { reportName: 'Intermediate Monthly Ip' },
-    { $set: { reportName: 'Intermediate Monthly IP' } }
-  );
-
-  await CustomReportModel.updateMany(
-    {},
-    {
-      $set: {
-        'dataSourceIds.$[elem].fileDetails': [
-          { name: 'All Disclosures', isRequired: true },
-          { name: 'All Disclosures_SHPP', isRequired: false },
-        ],
-      },
-    },
-    {
-      arrayFilters: [{ 'elem.code': 'disclosure' }],
-    }
-  );
-  await CustomReportModel.updateMany(
-    {},
-    {
-      $set: {
-        'dataSourceIds.$[elem].fileDetails': [
-          { name: 'Complete Portfolio', isRequired: true },
-          { name: 'Complete Portfolio_SHPP', isRequired: false },
-        ],
-      },
-    },
-    {
-      arrayFilters: [{ 'elem.code': 'portfolio' }],
-    }
-  );
-
-  await CustomReportModel.updateMany(
-    { reportCode: 'monthlyip', filters: { $exists: false } },
-    {
-      $set: {
-        filters: [
-          {
-            sheetCode: 'global',
-            section: 'global',
-            attribute: 'SBU',
-            columns: [
-              {
-                reportHeader: 'Corp T&I',
-                attributeValues: ['SBU T&I', 'T&I'],
-              },
-              {
-                reportHeader: 'Agri-Nutrients',
-                attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
-              },
-              {
-                reportHeader: 'Chemicals',
-                attributeValues: ['SBU Chemicals', 'Chemicals'],
-              },
-              {
-                reportHeader: 'Polymers',
-                attributeValues: [
-                  'SBU Polymers',
-                  'SBU Temp Polymers Transfer (from Spec)',
-                  'SBU PNJ Saudi Aramco-SABIC',
-                  'Polymers',
-                ],
-              },
-              {
-                reportHeader: 'Specialties',
-                attributeValues: ['SBU SHPP', 'SHPP'],
-              },
-              {
-                reportHeader: 'Strategy & Transformation',
-                attributeValues: ['SBU Strategy & Transformation', 'Strategy & Transformation'],
-              },
-            ],
-          },
-          {
-            sheetCode: 'stc',
-            section: 'stc',
-            attribute: 'SBU',
-            columns: [
-              {
-                reportHeader: 'Corp T&I',
-                attributeValues: ['SBU T&I', 'T&I'],
-              },
-              {
-                reportHeader: 'Agri-Nutrients',
-                attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
-              },
-              {
-                reportHeader: 'Chemicals',
-                attributeValues: ['SBU Chemicals', 'Chemicals'],
-              },
-              {
-                reportHeader: 'Polymers',
-                attributeValues: [
-                  'SBU Polymers',
-                  'SBU Temp Polymers Transfer (from Spec)',
-                  'SBU PNJ Saudi Aramco-SABIC',
-                  'Polymers',
-                ],
-              },
-              {
-                reportHeader: 'Specialties',
-                attributeValues: ['SBU SHPP', 'SHPP'],
-              },
-              {
-                reportHeader: 'Strategy & Transformation',
-                attributeValues: ['SBU Strategy & Transformation', 'Strategy & Transformation'],
-              },
-            ],
-          },
-        ],
-      },
-    }
-  );
-
-  await CustomReportModel.updateMany(
-    { reportCode: 'supplementalip', filters: { $exists: false } },
-    {
-      $set: {
-        filters: [
-          {
-            sheetCode: 'agreements',
-            section: 'finalAgreementTypes',
-            attribute: 'SBU',
-            columns: [
-              {
-                reportHeader: 'Agri-Nutrients',
-                attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
-              },
-              {
-                reportHeader: 'Chemicals',
-                attributeValues: ['SBU Chemicals', 'Chemicals'],
-              },
-              {
-                reportHeader: 'Polymers',
-                attributeValues: [
-                  'SBU Polymers',
-                  'SBU Temp Polymers Transfer (from Spec)',
-                  'SBU PNJ Saudi Aramco-SABIC',
-                  'Polymers',
-                ],
-              },
-              {
-                reportHeader: 'SHPP',
-                attributeValues: ['SBU SHPP', 'SHPP'],
-              },
-              {
-                reportHeader: 'T&I',
-                attributeValues: ['SBU T&I', 'T&I'],
-              },
-              { reportHeader: 'Metals', attributeValues: ['SBU Metals'] },
-              { reportHeader: 'Scientific Design', attributeValues: ['SBU Scientific Design', 'Scientific Design'] },
-            ],
-          },
-          {
-            sheetCode: 'agreements',
-            section: 'agreementTypes',
-            attribute: 'SBU',
-            columns: [
-              {
-                reportHeader: 'Agri-Nutrients',
-                attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
-              },
-              {
-                reportHeader: 'Chemicals',
-                attributeValues: ['SBU Chemicals', 'Chemicals'],
-              },
-              {
-                reportHeader: 'Polymers',
-                attributeValues: [
-                  'SBU Polymers',
-                  'SBU Temp Polymers Transfer (from Spec)',
-                  'SBU PNJ Saudi Aramco-SABIC',
-                  'Polymers',
-                ],
-              },
-              {
-                reportHeader: 'SHPP',
-                attributeValues: ['SBU SHPP', 'SHPP'],
-              },
-              {
-                reportHeader: 'T&I',
-                attributeValues: ['SBU T&I', 'T&I'],
-              },
-              { reportHeader: 'Metals', attributeValues: ['SBU Metals'] },
-              { reportHeader: 'Scientific Design', attributeValues: ['SBU Scientific Design', 'Scientific Design'] },
-            ],
-          },
-          {
-            sheetCode: 'patentvaluecoveragenew',
-            section: 'patentvaluecoveragenew',
-            attribute: 'SBU',
-            columns: [
-              {
-                reportHeader: 'Corp T&I',
-                attributeValues: ['SBU T&I', 'T&I'],
-              },
-              {
-                reportHeader: 'Agri-Nutrients',
-                attributeValues: ['SBU Agri-nutrients', 'Agri-Nutrients'],
-              },
-              {
-                reportHeader: 'Chemicals',
-                attributeValues: ['SBU Chemicals', 'Chemicals'],
-              },
-              {
-                reportHeader: 'Polymers',
-                attributeValues: [
-                  'SBU Polymers',
-                  'SBU Temp Polymers Transfer (from Spec)',
-                  'SBU PNJ Saudi Aramco-SABIC',
-                  'Polymers',
-                ],
-              },
-              {
-                reportHeader: 'Specialties',
-                attributeValues: ['SBU SHPP', 'SHPP'],
-              },
-              {
-                reportHeader: 'Strategy & Transformation',
-                attributeValues: ['SBU Strategy & Transformation', 'Strategy & Transformation'],
-              },
-              { reportHeader: 'Metals', attributeValues: ['SBU Metals'] },
-              { reportHeader: 'Scientific Design', attributeValues: ['SBU Scientific Design', 'Scientific Design'] },
-            ],
-          },
-        ],
-      },
-    }
-  );
-
   await CustomReportModel.collection.updateMany({ headers: { $exists: true } }, { $unset: { headers: '' } });
+
+  console.log('Update completed only for documents missing the files.');
 }
