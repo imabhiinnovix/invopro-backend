@@ -1191,6 +1191,919 @@ export const getDataSourceVersionValueV2 = async ({
   entityId: any;
   dimension?: string;
   groupBy?: string[];
+  aggregation: { type: string; attributeName: string };
+  conditions?: any[];
+  widgetType?: string;
+}) => {
+  try {
+    const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
+    const entity: any = await findEntityById(entityId);
+
+    // const attributesMap: Record<string, any> = entity.attributes.reduce((acc, attr) => {
+    //   acc[attr.name] = attr;
+    //   return acc;
+    // }, {} as Record<string, any>);
+
+    // ----------------- Cache -----------------
+    const modelCache: Record<string, any> = {};
+    const attrCache: Record<string, any> = {};
+
+    const getCachedModel = async (entityId: string) => {
+      if (!modelCache[entityId]) modelCache[entityId] = await getModelForEntity(entityId);
+      return modelCache[entityId];
+    };
+
+    const getCachedAttr = async (entityId: string, name: string) => {
+      const key = `${entityId}:${name}`;
+      if (!attrCache[key]) attrCache[key] = await getAttributeByName(entityId, name);
+      return attrCache[key];
+    };
+
+    const attributesMap: Record<string, any> = {};
+    const refAttributesMap: Record<string, any> = {};
+
+    // Add direct attributes
+    for (const attr of entity.attributes) {
+      attributesMap[attr.name] = attr;
+
+      // If this is a mapping relation, fetch referenced attributes
+      if (attr?.referenceEntitySetting?.refEntityId) {
+        const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
+        const refEntity: any = await findEntityById(refEntityId);
+        if (refEntity?.attributes) {
+          for (const refAttr of refEntity.attributes) {
+            // Avoid overwriting original key, prefix with mapping key
+            const mapKey = `${attr.name}.${refAttr.name}`;
+            if (refAttr?.referenceEntitySetting?.relationType.startsWith('mapping_')) {
+              refAttributesMap[mapKey] = refAttr;
+            }
+          }
+        }
+      }
+    }
+
+    const aggregationPipeline: any[] = [{ $match: query }];
+
+    // Step 1: Lookups for all reference fields
+    for (const [attrName, attr] of Object.entries(attributesMap)) {
+      if (attr.referenceEntitySetting?.refEntityId) {
+        const refEntityId = attr.referenceEntitySetting.refEntityId;
+        const localField = `rowData.${attrName}`;
+        const asField = `rowData.${attrName}_resolved`;
+        const refModel = await getModelForEntity(refEntityId);
+
+        if (!aggregationPipeline.some((stage) => stage.$lookup?.as === asField)) {
+          if (attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
+             aggregationPipeline.push({
+              $lookup: {
+                from: refModel.collection.name,
+                localField: '_id',
+                foreignField: localField,
+                as: asField,
+              },
+            });
+          }else{
+            aggregationPipeline.push({
+              $lookup: {
+                from: refModel.collection.name,
+                localField,
+                foreignField: '_id',
+                as: asField,
+              },
+            });
+          }
+          aggregationPipeline.push({
+            $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true },
+          });
+        }
+      }
+    }
+async function buildNestedLookups({
+  entityId,
+  pathSegments,
+  prefix = 'rowData',
+  pipeline,
+  visited,
+  filtersForLookup = {},
+  depth = 0,
+  filterConditions
+}: {
+  entityId: string;
+  pathSegments: string[];
+  prefix?: string;
+  pipeline: any[];
+  visited: Set<string>;
+  filtersForLookup?: Record<string, any>;
+  depth?: number;
+  filterConditions: any[]
+}) {
+  if (!pathSegments.length || depth > 10) return;
+
+  const field = pathSegments[0];
+  const attr = await getCachedAttr(entityId, field);
+  if (!attr) return;
+
+  const localField = `${prefix}.${field}`;
+  const asField = `${prefix}.${field}_resolved`;
+  const fullPath = [...pathSegments].join('.');
+  const filterString = filtersForLookup[field] ? JSON.stringify(filtersForLookup[field]) : '';
+  const lookupKey = `${entityId}:${fullPath}:${filterString}`;
+
+  if (visited.has(lookupKey)) return;
+  visited.add(lookupKey);
+
+  const alreadyHaveLookup = (asName: string) =>
+    pipeline.some((stage: any) => stage.$lookup?.as === asName);
+  console.log('attr',attr);
+  // -------- mapping reference --------
+  if (attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
+    const mappingEntityId = attr.referenceEntitySetting.refEntityId.toString();
+    const mappingModel = await getCachedModel(mappingEntityId);
+
+    const refFieldAttr = await getEntityAttribute(
+      attr.referenceEntitySetting.refEntityId,
+      attr.referenceEntitySetting.refEntityField
+    );
+    const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
+    if (!alreadyHaveLookup(asField)) {
+      if(prefix?.endsWith('_resolved')){
+        pipeline.push({
+          $lookup: {
+            from: mappingModel.collection.name,
+            localField: `${prefix}._id`,
+            foreignField: `rowData.${displayField}`,
+            as: asField,
+            // pipeline: [{ $project: { _id: 1, rowData: 1 } }],
+          },
+        });
+      }else{
+        pipeline.push({
+          $lookup: {
+            from: mappingModel.collection.name,
+            localField: `_id`,
+            foreignField: `rowData.${displayField}`,
+            as: asField,
+            // pipeline: [{ $project: { _id: 1, rowData: 1 } }],
+          },
+        });
+      }
+      pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
+    }
+
+    // ✅ Apply filters at root level
+    if (pathSegments.length === 1 && filtersForLookup) {
+      for (const [filterField, filterValue] of Object.entries(filtersForLookup)) {
+        const matchField = `${asField}.rowData.${filterField}`;
+        filterConditions.push({ [matchField]: filterValue });
+      }
+    }
+
+    if (pathSegments.length > 1) {
+      await buildNestedLookups({
+        entityId: mappingEntityId,
+        pathSegments: pathSegments.slice(1),
+        prefix: `${asField}`,
+        pipeline,
+        visited,
+        filtersForLookup,
+        depth: depth + 1,
+        filterConditions
+      });
+    }
+    return;
+  }
+
+  // -------- normal reference --------
+  if (attr.referenceEntitySetting?.refEntityId) {
+    const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
+    const refModel = await getCachedModel(refEntityId);
+    const isLast = pathSegments.length === 1;
+
+    if (!alreadyHaveLookup(asField)) {
+      pipeline.push({
+        $lookup: {
+          from: refModel.collection.name,
+          localField: `${prefix}.rowData.${field}`,
+          foreignField: '_id',
+          as: asField,
+        },
+      });
+        pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
+    }
+
+    // ✅ Apply filters at root level
+  if (isLast && filtersForLookup) {
+  const matchConditions: Record<string, any> = {};
+
+  for (const [filterField, filterValue] of Object.entries(filtersForLookup)) {
+    const matchField = `${asField}.rowData.${filterField}`;
+
+    if (
+      typeof filterValue === "object" &&
+      filterValue !== null &&
+      !Array.isArray(filterValue)
+    ) {
+      const keys = Object.keys(filterValue);
+
+      if (keys.length === 1 && keys[0].startsWith("$")) {
+        // ✅ Direct Mongo operator
+        matchConditions[matchField] = filterValue;
+      } else if (
+        keys.length === 1 &&
+        !keys[0].startsWith("$") &&
+        keys[0].includes(".")
+      ) {
+        // ✅ Case like { "rowData.FOEmail": { $regex: ... } }
+        matchConditions[matchField] = filterValue[keys[0]];
+      } else {
+        // ✅ Plain object (multiple operators)
+        matchConditions[matchField] = filterValue;
+      }
+    } else {
+      // ✅ Simple equality
+      matchConditions[matchField] = filterValue;
+    }
+  }
+
+  if (Object.keys(matchConditions).length > 0) {
+    filterConditions.push(matchConditions);
+  }
+}
+
+
+
+    if (!isLast) {
+      await buildNestedLookups({
+        entityId: refEntityId,
+        pathSegments: pathSegments.slice(1),
+        prefix: `${asField}`,
+        pipeline,
+        visited,
+        filtersForLookup,
+        depth: depth + 1,
+        filterConditions
+      });
+    }
+  }
+}
+
+/**
+ * Builds the $lookup stages for nested references and returns the aggregation path string.
+ */
+async function buildAggregationPathAndReturnExpr({
+  entityId,
+  pathSegments,
+  prefix = 'rowData',
+  pipeline,
+  visited,
+}: {
+  entityId: string;
+  pathSegments: string[];
+  prefix?: string;
+  pipeline: any[];
+  visited: Set<string>;
+}): Promise<string> {
+  if (!pathSegments.length) return prefix; // If empty, return prefix
+
+  const field = pathSegments[0];
+  const attr = await getCachedAttr(entityId, field);
+  if (!attr) return `${prefix}.${field}`; // Default path
+
+  const asField = `${prefix}.${field}_resolved`;
+  const lookupKey = `${entityId}:${pathSegments.join('.')}`;
+
+  if (!visited.has(lookupKey)) {
+    visited.add(lookupKey);
+
+    const alreadyHaveLookup = (asName: string) =>
+      pipeline.some((stage: any) => stage.$lookup?.as === asName);
+
+    // -------- mapping reference --------
+    if (attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
+      const mappingEntityId = attr.referenceEntitySetting.refEntityId.toString();
+      const mappingModel = await getCachedModel(mappingEntityId);
+
+      const refFieldAttr = await getEntityAttribute(
+        mappingEntityId,
+        attr.referenceEntitySetting.refEntityField
+      );
+      const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
+
+      if (!alreadyHaveLookup(asField)) {
+        pipeline.push({
+          $lookup: {
+            from: mappingModel.collection.name,
+            localField: prefix?.endsWith('_resolved') ? `${prefix}._id` : '_id',
+            foreignField: `rowData.${displayField}`,
+            as: asField,
+          },
+        });
+        pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
+      }
+
+      if (pathSegments.length > 1) {
+        return buildAggregationPathAndReturnExpr({
+          entityId: mappingEntityId,
+          pathSegments: pathSegments.slice(1),
+          prefix: asField,
+          pipeline,
+          visited,
+        });
+      }
+      return `${asField}.rowData.${displayField}`;
+    }
+
+    // -------- normal reference --------
+    if (attr.referenceEntitySetting?.refEntityId) {
+      const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
+      const refModel = await getCachedModel(refEntityId);
+
+      if (!alreadyHaveLookup(asField)) {
+        pipeline.push({
+          $lookup: {
+            from: refModel.collection.name,
+            localField: `${prefix}.rowData.${field}`,
+            foreignField: '_id',
+            as: asField,
+          },
+        });
+        pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
+      }
+
+      if (pathSegments.length > 1) {
+        return buildAggregationPathAndReturnExpr({
+          entityId: refEntityId,
+          pathSegments: pathSegments.slice(1),
+          prefix: asField,
+          pipeline,
+          visited,
+        });
+      }
+
+      // Last segment: return path to value
+      const refFieldAttr = await getEntityAttribute(refEntityId, attr.referenceEntitySetting.refEntityField);
+      const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
+      return `${asField}.rowData.${displayField}`;
+    }
+  }
+
+  // If no reference, return simple path
+  return `${prefix}.rowData.${field}`;
+}
+
+
+
+
+
+
+// Helper to build filter value (regex for strings)
+  const buildFilterForValue = (v: any) =>
+    typeof v === "string"
+      ? { $regex: `^${escapeRegExp(v.trim())}$`, $options: "i" }
+      : v;
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // Step 2: Filters (unchanged)
+    const filterConditions: any[] = [];
+    const visited = new Set<string>();
+    for (const [key, val] of Object.entries(filters)) {
+      if (key.startsWith('Derived.')) {
+        const derivedName = key.split('.')[1];
+        const derivedField = await getDerivedField({ name: derivedName, entityId });
+        if (!derivedField) continue;
+
+        const matchedRules = derivedField.valueRules.filter((vr) =>
+          Array.isArray(val) ? val.includes(vr.value) : vr.value === val
+        );
+
+        const derivedRuleConditions: any = [];
+        for (const rule of matchedRules) {
+          const conditionExpressions: any = [];
+          for (const cond of rule.conditions || []) {
+            const path = await resolveFieldPath(cond, entity.attributes);
+            if (!path) continue;
+
+            if (cond.operator === 'equals') conditionExpressions.push({ [path]: cond.matchValues[0] });
+            else if (cond.operator === 'in') conditionExpressions.push({ [path]: { $in: cond.matchValues } });
+            else if (cond.operator === 'not_in') conditionExpressions.push({ [path]: { $nin: cond.matchValues } });
+            else if (cond.operator === 'exists') conditionExpressions.push({ [path]: { $exists: true, $ne: null } });
+            else if (cond.operator === 'not_exists') conditionExpressions.push({ [path]: { $in: [null, undefined] } });
+          }
+          if (conditionExpressions.length > 0) {
+            derivedRuleConditions.push(
+              rule.conditionOperator === 'OR' ? { $or: conditionExpressions } : { $and: conditionExpressions }
+            );
+          }
+        }
+
+        if (derivedRuleConditions.length > 0) filterConditions.push({ $or: derivedRuleConditions });
+     } else if (key.includes(".")) {
+  const pathSegments = key.split(".");
+  const lastField = pathSegments[pathSegments.length - 1];
+
+  // Full filter path inside the nested document
+  const filterCondition = Array.isArray(val)
+    ? {
+        $or: val.map((v) => ({
+          [`rowData.${lastField}`]: buildFilterForValue(v),
+        })),
+      }
+    : { [`rowData.${lastField}`]: buildFilterForValue(val) };
+
+  // Pass filter into buildNestedLookups for correct nested $lookup pipeline
+  await buildNestedLookups({
+    entityId,
+    pathSegments: pathSegments.slice(0, -1), // all except last
+    pipeline: aggregationPipeline,
+    visited,
+    filtersForLookup: { [lastField]: filterCondition },
+    filterConditions
+  });
+}
+
+      // Top-level attribute (primitive or reference)
+       else {
+    const attr = attributesMap[key];
+    if (attr?.referenceEntitySetting?.refEntityId && !attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
+      const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
+      const refModel = await getModelForEntity(refEntityId);
+
+      const localField = `rowData.${key}`;
+      const asField = `rowData.${key}_resolved`;
+
+      // Add lookup if not already present
+      if (!aggregationPipeline.some((stage) => stage.$lookup?.as === asField)) {
+        aggregationPipeline.push({
+          $lookup: {
+            from: refModel.collection.name,
+            localField,
+            foreignField: "_id",
+            as: asField,
+          },
+        });
+        aggregationPipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
+      }
+
+      // ✅ Resolve actual attribute name from reference entity
+      const refFieldAttr = await getEntityAttribute(
+        attr.referenceEntitySetting.refEntityId,
+        attr.referenceEntitySetting.refEntityField
+      );
+      const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
+
+      const filterCondition = Array.isArray(val)
+      ? {
+          $or: val.map((v) => ({
+            [`${asField}.rowData.${displayField}`]: buildFilterForValue(v),
+          })),
+        }
+      : { [`${asField}.rowData.${displayField}`]: buildFilterForValue(val) };
+
+      filterConditions.push(filterCondition);
+    } else {
+      const filterCondition = Array.isArray(val)
+      ? {
+          $or: val.map((v) => ({
+            [`rowData.${key}`]: buildFilterForValue(v),
+          })),
+        }
+      : { [`rowData.${key}`]: buildFilterForValue(val) };
+
+      filterConditions.push(filterCondition);
+    }
+      }
+    }
+    console.log('filterConditions', JSON.stringify(filterConditions));
+
+   const matchStage: any = { $and: [] };
+
+  // Collect filter conditions
+  if (filterConditions.length > 0) {
+    matchStage.$and.push(...filterConditions);
+  }
+
+  // Only push if not empty
+  if (matchStage.$and.length > 0) {
+    aggregationPipeline.push({ $match: matchStage });
+  }
+
+   // Step 3: Build group-by keys
+    const groupKeys = [...(groupBy || [])];
+    if (dimension) groupKeys.unshift(dimension[0]);
+
+    const groupObject: Record<string, any> = {};
+    console.log(groupKeys, 'groupKeys', dimension);
+    for (const key of groupKeys) {
+      let path: string;
+      const visited = new Set<string>();
+      if (key.includes('.')) {
+        const pathSegments = key.split('.');
+
+        path = await buildAggregationPathAndReturnExpr({
+          entityId,
+          pathSegments,
+          pipeline: aggregationPipeline,
+          visited,
+        });
+
+        path = `$${path}`;
+        
+      } else {
+        path = `$rowData.${key}`;
+      }
+
+      // Replace dots with underscores for field names used in the group _id
+      const safeField = key === dimension[0] ? 'name' : key.replace(/\./g, '_');
+
+      groupObject[safeField] =  { "$ifNull": [path, "Unknown"] };
+    }
+    console.log(groupObject, 'groupObject');
+
+    const conditionsByField: Record<string, any[]> = {};
+console.log("payload conditions", JSON.stringify(conditions));
+
+for (const condition of conditions || []) {
+  const originalField = condition.field;
+  let resolvedFieldPath: string;
+  const visited = new Set<string>();
+
+  if (originalField.includes(".")) {
+    // Reference field
+    const pathSegments = originalField.split(".");
+    resolvedFieldPath = await buildAggregationPathAndReturnExpr({
+      entityId,
+      pathSegments,
+      pipeline: aggregationPipeline,
+      visited,
+    });
+    resolvedFieldPath =  resolvedFieldPath.replace(/^rowData\./, '');
+  } else {
+    // Direct field
+    resolvedFieldPath = `${originalField}`;
+  }
+
+  // Overwrite field name with resolved path
+  const processedCondition = {
+    ...condition,
+    field: resolvedFieldPath,
+  };
+  console.log("processedCondition", JSON.stringify(processedCondition));
+
+  if (!conditionsByField[resolvedFieldPath]) {
+    conditionsByField[resolvedFieldPath] = [];
+  }
+
+  conditionsByField[resolvedFieldPath].push(processedCondition);
+}
+
+console.log("conditionsByField", JSON.stringify(conditionsByField));
+
+    const getFieldType = (fieldName: string) => {
+      const attribute = entity.attributes.find((attr: any) => attr.name === fieldName);
+      return attribute ? attribute.type : 'text';
+    };
+
+    // Process conditions using the common utility
+    const { matchConditions, dateConversions } = processFieldConditions(conditionsByField, getFieldType, {});
+    console.log('matchConditions', JSON.stringify(matchConditions));
+    if (Object.keys(dateConversions).length > 0) {
+      aggregationPipeline.push({ $addFields: dateConversions });
+    }
+
+    // Add match conditions derived from widget.conditions
+    if (Object.keys(matchConditions).length > 0) {
+      aggregationPipeline.push({ $match: matchConditions });
+    }
+    let aggPath: string;
+    
+    if (aggregation?.attributeName.includes('.')) {
+      const visited = new Set<string>();
+      const pathSegments = aggregation.attributeName.split('.');
+
+      aggPath = await buildAggregationPathAndReturnExpr({
+        entityId,
+        pathSegments,
+        pipeline: aggregationPipeline,
+        visited,
+      });
+
+      console.log(aggPath, 'aggPath...');
+      // const [refField, ...subFields] = aggregation.attributeName.split('.');
+      // aggPath = `$rowData.${refField}_resolved.rowData.${subFields.join('.')}`;
+    } else {
+      aggPath = `$rowData.${aggregation?.attributeName}`;
+    }
+    console.log(aggPath, 'aggPath');
+    let aggregationExpr;
+    switch (aggregation?.type) {
+      case 'Count':
+        aggregationExpr = { count: { $sum: 1 } };
+        break;
+      case 'Sum':
+        aggregationExpr = { total: { $sum: aggPath } };
+        break;
+      case 'Average':
+        aggregationExpr = { average: { $avg: aggPath } };
+        break;
+      default:
+        aggregationExpr = { count: { $sum: 1 } };
+    }
+
+    if (widgetType === 'number') {
+      aggregationPipeline.push(
+        { $addFields: { name: 'Total' } },
+        {
+          $group: {
+            _id: { name: '$name' },
+            data: aggregationExpr[Object.keys(aggregationExpr)[0]],
+          },
+        },
+        {
+          $replaceRoot: {
+            newRoot: {
+              $mergeObjects: ['$_id', { name: '$name', data: '$data' }],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            data: { $push: '$$ROOT' },
+            total: { $sum: '$data' },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            data: 1,
+            total: 1,
+          },
+        },
+        {
+          $replaceRoot: { newRoot: { widgetData: '$data', totalCount: '$total' } },
+        }
+      );
+    } else {
+      aggregationPipeline.push(
+        {
+          $group: {
+            _id: groupObject,
+            ...aggregationExpr,
+          },
+        },
+        {
+          $replaceRoot: {
+            newRoot: {
+              $mergeObjects: [
+                '$_id',
+                {
+                  data: `$${Object.keys(aggregationExpr)[0]}`,
+                },
+              ],
+            },
+          },
+        },
+        {
+          $match: {
+            name: { $ne: null },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            data: { $push: '$$ROOT' },
+            total: { $sum: '$data' },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            data: 1,
+            total: 1,
+          },
+        },
+        {
+          $replaceRoot: { newRoot: { widgetData: '$data', totalCount: '$total' } },
+        }
+      );
+    }
+    
+    
+    console.log('aggregationPipeline',JSON.stringify(aggregationPipeline));
+    // Step 5: Execute aggregation
+    const versionValueData = await DataSourceVersionValue.aggregate(aggregationPipeline).exec();
+
+    console.log('versionValueData',JSON.stringify(versionValueData));
+
+    // -------------------------
+    // Helper: Resolve reference/mapping attributes (reuse your original logic)
+    // -------------------------
+    async function resolveRefAttribute(
+      attr: any,
+      refResolved: any,
+      key: string,
+      rowData: Record<string, any>,
+      currentAttr?: any
+    ) {
+      if (!refResolved) return;
+
+      let displayField: string | undefined;
+      if (attr.referenceEntitySetting?.refEntityField) {
+        const refFieldAttr = await getEntityAttribute(
+          attr.referenceEntitySetting.refEntityId,
+          attr.referenceEntitySetting.refEntityField
+        );
+        displayField = refFieldAttr?.name;
+      }
+      // console.log('attr',attr);
+      // Original many-to-one logic
+      if (
+        currentAttr &&
+        ['mapping_one_to_one', 'mapping_many_to_one'].includes(currentAttr?.referenceEntitySetting?.relationType)
+      ) {
+        const refFieldAttr = await getEntityAttribute(
+          attr.referenceEntitySetting.refEntityId,
+          attr.referenceEntitySetting.refEntityField
+        );
+        const refFieldName = refFieldAttr?.name;
+        // console.log('refFieldName',refFieldName,refResolved?.rowData);
+        if (refFieldName && refResolved?.rowData?.[refFieldName]) {
+          const refValue = refResolved.rowData[refFieldName];
+          const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
+          // console.log('refFieldName',refFieldName, refValue);
+          const relatedDocs: any[] = await RefModel.find({ _id: refValue }).lean();
+          // console.log('relatedDocs',relatedDocs);
+          if (currentAttr.referenceEntitySetting?.relationType == 'mapping_one_to_one') {
+            for (const r of relatedDocs) {
+              for (const subKey in r.rowData) {
+                // console.log('subKey',refFieldName,key );
+                // if (subKey === refFieldName) continue;
+                const arrayKey = `${key}.${subKey}`;
+                // console.log('arrayKey',arrayKey);
+                const value = r.rowData[subKey];
+                if (value !== undefined) rowData[arrayKey] = value;
+              }
+            }
+          } else {
+            for (const r of relatedDocs) {
+              for (const subKey in r.rowData) {
+                // console.log('subKey',refFieldName,key );
+                // if (subKey === refFieldName) continue;
+                const arrayKey = `${key}.${subKey}`;
+                // console.log('arrayKey',arrayKey);
+                if (!Array.isArray(rowData[arrayKey])) rowData[arrayKey] = [];
+                const value = r.rowData[subKey];
+                // console.log('value',value, subKey);
+                if (Array.isArray(value)) rowData[arrayKey].push(...value);
+                else if (value !== undefined) rowData[arrayKey].push(value);
+                // remove duplicates
+                rowData[arrayKey] = Array.from(new Set(rowData[arrayKey]));
+              }
+            }
+          }
+          // console.log('rowData',rowData);
+          // Remove duplicates
+          // for (const subKey in rowData) {
+          //   if (subKey.startsWith(`${key}.`) && Array.isArray(rowData[subKey])) rowData[subKey] = [...new Set(rowData[subKey])];
+          // }
+
+          // // Set main field
+          // rowData[`${key}.${refFieldName}`] = refResolved.rowData[refFieldName];
+          // rowData[key] = displayField && refResolved.rowData[displayField] !== undefined
+          //   ? refResolved.rowData[displayField]
+          //   : Object.values(refResolved.rowData)[0];
+        }
+      }
+      // Default one-to-one or array
+      else if (Array.isArray(refResolved)) {
+        const displayValues: string[] = [];
+        for (const ref of refResolved) {
+          if (!ref?.rowData) continue;
+          for (const subKey in ref.rowData) {
+            const arrayKey = `${key}.${subKey}`;
+            if (!Array.isArray(rowData[arrayKey])) rowData[arrayKey] = [];
+            const value = ref.rowData[subKey];
+            if (Array.isArray(value)) rowData[arrayKey].push(...value);
+            else if (value !== undefined) rowData[arrayKey].push(value);
+          }
+          const displayVal =
+            displayField && ref.rowData[displayField] !== undefined
+              ? ref.rowData[displayField]
+              : Object.values(ref.rowData)[0];
+          displayValues.push(displayVal);
+        }
+        rowData[key] = displayValues;
+      } else if (refResolved && refResolved.rowData) {
+        const refRowData = refResolved.rowData;
+        for (const subKey in refRowData) rowData[`${key}.${subKey}`] = refRowData[subKey];
+        rowData[key] =
+          displayField && refRowData[displayField] !== undefined
+            ? refRowData[displayField]
+            : Object.values(refRowData)[0];
+      }
+    }
+    function getTopLevelAttribute(dotKey: string): string {
+      return dotKey.split('.')[0]; // take everything before first dot
+    }
+
+    // Step 6: Transform
+    // Step 6: Transform widgetData
+const rawData = versionValueData[0] || { widgetData: [], totalCount: 0 };
+
+const transformedData = await Promise.all(
+  rawData.widgetData.map(async (doc: any) => {
+    const newDoc = { ...doc };
+    const key = aggregation?.attributeName;
+
+    // Check attribute in maps
+    const attr = attributesMap[key] || refAttributesMap[key];
+    if (!attr) return newDoc;
+
+    // Mapping reference
+    if (attr.referenceEntitySetting?.relationType?.startsWith("mapping_")) {
+      const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
+      const refFieldAttr = await getEntityAttribute(
+        attr.referenceEntitySetting.refEntityId,
+        attr.referenceEntitySetting.refEntityField
+      );
+      const displayField = refFieldAttr?.name;
+
+      if (displayField) {
+        const relatedDocs: any = await RefModel.find({ _id: doc.name }).lean();
+        if (relatedDocs.length > 0) {
+          newDoc.name = relatedDocs.map((r) => r.rowData?.[displayField]).filter(Boolean).join(", ");
+        }
+      }
+    }
+    // Normal reference
+    else if (attr.referenceEntitySetting?.refEntityId) {
+      const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
+      const refFieldAttr = await getEntityAttribute(
+        attr.referenceEntitySetting.refEntityId,
+        attr.referenceEntitySetting.refEntityField
+      );
+      const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
+
+      const resolvedDoc: any = await RefModel.findById(doc.name).lean();
+      if (resolvedDoc?.rowData?.[displayField]) {
+        newDoc.name = resolvedDoc.rowData[displayField];
+      }
+    }
+    // Primitive field (like FOEmail or "Unknown")
+    else {
+      newDoc.name = doc.name; // keep as-is
+    }
+
+    return newDoc;
+  })
+);
+
+return {
+  widgetData: transformedData,
+  totalCount: rawData.totalCount
+};
+
+
+
+   
+
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getDataSourceVersionValueV2Backup = async ({
+  schemaName,
+  query,
+  filters = {},
+  entityId = '',
+  dimension = '',
+  groupBy = [],
+  aggregation,
+  conditions,
+  widgetType,
+}: {
+  schemaName: string;
+  query: any;
+  select?: string;
+  filters?: Record<string, any>;
+  entityId: any;
+  dimension?: string;
+  groupBy?: string[];
   aggregation?: { type: string; attributeName: string };
   conditions?: any[];
   widgetType?: string;

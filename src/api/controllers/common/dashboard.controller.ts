@@ -16,6 +16,8 @@ import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common
 import createDefaultDataSourceVersionModel from '../../../database/models/common/defaultDataSourceVersionModel';
 import { DataSourceVersion } from '../../../types/widget.types';
 import { DateTime } from 'luxon';
+import { getDataSourceVersionValueV2 } from '../../../database/services/common/defaultDataSourceVersionValue.services';
+import { getDataSourceById } from './dataSource.controller';
 
 export const createDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -520,6 +522,74 @@ export const getWidgetChartData = async ({
   };
 };
 
+export const getNewChartData = async ({
+          dataSourceId,
+          dimensions,
+          entityId,
+          aggregation,
+          groupBy,
+          conditions,
+          widgetType,
+          dashBoardType,
+          dashboardFilters,
+          isIncremental,
+          orgCode,
+          dataSourceDetails
+        }) => {
+  try {
+    // const { dataSourceId, filters, versionValue, dimensions, groupBy, aggregation, conditions, widgetType } = req.body;
+
+    // const { orgCode } = req.user;
+
+    // const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+    // if (!dataSourceDetails) {
+    //   return res.status(404).json({ success: false, message: 'Data source not found.' });
+    // }
+
+    const versionQuery: any = {
+      dataSourceId: new Types.ObjectId(dataSourceId),
+      isCurrent: true, // Always filter for current version
+    };
+
+    // if (versionValue) {
+    //   versionQuery.versionValue = versionValue; // Optional, narrows to specific version if provided
+    // }
+
+    const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
+      query: versionQuery,
+    });
+
+    if (!dataSourceVersionDetails?.data?.length) {
+      return [];
+    }
+
+    const dataSourceVersionId = dataSourceVersionDetails.data[0]._id;
+    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSourceDetails.code,
+    });
+
+    const query = { dataSourceVersionId, status: 'active' };
+
+    const result = await getDataSourceVersionValueV2({
+      schemaName,
+      query,
+      filters: dashboardFilters,
+      entityId: dataSourceDetails.entityId,
+      dimension: dimensions,
+      groupBy,
+      aggregation,
+      conditions,
+      widgetType,
+    });
+    const data = result ?? [];
+
+    return data;
+  } catch (e) {
+    console.log('Error in getNotivixChartData:', e);
+  }
+};
+
 export const getWidgetData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     let {
@@ -536,19 +606,39 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     } = req.body;
     const { orgCode } = req.user;
 
-    const result = await getWidgetChartData({
-      dataSourceId,
-      dimensions,
-      entityId,
-      aggregation,
-      groupBy,
-      conditions,
-      widgetType,
-      orgCode,
-      dashBoardType,
-      dashboardFilters,
-      isIncremental,
-    });
+
+    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId);
+    let result: any;
+    if(dataSourceDetails?.isShowMenu == true){
+        result = await getNewChartData({
+          dataSourceId,
+          dimensions,
+          entityId,
+          aggregation,
+          groupBy,
+          conditions,
+          widgetType,
+          dashBoardType,
+          dashboardFilters: {},
+          isIncremental,
+          orgCode,
+          dataSourceDetails
+        });
+    }else{
+        result = await getWidgetChartData({
+        dataSourceId,
+        dimensions,
+        entityId,
+        aggregation,
+        groupBy,
+        conditions,
+        widgetType,
+        orgCode,
+        dashBoardType,
+        dashboardFilters,
+        isIncremental,
+      });
+    }
 
     if (result.widgetData && result.widgetData.length > 500) {
       res.status(400).json({
