@@ -22,6 +22,7 @@ export interface IUser extends Document {
   state?: string;
   city?: string;
   postalCode?: string;
+  imagePath?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -106,6 +107,10 @@ const userSchema = new Schema<IUser>(
       required: false,
     },
     postalCode: {
+      type: String,
+      required: false,
+    },
+    imagePath: {
       type: String,
       required: false,
     },
