@@ -44,7 +44,53 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
       fromDate,
       toDate,
       search,
-    } = req.query;
+      searchFields,
+    }: any = req.query;
+
+    let searchCondition: any = [];
+    if (search) {
+      const regex = new RegExp(search as string, 'i');
+
+      searchCondition = [
+        { 'notificationTypeId.name': { $regex: regex } }, // string field
+        { 'templateId.type': { $regex: regex } }, // string field
+        { subject: { $regex: regex } },
+        { status: { $regex: regex } },
+      ];
+
+      // --- Date field: sentAt
+      // Convert date to string in format "DD MMM" and match
+      searchCondition.push({
+        $expr: {
+          $regexMatch: {
+            input: {
+              $dateToString: { format: '%d %b %Y', date: '$sentAt' },
+            },
+            regex: regex,
+          },
+        },
+      });
+      const searchLower = search?.toLowerCase();
+      // --- Boolean field: notificationTriggerId.isDryRun
+      if (searchLower?.startsWith('yes')) {
+        // treat as true
+        searchCondition.push({ 'notificationTriggerId.isDryRun': true });
+      } else if (searchLower?.startsWith('n')) {
+        // treat as false OR missing
+        searchCondition.push({
+          $or: [
+            { 'notificationTriggerId.isDryRun': false },
+            { 'notificationTriggerId.isDryRun': { $exists: false } },
+            { 'notificationTriggerId.isDryRun': null },
+          ],
+        });
+      }
+      if (Array.isArray(searchFields) && searchFields.length > 0) {
+        searchFields.forEach((field: string) => {
+          searchCondition.push({ [field]: { $regex: regex } });
+        });
+      }
+    }
 
     const query: any = {};
     if (status) query.status = status;
@@ -67,10 +113,12 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
         skip,
         limit: Number(limit),
         sort,
+        searchCondition,
       }),
       countPreparedNotificationsAgg({
         query,
         search: search as string,
+        searchCondition,
       }),
     ]);
 

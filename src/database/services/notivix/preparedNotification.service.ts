@@ -56,7 +56,15 @@ export const listPreparedNotifications = async ({
   return await dbQuery.exec();
 };
 
-function buildNotificationPipeline({ query = {}, search }: { query?: Record<string, any>; search?: string }) {
+function buildNotificationPipeline({
+  query = {},
+  search,
+  searchCondition,
+}: {
+  query?: Record<string, any>;
+  search?: string;
+  searchCondition: any[];
+}) {
   const pipeline: any[] = [];
 
   // --- Base filters
@@ -71,7 +79,7 @@ function buildNotificationPipeline({ query = {}, search }: { query?: Record<stri
         from: 'notification_templates',
         localField: 'templateId',
         foreignField: '_id',
-        as: 'template',
+        as: 'templateId',
       },
     },
     {
@@ -79,7 +87,7 @@ function buildNotificationPipeline({ query = {}, search }: { query?: Record<stri
         from: 'notification_triggers',
         localField: 'notificationTriggerId',
         foreignField: '_id',
-        as: 'trigger',
+        as: 'notificationTriggerId',
       },
     },
     {
@@ -87,7 +95,7 @@ function buildNotificationPipeline({ query = {}, search }: { query?: Record<stri
         from: 'notification_types',
         localField: 'notificationTypeId',
         foreignField: '_id',
-        as: 'type',
+        as: 'notificationTypeId',
       },
     },
     {
@@ -95,7 +103,7 @@ function buildNotificationPipeline({ query = {}, search }: { query?: Record<stri
         from: 'notification_frequency_settings',
         localField: 'frequencySettingId',
         foreignField: '_id',
-        as: 'frequencySetting',
+        as: 'frequencySettingId',
       },
     },
     {
@@ -103,7 +111,7 @@ function buildNotificationPipeline({ query = {}, search }: { query?: Record<stri
         from: 'notification_medium_settings',
         localField: 'mediumSettingId',
         foreignField: '_id',
-        as: 'mediumSetting',
+        as: 'mediumSettingId',
       },
     },
     {
@@ -111,37 +119,22 @@ function buildNotificationPipeline({ query = {}, search }: { query?: Record<stri
         from: 'notification_acknowledges',
         localField: 'acknowledgeId',
         foreignField: '_id',
-        as: 'acknowledge',
+        as: 'acknowledgeId',
       },
     },
-    { $unwind: { path: '$template', preserveNullAndEmptyArrays: true } },
-    { $unwind: { path: '$trigger', preserveNullAndEmptyArrays: true } },
-    { $unwind: { path: '$type', preserveNullAndEmptyArrays: true } },
-    { $unwind: { path: '$frequencySetting', preserveNullAndEmptyArrays: true } },
-    { $unwind: { path: '$mediumSetting', preserveNullAndEmptyArrays: true } },
-    { $unwind: { path: '$acknowledge', preserveNullAndEmptyArrays: true } }
+    { $unwind: { path: '$templateId', preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: '$notificationTriggerId', preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: '$notificationTypeId', preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: '$frequencySettingId', preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: '$mediumSettingId', preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: '$acknowledgeId', preserveNullAndEmptyArrays: true } }
   );
 
   // --- Global search
   if (search) {
-    const regex = new RegExp(search, 'i');
     pipeline.push({
       $match: {
-        $or: [
-          { subject: regex },
-          { alert_content: regex },
-          { 'recipients.recipient_to': regex },
-          { 'recipients.recipient_cc': regex },
-          { 'recipients.recipient_bcc': regex },
-          { payloadString: regex },
-          { 'template.type': regex },
-          { 'template.subject': regex },
-          { 'trigger.title': regex },
-          { 'type.name': regex },
-          { 'frequencySetting.name': regex },
-          { 'mediumSetting.name': regex },
-          { 'acknowledge.identifierKey': regex },
-        ],
+        $or: searchCondition,
       },
     });
   }
@@ -155,14 +148,16 @@ export const listPreparedNotificationsAgg = async ({
   skip = 0,
   limit = 20,
   sort = {},
+  searchCondition,
 }: {
   query?: Record<string, any>;
   search?: string;
   skip?: number;
   limit?: number;
   sort?: Record<string, 1 | -1>;
+  searchCondition: any[];
 }) => {
-  const pipeline = buildNotificationPipeline({ query, search });
+  const pipeline = buildNotificationPipeline({ query, search, searchCondition });
 
   // Sorting
   if (Object.keys(sort).length > 0) {
@@ -179,11 +174,13 @@ export const listPreparedNotificationsAgg = async ({
 export const countPreparedNotificationsAgg = async ({
   query = {},
   search,
+  searchCondition,
 }: {
   query?: Record<string, any>;
   search?: string;
+  searchCondition: any[];
 }) => {
-  const pipeline = buildNotificationPipeline({ query, search });
+  const pipeline = buildNotificationPipeline({ query, search, searchCondition });
 
   pipeline.push({ $count: 'total' });
 
