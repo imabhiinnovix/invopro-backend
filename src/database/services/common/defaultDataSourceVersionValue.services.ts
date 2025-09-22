@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import createDefaultDataSourceVersionModel from '../../models/common/defaultDataSourceVersionModel';
 import { Model, Document, AnyBulkWriteOperation, Types } from 'mongoose';
-import { findEntityById } from './entity.services';
+import { findEntityById, getEntityFieldOptions } from './entity.services';
 import {
   getAttributeByName,
   getEntityAttribute,
@@ -13,7 +13,7 @@ import {
 } from '../../../utils/entity.utils';
 import { getDerivedField } from './derivedField.services';
 import { processFieldConditions } from '../../../utils/conditionProcessor';
-import { escapeRegExp } from '../../../utils/common.utils';
+import { escapeRegExp, getLabelByMappedAttributeName } from '../../../utils/common.utils';
 
 export const updateDataSourceVersionValue = async (
   schemaName: string,
@@ -150,7 +150,7 @@ export const getDataSourceVersionValueV1 = async ({
   sort = {},
   filters = {},
   entityId = '',
-  searchFilters = {},
+  searchFilters = {}
 }: {
   schemaName: string;
   query: any;
@@ -1184,24 +1184,29 @@ aggregationPipeline.push({ $replaceRoot: { newRoot: "$doc" } });
 export const getDataSourceVersionValueV2 = async ({
   schemaName,
   query,
-  filters = {},
+  dashboardFilters = {},
   entityId = '',
   dimension = '',
   groupBy = [],
   aggregation,
   conditions,
   widgetType,
+  dashBoardType,
+  dataSourceDetails
 }: {
   schemaName: string;
   query: any;
   select?: string;
-  filters?: Record<string, any>;
+  dashboardFilters?: Record<string, any>;
   entityId: any;
   dimension?: string;
   groupBy?: string[];
   aggregation: { type: string; attributeName: string };
   conditions?: any[];
   widgetType?: string;
+  dashBoardType?: string;
+  dataSourceDetails?: Record<string, any>;
+  
 }) => {
   try {
     const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
@@ -1250,7 +1255,7 @@ export const getDataSourceVersionValueV2 = async ({
       }
     }
 
-    const aggregationPipeline: any[] = [{ $match: query }];
+    const aggregationPipeline: any[] = [];
 
     // Step 1: Lookups for all reference fields
     for (const [attrName, attr] of Object.entries(attributesMap)) {
@@ -1588,6 +1593,7 @@ async function buildAggregationPathAndReturnExpr({
     // Step 2: Filters (unchanged)
     const filterConditions: any[] = [];
     const visited = new Set<string>();
+    const filters = dashboardFilters?.filters ?? {};
     for (const [key, val] of Object.entries(filters)) {
       if (key.startsWith('Derived.')) {
         const derivedName = key.split('.')[1];
@@ -1708,38 +1714,82 @@ async function buildAggregationPathAndReturnExpr({
   if (matchStage.$and.length > 0) {
     aggregationPipeline.push({ $match: matchStage });
   }
-
+  console.log('dashboardFilters', JSON.stringify(dashboardFilters), JSON.stringify(aggregationPipeline));
+  
    // Step 3: Build group-by keys
-    const groupKeys = [...(groupBy || [])];
-    if (dimension) groupKeys.unshift(dimension[0]);
+  // Helper function to get field path
+  const getFieldPath = (fieldName: string) => {
+    return `$${fieldName}`;
+  };
 
-    const groupObject: Record<string, any> = {};
-    console.log(groupKeys, 'groupKeys', dimension);
-    for (const key of groupKeys) {
-      let path: string;
-      const visited = new Set<string>();
-      if (key.includes('.')) {
-        const pathSegments = key.split('.');
+  const getReferenceField = async (fieldName: string) => {
+    const visited = new Set<string>();
+    const pathSegments = fieldName.split('.');
 
-        path = await buildAggregationPathAndReturnExpr({
-          entityId,
-          pathSegments,
-          pipeline: aggregationPipeline,
-          visited,
-        });
+    const refField = await buildAggregationPathAndReturnExpr({
+      entityId,
+      pathSegments,
+      pipeline: aggregationPipeline,
+      visited,
+    });
+    return getFieldPath(refField);
+  };
 
-        path = `$${path}`;
-        
-      } else {
-        path = `$rowData.${key}`;
-      }
 
-      // Replace dots with underscores for field names used in the group _id
-      const safeField = key === dimension[0] ? 'name' : key.replace(/\./g, '_');
+  const groupFields: Record<string, any> = {};
 
-      groupObject[safeField] =  { "$ifNull": [path, "Unknown"] };
+for (const fieldRaw of [...(dimension || []), ...(groupBy || [])]) {
+  let field = fieldRaw;
+
+  if (fieldRaw === dimension?.[0]) {
+    if (dashBoardType === 'trend') {
+      groupFields['name'] = getFieldPath(`${field}`);
+    } else {
+      groupFields['name'] = field.includes('.') ? await getReferenceField(field) : getFieldPath(`rowData.${field}`);
     }
-    console.log(groupObject, 'groupObject');
+  } else {
+    const labelArr = await getLabelByMappedAttributeName(dataSourceDetails);
+    const label = labelArr[field] ?? field;
+    groupFields[label] = field.includes('.') ? await getReferenceField(field) : getFieldPath(`rowData.${field}`);
+  }
+}
+
+
+
+
+
+
+
+    // const groupKeys = [...(groupBy || [])];
+    // if (dimension) groupKeys.unshift(dimension[0]);
+
+    // const groupObject: Record<string, any> = {};
+    // console.log(groupKeys, 'groupKeys', dimension);
+    // for (const key of groupKeys) {
+    //   let path: string;
+    //   const visited = new Set<string>();
+    //   if (key.includes('.')) {
+    //     const pathSegments = key.split('.');
+
+    //     path = await buildAggregationPathAndReturnExpr({
+    //       entityId,
+    //       pathSegments,
+    //       pipeline: aggregationPipeline,
+    //       visited,
+    //     });
+
+    //     path = `$${path}`;
+        
+    //   } else {
+    //     path = `$rowData.${key}`;
+    //   }
+
+    //   // Replace dots with underscores for field names used in the group _id
+    //   const safeField = key === dimension[0] ? 'name' : key.replace(/\./g, '_');
+
+    //   groupObject[safeField] =  { "$ifNull": [path, "Unknown"] };
+    // }
+    console.log(groupFields, 'groupFields');
 
     const conditionsByField: Record<string, any[]> = {};
 console.log("payload conditions", JSON.stringify(conditions));
@@ -1780,13 +1830,15 @@ for (const condition of conditions || []) {
 
 console.log("conditionsByField", JSON.stringify(conditionsByField));
 
+    const entityFieldOptions = await getEntityFieldOptions(entityId);
+
     const getFieldType = (fieldName: string) => {
-      const attribute = entity.attributes.find((attr: any) => attr.name === fieldName);
-      return attribute ? attribute.type : 'text';
+      const attribute = entityFieldOptions.find((attr: any) => attr.label === fieldName);
+      return attribute?.value?.type ?? 'text';
     };
 
     // Process conditions using the common utility
-    const { matchConditions, dateConversions } = processFieldConditions(conditionsByField, getFieldType, {});
+    const { matchConditions, dateConversions } = processFieldConditions(conditionsByField, getFieldType, query);
     console.log('matchConditions', JSON.stringify(matchConditions));
     if (Object.keys(dateConversions).length > 0) {
       aggregationPipeline.push({ $addFields: dateConversions });
@@ -1869,7 +1921,9 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
       aggregationPipeline.push(
         {
           $group: {
-            _id: groupObject,
+            _id: {
+              ...groupFields
+            },
             ...aggregationExpr,
           },
         },
@@ -1908,6 +1962,12 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
           $replaceRoot: { newRoot: { widgetData: '$data', totalCount: '$total' } },
         }
       );
+
+      if (dashBoardType === 'trend') {
+        aggregationPipeline.push({ $sort: { name: 1 } });
+      } else {
+        aggregationPipeline.push({ $sort: { data: 1 } });
+      }
     }
     
     
@@ -1920,113 +1980,113 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
     // -------------------------
     // Helper: Resolve reference/mapping attributes (reuse your original logic)
     // -------------------------
-    async function resolveRefAttribute(
-      attr: any,
-      refResolved: any,
-      key: string,
-      rowData: Record<string, any>,
-      currentAttr?: any
-    ) {
-      if (!refResolved) return;
+    // async function resolveRefAttribute(
+    //   attr: any,
+    //   refResolved: any,
+    //   key: string,
+    //   rowData: Record<string, any>,
+    //   currentAttr?: any
+    // ) {
+    //   if (!refResolved) return;
 
-      let displayField: string | undefined;
-      if (attr.referenceEntitySetting?.refEntityField) {
-        const refFieldAttr = await getEntityAttribute(
-          attr.referenceEntitySetting.refEntityId,
-          attr.referenceEntitySetting.refEntityField
-        );
-        displayField = refFieldAttr?.name;
-      }
-      // console.log('attr',attr);
-      // Original many-to-one logic
-      if (
-        currentAttr &&
-        ['mapping_one_to_one', 'mapping_many_to_one'].includes(currentAttr?.referenceEntitySetting?.relationType)
-      ) {
-        const refFieldAttr = await getEntityAttribute(
-          attr.referenceEntitySetting.refEntityId,
-          attr.referenceEntitySetting.refEntityField
-        );
-        const refFieldName = refFieldAttr?.name;
-        // console.log('refFieldName',refFieldName,refResolved?.rowData);
-        if (refFieldName && refResolved?.rowData?.[refFieldName]) {
-          const refValue = refResolved.rowData[refFieldName];
-          const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
-          // console.log('refFieldName',refFieldName, refValue);
-          const relatedDocs: any[] = await RefModel.find({ _id: refValue }).lean();
-          // console.log('relatedDocs',relatedDocs);
-          if (currentAttr.referenceEntitySetting?.relationType == 'mapping_one_to_one') {
-            for (const r of relatedDocs) {
-              for (const subKey in r.rowData) {
-                // console.log('subKey',refFieldName,key );
-                // if (subKey === refFieldName) continue;
-                const arrayKey = `${key}.${subKey}`;
-                // console.log('arrayKey',arrayKey);
-                const value = r.rowData[subKey];
-                if (value !== undefined) rowData[arrayKey] = value;
-              }
-            }
-          } else {
-            for (const r of relatedDocs) {
-              for (const subKey in r.rowData) {
-                // console.log('subKey',refFieldName,key );
-                // if (subKey === refFieldName) continue;
-                const arrayKey = `${key}.${subKey}`;
-                // console.log('arrayKey',arrayKey);
-                if (!Array.isArray(rowData[arrayKey])) rowData[arrayKey] = [];
-                const value = r.rowData[subKey];
-                // console.log('value',value, subKey);
-                if (Array.isArray(value)) rowData[arrayKey].push(...value);
-                else if (value !== undefined) rowData[arrayKey].push(value);
-                // remove duplicates
-                rowData[arrayKey] = Array.from(new Set(rowData[arrayKey]));
-              }
-            }
-          }
-          // console.log('rowData',rowData);
-          // Remove duplicates
-          // for (const subKey in rowData) {
-          //   if (subKey.startsWith(`${key}.`) && Array.isArray(rowData[subKey])) rowData[subKey] = [...new Set(rowData[subKey])];
-          // }
+    //   let displayField: string | undefined;
+    //   if (attr.referenceEntitySetting?.refEntityField) {
+    //     const refFieldAttr = await getEntityAttribute(
+    //       attr.referenceEntitySetting.refEntityId,
+    //       attr.referenceEntitySetting.refEntityField
+    //     );
+    //     displayField = refFieldAttr?.name;
+    //   }
+    //   // console.log('attr',attr);
+    //   // Original many-to-one logic
+    //   if (
+    //     currentAttr &&
+    //     ['mapping_one_to_one', 'mapping_many_to_one'].includes(currentAttr?.referenceEntitySetting?.relationType)
+    //   ) {
+    //     const refFieldAttr = await getEntityAttribute(
+    //       attr.referenceEntitySetting.refEntityId,
+    //       attr.referenceEntitySetting.refEntityField
+    //     );
+    //     const refFieldName = refFieldAttr?.name;
+    //     // console.log('refFieldName',refFieldName,refResolved?.rowData);
+    //     if (refFieldName && refResolved?.rowData?.[refFieldName]) {
+    //       const refValue = refResolved.rowData[refFieldName];
+    //       const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
+    //       // console.log('refFieldName',refFieldName, refValue);
+    //       const relatedDocs: any[] = await RefModel.find({ _id: refValue }).lean();
+    //       // console.log('relatedDocs',relatedDocs);
+    //       if (currentAttr.referenceEntitySetting?.relationType == 'mapping_one_to_one') {
+    //         for (const r of relatedDocs) {
+    //           for (const subKey in r.rowData) {
+    //             // console.log('subKey',refFieldName,key );
+    //             // if (subKey === refFieldName) continue;
+    //             const arrayKey = `${key}.${subKey}`;
+    //             // console.log('arrayKey',arrayKey);
+    //             const value = r.rowData[subKey];
+    //             if (value !== undefined) rowData[arrayKey] = value;
+    //           }
+    //         }
+    //       } else {
+    //         for (const r of relatedDocs) {
+    //           for (const subKey in r.rowData) {
+    //             // console.log('subKey',refFieldName,key );
+    //             // if (subKey === refFieldName) continue;
+    //             const arrayKey = `${key}.${subKey}`;
+    //             // console.log('arrayKey',arrayKey);
+    //             if (!Array.isArray(rowData[arrayKey])) rowData[arrayKey] = [];
+    //             const value = r.rowData[subKey];
+    //             // console.log('value',value, subKey);
+    //             if (Array.isArray(value)) rowData[arrayKey].push(...value);
+    //             else if (value !== undefined) rowData[arrayKey].push(value);
+    //             // remove duplicates
+    //             rowData[arrayKey] = Array.from(new Set(rowData[arrayKey]));
+    //           }
+    //         }
+    //       }
+    //       // console.log('rowData',rowData);
+    //       // Remove duplicates
+    //       // for (const subKey in rowData) {
+    //       //   if (subKey.startsWith(`${key}.`) && Array.isArray(rowData[subKey])) rowData[subKey] = [...new Set(rowData[subKey])];
+    //       // }
 
-          // // Set main field
-          // rowData[`${key}.${refFieldName}`] = refResolved.rowData[refFieldName];
-          // rowData[key] = displayField && refResolved.rowData[displayField] !== undefined
-          //   ? refResolved.rowData[displayField]
-          //   : Object.values(refResolved.rowData)[0];
-        }
-      }
-      // Default one-to-one or array
-      else if (Array.isArray(refResolved)) {
-        const displayValues: string[] = [];
-        for (const ref of refResolved) {
-          if (!ref?.rowData) continue;
-          for (const subKey in ref.rowData) {
-            const arrayKey = `${key}.${subKey}`;
-            if (!Array.isArray(rowData[arrayKey])) rowData[arrayKey] = [];
-            const value = ref.rowData[subKey];
-            if (Array.isArray(value)) rowData[arrayKey].push(...value);
-            else if (value !== undefined) rowData[arrayKey].push(value);
-          }
-          const displayVal =
-            displayField && ref.rowData[displayField] !== undefined
-              ? ref.rowData[displayField]
-              : Object.values(ref.rowData)[0];
-          displayValues.push(displayVal);
-        }
-        rowData[key] = displayValues;
-      } else if (refResolved && refResolved.rowData) {
-        const refRowData = refResolved.rowData;
-        for (const subKey in refRowData) rowData[`${key}.${subKey}`] = refRowData[subKey];
-        rowData[key] =
-          displayField && refRowData[displayField] !== undefined
-            ? refRowData[displayField]
-            : Object.values(refRowData)[0];
-      }
-    }
-    function getTopLevelAttribute(dotKey: string): string {
-      return dotKey.split('.')[0]; // take everything before first dot
-    }
+    //       // // Set main field
+    //       // rowData[`${key}.${refFieldName}`] = refResolved.rowData[refFieldName];
+    //       // rowData[key] = displayField && refResolved.rowData[displayField] !== undefined
+    //       //   ? refResolved.rowData[displayField]
+    //       //   : Object.values(refResolved.rowData)[0];
+    //     }
+    //   }
+    //   // Default one-to-one or array
+    //   else if (Array.isArray(refResolved)) {
+    //     const displayValues: string[] = [];
+    //     for (const ref of refResolved) {
+    //       if (!ref?.rowData) continue;
+    //       for (const subKey in ref.rowData) {
+    //         const arrayKey = `${key}.${subKey}`;
+    //         if (!Array.isArray(rowData[arrayKey])) rowData[arrayKey] = [];
+    //         const value = ref.rowData[subKey];
+    //         if (Array.isArray(value)) rowData[arrayKey].push(...value);
+    //         else if (value !== undefined) rowData[arrayKey].push(value);
+    //       }
+    //       const displayVal =
+    //         displayField && ref.rowData[displayField] !== undefined
+    //           ? ref.rowData[displayField]
+    //           : Object.values(ref.rowData)[0];
+    //       displayValues.push(displayVal);
+    //     }
+    //     rowData[key] = displayValues;
+    //   } else if (refResolved && refResolved.rowData) {
+    //     const refRowData = refResolved.rowData;
+    //     for (const subKey in refRowData) rowData[`${key}.${subKey}`] = refRowData[subKey];
+    //     rowData[key] =
+    //       displayField && refRowData[displayField] !== undefined
+    //         ? refRowData[displayField]
+    //         : Object.values(refRowData)[0];
+    //   }
+    // }
+    // function getTopLevelAttribute(dotKey: string): string {
+    //   return dotKey.split('.')[0]; // take everything before first dot
+    // }
 
     // Step 6: Transform
     // Step 6: Transform widgetData
