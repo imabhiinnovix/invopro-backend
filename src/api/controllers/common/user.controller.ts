@@ -204,6 +204,14 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
         path: 'organizationProductSubscriptionIds',
         populate: { path: 'productId', select: 'name code status' }, // 👈 nested population
       },
+      {
+        path: 'departmentId',
+        select: 'name', // 👈 nested population
+      },
+      {
+        path: 'designationId',
+        select: 'name', // 👈 nested population
+      },
     ]);
 
     const roleIds = Array.isArray(user.roleIds)
