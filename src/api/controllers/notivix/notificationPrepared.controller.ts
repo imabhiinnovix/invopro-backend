@@ -1,13 +1,20 @@
-import { Request, Response, NextFunction } from "express";
-import { prepareTodayNotifications } from "../../../cronServices/prepareNotificationsForSlot";
-import { countPreparedNotifications, listPreparedNotifications } from "../../../database/services/notivix/preparedNotification.service";
-import { flattenObject, formatDate, generateNotificationAttachments, getRecipientName, parseTemplate } from "../../../utils/notification.utils";
+import { Request, Response, NextFunction } from 'express';
+import { prepareTodayNotifications } from '../../../cronServices/prepareNotificationsForSlot';
+import {
+  countPreparedNotifications,
+  countPreparedNotificationsAgg,
+  listPreparedNotifications,
+  listPreparedNotificationsAgg,
+} from '../../../database/services/notivix/preparedNotification.service';
+import {
+  flattenObject,
+  formatDate,
+  generateNotificationAttachments,
+  getRecipientName,
+  parseTemplate,
+} from '../../../utils/notification.utils';
 
-export const triggerPrepareTodayNotifications = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const triggerPrepareTodayNotifications = async (req: Request, res: Response, next: NextFunction) => {
   try {
     console.log(`[${new Date().toISOString()}] On-demand trigger called`);
 
@@ -17,7 +24,7 @@ export const triggerPrepareTodayNotifications = async (
 
     res.status(200).json({
       success: true,
-      message: "prepareTodayNotifications executed successfully",
+      message: 'prepareTodayNotifications executed successfully',
     });
   } catch (err) {
     console.error(`[${new Date().toISOString()}] On-demand trigger failed:`, err);
@@ -25,18 +32,18 @@ export const triggerPrepareTodayNotifications = async (
   }
 };
 
-
 export const listNotifications = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
       page = 1,
       limit = 10,
-      sortBy = "sentAt",
-      sortOrder = "desc",
+      sortBy = 'sentAt',
+      sortOrder = 'desc',
       status,
       organizationId,
       fromDate,
       toDate,
+      search,
     } = req.query;
 
     const query: any = {};
@@ -50,26 +57,21 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
 
     const skip = (Number(page) - 1) * Number(limit);
     const sort: Record<string, 1 | -1> = {
-      [sortBy as string]: sortOrder === "asc" ? 1 : -1,
+      [sortBy as string]: sortOrder === 'asc' ? 1 : -1,
     };
 
-    // ✅ Fetch notifications and total count
     const [notifications, total] = await Promise.all([
-      listPreparedNotifications({
+      listPreparedNotificationsAgg({
         query,
-        populate: [
-          "templateId",
-          "notificationTriggerId",
-          "notificationTypeId",
-          "frequencySettingId",
-          "mediumSettingId",
-          "acknowledgeId", // <-- populate acknowledgeId
-        ],
+        search: search as string,
         skip,
         limit: Number(limit),
         sort,
       }),
-      countPreparedNotifications(query),
+      countPreparedNotificationsAgg({
+        query,
+        search: search as string,
+      }),
     ]);
 
     const todayDate = formatDate(new Date());
@@ -81,8 +83,8 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
         const trigger = notif.notificationTriggerId;
         const acknowledge = notif.acknowledgeId;
 
-        let alert_content = "";
-        let subject = "";
+        let alert_content = '';
+        let subject = '';
 
         const lastUploadedDate = trigger?.actionsLastUploadedDate
           ? formatDate(new Date(trigger.actionsLastUploadedDate))
@@ -94,7 +96,7 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
         //   : [];
 
         /* -------- SINGLE template -------- */
-        if (template?.type === "single") {
+        if (template?.type === 'single') {
           const rowKey = Object.keys(notif.payload || {})[0];
           const rowData = notif.payload?.[rowKey]?.[0]?.rowData || {};
           const recipientTo = notif.recipients?.recipient_to?.[0];
@@ -125,10 +127,8 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
           const body = parseTemplate(template.body, context);
           alert_content = body;
           subject = parseSubject;
-        }
-
-        /* -------- OVERALL template -------- */
-        else if (template?.type === "overall") {
+        } else if (template?.type === 'overall') {
+          /* -------- OVERALL template -------- */
           const groups: Array<{ groupKey: string; rows: Record<string, any>[] }> = [];
           let firstRow: Record<string, any> | null = null;
 
@@ -155,7 +155,7 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
                   ...flattened,
                   DaysRemaining,
                   DaysPassed,
-                  AssignedTo: rd.Assignedto || "-",
+                  AssignedTo: rd.Assignedto || '-',
                   DueDate: dueDate ? formatDate(dueDate) : null,
                 };
               }),
@@ -204,4 +204,3 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
     next(err);
   }
 };
-
