@@ -1138,6 +1138,27 @@ let permissions = [
     resourceCode: 'dashboard_theme_delete',
     isSuperUser: false,
   },
+  // GET current user profile image
+  {
+    name: 'Get Current User Profile Image',
+    method: 'GET',
+    resourceId: '/common/user/image',
+    extraOptions: {},
+    resourceType: 'User Profile Image',
+    resourceCode: 'user_profile_image_get',
+    isSuperUser: false,
+  },
+
+  // DELETE current user profile image
+  {
+    name: 'Delete Current User Profile Image',
+    method: 'DELETE',
+    resourceId: '/common/user/image',
+    extraOptions: {},
+    resourceType: 'User Profile Image',
+    resourceCode: 'user_profile_image_delete',
+    isSuperUser: false,
+  },
 ];
 
 function getDynamicPermission(
@@ -1201,9 +1222,9 @@ export async function seedPermissions(perissionList: any[]) {
   console.log(dynamicPerission);
   permissions = [...permissions, ...dynamicPerission];
   for (const perm of permissions) {
-    const { method, resourceId } = perm;
+    const { resourceCode } = perm;
 
-    const existing = await Permission.findOne({ method, resourceId });
+    const existing = await Permission.findOne({ resourceCode });
 
     if (!existing) {
       const newPermission = new Permission({

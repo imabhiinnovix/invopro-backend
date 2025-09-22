@@ -57,6 +57,8 @@ const defaultPermissionsUser = [
   'GET:/reportivix/nlQuery/getData',
   'GET:/reportivix/nlQuery/insights',
   'POST:/common/dataSourceVersion/chartData',
+  'GET:/common/user/image',
+  'DELETE:/common/user/image',
 ];
 
 const defaultPermissionsAdmin = [

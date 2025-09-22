@@ -11,8 +11,9 @@ import * as organizationProductSubscriptionService from '../../../database/servi
 import { validateUserInput } from '../../../utils/validation.utils';
 import * as roleHasPermissionService from '../../../database/services/common/roleHasPermission.services';
 import * as permissionService from '../../../database/services/common/permission.service';
-import { permission } from 'process';
-import { populate } from 'dotenv';
+import path from 'path';
+import fsPromises from 'fs/promises';
+import UserRole from '../../../database/models/common/userRole';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -516,5 +517,102 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
   } catch (error) {
     console.error('Error changing password:', error);
     next(error);
+  }
+};
+
+export async function createUpdateCurrentUserProfileImage(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { userId, organizationId } = req?.user;
+
+    // ensure files exist
+    const files = Array.isArray(req.files) ? req.files : Object.values(req.files || {}).flat();
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: 'No image uploaded' });
+    }
+
+    // take the first file (profile pic)
+    const file = files[0] as Express.Multer.File;
+
+    // get extension
+    const ext = path.extname(file.originalname) || '.jpg';
+
+    // build target path: uploads/<organizationId>/<userId>.<ext>
+    const newFilePath = path.join('uploads', organizationId.toString(), userId.toString(), `${userId}${ext}`);
+
+    // create directory if not exists
+    await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
+
+    // move file from multer temp to target location
+    await fsPromises.rename(file.path, newFilePath);
+
+    await userService.updateUser(userId, { imagePath: newFilePath });
+    return res.json({
+      message: 'Profile image updated successfully',
+      imagePath: newFilePath,
+    });
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function getCurrentUserProfileImage(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { userId } = req?.user;
+
+    // Fetch user from DB to get imagePath
+    const user = await userService.findUserById(userId);
+    if (!user || !user.imagePath) {
+      return res.status(404).json({ message: 'Profile image not found' });
+    }
+
+    const imagePath = path.resolve(user.imagePath);
+
+    // Check if file exists asynchronously
+    try {
+      await fsPromises.access(imagePath);
+    } catch {
+      return res.status(404).json({ message: 'Image file not found' });
+    }
+
+    // Send file using res.sendFile
+    res.sendFile(imagePath, (err) => {
+      if (err) {
+        console.error('Error sending image:', err);
+        return res.status(500).json({ message: 'Error sending image file' });
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching profile image:', err);
+    return res.status(500).json({ message: 'Unable to fetch profile image' });
+  }
+}
+
+export const deleteCurrentUserProfileImage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user.userId;
+    const user = await userService.findUserById(userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Optionally delete the file if exists
+    if (user.imagePath) {
+      try {
+        await fsPromises.unlink(user.imagePath); // delete file
+      } catch {
+        // ignore errors if file doesn't exist
+      }
+    }
+
+    // Update DB to remove image path
+    user.imagePath = '';
+    await user.save();
+
+    return res.status(200).json({ success: true, message: 'Profile image deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting profile image:', err);
+    return res.status(500).json({ success: false, message: 'Unable to delete profile image' });
   }
 };
