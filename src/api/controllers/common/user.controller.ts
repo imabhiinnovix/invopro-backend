@@ -211,6 +211,9 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
       : [];
 
     user = user.toObject();
+    if (user?.imagePath) {
+      user.imagePath = `${process.env.BASE_BACKEND_URL}/${user.imagePath}`;
+    }
     const permissionDetails = await roleHasPermissionService.getPermissionsByRoleIds(roleIds);
 
     let allPermissionResult = await permissionService.getPermissionList({
@@ -549,7 +552,7 @@ export async function createUpdateCurrentUserProfileImage(req: Request, res: Res
     await userService.updateUser(userId, { imagePath: newFilePath });
     return res.json({
       message: 'Profile image updated successfully',
-      imagePath: newFilePath,
+      imagePath: `${process.env.BASE_BACKEND_URL}/${newFilePath}`,
     });
   } catch (e) {
     next(e);
