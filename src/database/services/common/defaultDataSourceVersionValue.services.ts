@@ -359,9 +359,7 @@ async function buildNestedLookups({
     }
 
     // ✅ Apply filters at root level
-  if (isLast && filtersForLookup) {
-  const matchConditions: Record<string, any> = {};
-
+ if (isLast && filtersForLookup) {
   for (const [filterField, filterValue] of Object.entries(filtersForLookup)) {
     const matchField = `${asField}.rowData.${filterField}`;
 
@@ -372,28 +370,33 @@ async function buildNestedLookups({
     ) {
       const keys = Object.keys(filterValue);
 
-      if (keys.length === 1 && keys[0].startsWith("$")) {
-        // ✅ Direct Mongo operator
-        matchConditions[matchField] = filterValue;
-      } else if (
-        keys.length === 1 &&
-        !keys[0].startsWith("$") &&
-        keys[0].includes(".")
-      ) {
-        // ✅ Case like { "rowData.FOEmail": { $regex: ... } }
-        matchConditions[matchField] = filterValue[keys[0]];
+      if (keys.includes("$or")) {
+        // ✅ Unwrap $or and rewrite with the correct matchField
+        const orConditions = filterValue.$or.map((cond: any) => {
+          const innerKey = Object.keys(cond)[0];
+          return { [matchField]: cond[innerKey] };
+        });
+        filterConditions.push({ $or: orConditions });
+
+      } else if (keys.includes("$and")) {
+        // ✅ Handle $and similarly
+        const andConditions = filterValue.$and.map((cond: any) => {
+          const innerKey = Object.keys(cond)[0];
+          return { [matchField]: cond[innerKey] };
+        });
+        filterConditions.push({ $and: andConditions });
+
+      } else if (keys.length === 1 && keys[0].startsWith("$")) {
+        // ✅ Single operator like { $regex: ... }
+        filterConditions.push({ [matchField]: filterValue });
       } else {
-        // ✅ Plain object (multiple operators)
-        matchConditions[matchField] = filterValue;
+        // ✅ Plain object with multiple operators
+        filterConditions.push({ [matchField]: filterValue });
       }
     } else {
       // ✅ Simple equality
-      matchConditions[matchField] = filterValue;
+      filterConditions.push({ [matchField]: filterValue });
     }
-  }
-
-  if (Object.keys(matchConditions).length > 0) {
-    filterConditions.push(matchConditions);
   }
 }
 
@@ -1405,9 +1408,7 @@ async function buildNestedLookups({
     }
 
     // ✅ Apply filters at root level
-  if (isLast && filtersForLookup) {
-  const matchConditions: Record<string, any> = {};
-
+if (isLast && filtersForLookup) {
   for (const [filterField, filterValue] of Object.entries(filtersForLookup)) {
     const matchField = `${asField}.rowData.${filterField}`;
 
@@ -1418,28 +1419,33 @@ async function buildNestedLookups({
     ) {
       const keys = Object.keys(filterValue);
 
-      if (keys.length === 1 && keys[0].startsWith("$")) {
-        // ✅ Direct Mongo operator
-        matchConditions[matchField] = filterValue;
-      } else if (
-        keys.length === 1 &&
-        !keys[0].startsWith("$") &&
-        keys[0].includes(".")
-      ) {
-        // ✅ Case like { "rowData.FOEmail": { $regex: ... } }
-        matchConditions[matchField] = filterValue[keys[0]];
+      if (keys.includes("$or")) {
+        // ✅ Unwrap $or and rewrite with the correct matchField
+        const orConditions = filterValue.$or.map((cond: any) => {
+          const innerKey = Object.keys(cond)[0];
+          return { [matchField]: cond[innerKey] };
+        });
+        filterConditions.push({ $or: orConditions });
+
+      } else if (keys.includes("$and")) {
+        // ✅ Handle $and similarly
+        const andConditions = filterValue.$and.map((cond: any) => {
+          const innerKey = Object.keys(cond)[0];
+          return { [matchField]: cond[innerKey] };
+        });
+        filterConditions.push({ $and: andConditions });
+
+      } else if (keys.length === 1 && keys[0].startsWith("$")) {
+        // ✅ Single operator like { $regex: ... }
+        filterConditions.push({ [matchField]: filterValue });
       } else {
-        // ✅ Plain object (multiple operators)
-        matchConditions[matchField] = filterValue;
+        // ✅ Plain object with multiple operators
+        filterConditions.push({ [matchField]: filterValue });
       }
     } else {
       // ✅ Simple equality
-      matchConditions[matchField] = filterValue;
+      filterConditions.push({ [matchField]: filterValue });
     }
-  }
-
-  if (Object.keys(matchConditions).length > 0) {
-    filterConditions.push(matchConditions);
   }
 }
 
