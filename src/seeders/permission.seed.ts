@@ -1141,7 +1141,7 @@ let permissions = [
   {
     name: 'Create Department',
     method: 'POST',
-    resourceId: '/department/create',
+    resourceId: '/common/department/create',
     extraOptions: {},
     resourceType: 'Department',
     resourceCode: 'department_create',
@@ -1150,7 +1150,7 @@ let permissions = [
   {
     name: 'Update Department',
     method: 'PUT',
-    resourceId: '/department/update/:departmentId',
+    resourceId: '/common/department/update/:departmentId',
     extraOptions: {},
     resourceType: 'Department',
     resourceCode: 'department_update',
@@ -1159,7 +1159,7 @@ let permissions = [
   {
     name: 'List Departments',
     method: 'GET',
-    resourceId: '/department/list',
+    resourceId: '/common/department/list',
     extraOptions: {},
     resourceType: 'Department',
     resourceCode: 'department_list',
@@ -1168,7 +1168,7 @@ let permissions = [
   {
     name: 'Delete Department',
     method: 'DELETE',
-    resourceId: '/department/delete/:departmentId',
+    resourceId: '/common/department/delete/:departmentId',
     extraOptions: {},
     resourceType: 'Department',
     resourceCode: 'department_delete',
@@ -1177,7 +1177,7 @@ let permissions = [
   {
     name: 'Create Designation',
     method: 'POST',
-    resourceId: '/designation/create',
+    resourceId: '/common/designation/create',
     extraOptions: {},
     resourceType: 'Designation',
     resourceCode: 'designation_create',
@@ -1186,7 +1186,7 @@ let permissions = [
   {
     name: 'Update Designation',
     method: 'PUT',
-    resourceId: '/designation/update/:designationId',
+    resourceId: '/common/designation/update/:designationId',
     extraOptions: {},
     resourceType: 'Designation',
     resourceCode: 'designation_update',
@@ -1195,7 +1195,7 @@ let permissions = [
   {
     name: 'List Designations',
     method: 'GET',
-    resourceId: '/designation/list',
+    resourceId: '/common/designation/list',
     extraOptions: {},
     resourceType: 'Designation',
     resourceCode: 'designation_list',
@@ -1204,7 +1204,7 @@ let permissions = [
   {
     name: 'Delete Designation',
     method: 'GET',
-    resourceId: '/designation/delete/:designationId',
+    resourceId: '/common/designation/delete/:designationId',
     extraOptions: {},
     resourceType: 'Designation',
     resourceCode: 'designation_delete',

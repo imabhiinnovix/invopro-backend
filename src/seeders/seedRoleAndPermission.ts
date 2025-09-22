@@ -57,8 +57,8 @@ const defaultPermissionsUser = [
   'GET:/reportivix/nlQuery/getData',
   'GET:/reportivix/nlQuery/insights',
   'POST:/common/dataSourceVersion/chartData',
-  'GET:/designation/list',
-  'GET:/department/list',
+  'GET:/common/designation/list',
+  'GET:/common/department/list',
 ];
 
 const defaultPermissionsAdmin = [
@@ -131,12 +131,12 @@ const defaultPermissionsAdmin = [
   'PUT:/common/dashboardTheme/update/:themeId',
   'DELETE:/common/dashboardTheme/delete/:themeId',
   'GET:/notivix/notification-setting/medium/:id',
-  'POST:/designation/create',
-  'PUT:/designation/update/:designationId',
-  'DELETE:/designation/delete/:designationId',
-  'POST:/department/create',
-  'PUT:/department/update/:departmentId',
-  'DELETE:/department/delete/:departmentId',
+  'POST:/common/designation/create',
+  'PUT:/common/designation/update/:designationId',
+  'DELETE:/common/designation/delete/:designationId',
+  'POST:/common/department/create',
+  'PUT:/common/department/update/:departmentId',
+  'DELETE:/common/department/delete/:departmentId',
 ];
 
 const defaultPermissionsPrimarySuperAdmin = [
