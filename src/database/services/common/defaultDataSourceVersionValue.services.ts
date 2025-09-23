@@ -1729,16 +1729,34 @@ async function buildAggregationPathAndReturnExpr({
   };
 
   const getReferenceField = async (fieldName: string) => {
-    const visited = new Set<string>();
-    const pathSegments = fieldName.split('.');
+    if(fieldName.includes('.')){
+      const visited = new Set<string>();
+      const pathSegments = fieldName.split('.');
 
-    const refField = await buildAggregationPathAndReturnExpr({
-      entityId,
-      pathSegments,
-      pipeline: aggregationPipeline,
-      visited,
-    });
-    return getFieldPath(refField);
+      const refField = await buildAggregationPathAndReturnExpr({
+        entityId,
+        pathSegments,
+        pipeline: aggregationPipeline,
+        visited,
+      });
+      return refField;
+    }else{
+        const attr = attributesMap[fieldName];
+      if (attr?.referenceEntitySetting?.refEntityId) {
+        const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
+        const asField = `rowData.${fieldName}_resolved`;
+
+        // ✅ Resolve actual attribute name from reference entity
+        const refFieldAttr = await getEntityAttribute(
+          attr.referenceEntitySetting.refEntityId,
+          attr.referenceEntitySetting.refEntityField
+        );
+        const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
+        return `${asField}.rowData.${displayField}`;
+      }else{
+        return `rowData.${fieldName}`;
+      }
+    }
   };
 
 
@@ -1751,12 +1769,12 @@ for (const fieldRaw of [...(dimension || []), ...(groupBy || [])]) {
     if (dashBoardType === 'trend') {
       groupFields['name'] = getFieldPath(`${field}`);
     } else {
-      groupFields['name'] = field.includes('.') ? await getReferenceField(field) : getFieldPath(`rowData.${field}`);
+      groupFields['name'] = getFieldPath(await getReferenceField(field));
     }
   } else {
     const labelArr = await getLabelByMappedAttributeName(dataSourceDetails);
     const label = labelArr[field] ?? field;
-    groupFields[label] = field.includes('.') ? await getReferenceField(field) : getFieldPath(`rowData.${field}`);
+    groupFields[label] = getFieldPath(await getReferenceField(field));
   }
 }
 
@@ -1802,23 +1820,23 @@ console.log("payload conditions", JSON.stringify(conditions));
 
 for (const condition of conditions || []) {
   const originalField = condition.field;
-  let resolvedFieldPath: string;
-  const visited = new Set<string>();
+  let resolvedFieldPath = await getReferenceField(originalField);
+  // const visited = new Set<string>();
 
-  if (originalField.includes(".")) {
-    // Reference field
-    const pathSegments = originalField.split(".");
-    resolvedFieldPath = await buildAggregationPathAndReturnExpr({
-      entityId,
-      pathSegments,
-      pipeline: aggregationPipeline,
-      visited,
-    });
+  // if (originalField.includes(".")) {
+  //   // Reference field
+  //   const pathSegments = originalField.split(".");
+  //   resolvedFieldPath = await buildAggregationPathAndReturnExpr({
+  //     entityId,
+  //     pathSegments,
+  //     pipeline: aggregationPipeline,
+  //     visited,
+  //   });
     resolvedFieldPath =  resolvedFieldPath.replace(/^rowData\./, '');
-  } else {
-    // Direct field
-    resolvedFieldPath = `${originalField}`;
-  }
+  // } else {
+  //   // Direct field
+  //   resolvedFieldPath = `${originalField}`;
+  // }
 
   // Overwrite field name with resolved path
   const processedCondition = {
@@ -1854,25 +1872,25 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
     if (Object.keys(matchConditions).length > 0) {
       aggregationPipeline.push({ $match: matchConditions });
     }
-    let aggPath: string;
+    const aggPath = getFieldPath(await getReferenceField(aggregation?.attributeName));
     
-    if (aggregation?.attributeName.includes('.')) {
-      const visited = new Set<string>();
-      const pathSegments = aggregation.attributeName.split('.');
+    // if (aggregation?.attributeName.includes('.')) {
+    //   const visited = new Set<string>();
+    //   const pathSegments = aggregation.attributeName.split('.');
 
-      aggPath = await buildAggregationPathAndReturnExpr({
-        entityId,
-        pathSegments,
-        pipeline: aggregationPipeline,
-        visited,
-      });
+    //   aggPath = await buildAggregationPathAndReturnExpr({
+    //     entityId,
+    //     pathSegments,
+    //     pipeline: aggregationPipeline,
+    //     visited,
+    //   });
 
-      console.log(aggPath, 'aggPath...');
-      // const [refField, ...subFields] = aggregation.attributeName.split('.');
-      // aggPath = `$rowData.${refField}_resolved.rowData.${subFields.join('.')}`;
-    } else {
-      aggPath = `$rowData.${aggregation?.attributeName}`;
-    }
+    //   console.log(aggPath, 'aggPath...');
+    //   // const [refField, ...subFields] = aggregation.attributeName.split('.');
+    //   // aggPath = `$rowData.${refField}_resolved.rowData.${subFields.join('.')}`;
+    // } else {
+    //   aggPath = `$rowData.${aggregation?.attributeName}`;
+    // }
     console.log(aggPath, 'aggPath');
     let aggregationExpr;
     switch (aggregation?.type) {
@@ -2098,60 +2116,60 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
     // Step 6: Transform widgetData
 const rawData = versionValueData[0] || { widgetData: [], totalCount: 0 };
 
-const transformedData = await Promise.all(
-  rawData.widgetData.map(async (doc: any) => {
-    const newDoc = { ...doc };
-    const key = aggregation?.attributeName;
+// const transformedData = await Promise.all(
+//   rawData.widgetData.map(async (doc: any) => {
+//     const newDoc = { ...doc };
+//     const key = aggregation?.attributeName;
 
-    // Check attribute in maps
-    const attr = attributesMap[key] || refAttributesMap[key];
-    if (!attr) return newDoc;
+//     // Check attribute in maps
+//     const attr = attributesMap[key] || refAttributesMap[key];
+//     if (!attr) return newDoc;
 
-    // Mapping reference
-    if (attr.referenceEntitySetting?.relationType?.startsWith("mapping_")) {
-      const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
-      const refFieldAttr = await getEntityAttribute(
-        attr.referenceEntitySetting.refEntityId,
-        attr.referenceEntitySetting.refEntityField
-      );
-      const displayField = refFieldAttr?.name;
+//     // Mapping reference
+//     if (attr.referenceEntitySetting?.relationType?.startsWith("mapping_")) {
+//       const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
+//       const refFieldAttr = await getEntityAttribute(
+//         attr.referenceEntitySetting.refEntityId,
+//         attr.referenceEntitySetting.refEntityField
+//       );
+//       const displayField = refFieldAttr?.name;
 
-      if (displayField) {
-        const relatedDocs: any = await RefModel.find({ _id: doc.name }).lean();
-        if (relatedDocs.length > 0) {
-          newDoc.name = relatedDocs.map((r) => r.rowData?.[displayField]).filter(Boolean).join(", ");
-        }
-      }
-    }
-    // Normal reference
-    else if (attr.referenceEntitySetting?.refEntityId) {
-      const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
-      const refFieldAttr = await getEntityAttribute(
-        attr.referenceEntitySetting.refEntityId,
-        attr.referenceEntitySetting.refEntityField
-      );
-      const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
+//       if (displayField) {
+//         const relatedDocs: any = await RefModel.find({ _id: doc.name }).lean();
+//         if (relatedDocs.length > 0) {
+//           newDoc.name = relatedDocs.map((r) => r.rowData?.[displayField]).filter(Boolean).join(", ");
+//         }
+//       }
+//     }
+//     // Normal reference
+//     else if (attr.referenceEntitySetting?.refEntityId) {
+//       const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
+//       const refFieldAttr = await getEntityAttribute(
+//         attr.referenceEntitySetting.refEntityId,
+//         attr.referenceEntitySetting.refEntityField
+//       );
+//       const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
 
-      const resolvedDoc: any = await RefModel.findById(doc.name).lean();
-      if (resolvedDoc?.rowData?.[displayField]) {
-        newDoc.name = resolvedDoc.rowData[displayField];
-      }
-    }
-    // Primitive field (like FOEmail or "Unknown")
-    else {
-      newDoc.name = doc.name; // keep as-is
-    }
+//       const resolvedDoc: any = await RefModel.findById(doc.name).lean();
+//       if (resolvedDoc?.rowData?.[displayField]) {
+//         newDoc.name = resolvedDoc.rowData[displayField];
+//       }
+//     }
+//     // Primitive field (like FOEmail or "Unknown")
+//     else {
+//       newDoc.name = doc.name; // keep as-is
+//     }
 
-    return newDoc;
-  })
-);
+//     return newDoc;
+//   })
+// );
 
-return {
-  widgetData: transformedData,
-  totalCount: rawData.totalCount
-};
+// return {
+//   widgetData: transformedData,
+//   totalCount: rawData.totalCount
+// };
 
-
+return rawData;
 
    
 
