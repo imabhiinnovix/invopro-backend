@@ -577,7 +577,7 @@ export async function getCurrentUserProfileImage(req: Request, res: Response, ne
     // Fetch user from DB to get imagePath
     const user = await userService.findUserById(userId);
     if (!user || !user.imagePath) {
-      return res.status(404).json({ message: 'Profile image not found' });
+      return res.status(404).json({ success: false, message: 'Profile image not found' });
     }
 
     const imagePath = path.resolve(user.imagePath);
@@ -586,19 +586,19 @@ export async function getCurrentUserProfileImage(req: Request, res: Response, ne
     try {
       await fsPromises.access(imagePath);
     } catch {
-      return res.status(404).json({ message: 'Image file not found' });
+      return res.status(404).json({ success: false, message: 'Image file not found' });
     }
 
     // Send file using res.sendFile
     res.sendFile(imagePath, (err) => {
       if (err) {
         console.error('Error sending image:', err);
-        return res.status(500).json({ message: 'Error sending image file' });
+        return res.status(500).json({ success: false, message: 'Error sending image file' });
       }
     });
   } catch (err) {
     console.error('Error fetching profile image:', err);
-    return res.status(500).json({ message: 'Unable to fetch profile image' });
+    return res.status(500).json({ success: false, message: 'Unable to fetch profile image' });
   }
 }
 
