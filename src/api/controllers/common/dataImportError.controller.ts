@@ -18,20 +18,60 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
   next: NextFunction
 ) => {
   try {
-    const { paginate = 'false', dataSourceVersionId } = req.query;
+    const {
+      paginate = 'false',
+      dataSourceVersionId,
+      sortBy = 'rowNumber',
+      sortOrder = 'asc',
+      search,
+      searchFields,
+    }: any = req.query;
 
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
     const query: any = { dataSourceVersionId: dataSourceVersionId, status: 'open' };
 
+    let searchCondition: any[] = [];
+    if (search) {
+      const regex = new RegExp(search as string, 'i');
+
+      searchCondition = [
+        // rowNumber is number → convert to string for regex
+        {
+          $expr: {
+            $regexMatch: {
+              input: { $toString: '$rowNumber' },
+              regex: regex,
+            },
+          },
+        },
+        { errorCode: { $regex: regex } },
+        { fileName: { $regex: regex } },
+        { errorMessage: { $regex: regex } },
+        { fileAttributeValue: { $regex: regex } },
+        { status: { $regex: regex } },
+      ];
+
+      // Support dynamic searchFields array
+      if (Array.isArray(searchFields) && searchFields.length > 0) {
+        searchFields.forEach((field: string) => {
+          searchCondition.push({ [field]: { $regex: regex } });
+        });
+      }
+
+      if (searchCondition.length > 0) {
+        query.$or = searchCondition;
+      }
+    }
+    const sort: any = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
     let result: any = {};
     if (paginate) {
       result = await dataImportErrorServices.getDataSourceVersionErrrorList({
         query,
         page,
         limit,
-        sort: { rowNumber: 1 },
+        sort,
       });
     } else {
       result = await dataImportErrorServices.getDataSourceVersionErrrorList({
