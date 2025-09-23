@@ -559,8 +559,11 @@ export async function createUpdateCurrentUserProfileImage(req: Request, res: Res
 
     await userService.updateUser(userId, { imagePath: newFilePath });
     return res.json({
-      message: 'Profile image updated successfully',
-      imagePath: `${process.env.BASE_BACKEND_URL}/${newFilePath}`,
+      success: true,
+      message: 'Profile image updated successfully.',
+      data: {
+        imagePath: newFilePath,
+      },
     });
   } catch (e) {
     next(e);
