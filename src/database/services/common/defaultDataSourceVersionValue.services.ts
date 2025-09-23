@@ -1184,12 +1184,212 @@ aggregationPipeline.push({ $replaceRoot: { newRoot: "$doc" } });
   }
 };
 
+/**
+ * Add dueDays custom dimension + bucket + Total bucket
+ * - Pending → (dueDate - today)
+ * - Completed → (today - DateTaken)
+ */
+async function addDueDaysDimensionWithTotal({
+  aggregationPipeline,
+  dashboardFilters,
+  dimension = [],
+  groupBy = [],
+  dashBoardType,
+  getReferenceField,
+  getLabelByMappedAttributeName,
+  dataSourceDetails,
+}: {
+  aggregationPipeline: any[];
+  dashboardFilters?: any;
+  dimension?: string[];
+  groupBy?: string[];
+  dashBoardType?: string;
+  getReferenceField?: (field: string) => Promise<string>;
+  getLabelByMappedAttributeName?: (details: any) => Promise<Record<string, string>>;
+  dataSourceDetails?: any;
+}) {
+  const statusFilter = dashboardFilters?.filters?.["Derived.Status"] ?? "Pending";
+  const isCompleted = statusFilter === "Completed";
+
+  // Step 1: Compute dueDays
+  const sourceField = isCompleted ? "$rowData.DateTaken" : "$rowData.DueDate";
+  aggregationPipeline.push({
+    $addFields: {
+      dueDays: isCompleted
+        ? { $dateDiff: { startDate: sourceField, endDate: "$$NOW", unit: "day" } }
+        : { $dateDiff: { startDate: "$$NOW", endDate: sourceField, unit: "day" } },
+    },
+  });
+
+  // Step 2: Bucket dueDays
+  aggregationPipeline.push({
+    $addFields: {
+      dueBucket: {
+        $switch: {
+          branches: isCompleted
+            ? [
+                { case: { $and: [{ $gte: ["$dueDays", 0] }, { $lte: ["$dueDays", 30] }] }, then: "0-1 Months" },
+                { case: { $and: [{ $gte: ["$dueDays", 31] }, { $lte: ["$dueDays", 90] }] }, then: "2-3 Months" },
+                { case: { $and: [{ $gte: ["$dueDays", 91] }, { $lte: ["$dueDays", 180] }] }, then: "4-6 Months" },
+                { case: { $and: [{ $gte: ["$dueDays", 181] }, { $lte: ["$dueDays", 365] }] }, then: "7-12 Months" },
+              ]
+            : [
+                { case: { $and: [{ $gte: ["$dueDays", 0] }, { $lte: ["$dueDays", 3] }] }, then: "0-3 Days" },
+                { case: { $and: [{ $gte: ["$dueDays", 4] }, { $lte: ["$dueDays", 7] }] }, then: "4-7 Days" },
+                { case: { $and: [{ $gte: ["$dueDays", 8] }, { $lte: ["$dueDays", 15] }] }, then: "8-15 Days" },
+                { case: { $and: [{ $gte: ["$dueDays", 16] }, { $lte: ["$dueDays", 30] }] }, then: "16-30 Days" },
+              ],
+          default: null,
+        },
+      },
+    },
+  });
+
+  aggregationPipeline.push({ $match: { dueBucket: { $ne: null } } });
+
+  // Step 3: Build group fields (dimension vs groupBy swap)
+  const groupFields: Record<string, any> = {};
+  const hasDueDaysInDimension = dimension.includes("dueDays");
+  const hasDueDaysInGroupBy = groupBy.includes("dueDays");
+
+  if (hasDueDaysInDimension) {
+    groupFields["name"] = "$dueBucket";
+
+    for (const field of groupBy) {
+      if (field === "dueDays") continue;
+      const labelArr = await getLabelByMappedAttributeName?.(dataSourceDetails) ?? {};
+      const label = labelArr[field] ?? field;
+      groupFields[label] = `$${await getReferenceField?.(field)}`;
+    }
+  } else if (hasDueDaysInGroupBy) {
+    for (const fieldRaw of dimension) {
+      if (fieldRaw === dimension[0]) {
+        groupFields["name"] =
+          dashBoardType === "trend"
+            ? `$${fieldRaw}`
+            : `$${await getReferenceField?.(fieldRaw)}`;
+      } else {
+        const labelArr = await getLabelByMappedAttributeName?.(dataSourceDetails) ?? {};
+        const label = labelArr[fieldRaw] ?? fieldRaw;
+        groupFields[label] = `$${await getReferenceField?.(fieldRaw)}`;
+      }
+    }
+
+    groupFields["dueBucket"] = "$dueBucket";
+  }
+
+  // Step 4: Group + reshape
+  aggregationPipeline.push({
+    $group: {
+      _id: groupFields,
+      data: { $sum: 1 },
+    },
+  });
+
+  aggregationPipeline.push({
+    $replaceRoot: {
+      newRoot: { $mergeObjects: ["$_id", { data: "$data" }] },
+    },
+  });
+
+// Step 5: Re-group by groupBy fields only (keep dimension out)
+aggregationPipeline.push({
+  $group: {
+    _id: Object.fromEntries(
+      groupBy.map((g) => [g.split(".").pop(), `$${g.split(".").pop()}`])
+    ),
+    data: { $push: "$$ROOT" },
+    total: { $sum: "$data" },
+  },
+});
+
+// Step 6: Add one "Total" row per group
+aggregationPipeline.push({
+  $project: {
+    _id: 0,
+    widgetData: {
+      $concatArrays: [
+        "$data",
+        [
+          {
+            name: isCompleted ? "Total Completed" : "Total Dues",
+            data: "$total",
+            // copy groupBy values into this total row
+            ...Object.fromEntries(
+              groupBy.map((g) => [
+                g.split(".").pop(),
+                `$_id.${g.split(".").pop()}`,
+              ])
+            ),
+          },
+        ],
+      ],
+    },
+    totalCount: "$total",
+  },
+});
+
+ // Step 7: Assign custom sort order for buckets
+  const bucketOrder = isCompleted
+    ? ["0-1 Months", "2-3 Months", "4-6 Months", "7-12 Months", "Total Completed"]
+    : ["0-3 Days", "4-7 Days", "8-15 Days", "16-30 Days", "Total Dues"];
+
+  aggregationPipeline.push({
+    $addFields: {
+      widgetData: {
+        $map: {
+          input: "$widgetData",
+          as: "item",
+          in: {
+            $mergeObjects: [
+              "$$item",
+              { sortOrder: { $indexOfArray: [bucketOrder, "$$item.name"] } },
+            ],
+          },
+        },
+      },
+    },
+  });
+aggregationPipeline.push({ $unwind: "$widgetData" });
+aggregationPipeline.push({ $replaceRoot: { newRoot: "$widgetData" } });
+aggregationPipeline.push({
+  $sort: { sortOrder: 1, ReportCriticalEvent: 1 },
+});
+
+aggregationPipeline.push({
+  $project: { sortOrder: 0 },
+});
+
+// Step 8: Final regroup for global totalCount
+aggregationPipeline.push({
+  $group: {
+    _id: null,
+    widgetData: { $push: "$$ROOT" },
+    totalCount: { $sum: "$data" },
+  },
+});
+
+aggregationPipeline.push({
+  $project: {
+    _id: 0,
+    widgetData: 1,
+    totalCount: 1,
+  },
+});
+
+
+}
+
+
+
+
+
 export const getDataSourceVersionValueV2 = async ({
   schemaName,
   query,
   dashboardFilters = {},
   entityId = '',
-  dimension = '',
+  dimension = [],
   groupBy = [],
   aggregation,
   conditions,
@@ -1202,7 +1402,7 @@ export const getDataSourceVersionValueV2 = async ({
   select?: string;
   dashboardFilters?: Record<string, any>;
   entityId: any;
-  dimension?: string;
+  dimension?: string[];
   groupBy?: string[];
   aggregation: { type: string; attributeName: string };
   conditions?: any[];
@@ -1762,21 +1962,28 @@ async function buildAggregationPathAndReturnExpr({
 
   const groupFields: Record<string, any> = {};
 
-for (const fieldRaw of [...(dimension || []), ...(groupBy || [])]) {
-  let field = fieldRaw;
+// Handle custom dimension "dueDays"
+if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
+  // Normal fields
+  for (const fieldRaw of [...(dimension || []), ...(groupBy || [])]) {
+    let field = fieldRaw;
 
-  if (fieldRaw === dimension?.[0]) {
-    if (dashBoardType === 'trend') {
-      groupFields['name'] = getFieldPath(`${field}`);
+    if (fieldRaw === dimension?.[0]) {
+      if (dashBoardType === "trend") {
+        groupFields["name"] = getFieldPath(`${field}`);
+      } else {
+        groupFields["name"] = getFieldPath(await getReferenceField(field));
+      }
     } else {
-      groupFields['name'] = getFieldPath(await getReferenceField(field));
+      const labelArr = await getLabelByMappedAttributeName(dataSourceDetails);
+      const label = labelArr[field] ?? field;
+      groupFields[label] = getFieldPath(await getReferenceField(field));
     }
-  } else {
-    const labelArr = await getLabelByMappedAttributeName(dataSourceDetails);
-    const label = labelArr[field] ?? field;
-    groupFields[label] = getFieldPath(await getReferenceField(field));
   }
 }
+
+console.log(groupFields, 'groupFields');
+
 
 
 
@@ -1813,7 +2020,7 @@ for (const fieldRaw of [...(dimension || []), ...(groupBy || [])]) {
 
     //   groupObject[safeField] =  { "$ifNull": [path, "Unknown"] };
     // }
-    console.log(groupFields, 'groupFields');
+    
 
     const conditionsByField: Record<string, any[]> = {};
 console.log("payload conditions", JSON.stringify(conditions));
@@ -1872,6 +2079,7 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
     if (Object.keys(matchConditions).length > 0) {
       aggregationPipeline.push({ $match: matchConditions });
     }
+
     const aggPath = getFieldPath(await getReferenceField(aggregation?.attributeName));
     
     // if (aggregation?.attributeName.includes('.')) {
@@ -1941,7 +2149,22 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
           $replaceRoot: { newRoot: { widgetData: '$data', totalCount: '$total' } },
         }
       );
-    } else {
+    } else{
+     if([...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
+      await addDueDaysDimensionWithTotal({
+        aggregationPipeline,
+        dashboardFilters,
+        dimension,
+        groupBy,
+        dashBoardType,
+        getReferenceField,
+        getLabelByMappedAttributeName,
+        dataSourceDetails,
+      });
+
+      // For charting, name will be bucket labels ("0-3 days left", etc.)
+      groupFields["name"] = "$_id"; 
+    }else{
       aggregationPipeline.push(
         {
           $group: {
@@ -1993,6 +2216,7 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
         aggregationPipeline.push({ $sort: { data: 1 } });
       }
     }
+  }
     
     
     console.log('aggregationPipeline',JSON.stringify(aggregationPipeline));
