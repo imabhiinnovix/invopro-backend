@@ -271,16 +271,18 @@ async function buildNestedLookups({
   if (!attr) return;
 
   const localField = `${prefix}.${field}`;
-  const asField = `${prefix}.${field}_resolved`;
+  console.log('prefix',prefix,field);
+
+  const asField = prefix.endsWith(`${field}_resolved`)? prefix : `${prefix}.${field}_resolved`;
   const fullPath = [...pathSegments].join('.');
   const filterString = filtersForLookup[field] ? JSON.stringify(filtersForLookup[field]) : '';
   const lookupKey = `${entityId}:${fullPath}:${filterString}`;
-
+  console.log('lookupKey',lookupKey);
   if (visited.has(lookupKey)) return;
   visited.add(lookupKey);
 
-  const alreadyHaveLookup = (asName: string) =>
-    pipeline.some((stage: any) => stage.$lookup?.as === asName);
+   const alreadyHaveLookup = (fromCollection: string) =>
+    pipeline.some((stage: any) => stage.$lookup?.from === fromCollection);
   console.log('attr',attr);
   // -------- mapping reference --------
   if (attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
@@ -292,7 +294,7 @@ async function buildNestedLookups({
       attr.referenceEntitySetting.refEntityField
     );
     const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
-    if (!alreadyHaveLookup(asField)) {
+    if (!alreadyHaveLookup(mappingModel.collection.name)) {
       if(prefix?.endsWith('_resolved')){
         pipeline.push({
           $lookup: {
@@ -321,7 +323,47 @@ async function buildNestedLookups({
     if (pathSegments.length === 1 && filtersForLookup) {
       for (const [filterField, filterValue] of Object.entries(filtersForLookup)) {
         const matchField = `${asField}.rowData.${filterField}`;
+        if (
+      typeof filterValue === "object" &&
+      filterValue !== null &&
+      !Array.isArray(filterValue)
+    ) {
+      const keys = Object.keys(filterValue);
+      
+      if (keys.includes("$or")) {
+        // ✅ Unwrap $or and rewrite with the correct matchField
+        const orConditions = filterValue.$or.map((cond: any) => {
+          const innerKey = Object.keys(cond)[0];
+          return { [matchField]: cond[innerKey] };
+        });
+        filterConditions.push({ $or: orConditions });
+
+      } else if (keys.includes("$and")) {
+        // ✅ Handle $and similarly
+        const andConditions = filterValue.$and.map((cond: any) => {
+          const innerKey = Object.keys(cond)[0];
+          return { [matchField]: cond[innerKey] };
+        });
+        filterConditions.push({ $and: andConditions });
+
+      } else if (keys.length === 1 && keys[0].startsWith("$")) {
+        // ✅ Single operator like { $regex: ... }
         filterConditions.push({ [matchField]: filterValue });
+      } else if (
+        keys.length === 1 &&
+        !keys[0].startsWith("$") &&
+        keys[0].includes(".")
+      ) {
+        // ✅ Case like { "rowData.FOEmail": { $regex: ... } }
+        filterConditions.push({ [matchField]: filterValue[keys[0]] });
+      } else {
+        // ✅ Plain object with multiple operators
+        filterConditions.push({ [matchField]: filterValue });
+      }
+    } else {
+      // ✅ Simple equality
+      filterConditions.push({ [matchField]: filterValue });
+    }
       }
     }
 
@@ -346,7 +388,7 @@ async function buildNestedLookups({
     const refModel = await getCachedModel(refEntityId);
     const isLast = pathSegments.length === 1;
 
-    if (!alreadyHaveLookup(asField)) {
+    if (!alreadyHaveLookup(refModel.collection.name)) {
       pipeline.push({
         $lookup: {
           from: refModel.collection.name,
@@ -369,7 +411,7 @@ async function buildNestedLookups({
       !Array.isArray(filterValue)
     ) {
       const keys = Object.keys(filterValue);
-
+      
       if (keys.includes("$or")) {
         // ✅ Unwrap $or and rewrite with the correct matchField
         const orConditions = filterValue.$or.map((cond: any) => {
@@ -454,11 +496,11 @@ async function buildNestedLookupsForSearch({
   const filterString = filtersForLookup[field] ? JSON.stringify(filtersForLookup[field]) : '';
   const lookupKey = `${entityId}:${fullPath}:${filterString}`;
 
-  if (visited.has(lookupKey)) return;
-  visited.add(lookupKey);
+  // if (visited.has(lookupKey)) return;
+  // visited.add(lookupKey);
 
-  const alreadyHaveLookup = (asName: string) =>
-    aggregationPipeline.some((stage: any) => stage.$lookup?.as === asName);
+  const alreadyHaveLookup = (fromCollection: string) =>
+    aggregationPipeline.some((stage: any) => stage.$lookup?.from === fromCollection);
 
   // -------- mapping reference --------
   if (attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
@@ -471,7 +513,7 @@ async function buildNestedLookupsForSearch({
     );
     const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
 
-    if (!alreadyHaveLookup(asField)) {
+    if (!alreadyHaveLookup(mappingModel.collection.name)) {
       aggregationPipeline.push({
         $lookup: {
           from: mappingModel.collection.name,
@@ -513,7 +555,7 @@ async function buildNestedLookupsForSearch({
     const refModel = await getCachedModel(refEntityId);
     const isLast = pathSegments.length === 1;
 
-    if (!alreadyHaveLookup(asField)) {
+    if (!alreadyHaveLookup(refModel.collection.name)) {
       aggregationPipeline.push({
         $lookup: {
           from: refModel.collection.name,
@@ -766,7 +808,7 @@ async function buildNestedLookupsForSearch({
 
           const pathSegments = key.split(".");
           const lastField = pathSegments[pathSegments.length - 1];
-
+          
           // Full filter path inside the nested document
           const searchCondition = Array.isArray(searchValue)
             ? {
@@ -1527,7 +1569,7 @@ async function buildNestedLookups({
   if (!attr) return;
 
   const localField = `${prefix}.${field}`;
-  const asField = `${prefix}.${field}_resolved`;
+  const asField = prefix.endsWith(`${field}_resolved`)? prefix : `${prefix}.${field}_resolved`;
   const fullPath = [...pathSegments].join('.');
   const filterString = filtersForLookup[field] ? JSON.stringify(filtersForLookup[field]) : '';
   const lookupKey = `${entityId}:${fullPath}:${filterString}`;
@@ -1535,8 +1577,8 @@ async function buildNestedLookups({
   if (visited.has(lookupKey)) return;
   visited.add(lookupKey);
 
-  const alreadyHaveLookup = (asName: string) =>
-    pipeline.some((stage: any) => stage.$lookup?.as === asName);
+  const alreadyHaveLookup = (fromCollection: string) =>
+    pipeline.some((stage: any) => stage.$lookup?.from === fromCollection);
   console.log('attr',attr);
   // -------- mapping reference --------
   if (attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
@@ -1548,7 +1590,7 @@ async function buildNestedLookups({
       attr.referenceEntitySetting.refEntityField
     );
     const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
-    if (!alreadyHaveLookup(asField)) {
+    if (!alreadyHaveLookup(mappingModel.collection.name)) {
       if(prefix?.endsWith('_resolved')){
         pipeline.push({
           $lookup: {
@@ -1577,7 +1619,47 @@ async function buildNestedLookups({
     if (pathSegments.length === 1 && filtersForLookup) {
       for (const [filterField, filterValue] of Object.entries(filtersForLookup)) {
         const matchField = `${asField}.rowData.${filterField}`;
+        if (
+      typeof filterValue === "object" &&
+      filterValue !== null &&
+      !Array.isArray(filterValue)
+    ) {
+      const keys = Object.keys(filterValue);
+      
+      if (keys.includes("$or")) {
+        // ✅ Unwrap $or and rewrite with the correct matchField
+        const orConditions = filterValue.$or.map((cond: any) => {
+          const innerKey = Object.keys(cond)[0];
+          return { [matchField]: cond[innerKey] };
+        });
+        filterConditions.push({ $or: orConditions });
+
+      } else if (keys.includes("$and")) {
+        // ✅ Handle $and similarly
+        const andConditions = filterValue.$and.map((cond: any) => {
+          const innerKey = Object.keys(cond)[0];
+          return { [matchField]: cond[innerKey] };
+        });
+        filterConditions.push({ $and: andConditions });
+
+      } else if (keys.length === 1 && keys[0].startsWith("$")) {
+        // ✅ Single operator like { $regex: ... }
         filterConditions.push({ [matchField]: filterValue });
+      } else if (
+        keys.length === 1 &&
+        !keys[0].startsWith("$") &&
+        keys[0].includes(".")
+      ) {
+        // ✅ Case like { "rowData.FOEmail": { $regex: ... } }
+        filterConditions.push({ [matchField]: filterValue[keys[0]] });
+      } else {
+        // ✅ Plain object with multiple operators
+        filterConditions.push({ [matchField]: filterValue });
+      }
+    } else {
+      // ✅ Simple equality
+      filterConditions.push({ [matchField]: filterValue });
+    }
       }
     }
 
@@ -1602,7 +1684,7 @@ async function buildNestedLookups({
     const refModel = await getCachedModel(refEntityId);
     const isLast = pathSegments.length === 1;
 
-    if (!alreadyHaveLookup(asField)) {
+    if (!alreadyHaveLookup(refModel.collection.name)) {
       pipeline.push({
         $lookup: {
           from: refModel.collection.name,
@@ -1702,14 +1784,14 @@ async function buildAggregationPathAndReturnExpr({
   const attr = await getCachedAttr(entityId, field);
   if (!attr) return `${prefix}.${field}`; // Default path
 
-  const asField = `${prefix}.${field}_resolved`;
+  const asField = prefix.endsWith(`${field}_resolved`)? prefix : `${prefix}.${field}_resolved`;
   const lookupKey = `${entityId}:${pathSegments.join('.')}`;
 
   if (!visited.has(lookupKey)) {
     visited.add(lookupKey);
 
-    const alreadyHaveLookup = (asName: string) =>
-      pipeline.some((stage: any) => stage.$lookup?.as === asName);
+    const alreadyHaveLookup = (fromCollection: string) =>
+      pipeline.some((stage: any) => stage.$lookup?.from === fromCollection);
 
     // -------- mapping reference --------
     if (attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
@@ -1722,7 +1804,7 @@ async function buildAggregationPathAndReturnExpr({
       );
       const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
 
-      if (!alreadyHaveLookup(asField)) {
+      if (!alreadyHaveLookup(mappingModel.collection.name)) {
         pipeline.push({
           $lookup: {
             from: mappingModel.collection.name,
@@ -1751,7 +1833,7 @@ async function buildAggregationPathAndReturnExpr({
       const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
       const refModel = await getCachedModel(refEntityId);
 
-      if (!alreadyHaveLookup(asField)) {
+      if (!alreadyHaveLookup(refModel.collection.name)) {
         pipeline.push({
           $lookup: {
             from: refModel.collection.name,

@@ -14,6 +14,7 @@ interface IFieldSetting {
   isDashboardFilter: boolean;
   type: 'number' | 'text' | 'date' | 'boolean' | 'richtext' | 'url' | 'option' | 'multioption' | 'user';
   isDerived: boolean;
+  optionAttributeId?: Types.ObjectId;
 }
 
 interface IDataUploadCondition {
@@ -79,6 +80,10 @@ const fieldSettingSchema = new Schema<IFieldSetting>(
       type: String,
       required: true,
       enum: config.FIELD_TYPE_ENUM,
+    },
+    optionAttributeId: {
+      type: Schema.Types.ObjectId,
+      default: null
     },
   },
   { _id: false }

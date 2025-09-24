@@ -132,6 +132,7 @@ interface FieldOption {
     refAttributeId?: Types.ObjectId[];
     isDerived?: boolean;
     type?:string;
+    optionAttributeId?:any;
   };
 }
 
@@ -162,6 +163,7 @@ export const getEntityFieldOptions = async (entityId: string): Promise<FieldOpti
           attributeId: currentAttrId,
           refAttributeId: attributeIdChain,
           type: attr?.type || 'text',
+          optionAttributeId: attr?.optionAttributeId || null
         },
       });
 
@@ -198,6 +200,7 @@ export const getEntityFieldOptions = async (entityId: string): Promise<FieldOpti
                 attributeId: currentAttrId,
                 refAttributeId: nestedRefPath,
                 type: subAttr.type || 'text',
+                optionAttributeId: subAttr?.optionAttributeId || null
               },
             });
 
@@ -216,6 +219,7 @@ export const getEntityFieldOptions = async (entityId: string): Promise<FieldOpti
                         attributeId: currentAttrId,
                         refAttributeId: leafRefPath,
                         type: leafAttr.type || 'text',
+                        optionAttributeId: leafAttr?.optionAttributeId || null
                       },
                     });
                   }
@@ -253,6 +257,7 @@ export const getEntityFieldOptions = async (entityId: string): Promise<FieldOpti
         refAttributeId: [],
         isDerived: true,
         type: df?.type || 'text',
+        optionAttributeId: df?.optionAttributeId || null
       },
     });
   }
