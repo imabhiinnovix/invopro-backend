@@ -1201,9 +1201,9 @@ export async function seedPermissions(perissionList: any[]) {
   console.log(dynamicPerission);
   permissions = [...permissions, ...dynamicPerission];
   for (const perm of permissions) {
-    const { method, resourceId } = perm;
+    const { resourceCode } = perm;
 
-    const existing = await Permission.findOne({ method, resourceId });
+    const existing = await Permission.findOne({ resourceCode });
 
     if (!existing) {
       const newPermission = new Permission({

@@ -20,6 +20,7 @@ import { seedProducts } from './product.seed';
 import { seedRolesAndPermissions } from './seedRoleAndPermission';
 import { seedPermissions } from './permission.seed';
 import { createProductSubscription } from './organizationHasProduct.seed';
+import { seedDashboardsForOrganization } from './userLevelDashboard.seed';
 
 const payload = {
   reportivixSuperAdminUserId: new mongoose.Types.ObjectId('66b34cbbd40e24fca2e3e312'),
@@ -49,6 +50,8 @@ const payload = {
   radarChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bbb'),
   scatterChartId: new mongoose.Types.ObjectId('67f75cd8b28822189f7ae71c'),
   tabularChartId: new mongoose.Types.ObjectId('67f75cd8b28822189f7ae71d'),
+  stackedBarLineId: new mongoose.Types.ObjectId('67f75cd8b28822189f7ae71e'),
+  comboBarLineId: new mongoose.Types.ObjectId('67f75cd8b28822189f7ae71f'),
   widgetThemeId: new mongoose.Types.ObjectId('67f783d7d2001cac19c75961'),
 };
 
@@ -793,6 +796,25 @@ export async function seedDatabase() {
     console.info('\n====> Seeding Operators <====');
     await seedOperators();
 
+    await seedDashboardsForOrganization({
+      organizationId: payload.reportivixOrganizationId,
+      widgetThemeId: payload.widgetThemeId,
+      dashboardName: 'Notivix Dashboard',
+      widgets: [
+        {
+          widgetTypeId: payload.verticalBarChartId,
+          name: 'Formality Officers',
+          dimensions: 'Attorney.AttorneyName.FOName',
+          groupBy: [],
+          aggregation: { type: 'Count', attributeName: 'Attorney.AttorneyName.FOName' },
+          position: { x: 0, y: 0, index: 0 },
+          conditions: [{ field: 'Attorney.AttorneyName.FOName', operator: 'notblank', value: '' }],
+          dataSourceId: entityDataSourceMapReportivix.case_list.dataSourceId,
+          entityId: entityDataSourceMapReportivix.case_list.entityId,
+          isIncremental: false,
+        },
+      ],
+    });
     // console.info('\n====> Seeding Dashboard Widget <====');
     // await seedDashboardWidget();
 
