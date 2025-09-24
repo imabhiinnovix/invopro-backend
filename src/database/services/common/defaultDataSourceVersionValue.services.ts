@@ -389,6 +389,13 @@ async function buildNestedLookups({
       } else if (keys.length === 1 && keys[0].startsWith("$")) {
         // ✅ Single operator like { $regex: ... }
         filterConditions.push({ [matchField]: filterValue });
+      } else if (
+        keys.length === 1 &&
+        !keys[0].startsWith("$") &&
+        keys[0].includes(".")
+      ) {
+        // ✅ Case like { "rowData.FOEmail": { $regex: ... } }
+        filterConditions.push({ [matchField]: filterValue[keys[0]] });
       } else {
         // ✅ Plain object with multiple operators
         filterConditions.push({ [matchField]: filterValue });
@@ -1638,6 +1645,13 @@ if (isLast && filtersForLookup) {
       } else if (keys.length === 1 && keys[0].startsWith("$")) {
         // ✅ Single operator like { $regex: ... }
         filterConditions.push({ [matchField]: filterValue });
+      }else if (
+        keys.length === 1 &&
+        !keys[0].startsWith("$") &&
+        keys[0].includes(".")
+      ) {
+        // ✅ Case like { "rowData.FOEmail": { $regex: ... } }
+        filterConditions.push({ [matchField]: filterValue[keys[0]] });
       } else {
         // ✅ Plain object with multiple operators
         filterConditions.push({ [matchField]: filterValue });
