@@ -323,6 +323,14 @@ async function buildNestedLookups({
     if (pathSegments.length === 1 && filtersForLookup) {
       for (const [filterField, filterValue] of Object.entries(filtersForLookup)) {
         const matchField = `${asField}.rowData.${filterField}`;
+        // ✅ Check if it's date/date-range
+        const nestedAttr = await getCachedAttr(entityId, filterField);
+        const dateFilter = buildDateFilter(matchField, filterValue, nestedAttr);
+
+        if (dateFilter) {
+          filterConditions.push(dateFilter);
+          continue;
+        }
         if (
       typeof filterValue === "object" &&
       filterValue !== null &&
@@ -404,7 +412,14 @@ async function buildNestedLookups({
  if (isLast && filtersForLookup) {
   for (const [filterField, filterValue] of Object.entries(filtersForLookup)) {
     const matchField = `${asField}.rowData.${filterField}`;
+    // ✅ Check if it's date/date-range
+    const nestedAttr = await getCachedAttr(entityId, filterField);
+    const dateFilter = buildDateFilter(matchField, filterValue, nestedAttr);
 
+    if (dateFilter) {
+      filterConditions.push(dateFilter);
+      continue;
+    }
     if (
       typeof filterValue === "object" &&
       filterValue !== null &&
@@ -651,9 +666,37 @@ async function buildNestedLookupsForSearch({
 
 
     // Step 2: Filters (unchanged)
+
+    function buildDateFilter(key: string, val: any, attr: any) {
+      if (attr?.type === "date-range" && val?.startDate && val?.endDate) {
+        return {
+          [`${key}`]: {
+            $gte: new Date(val.startDate),
+            $lte: new Date(val.endDate),
+          },
+        };
+      }
+
+      if (attr?.type === "date" && typeof val === "string") {
+        return {
+          [`${key}`]: { $eq: new Date(val) },
+        };
+      }
+
+      return null; // not a date filter
+  }
+
     const filterConditions: any[] = [];
     const visited = new Set<string>();
     for (const [key, val] of Object.entries(filters)) {
+        // ✅ Date / Date-Range
+        const attr = attributesMap[key] || refAttributesMap[key];
+        const dateFilter = buildDateFilter(`rowData.${key}`, val, attr);
+        if (dateFilter) {
+          filterConditions.push(dateFilter);
+          continue;
+        }
+
       if (key.startsWith('Derived.')) {
         const derivedName = key.split('.')[1];
         const derivedField = await getDerivedField({ name: derivedName, entityId });
@@ -1619,6 +1662,14 @@ async function buildNestedLookups({
     if (pathSegments.length === 1 && filtersForLookup) {
       for (const [filterField, filterValue] of Object.entries(filtersForLookup)) {
         const matchField = `${asField}.rowData.${filterField}`;
+        // ✅ Check if it's date/date-range
+    const nestedAttr = await getCachedAttr(entityId, filterField);
+    const dateFilter = buildDateFilter(matchField, filterValue, nestedAttr);
+
+    if (dateFilter) {
+      filterConditions.push(dateFilter);
+      continue;
+    }
         if (
       typeof filterValue === "object" &&
       filterValue !== null &&
@@ -1700,6 +1751,15 @@ async function buildNestedLookups({
 if (isLast && filtersForLookup) {
   for (const [filterField, filterValue] of Object.entries(filtersForLookup)) {
     const matchField = `${asField}.rowData.${filterField}`;
+
+    // ✅ Check if it's date/date-range
+    const nestedAttr = await getCachedAttr(entityId, filterField);
+    const dateFilter = buildDateFilter(matchField, filterValue, nestedAttr);
+
+    if (dateFilter) {
+      filterConditions.push(dateFilter);
+      continue;
+    }
 
     if (
       typeof filterValue === "object" &&
@@ -1893,10 +1953,36 @@ async function buildAggregationPathAndReturnExpr({
 
 
     // Step 2: Filters (unchanged)
+    function buildDateFilter(key: string, val: any, attr: any) {
+      if (attr?.type === "date-range" && val?.startDate && val?.endDate) {
+        return {
+          [`${key}`]: {
+            $gte: new Date(val.startDate),
+            $lte: new Date(val.endDate),
+          },
+        };
+      }
+
+      if (attr?.type === "date" && typeof val === "string") {
+        return {
+          [`${key}`]: { $eq: new Date(val) },
+        };
+      }
+
+      return null; // not a date filter
+  }
     const filterConditions: any[] = [];
     const visited = new Set<string>();
     const filters = dashboardFilters?.filters ?? {};
     for (const [key, val] of Object.entries(filters)) {
+      // ✅ Date / Date-Range
+        const attr = attributesMap[key] || refAttributesMap[key];
+        const dateFilter = buildDateFilter(`rowData.${key}`, val, attr);
+        if (dateFilter) {
+          filterConditions.push(dateFilter);
+          continue;
+        }
+
       if (key.startsWith('Derived.')) {
         const derivedName = key.split('.')[1];
         const derivedField = await getDerivedField({ name: derivedName, entityId });
