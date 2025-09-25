@@ -311,6 +311,7 @@ const entityDataSourceMapReportivix = {
     countryAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab8d'),
     caseTypeAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab8e'),
     activeSwitchAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab8f'),
+    disclosureAttributeId: new mongoose.Types.ObjectId('68b01d62dda97879b399ede0'),
   },
   action_due: {
     entityId: new mongoose.Types.ObjectId('6880b07573ff870ac0c67aa8'),
@@ -324,12 +325,21 @@ const entityDataSourceMapReportivix = {
     reportActionsDueAttributeId: new mongoose.Types.ObjectId('68a29126336c6c2cc97be4cb'),
     excludedAttributeId: new mongoose.Types.ObjectId('68889f1440e7e5582836a7f4'),
   },
+  attorney_fo_mapping: {
+    entityId: new mongoose.Types.ObjectId('68a726f696481808fce1aede'),
+    dataSourceId: new mongoose.Types.ObjectId('68a729e596481808fce1b233'),
+    foNameAttributeId: new mongoose.Types.ObjectId('68a726f696481808fce1aee0'),
+    attorneyNameAttributeId: new mongoose.Types.ObjectId('68a726f696481808fce1aee0'),
+  },
   formality_officers: {
     entityId: new mongoose.Types.ObjectId('6880b70e279a1a50d220e5ae'),
     dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08b0e'),
     foNameAttributeId: new mongoose.Types.ObjectId('68a29126336c6c2cc97be4d9'),
     foEmailAttributeId: new mongoose.Types.ObjectId('68a29126336c6c2cc97be4da'),
-    managerNameAttributeId: new mongoose.Types.ObjectId('68a29126336c6c2cc97be4db'),
+    escalation1AttributeId: new mongoose.Types.ObjectId('689ee486e35b2b9634d729d5'),
+    escalation1EmailIDAttributeId: new mongoose.Types.ObjectId('689ee486e35b2b9634d729d6'),
+    escalation2AttributeId: new mongoose.Types.ObjectId('689ee486e35b2b9634d729d7'),
+    escalation2EmailIDAttributeId: new mongoose.Types.ObjectId('689ee486e35b2b9634d729d8'),
   },
   ip_counsel: {
     entityId: new mongoose.Types.ObjectId('6880b07573ff870ac0c67aa9'),
@@ -651,6 +661,11 @@ const attributeOptionMapReportivix = {
   attorneyName: {
     id: new mongoose.Types.ObjectId('68a7163221450a2ddaeaec85'),
     attributeName: 'Attorney Name',
+    attributeValue: [],
+  },
+  foName: {
+    id: new mongoose.Types.ObjectId('68a7160121450a2ddaeaeb61'),
+    attributeName: 'FO Name',
     attributeValue: [],
   },
 };
