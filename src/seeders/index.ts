@@ -920,7 +920,7 @@ export async function seedDatabase() {
           widgetTypeId: payload.verticalBarChartId,
           name: 'Formality Officers',
           dimensions: 'Attorney.AttorneyName.FOName',
-          groupBy: [],
+          groupBy: ['ActionDue.ReportCriticalEvent'],
           aggregation: { type: 'Count', attributeName: 'Attorney.AttorneyName.FOName' },
           position: { x: 0, y: 0, index: 0 },
           conditions: [{ field: 'Attorney.AttorneyName.FOName', operator: 'notblank', value: '' }],
