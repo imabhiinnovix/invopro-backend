@@ -21,6 +21,7 @@ import { seedRolesAndPermissions } from './seedRoleAndPermission';
 import { seedPermissions } from './permission.seed';
 import { createProductSubscription } from './organizationHasProduct.seed';
 import { seedDashboardsForOrganization } from './userLevelDashboard.seed';
+import { seedAttributeOptions } from './attibuteOptionSeed';
 
 const payload = {
   reportivixSuperAdminUserId: new mongoose.Types.ObjectId('66b34cbbd40e24fca2e3e312'),
@@ -291,18 +292,49 @@ const entityDataSourceMapReportivix = {
   case_list: {
     entityId: new mongoose.Types.ObjectId('6880a9d9c7f126fbdf3a991c'),
     dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08bee'),
+    caseNumberAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab7d'),
+    otherReferenceNumberAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab7e'),
+    titleAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab7f'),
+    statusAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab80'),
+    actionDueAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab81'),
+    dueDateAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab82'),
+    dateTakenAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab83'),
+    remarksAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab84'),
+    attorneyAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab85'),
+    legalAssistantAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab86'),
+    assignedToAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab87'),
+    procedureAgentNameAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab88'),
+    localAgentNameAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab89'),
+    sbuAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab8a'),
+    buAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab8b'),
+    blAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab8c'),
+    countryAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab8d'),
+    caseTypeAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab8e'),
+    activeSwitchAttributeId: new mongoose.Types.ObjectId('689f084a2a15733ff9dcab8f'),
   },
   action_due: {
     entityId: new mongoose.Types.ObjectId('6880b07573ff870ac0c67aa8'),
     dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08bef'),
+    actionDueAttributeId: new mongoose.Types.ObjectId('689dcd95958ef0750ce1583f'),
+    stdActionsAttributeId: new mongoose.Types.ObjectId('68a29126336c6c2cc97be4c6'),
+    actionCategoryAttributeId: new mongoose.Types.ObjectId('68a29126336c6c2cc97be4c7'),
+    alertRequiredAttributeId: new mongoose.Types.ObjectId('68a29126336c6c2cc97be4c8'),
+    reportCriticalEventAttributeId: new mongoose.Types.ObjectId('68a29126336c6c2cc97be4c9'),
+    reportPersonalSchedulerAttributeId: new mongoose.Types.ObjectId('68a29126336c6c2cc97be4ca'),
+    reportActionsDueAttributeId: new mongoose.Types.ObjectId('68a29126336c6c2cc97be4cb'),
   },
   ip_counsel: {
     entityId: new mongoose.Types.ObjectId('6880b07573ff870ac0c67aa9'),
     dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08beb'),
+    attorneyNameAttributeId: new mongoose.Types.ObjectId('68a29126336c6c2cc97be4d4'),
+    formalityOfficerFOAttributeId: new mongoose.Types.ObjectId('68a29126336c6c2cc97be4d5'),
   },
   formality_officers: {
     entityId: new mongoose.Types.ObjectId('6880b70e279a1a50d220e5ae'),
     dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08b0e'),
+    foNameAttributeId: new mongoose.Types.ObjectId('68a29126336c6c2cc97be4d9'),
+    foEmailAttributeId: new mongoose.Types.ObjectId('68a29126336c6c2cc97be4da'),
+    managerNameAttributeId: new mongoose.Types.ObjectId('68a29126336c6c2cc97be4db'),
   },
 };
 
@@ -584,6 +616,17 @@ const customReportMapSabic = {
   },
 };
 
+const attributeOptionMapReportivix = {
+  sbu: {
+    id,
+    attributeName: name,
+    organizationId,
+    attributeValue: value,
+    isActive: true,
+    updatedBy: updatedBy || createdBy,
+    createdBy,
+  },
+};
 export async function seedDatabase() {
   try {
     // Connect to MongoDB
@@ -722,7 +765,7 @@ export async function seedDatabase() {
         isMaster: false,
         users: [
           {
-            email: 'admin@sabic.com',
+            email: 'cs.sabic@innovix-labs.com',
             password: 'Sabic@1234',
             firstName: 'Sabic',
             lastName: 'Admin',
@@ -741,6 +784,7 @@ export async function seedDatabase() {
       },
     ]);
 
+    await seedAttributeOptions();
     console.info('\n====> Seeding Entities Reportivix <====');
     await seedEntities({
       organizationId: payload.reportivixOrganizationId,
