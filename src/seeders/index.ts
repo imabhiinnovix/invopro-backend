@@ -329,7 +329,7 @@ const entityDataSourceMapReportivix = {
     entityId: new mongoose.Types.ObjectId('68a726f696481808fce1aede'),
     dataSourceId: new mongoose.Types.ObjectId('68a729e596481808fce1b233'),
     foNameAttributeId: new mongoose.Types.ObjectId('68a726f696481808fce1aee0'),
-    attorneyNameAttributeId: new mongoose.Types.ObjectId('68a726f696481808fce1aee0'),
+    attorneyNameAttributeId: new mongoose.Types.ObjectId('68a726f696481808fce1aedf'),
   },
   formality_officers: {
     entityId: new mongoose.Types.ObjectId('6880b70e279a1a50d220e5ae'),
