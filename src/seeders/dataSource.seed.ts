@@ -919,9 +919,6 @@ function getDataSourceToBeSeed({ entityDataSourceMap, organizationId, createdBy,
       __v: 0,
       isVisible: false,
     },
-    /**
-     * Paste one or more documents here
-     */
     {
       _id: entityDataSourceMap.case_list.dataSourceId,
       organizationId,
@@ -1180,7 +1177,6 @@ function getDataSourceToBeSeed({ entityDataSourceMap, organizationId, createdBy,
         },
       ],
     },
-
     {
       _id: entityDataSourceMap.action_due.dataSourceId,
       organizationId,
@@ -1300,7 +1296,6 @@ function getDataSourceToBeSeed({ entityDataSourceMap, organizationId, createdBy,
       canEditInline: false,
       uniqueAttributeRules: [[entityDataSourceMap.formality_officers.foNameAttributeId]],
       isVisible: true,
-
       fieldSettings: [
         {
           attributeId: entityDataSourceMap.formality_officers.foNameAttributeId,
@@ -1342,7 +1337,6 @@ function getDataSourceToBeSeed({ entityDataSourceMap, organizationId, createdBy,
       isShowMenu: true,
       updatedBy,
     },
-
     {
       _id: entityDataSourceMap.attorney_fo_mapping.dataSourceId,
       organizationId,
@@ -1425,7 +1419,11 @@ export async function seedDataSource({ organizationId, createdBy, updatedBy, ent
   for (const dataSource of dataSources) {
     try {
       let dataSourceWithFieldSetting = dataSource;
-      if (!['case_list', 'action_due', 'ip_counsel', 'formality_officers'].includes(dataSourceWithFieldSetting.code)) {
+      if (
+        !['caselists', 'actiondues', 'ipcounsels', 'formalityofficers', 'attorneyfomapping'].includes(
+          dataSourceWithFieldSetting.code
+        )
+      ) {
         const entityDetails = await Entity.findOne({
           _id: dataSource.entityId,
         });
