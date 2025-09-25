@@ -296,7 +296,7 @@ export const updateCurrentUser = async (req: Request, res: Response, next: NextF
   try {
     const { userId } = req.user;
 
-    const { firstName, lastName, mobile, address, country, state, city } = req.body;
+    const { firstName, lastName, mobile, address, country, state, city, postalCode } = req.body;
     const validationResult = validateUserInput({ firstName, isUpdate: true });
 
     if (!validationResult.valid) {
@@ -311,6 +311,7 @@ export const updateCurrentUser = async (req: Request, res: Response, next: NextF
       ...(country && { country }),
       ...(state && { state }),
       ...(city && { city }),
+      ...(postalCode && { postalCode }),
     };
 
     await userService.updateUser(userId, updateUser);
