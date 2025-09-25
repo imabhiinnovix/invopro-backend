@@ -6564,16 +6564,16 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
           _id: entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
         },
         {
-          name: 'FormalityOfficerFO',
-          mappingName: 'Formality Officer (FO)',
-          type: 'text',
+          name: 'Email',
+          mappingName: 'Email',
+          type: 'email',
           required: false,
           validation: [],
           transformations: [],
           optionAttributeId: '',
           cleaner: [],
           isReferenceEditable: 'HIDE',
-          _id: entityDataSourceMap.ip_counsel.formalityOfficerFOAttributeId,
+          _id: entityDataSourceMap.ip_counsel.emailAttributeId,
         },
       ],
       organizationId,
@@ -6886,27 +6886,62 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
     },
   ];
 }
+// export async function seedEntities({ organizationId, createdBy, updatedBy, entityDataSourceMap, attributeOptionMap }) {
+//   const entities = getEntityToBeSeed({
+//     entityDataSourceMap,
+//     attributeOptionMap,
+//     organizationId,
+//     createdBy,
+//     updatedBy,
+//   });
+
+//   for (const entity of entities) {
+//     // check both id and unique keys (name + orgId)
+//     const existingEntity = await Entity.findOne({
+//       $or: [{ _id: entity._id }, { name: entity.name, organizationId: entity.organizationId }],
+//     });
+
+//     if (!existingEntity) {
+//       const newEntity = new Entity(entity);
+//       await newEntity.save();
+//       console.info(`New entity '${entity.name}' created successfully.`);
+//     } else {
+//       console.info(`Entity '${entity.name}' already exists for org ${entity.organizationId}. Skipping.`);
+//     }
+//   }
+// }
+
 export async function seedEntities({ organizationId, createdBy, updatedBy, entityDataSourceMap, attributeOptionMap }) {
   const entities = getEntityToBeSeed({
     entityDataSourceMap,
-    attributeOptionMap,
     organizationId,
     createdBy,
     updatedBy,
+    attributeOptionMap,
   });
 
   for (const entity of entities) {
-    // check both id and unique keys (name + orgId)
-    const existingEntity = await Entity.findOne({
-      $or: [{ _id: entity._id }, { name: entity.name, organizationId: entity.organizationId }],
-    });
+    try {
+      // Use findByIdAndUpdate with upsert option
+      const result = await Entity.findByIdAndUpdate(
+        entity._id,
+        {
+          ...entity,
+        },
+        {
+          upsert: true, // Create if doesn't exist
+          new: true, // Return the updated document
+          runValidators: true, // Run schema validations
+        }
+      );
 
-    if (!existingEntity) {
-      const newEntity = new Entity(entity);
-      await newEntity.save();
-      console.info(`New entity '${entity.name}' created successfully.`);
-    } else {
-      console.info(`Entity '${entity.name}' already exists for org ${entity.organizationId}. Skipping.`);
+      if (result.isNew) {
+        console.info(`New entity created with ID: ${entity._id}`);
+      } else {
+        console.info(`Entity updated with ID: ${entity._id}`);
+      }
+    } catch (error) {
+      console.error(`Error upserting entity with ID ${entity._id}:`, error);
     }
   }
 }
