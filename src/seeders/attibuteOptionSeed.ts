@@ -9,12 +9,12 @@ function getAttributeOptionsToSeed(attributeOptionMap, organizationId, createdBy
 
   for (const key in attributeOptionMap) {
     if (attributeOptionMap[key]) {
-      const { id, name, value } = attributeOptionMap[key];
+      const { id, attributeName, attributeValue } = attributeOptionMap[key];
       options.push({
         id,
-        attributeName: name,
+        attributeName: attributeName,
         organizationId,
-        attributeValue: value,
+        attributeValue: attributeValue,
         isActive: true,
         updatedBy: updatedBy || createdBy,
         createdBy,
