@@ -4,7 +4,7 @@
 import Entity from '../database/models/common/entity';
 import mongoose from 'mongoose';
 
-function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, updatedBy }) {
+function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizationId, createdBy, updatedBy }) {
   return [
     {
       _id: entityDataSourceMap.disclosure.entityId,
@@ -3234,7 +3234,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '679232a1753ceb4945e5b396',
+          optionAttributeId: attributeOptionMap.sbu.id,
           cleaner: [],
         },
         {
@@ -3265,7 +3265,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '679232a1753ceb4945e5b396',
+          optionAttributeId: attributeOptionMap.sbu.id,
           cleaner: [],
         },
         {
@@ -3296,7 +3296,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '679232a1753ceb4945e5b396',
+          optionAttributeId: attributeOptionMap.sbu.id,
           cleaner: [],
         },
         {
@@ -6358,7 +6358,8 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: attributeOptionMap.actionDue.id,
+          isReferenceEditable: 'EDIT',
           cleaner: [],
           _id: entityDataSourceMap.action_due.actionDueAttributeId,
         },
@@ -6369,19 +6370,21 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: attributeOptionMap.stdAction.id,
+          isReferenceEditable: 'HIDE',
           cleaner: [],
           _id: entityDataSourceMap.action_due.stdActionsAttributeId,
         },
         {
           name: 'ActionCategory',
           mappingName: 'Action Category',
-          type: 'text',
+          type: 'option',
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: attributeOptionMap.actionCategory.id,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
           _id: entityDataSourceMap.action_due.actionCategoryAttributeId,
         },
         {
@@ -6393,6 +6396,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           transformations: [],
           optionAttributeId: '',
           cleaner: [],
+          isReferenceEditable: 'HIDE',
           _id: entityDataSourceMap.action_due.alertRequiredAttributeId,
         },
         {
@@ -6404,6 +6408,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           transformations: [],
           optionAttributeId: '',
           cleaner: [],
+          isReferenceEditable: 'HIDE',
           _id: entityDataSourceMap.action_due.reportCriticalEventAttributeId,
         },
         {
@@ -6415,6 +6420,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           transformations: [],
           optionAttributeId: '',
           cleaner: [],
+          isReferenceEditable: 'HIDE',
           _id: entityDataSourceMap.action_due.reportPersonalSchedulerAttributeId,
         },
         {
@@ -6426,45 +6432,27 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           transformations: [],
           optionAttributeId: '',
           cleaner: [],
+          isReferenceEditable: 'HIDE',
           _id: entityDataSourceMap.action_due.reportActionsDueAttributeId,
         },
-      ],
-      organizationId,
-      createdBy,
-      isActive: true,
-    },
-    {
-      _id: entityDataSourceMap.ip_counsel.entityId,
-      name: 'IP Counsel',
-      description: '',
-      attributes: [
         {
-          name: 'AttorneyName',
-          mappingName: 'Attorney Name',
+          name: 'Excluded',
+          mappingName: 'Excluded',
           type: 'text',
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
-          _id: entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
-        },
-        {
-          name: 'FormalityOfficerFO',
-          mappingName: 'Formality Officer (FO)',
-          type: 'text',
-          required: false,
-          validation: [],
-          transformations: [],
-          optionAttributeId: '',
-          cleaner: [],
-          _id: entityDataSourceMap.ip_counsel.formalityOfficerFOAttributeId,
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.action_due.excludedAttributeId,
         },
       ],
       organizationId,
       createdBy,
       isActive: true,
     },
+
     {
       _id: entityDataSourceMap.formality_officers.entityId,
       name: 'Formality Officers',
@@ -6508,6 +6496,48 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
       createdBy,
       isActive: true,
       __v: 0,
+    },
+    {
+      _id: entityDataSourceMap.ip_counsel.entityId,
+      name: 'IP Counsel',
+      description: '',
+      attributes: [
+        {
+          name: 'AttorneyName',
+          mappingName: 'Attorney Name',
+          type: 'text-with-option',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: attributeOptionMap.attorneyName.id,
+          referenceEntitySetting: {
+            refEntityId: {
+              $oid: '68a726f696481808fce1aede',
+            },
+            refEntityField: {
+              $oid: '68a726f696481808fce1aedf',
+            },
+            relationType: 'mapping_many_to_one',
+          },
+          isReferenceEditable: 'VIEW',
+          cleaner: [],
+          _id: entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
+        },
+        {
+          name: 'FormalityOfficerFO',
+          mappingName: 'Formality Officer (FO)',
+          type: 'text',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: '',
+          cleaner: [],
+          _id: entityDataSourceMap.ip_counsel.formalityOfficerFOAttributeId,
+        },
+      ],
+      organizationId,
+      createdBy,
+      isActive: true,
     },
     {
       _id: entityDataSourceMap.case_list.entityId,
@@ -6735,9 +6765,10 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
     },
   ];
 }
-export async function seedEntities({ organizationId, createdBy, updatedBy, entityDataSourceMap }) {
+export async function seedEntities({ organizationId, createdBy, updatedBy, entityDataSourceMap, attributeOptionMap }) {
   const entities = getEntityToBeSeed({
     entityDataSourceMap,
+    attributeOptionMap,
     organizationId,
     createdBy,
     updatedBy,
