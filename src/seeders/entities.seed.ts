@@ -6697,7 +6697,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
           cleaner: [],
           referenceEntitySetting: {
             refEntityId: entityDataSourceMap.ip_counsel.entityId,
-            refEntityField: attributeOptionMap.ip_counsel.attorneyNameAttributeId,
+            refEntityField: entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
             relationType: 'many_to_one',
           },
           isReferenceEditable: 'HIDE',
@@ -6912,6 +6912,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
 // }
 
 export async function seedEntities({ organizationId, createdBy, updatedBy, entityDataSourceMap, attributeOptionMap }) {
+  console.log(entityDataSourceMap);
   const entities = getEntityToBeSeed({
     entityDataSourceMap,
     organizationId,

@@ -10,11 +10,13 @@ function getAttributeOptionsToSeed(attributeOptionMap, organizationId, createdBy
   for (const key in attributeOptionMap) {
     if (attributeOptionMap[key]) {
       const { id, attributeName, attributeValue } = attributeOptionMap[key];
+      if (!attributeName) continue; // ✅ skip bad entries
+
       options.push({
         id,
-        attributeName: attributeName,
+        attributeName,
         organizationId,
-        attributeValue: attributeValue,
+        attributeValue,
         isActive: true,
         updatedBy: updatedBy || createdBy,
         createdBy,
@@ -33,22 +35,35 @@ export const seedAttributeOptions = async ({ organizationId, createdBy, updatedB
     const dataToSeed = getAttributeOptionsToSeed(attributeOptionMap, organizationId, createdBy, updatedBy);
 
     for (const item of dataToSeed) {
-      await AttributeOption.findByIdAndUpdate(
-        new mongoose.Types.ObjectId(item.id),
-        {
-          $set: {
-            attributeName: item.attributeName,
-            organizationId: new mongoose.Types.ObjectId(organizationId),
-            attributeValue: item.attributeValue,
-            isActive: true,
-            updatedBy: item.updatedBy,
+      const existing = await AttributeOption.findById(item.id);
+
+      if (existing) {
+        // ✅ Update only if it exists
+        await AttributeOption.findByIdAndUpdate(
+          item.id,
+          {
+            $set: {
+              attributeName: item.attributeName,
+              organizationId: new mongoose.Types.ObjectId(organizationId),
+              attributeValue: item.attributeValue,
+              isActive: true,
+              updatedBy: item.updatedBy,
+            },
           },
-          $setOnInsert: {
-            createdBy: item.createdBy,
-          },
-        },
-        { upsert: true, new: true }
-      );
+          { new: true }
+        );
+      } else {
+        // ✅ Insert only if not exists
+        await AttributeOption.create({
+          _id: new mongoose.Types.ObjectId(item.id),
+          attributeName: item.attributeName,
+          organizationId: new mongoose.Types.ObjectId(organizationId),
+          attributeValue: item.attributeValue,
+          isActive: true,
+          createdBy: item.createdBy,
+          updatedBy: item.updatedBy,
+        });
+      }
     }
 
     console.log('✅ Attribute options seeded successfully');
