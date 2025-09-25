@@ -15,6 +15,7 @@ interface IFieldSetting {
   type: 'number' | 'text' | 'date' | 'boolean' | 'richtext' | 'url' | 'option' | 'multioption' | 'user';
   isDerived: boolean;
   optionAttributeId?: Types.ObjectId;
+  mappedAttributeName: string;
 }
 
 interface IDataUploadCondition {
@@ -85,6 +86,9 @@ const fieldSettingSchema = new Schema<IFieldSetting>(
       type: Schema.Types.ObjectId,
       default: null
     },
+    mappedAttributeName: {
+      type: String
+    }
   },
   { _id: false }
 );
