@@ -19,7 +19,19 @@ export interface IReferenceEntitySetting {
 export interface IAttribute {
   name: string;
   mappingName: string;
-  type: 'number' | 'text' | 'date' | 'boolean' | 'richtext' | 'url' | 'option' | 'multioption' | 'user' | 'email' | 'text-with-option';
+  type:
+    | 'number'
+    | 'text'
+    | 'date'
+    | 'boolean'
+    | 'richtext'
+    | 'url'
+    | 'option'
+    | 'multioption'
+    | 'user'
+    | 'email'
+    | 'text-with-option'
+    | 'date-range';
   required: any;
   validation?: string[];
   transformations?: string[];
@@ -96,8 +108,8 @@ const attributeSchema = new Schema<IAttribute>(
     },
     isReferenceEditable: {
       type: String,
-      enum: ["EDIT", "VIEW", "HIDE"], // enum values
-      default: "EDIT"
+      enum: ['EDIT', 'VIEW', 'HIDE'], // enum values
+      default: 'EDIT',
     }, // ✅ Added
   },
   { _id: true, toJSON: { getters: true }, toObject: { getters: true } }
@@ -122,10 +134,7 @@ const entitySchema = new Schema<IEntity>(
 );
 
 // Unique index
-entitySchema.index(
-  { name: 1, organizationId: 1 },
-  { unique: true, collation: { locale: 'en', strength: 2 } }
-);
+entitySchema.index({ name: 1, organizationId: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
 
 // ---------------------------
 // Model

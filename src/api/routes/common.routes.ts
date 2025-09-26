@@ -22,6 +22,8 @@ import dataSourceRoutes from './common/dataSource.routes';
 import derivedFieldRoutes from './common/derivedField.routes';
 import dashboardFontRoutes from './common/dashboardFont.routes';
 import dashboardThemeRoutes from './common/dashboardTheme.routes';
+import departmentRoutes from './common/department.routes';
+import designationRoutes from './common/designation.routes';
 
 const router = Router();
 
@@ -48,5 +50,7 @@ router.use('/dashboardShare', dashboardShareRoutes);
 router.use('/derivedField', derivedFieldRoutes);
 router.use('/dashboardFont', dashboardFontRoutes);
 router.use('/dashboardTheme', dashboardThemeRoutes);
+router.use('/department', departmentRoutes);
+router.use('/designation', designationRoutes);
 
 export default router;

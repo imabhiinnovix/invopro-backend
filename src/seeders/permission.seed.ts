@@ -1138,6 +1138,99 @@ let permissions = [
     resourceCode: 'dashboard_theme_delete',
     isSuperUser: false,
   },
+  // GET current user profile image
+  {
+    name: 'Get Current User Profile Image',
+    method: 'GET',
+    resourceId: '/common/user/image',
+    extraOptions: {},
+    resourceType: 'User Profile Image',
+    resourceCode: 'user_profile_image_get',
+    isSuperUser: false,
+  },
+
+  // DELETE current user profile image
+  {
+    name: 'Delete Current User Profile Image',
+    method: 'DELETE',
+    resourceId: '/common/user/image',
+    extraOptions: {},
+    resourceType: 'User Profile Image',
+    resourceCode: 'user_profile_image_delete',
+    isSuperUser: false,
+  },
+  {
+    name: 'Create Department',
+    method: 'POST',
+    resourceId: '/common/department/create',
+    extraOptions: {},
+    resourceType: 'Department',
+    resourceCode: 'department_create',
+    isSuperUser: false,
+  },
+  {
+    name: 'Update Department',
+    method: 'PUT',
+    resourceId: '/common/department/update/:departmentId',
+    extraOptions: {},
+    resourceType: 'Department',
+    resourceCode: 'department_update',
+    isSuperUser: false,
+  },
+  {
+    name: 'List Departments',
+    method: 'GET',
+    resourceId: '/common/department/list',
+    extraOptions: {},
+    resourceType: 'Department',
+    resourceCode: 'department_list',
+    isSuperUser: false,
+  },
+  {
+    name: 'Delete Department',
+    method: 'DELETE',
+    resourceId: '/common/department/delete/:departmentId',
+    extraOptions: {},
+    resourceType: 'Department',
+    resourceCode: 'department_delete',
+    isSuperUser: false,
+  },
+  {
+    name: 'Create Designation',
+    method: 'POST',
+    resourceId: '/common/designation/create',
+    extraOptions: {},
+    resourceType: 'Designation',
+    resourceCode: 'designation_create',
+    isSuperUser: false,
+  },
+  {
+    name: 'Update Designation',
+    method: 'PUT',
+    resourceId: '/common/designation/update/:designationId',
+    extraOptions: {},
+    resourceType: 'Designation',
+    resourceCode: 'designation_update',
+    isSuperUser: false,
+  },
+  {
+    name: 'List Designations',
+    method: 'GET',
+    resourceId: '/common/designation/list',
+    extraOptions: {},
+    resourceType: 'Designation',
+    resourceCode: 'designation_list',
+    isSuperUser: false,
+  },
+  {
+    name: 'Delete Designation',
+    method: 'GET',
+    resourceId: '/common/designation/delete/:designationId',
+    extraOptions: {},
+    resourceType: 'Designation',
+    resourceCode: 'designation_delete',
+    isSuperUser: false,
+  },
 ];
 
 function getDynamicPermission(
@@ -1158,7 +1251,7 @@ function getDynamicPermission(
     {
       action: 'Update',
       method: 'PUT',
-      resourceId: 'common/dataSourceVersion/versionData/update/:rowId',
+      resourceId: 'common/dataSourceVersion/versionData/update/',
       codeSuffix: 'update',
     },
     {
@@ -1201,9 +1294,9 @@ export async function seedPermissions(perissionList: any[]) {
   console.log(dynamicPerission);
   permissions = [...permissions, ...dynamicPerission];
   for (const perm of permissions) {
-    const { method, resourceId } = perm;
+    const { resourceCode } = perm;
 
-    const existing = await Permission.findOne({ method, resourceId });
+    const existing = await Permission.findOne({ resourceCode });
 
     if (!existing) {
       const newPermission = new Permission({
