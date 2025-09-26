@@ -6701,7 +6701,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
             relationType: 'many_to_one',
           },
           isReferenceEditable: 'HIDE',
-          _id: entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
+          _id: entityDataSourceMap.case_list.attorneyAttributeId,
         },
         {
           name: 'LegalAssistant',
