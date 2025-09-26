@@ -11,13 +11,29 @@ import * as organizationProductSubscriptionService from '../../../database/servi
 import { validateUserInput } from '../../../utils/validation.utils';
 import * as roleHasPermissionService from '../../../database/services/common/roleHasPermission.services';
 import * as permissionService from '../../../database/services/common/permission.service';
-import { permission } from 'process';
-import { populate } from 'dotenv';
+import path from 'path';
+import fsPromises from 'fs/promises';
+import UserRole from '../../../database/models/common/userRole';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let { email, password, moblie, organizationId, firstName, lastName, roleIds, organizationProductSubscriptionIds } =
-      req.body;
+    let {
+      email,
+      password,
+      moblie,
+      organizationId,
+      firstName,
+      lastName,
+      roleIds,
+      organizationProductSubscriptionIds,
+      departmentId,
+      designationId,
+      address,
+      country,
+      state,
+      city,
+      postalCode,
+    } = req.body;
 
     const validationResult = validateUserInput({ email, password, firstName, isUpdate: false });
 
@@ -118,6 +134,13 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       status: 'active',
       isVerified: true,
       organizationProductSubscriptionIds,
+      departmentId,
+      designationId,
+      address,
+      country,
+      state,
+      city,
+      postalCode,
     });
 
     return res.status(201).json({ success: true, message: 'User created successfully' });
@@ -181,6 +204,14 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
         path: 'organizationProductSubscriptionIds',
         populate: { path: 'productId', select: 'name code status' }, // 👈 nested population
       },
+      {
+        path: 'departmentId',
+        select: 'name', // 👈 nested population
+      },
+      {
+        path: 'designationId',
+        select: 'name', // 👈 nested population
+      },
     ]);
 
     const roleIds = Array.isArray(user.roleIds)
@@ -188,6 +219,9 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
       : [];
 
     user = user.toObject();
+    if (user?.imagePath) {
+      user.imagePath = `${process.env.BASE_BACKEND_URL}/${user.imagePath}`;
+    }
     const permissionDetails = await roleHasPermissionService.getPermissionsByRoleIds(roleIds);
 
     let allPermissionResult = await permissionService.getPermissionList({
@@ -262,7 +296,7 @@ export const updateCurrentUser = async (req: Request, res: Response, next: NextF
   try {
     const { userId } = req.user;
 
-    const { firstName, lastName, mobile } = req.body;
+    const { firstName, lastName, mobile, address, country, state, city, postalCode } = req.body;
     const validationResult = validateUserInput({ firstName, isUpdate: true });
 
     if (!validationResult.valid) {
@@ -273,6 +307,11 @@ export const updateCurrentUser = async (req: Request, res: Response, next: NextF
       ...(firstName && { firstName }),
       ...(lastName && { lastName }),
       ...(mobile && { mobile }),
+      ...(address && { address }),
+      ...(country && { country }),
+      ...(state && { state }),
+      ...(city && { city }),
+      ...(postalCode && { postalCode }),
     };
 
     await userService.updateUser(userId, updateUser);
@@ -295,6 +334,13 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
       password,
       organizationProductSubscriptionIds,
       organizationId: bodyOrgId,
+      departmentId,
+      designationId,
+      address,
+      country,
+      state,
+      city,
+      postalCode,
     } = req.body;
 
     const validationResult = validateUserInput({ firstName, password, isUpdate: true });
@@ -395,7 +441,27 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
     if (password) updateData.password = await hashPassword(password);
     if (organizationProductSubscriptionIds)
       updateData.organizationProductSubscriptionIds = organizationProductSubscriptionIds;
-
+    if (departmentId) {
+      updateData.departmentId = departmentId;
+    }
+    if (designationId) {
+      updateData.designationId = designationId;
+    }
+    if (address) {
+      updateData.address = address;
+    }
+    if (country) {
+      updateData.country = country;
+    }
+    if (state) {
+      updateData.state = state;
+    }
+    if (city) {
+      updateData.city = city;
+    }
+    if (postalCode) {
+      updateData.postalCode = postalCode;
+    }
     // Step 3: Update user
     await userService.updateUser(userId, updateData);
 
@@ -463,5 +529,105 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
   } catch (error) {
     console.error('Error changing password:', error);
     next(error);
+  }
+};
+
+export async function createUpdateCurrentUserProfileImage(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { userId, organizationId } = req?.user;
+
+    // ensure files exist
+    const files = Array.isArray(req.files) ? req.files : Object.values(req.files || {}).flat();
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: 'No image uploaded' });
+    }
+
+    // take the first file (profile pic)
+    const file = files[0] as Express.Multer.File;
+
+    // get extension
+    const ext = path.extname(file.originalname) || '.jpg';
+
+    // build target path: uploads/<organizationId>/<userId>.<ext>
+    const newFilePath = path.join('uploads', organizationId.toString(), userId.toString(), `${userId}${ext}`);
+
+    // create directory if not exists
+    await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
+
+    // move file from multer temp to target location
+    await fsPromises.rename(file.path, newFilePath);
+
+    await userService.updateUser(userId, { imagePath: newFilePath });
+    return res.json({
+      success: true,
+      message: 'Profile image updated successfully.',
+      data: {
+        imagePath: newFilePath,
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function getCurrentUserProfileImage(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { userId } = req?.user;
+
+    // Fetch user from DB to get imagePath
+    const user = await userService.findUserById(userId);
+    if (!user || !user.imagePath) {
+      return res.status(404).json({ success: false, message: 'Profile image not found' });
+    }
+
+    const imagePath = path.resolve(user.imagePath);
+
+    // Check if file exists asynchronously
+    try {
+      await fsPromises.access(imagePath);
+    } catch {
+      return res.status(404).json({ success: false, message: 'Image file not found' });
+    }
+
+    // Send file using res.sendFile
+    res.sendFile(imagePath, (err) => {
+      if (err) {
+        console.error('Error sending image:', err);
+        return res.status(500).json({ success: false, message: 'Error sending image file' });
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching profile image:', err);
+    return res.status(500).json({ success: false, message: 'Unable to fetch profile image' });
+  }
+}
+
+export const deleteCurrentUserProfileImage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user.userId;
+    const user = await userService.findUserById(userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Optionally delete the file if exists
+    if (user.imagePath) {
+      try {
+        await fsPromises.unlink(user.imagePath); // delete file
+      } catch {
+        // ignore errors if file doesn't exist
+      }
+    }
+
+    // Update DB to remove image path
+    user.imagePath = '';
+    await user.save();
+
+    return res.status(200).json({ success: true, message: 'Profile image deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting profile image:', err);
+    return res.status(500).json({ success: false, message: 'Unable to delete profile image' });
   }
 };

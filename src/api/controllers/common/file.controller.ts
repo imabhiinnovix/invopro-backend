@@ -6,6 +6,7 @@ import {
 import { getAttributesFromXlsxOrCsvHeaders } from './getAttributesFromXlsxOrCsvHeaders.controller';
 import { createDashboardFont, updateDashboardFont } from './dashboardFont.controller';
 import { createAttributeOptionWithFile, updateAttributeOptionWithFile } from './attributeOptions.controller';
+import { createUpdateCurrentUserProfileImage } from './user.controller';
 
 export const handleFileUpload = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -29,6 +30,8 @@ export const handleFileUpload = async (req: Request, res: Response, next: NextFu
       return await createAttributeOptionWithFile(req, res, next);
     } else if (operation.toLowerCase() === 'updateattributeoption') {
       return await updateAttributeOptionWithFile(req, res, next);
+    } else if (operation.toLowerCase() === 'profile') {
+      return await createUpdateCurrentUserProfileImage(req, res, next);
     } else {
       res.status(400).json({
         success: false,
