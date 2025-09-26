@@ -297,7 +297,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
             }
 
             // Precompute all field options for this entity
-            const fieldOptions = await entityService.getEntityFieldOptions(ds.entityId._id.toString());
+            const fieldOptions: any = await entityService.getEntityFieldOptions(ds.entityId._id.toString());
 
             if (Array.isArray(ds.fieldSettings)) {
               for (const field of ds.fieldSettings) {
@@ -320,8 +320,10 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
 
                 if (match) {
                   field.mappedAttributeName = match.label;
+                  field.optionAttributeId = match?.value?.optionAttributeId || null;
                 } else {
                   field.mappedAttributeName = 'Unknown';
+                  field.optionAttributeId = null;
                 }
               }
             }

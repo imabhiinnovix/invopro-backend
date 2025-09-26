@@ -9,7 +9,7 @@ import {
   getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue,
   getDataSourceVersionDetailsBasedOnId,
   getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue,
-  getNewChartData,
+  // getNewChartData,
   listAllAvailableDataSourceVersionValue,
   listDataSourceVersion,
   updateSingleRowVersionValue,
@@ -59,7 +59,7 @@ router.get(
   listAllAvailableDataSourceVersionValue
 );
 
-router.post('/chartData', authenticateToken, permissionMiddleware(), getNewChartData);
+// router.post('/chartData', authenticateToken, permissionMiddleware(), getNewChartData);
 router.get('/:dataSourceVersionId', authenticateToken, getDataSourceVersionDetailsBasedOnId);
 
 export default router;

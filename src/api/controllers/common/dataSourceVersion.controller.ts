@@ -89,6 +89,7 @@ function evaluateCondition(fieldValue: any, operator: string, expectedValue: any
       break;
 
     case 'date':
+    case 'date-range':
       const dateValue = new Date(fieldValue);
       const dateExpected = new Date(expectedValue);
       switch (operator) {
@@ -236,7 +237,6 @@ export async function validateFileDataCondition({ fileData, attributeSetting, co
   return filteredData;
 }
 
-
 async function validateAndConvert({
   value,
   type,
@@ -266,7 +266,7 @@ async function validateAndConvert({
     return { isValid: typeof convertedValue === 'string', convertedValue };
   }
 
-  if (type === 'date') {
+  if (type === 'date' || type === 'date-range') {
     if (typeof value === 'number') {
       value = excelDateToJSDate(value);
     }
@@ -608,7 +608,6 @@ async function validateFileData({
     newRowData,
   };
 }
-
 
 export async function validateRowData({
   rowData,
@@ -1344,49 +1343,43 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     }
 
     // 🔹 Precompute field mappings
-const fieldOptions = await entityService.getEntityFieldOptions(
-  String(dataSourceDetails.entityId._id)
-);
+    const fieldOptions = await entityService.getEntityFieldOptions(String(dataSourceDetails.entityId._id));
 
-if (Array.isArray(dataSourceDetails.fieldSettings)) {
-  for (const field of dataSourceDetails.fieldSettings) {
-    // Derived fields
-    if (field.isDerived && field.attributeId) {
-      const derived = await findDerivedFieldById(field.attributeId);
-      if (derived) {
-        field.mappedAttributeName = `Derived.${derived.name}`;
-        field.values = Array.isArray(derived.valueRules)
-          ? derived.valueRules.map((vr) => vr.value)
-          : [];
+    if (Array.isArray(dataSourceDetails.fieldSettings)) {
+      for (const field of dataSourceDetails.fieldSettings) {
+        // Derived fields
+        if (field.isDerived && field.attributeId) {
+          const derived = await findDerivedFieldById(field.attributeId);
+          if (derived) {
+            field.mappedAttributeName = `Derived.${derived.name}`;
+            field.values = Array.isArray(derived.valueRules) ? derived.valueRules.map((vr) => vr.value) : [];
+          }
+          continue;
+        }
+
+        // Normal fields → look up in fieldOptions
+        const match = fieldOptions.find(
+          (opt) =>
+            String(opt.value.attributeId) === String(field.attributeId) &&
+            JSON.stringify(opt.value.refAttributeId || []) === JSON.stringify(field.refAttributeId || [])
+        );
+
+        if (match) {
+          field.mappedAttributeName = match.label;
+        } else {
+          field.mappedAttributeName = 'Unknown';
+        }
       }
-      continue;
     }
 
-    // Normal fields → look up in fieldOptions
-    const match = fieldOptions.find(
-      (opt) =>
-        String(opt.value.attributeId) === String(field.attributeId) &&
-        JSON.stringify(opt.value.refAttributeId || []) ===
-          JSON.stringify(field.refAttributeId || [])
-    );
+    // 🔹 Build search filters using mappedAttributeName
+    if (search && search.length > 0) {
+      for (const field of dataSourceDetails.fieldSettings) {
+        if (!field.mappedAttributeName || field.mappedAttributeName === 'Unknown') continue;
 
-    if (match) {
-      field.mappedAttributeName = match.label;
-    } else {
-      field.mappedAttributeName = "Unknown";
+        searchFilters[field.mappedAttributeName] = search;
+      }
     }
-  }
-}
-
-// 🔹 Build search filters using mappedAttributeName
-if (search && search.length > 0) {
-  for (const field of dataSourceDetails.fieldSettings) {
-    if (!field.mappedAttributeName || field.mappedAttributeName === "Unknown")
-      continue;
-
-    searchFilters[field.mappedAttributeName] = search;
-  }
-}
 
     const versionQuery: any = {
       dataSourceId,
@@ -2085,70 +2078,70 @@ export const listAllAvailableDataSourceVersionValue = async (req: Request, res: 
   }
 };
 
-export const getNewChartData = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { dataSourceId, filters, versionValue, dimensions, groupBy, aggregation, conditions, widgetType } = req.body;
+// export const getNewChartData = async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const { dataSourceId, filters, versionValue, dimensions, groupBy, aggregation, conditions, widgetType } = req.body;
 
-    const { orgCode } = req.user;
+//     const { orgCode } = req.user;
 
-    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
-    if (!dataSourceDetails) {
-      return res.status(404).json({ success: false, message: 'Data source not found.' });
-    }
+//     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+//     if (!dataSourceDetails) {
+//       return res.status(404).json({ success: false, message: 'Data source not found.' });
+//     }
 
-    const versionQuery: any = {
-      dataSourceId: new Types.ObjectId(dataSourceId),
-      isCurrent: true, // Always filter for current version
-    };
+//     const versionQuery: any = {
+//       dataSourceId: new Types.ObjectId(dataSourceId),
+//       isCurrent: true, // Always filter for current version
+//     };
 
-    if (versionValue) {
-      versionQuery.versionValue = versionValue; // Optional, narrows to specific version if provided
-    }
+//     if (versionValue) {
+//       versionQuery.versionValue = versionValue; // Optional, narrows to specific version if provided
+//     }
 
-    const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
-      query: versionQuery,
-    });
+//     const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
+//       query: versionQuery,
+//     });
 
-    if (!dataSourceVersionDetails?.data?.length) {
-      return res.status(200).json({
-        success: true,
-        message: 'Version data has been successfully retrieved.',
-        data: [],
-        totalCount: 0,
-      });
-    }
+//     if (!dataSourceVersionDetails?.data?.length) {
+//       return res.status(200).json({
+//         success: true,
+//         message: 'Version data has been successfully retrieved.',
+//         data: [],
+//         totalCount: 0,
+//       });
+//     }
 
-    const dataSourceVersionId = dataSourceVersionDetails.data[0]._id;
-    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
-      orgCode,
-      versionCode: dataSourceDetails.code,
-    });
+//     const dataSourceVersionId = dataSourceVersionDetails.data[0]._id;
+//     const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+//       orgCode,
+//       versionCode: dataSourceDetails.code,
+//     });
 
-    const query = { dataSourceVersionId };
+//     const query = { dataSourceVersionId };
 
-    const result = await dataSourceVersionValueService.getDataSourceVersionValueV2({
-      schemaName,
-      query,
-      filters,
-      entityId: dataSourceDetails.entityId,
-      dimension: dimensions,
-      groupBy,
-      aggregation,
-      conditions,
-      widgetType,
-    });
-    const data = result ?? [];
+//     const result = await dataSourceVersionValueService.getDataSourceVersionValueV2({
+//       schemaName,
+//       query,
+//       filters,
+//       entityId: dataSourceDetails.entityId,
+//       dimension: dimensions,
+//       groupBy,
+//       aggregation,
+//       conditions,
+//       widgetType,
+//     });
+//     const data = result ?? [];
 
-    return res.status(200).json({
-      success: true,
-      message: 'Chart data has been successfully retrieved.',
-      data,
-    });
-  } catch (e) {
-    console.log('Error in getNotivixChartData:', e);
-    next(e);
-  }
-};
+//     return res.status(200).json({
+//       success: true,
+//       message: 'Chart data has been successfully retrieved.',
+//       data,
+//     });
+//   } catch (e) {
+//     console.log('Error in getNotivixChartData:', e);
+//     next(e);
+//   }
+// };
 
 export const getDataSourceVersionDetailsBasedOnId = async (req: Request, res: Response, next: NextFunction) => {
   try {
