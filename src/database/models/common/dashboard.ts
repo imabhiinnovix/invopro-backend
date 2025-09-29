@@ -20,6 +20,8 @@ interface IDashboard extends Document {
     endVersionValue: string;
     dynamicVersionValue: '12m' | '6m' | '3m' | '1m';
   };
+  isDefaultNotivix: boolean;
+  isDefault: boolean;
 }
 
 const settingsSchema = new Schema(
@@ -50,6 +52,8 @@ const dashboardSchema = new Schema<IDashboard>(
     isActive: { type: Boolean, default: true, required: true },
     isShareble: { type: Boolean, default: false, required: true },
     settings: { type: settingsSchema, default: () => ({}) },
+    isDefaultNotivix: { type: Boolean, default: false },
+    isDefault: { type: Boolean, default: false },
   },
   {
     timestamps: true,
