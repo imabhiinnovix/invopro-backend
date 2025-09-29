@@ -260,6 +260,8 @@ export const getAllDashboardsAggregation = async ({
                 isShareble: '$$dashboard.isShareble',
                 isActive: '$$dashboard.isActive',
                 isEdit: '$$dashboard.isEdit',
+                isDefaultNotivix: '$$dashboard.isDefaultNotivix',
+                isDefault: '$$dashboard.isDefault',
                 organizationId: '$$dashboard.organizationId',
                 createdAt: '$$dashboard.createdAt',
                 updatedAt: '$$dashboard.updatedAt',
