@@ -678,7 +678,7 @@ export const getNewChartData = async ({
       dashBoardType,
       dataSourceDetails
     });
-    let dataResults = result.widgetData ?? [];
+    let dataResults = result?.widgetData ?? [];
 
     if (isIncremental) {
       if (groupBy && groupBy.length >= 0) {
