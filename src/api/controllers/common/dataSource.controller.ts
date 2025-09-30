@@ -522,16 +522,17 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
                 dataSourceVersionId: { $in: dataSourceVersionIdArray }, 
                 status: 'active' 
               };
+      const filters = {};        
 
       // Add dimension conditions to match
       if (dimensions && Array.isArray(dimensions)) {
         dimensions.forEach((dimension) => {
           const [field, value] = Object.entries(dimension)[0];
-          if (dashBoardType === 'trend') {
-            query[`${field}`] = value;
-          } else {
-            query[`rowData.${field}`] = value;
-          }
+          // if (dashBoardType === 'trend') {
+          //   filters[`${field}`] = value;
+          // } else {
+            filters[`${field}`] = value;
+          // }
         });
       }
 
@@ -539,40 +540,29 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
       if (groupBy && Array.isArray(groupBy)) {
         groupBy.forEach((group) => {
           const [field, value] = Object.entries(group)[0];
-          query[`rowData.${field}`] = value;
+          filters[`${field}`] = value;
         });
       }
 
-      // detailedData = await defaultDataSourceVersionValue.getDataSourceVersionValueV2({
-      //   schemaName,
-      //   query,
-      //   dashboardFilters,
-      //   entityId: dataSource.entityId,
-      //   dimension: dimensions,
-      //   aggregation:{type: 'count',attributeName: '_id'},
-      //   groupBy,
-      //   conditions,
-      //   dashBoardType,
-      //   dataSource,
-      //   paginate:{page, limit, skip}
-      // });
-      const result = await defaultDataSourceVersionValue.getDataSourceVersionValueV1({
+      dashboardFilters.filters = filters;
+
+      const result = await defaultDataSourceVersionValue.getDataSourceVersionValueWidgetDataV2({
         schemaName,
         query,
+        dashboardFilters,
         entityId: dataSource.entityId,
-        filters: conditions,
+        aggregation:{type: 'count',attributeName: '_id'},
+        conditions,
+        dashBoardType,
+        dataSourceDetails: dataSource,
+        isPaginate: true,
         page,
         limit
       });
       console.log('results',JSON.stringify(result));
       dataResults = result?.data ?? [];
-      const totalCount = result?.totalCount ?? 0;
-      pagination =  {
-        page,
-        limit,
-        totalPages: Math.ceil(totalCount / limit),
-        totalRecords: totalCount,
-      };
+      pagination = result?.pagination || {};
+     
     }else{
       // Helper function to get field type from entity
       const getFieldType = (fieldName: string) => {
