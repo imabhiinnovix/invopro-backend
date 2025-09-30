@@ -5,7 +5,7 @@ import { Types } from 'mongoose';
 import * as dataSourceService from '../../../database/services/common/dataSource.services';
 import * as defaultDataSourceVersionValue from '../../../database/services/common/defaultDataSourceVersionValue.services';
 import * as entityService from '../../../database/services/common/entity.services';
-import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
+import { checkReferenceFieldExist, getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
 import createDefaultDataSourceVersionModel from '../../../database/models/common/defaultDataSourceVersionModel';
 import * as dataSourceVersionService from '../../../database/services/common/dataSourceVersion.services';
 import { DataSourceVersion } from '../../../types/widget.types';
@@ -486,8 +486,11 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
     // if (!dataSourceVersion) {
     //   throw new Error('No active data source version found');
     // }
-
+    
+    
     const headers = entity?.attributes.map((attr: any) => attr.name);
+   
+    
     if (!dataSourceVersion || dataSourceVersion.length === 0) {
       // throw new Error('No active data source version found');
 
@@ -501,109 +504,184 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
     }
 
     const dataSourceVersionIdArray = dataSourceVersion.map((data) => new Types.ObjectId(data._id.toString()));
-    // Helper function to get field type from entity
-    const getFieldType = (fieldName: string) => {
-      const attribute = entity.attributes.find((attr: any) => attr.name === fieldName);
-      return attribute ? attribute.type : 'string';
-    };
-
-    // Group conditions by field
-    const conditionsByField: Record<string, any[]> = {};
-    conditions?.forEach((condition) => {
-      if (!conditionsByField[condition.field]) {
-        conditionsByField[condition.field] = [];
-      }
-      conditionsByField[condition.field].push(condition);
-    });
-
-    // Use the common utility to process conditions
-    const initialMatchConditions = {
-      dataSourceId: new Types.ObjectId(dataSourceId),
-      dataSourceVersionId: { $in: dataSourceVersionIdArray },
-    };
-
-    // Add dimension conditions to match
-    if (dimensions && Array.isArray(dimensions)) {
-      dimensions.forEach((dimension) => {
-        const [field, value] = Object.entries(dimension)[0];
-        if (dashBoardType === 'trend') {
-          initialMatchConditions[`${field}`] = value;
-        } else {
-          initialMatchConditions[`rowData.${field}`] = value;
-        }
-      });
-    }
-
-    // Add groupBy conditions to match
-    if (groupBy && Array.isArray(groupBy)) {
-      groupBy.forEach((group) => {
-        const [field, value] = Object.entries(group)[0];
-        initialMatchConditions[`rowData.${field}`] = value;
-      });
-    }
-
-    const { matchConditions, dateConversions } = processFieldConditions(
-      conditionsByField,
-      getFieldType,
-      initialMatchConditions
-    );
-
-    const detailPipeline: any[] = [];
-
-    if (Object.keys(dateConversions).length > 0) {
-      detailPipeline.push({ $addFields: dateConversions });
-    }
-
-    detailPipeline.push(
-      { $match: matchConditions },
-      {
-        $project: {
-          _id: 0,
-          rowData: 1,
-        },
-      },
-      {
-        $replaceRoot: {
-          newRoot: '$rowData',
-        },
-      },
-      {
-        $facet: {
-          metadata: [{ $count: 'totalRecords' }],
-          data: [{ $skip: skip }, { $limit: limit }],
-        },
-      },
-      {
-        $project: {
-          data: 1,
-          pagination: {
-            currentPage: page,
-            limit: limit,
-            totalRecords: { $arrayElemAt: ['$metadata.totalRecords', 0] },
-            totalPages: {
-              $ceil: {
-                $divide: [{ $arrayElemAt: ['$metadata.totalRecords', 0] }, limit],
-              },
-            },
-          },
-        },
-      }
-    );
 
     const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
       orgCode,
       versionCode: dataSource?.code,
     });
-    const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
+    
+    let dataResults: any;
+    let pagination: any;
 
-    const detailedData = await DataSourceModel.aggregate(detailPipeline).exec();
+    const isReferenceField = await checkReferenceFieldExist(dataSource);
+
+    if(isReferenceField == true){
+
+      const query = { 
+                dataSourceId: new Types.ObjectId(dataSourceId),
+                dataSourceVersionId: { $in: dataSourceVersionIdArray }, 
+                status: 'active' 
+              };
+
+      // Add dimension conditions to match
+      if (dimensions && Array.isArray(dimensions)) {
+        dimensions.forEach((dimension) => {
+          const [field, value] = Object.entries(dimension)[0];
+          if (dashBoardType === 'trend') {
+            query[`${field}`] = value;
+          } else {
+            query[`rowData.${field}`] = value;
+          }
+        });
+      }
+
+      // Add groupBy conditions to match
+      if (groupBy && Array.isArray(groupBy)) {
+        groupBy.forEach((group) => {
+          const [field, value] = Object.entries(group)[0];
+          query[`rowData.${field}`] = value;
+        });
+      }
+
+      // detailedData = await defaultDataSourceVersionValue.getDataSourceVersionValueV2({
+      //   schemaName,
+      //   query,
+      //   dashboardFilters,
+      //   entityId: dataSource.entityId,
+      //   dimension: dimensions,
+      //   aggregation:{type: 'count',attributeName: '_id'},
+      //   groupBy,
+      //   conditions,
+      //   dashBoardType,
+      //   dataSource,
+      //   paginate:{page, limit, skip}
+      // });
+      const result = await defaultDataSourceVersionValue.getDataSourceVersionValueV1({
+        schemaName,
+        query,
+        entityId: dataSource.entityId,
+        filters: conditions,
+        page,
+        limit
+      });
+      console.log('results',JSON.stringify(result));
+      dataResults = result?.data ?? [];
+      const totalCount = result?.totalCount ?? 0;
+      pagination =  {
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+        totalRecords: totalCount,
+      };
+    }else{
+      // Helper function to get field type from entity
+      const getFieldType = (fieldName: string) => {
+        const attribute = entity.attributes.find((attr: any) => attr.name === fieldName);
+        return attribute ? attribute.type : 'string';
+      };
+
+      // Group conditions by field
+      const conditionsByField: Record<string, any[]> = {};
+      conditions?.forEach((condition) => {
+        if (!conditionsByField[condition.field]) {
+          conditionsByField[condition.field] = [];
+        }
+        conditionsByField[condition.field].push(condition);
+      });
+
+      // Use the common utility to process conditions
+      const initialMatchConditions = {
+        dataSourceId: new Types.ObjectId(dataSourceId),
+        dataSourceVersionId: { $in: dataSourceVersionIdArray },
+      };
+
+      // Add dimension conditions to match
+      if (dimensions && Array.isArray(dimensions)) {
+        dimensions.forEach((dimension) => {
+          const [field, value] = Object.entries(dimension)[0];
+          if (dashBoardType === 'trend') {
+            initialMatchConditions[`${field}`] = value;
+          } else {
+            initialMatchConditions[`rowData.${field}`] = value;
+          }
+        });
+      }
+
+      // Add groupBy conditions to match
+      if (groupBy && Array.isArray(groupBy)) {
+        groupBy.forEach((group) => {
+          const [field, value] = Object.entries(group)[0];
+          initialMatchConditions[`rowData.${field}`] = value;
+        });
+      }
+
+      const { matchConditions, dateConversions } = processFieldConditions(
+        conditionsByField,
+        getFieldType,
+        initialMatchConditions
+      );
+
+      const detailPipeline: any[] = [];
+
+      if (Object.keys(dateConversions).length > 0) {
+        detailPipeline.push({ $addFields: dateConversions });
+      }
+
+      detailPipeline.push(
+        { $match: matchConditions },
+        {
+          $project: {
+            _id: 0,
+            rowData: 1,
+          },
+        },
+        {
+          $replaceRoot: {
+            newRoot: '$rowData',
+          },
+        },
+        {
+          $facet: {
+            metadata: [{ $count: 'totalRecords' }],
+            data: [{ $skip: skip }, { $limit: limit }],
+          },
+        },
+        {
+          $project: {
+            data: 1,
+            pagination: {
+              currentPage: page,
+              limit: limit,
+              totalRecords: { $arrayElemAt: ['$metadata.totalRecords', 0] },
+              totalPages: {
+                $ceil: {
+                  $divide: [{ $arrayElemAt: ['$metadata.totalRecords', 0] }, limit],
+                },
+              },
+            },
+          },
+        }
+      );
+
+      
+      const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
+
+      const detailedData = await DataSourceModel.aggregate(detailPipeline).exec();
+
+      dataResults = detailedData[0]?.data || [];
+      pagination = detailedData[0]?.pagination || {};
+
+  }
+
+  
+
 
     // 6. Prepare response
     const response = {
       success: true,
       message: 'Detailed chart data fetched successfully',
-      data: detailedData[0]?.data || [],
-      pagination: detailedData[0]?.pagination || {},
+      data: dataResults,
+      pagination: pagination,
       headers,
     };
 
