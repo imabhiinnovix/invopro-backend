@@ -3602,8 +3602,7 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
           }
         }
         const transformRowData = await transformRowDataWithLabels(rowData, dataSourceDetails);
-        newDoc.rowData = transformRowData;
-        return newDoc;
+        return transformRowData;
       })
     );
 
