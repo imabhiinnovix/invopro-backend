@@ -2,6 +2,8 @@ import ExcelJS from 'exceljs';
 import { DataItem } from '../database/services/reportivix/monthlyipReport.services';
 import * as xlsx from 'xlsx';
 import { findEntityById } from '../database/services/common/entity.services';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface KeywordPosition {
   page: number;
@@ -652,14 +654,7 @@ export function excelDateToJSDate(serial: number) {
   const hours = Math.floor(total_seconds / (60 * 60));
   const minutes = Math.floor(total_seconds / 60) % 60;
 
-  return new Date(
-    date_info.getFullYear(),
-    date_info.getMonth(),
-    date_info.getDate(),
-    hours,
-    minutes,
-    seconds
-  );
+  return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
 }
 
 interface ReportSettings {
@@ -1102,7 +1097,10 @@ export async function generateExcelReport({
       }
     }
   }
-
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
   await workbook.xlsx.writeFile(filePath);
   console.log(`${reportName}.xlsx generated successfully.`);
 }
@@ -1188,5 +1186,3 @@ export async function extractUniqueColumnValuesByNamesFromXLSX({
 
   return Object.fromEntries(Object.entries(result).map(([key, val]) => [key, Array.from(val)]));
 }
-
-

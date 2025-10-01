@@ -1716,6 +1716,7 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
         dataSourceId,
         versionValue: newVersionValue,
         isCurrent: true,
+        isActive: true,
         createdBy: userId,
         organizationId,
       });
