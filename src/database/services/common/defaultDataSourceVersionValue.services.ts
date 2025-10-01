@@ -13,7 +13,7 @@ import {
 } from '../../../utils/entity.utils';
 import { getDerivedField } from './derivedField.services';
 import { processFieldConditions } from '../../../utils/conditionProcessor';
-import { escapeRegExp, getLabelByMappedAttributeName } from '../../../utils/common.utils';
+import { escapeRegExp, getLabelByMappedAttributeName, transformRowDataWithLabels } from '../../../utils/common.utils';
 
 export const updateDataSourceVersionValue = async (
   schemaName: string,
@@ -3315,8 +3315,8 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
     $project: {
       data: 1,
       pagination: {
-        currentPage: { $literal: page },   // wrap in $literal
-        limit: { $literal: limit },        // wrap in $literal
+        // currentPage: { $literal: page },   // wrap in $literal
+        // limit: { $literal: limit },        // wrap in $literal
         totalRecords: { $arrayElemAt: ['$metadata.totalRecords', 0] },
         totalPages: {
           $ceil: {
@@ -3601,8 +3601,8 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
             delete rowData[`${key}_resolved`];
           }
         }
-
-        newDoc.rowData = rowData;
+        const transformRowData = await transformRowDataWithLabels(rowData, dataSourceDetails);
+        newDoc.rowData = transformRowData;
         return newDoc;
       })
     );

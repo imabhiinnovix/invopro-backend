@@ -120,4 +120,41 @@ export async function getLabelByMappedAttributeName(dataSourceDetails: any) {
   return result;
 }
 
+/**
+ * Filters rowData to only mapped fields and renames them
+ */
+export async function transformRowDataWithLabels(
+  rowData: Record<string, any>,
+  dataSourceDetails: any
+): Promise<Record<string, any>> {
+  const labelMap = await getLabelByMappedAttributeName(dataSourceDetails);
+
+  const transformed: Record<string, any> = {};
+
+  for (const mappedAttr in labelMap) {
+    if (!labelMap.hasOwnProperty(mappedAttr)) continue;
+
+    const value = rowData[mappedAttr]; // direct lookup
+    if (value !== undefined) {
+      const label = labelMap[mappedAttr];
+
+      if (Array.isArray(value)) {
+        if (value.length === 1) {
+          transformed[label] = value[0]; // unwrap single element
+        } else if (value.length > 1) {
+          transformed[label] = value.join(" | "); // join with pipe
+        } else {
+          transformed[label] = ""; // empty array → empty string
+        }
+      } else {
+        transformed[label] = value;
+      }
+    }
+  }
+
+  return transformed;
+}
+
+
+
 

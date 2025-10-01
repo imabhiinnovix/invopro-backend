@@ -487,8 +487,12 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
     //   throw new Error('No active data source version found');
     // }
     
+    let headers: Record <string, any[]> = entity?.attributes.map((attr: any) => attr.name);
+    const isReferenceField = await checkReferenceFieldExist(dataSource);
+    if(isReferenceField == true){
+      headers = dataSource?.fieldSettings.map((field: any) => field.label);
+    }
     
-    const headers = entity?.attributes.map((attr: any) => attr.name);
    
     
     if (!dataSourceVersion || dataSourceVersion.length === 0) {
@@ -513,10 +517,9 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
     let dataResults: any;
     let pagination: any;
 
-    const isReferenceField = await checkReferenceFieldExist(dataSource);
+    
 
     if(isReferenceField == true){
-
       const query = { 
                 dataSourceId: new Types.ObjectId(dataSourceId),
                 dataSourceVersionId: { $in: dataSourceVersionIdArray }, 
@@ -527,20 +530,24 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
       // Add dimension conditions to match
       if (dimensions && Array.isArray(dimensions)) {
         dimensions.forEach((dimension) => {
-          const [field, value] = Object.entries(dimension)[0];
-          // if (dashBoardType === 'trend') {
-          //   filters[`${field}`] = value;
-          // } else {
-            filters[`${field}`] = value;
-          // }
+          if (dimension && typeof dimension === "object" && Object.keys(dimension).length > 0) {
+            const [field, value] = Object.entries(dimension)[0];
+            if (dashBoardType === 'trend') {
+              query[`${field}`] = value;
+            } else {
+              filters[`${field}`] = value;
+            }
+          }
         });
       }
 
       // Add groupBy conditions to match
       if (groupBy && Array.isArray(groupBy)) {
         groupBy.forEach((group) => {
-          const [field, value] = Object.entries(group)[0];
-          filters[`${field}`] = value;
+          if (group && typeof group === "object" && Object.keys(group).length > 0) {
+            const [field, value] = Object.entries(group)[0];
+            filters[`${field}`] = value;
+          }
         });
       }
 
