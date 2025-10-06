@@ -41,7 +41,7 @@ export const createDataSourcce = async (req: Request, res: Response, next: NextF
       versionCode: code,
     });
 
-    await defaultDataSourceVersionValue.createEmptyCollection(collectionName);
+    // await defaultDataSourceVersionValue.createEmptyCollection(collectionName);
 
     const dataSource = await dataSourceService.createDataSourcce({
       entityId,
