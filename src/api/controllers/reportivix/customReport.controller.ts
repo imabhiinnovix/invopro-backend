@@ -38,7 +38,7 @@ export const generateCustomReportsFunction = async ({
   isRowData?: boolean;
 }) => {
   try {
-    const customReportDetails = await customReportServices.findCustomReportById(customReportId);
+    const customReportDetails: any = await customReportServices.findCustomReportById(customReportId);
 
     if (!customReportDetails) {
       throw new Error('Custom report not found');
