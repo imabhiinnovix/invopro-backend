@@ -220,6 +220,7 @@ export const generateCustomReportsFunction = async ({
         },
       });
 
+      //Function to generate monthly ip report
       const data = await generateMonthlyIpReport({
         reportRequestPayload,
         requestedReportId: reportRequestId as string,
