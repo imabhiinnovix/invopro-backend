@@ -148,6 +148,7 @@ export const generateMonthlyIpReport = async ({
       { reportHeader: 'Totals', attributeValues: ['Totals'] },
     ];
 
+    //02-25-v1:Global/SECTION 1/FIRST FILINGS/CURRENT YEAR NEW APPLICATIONS FILED
     const currentYearApplicationFiledData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -155,6 +156,8 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
       isRowData,
     });
+
+    //02-25-v1:Global/SECTION 1/FIRST FILINGS/CURRENT YEAR NEW APPLICATIONS FILED/INTERMEDIATE DATA
     const currentYearApplicationFiledRawData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -180,6 +183,7 @@ export const generateMonthlyIpReport = async ({
       totalColumnName: 'Totals',
     });
 
+    //02-25-v1:Global/SECTION 1/FIRST FILINGS/% OF CURENT YEAR INVENTION DISCLOSURES CONVERTED TO FILINGS
     const processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData: any =
       await percentageOfCurrentYearInventionDisclosureConvertedToFilings({
         portfolioDataSourceVersionId,
@@ -190,6 +194,8 @@ export const generateMonthlyIpReport = async ({
         headers: globalSBUHeaders,
         sbuHeaders: globalSBUHeadersAll,
       });
+
+    //02-25-v1:Global/SECTION 1/FIRST FILINGS/% OF CURENT YEAR INVENTION DISCLOSURES CONVERTED TO FILINGS/INTERMEDIATE DATA
     const percentageOfCurrentYearInventionDisclosureConvertedToFilingsRawData: any =
       await percentageOfCurrentYearInventionDisclosureConvertedToFilings({
         portfolioDataSourceVersionId,
@@ -239,6 +245,7 @@ export const generateMonthlyIpReport = async ({
       ...processedPercentageOfCurrentYearInventionDisclosureConvertedToFilingsData,
     ];
 
+    //02-25-v1:Global/SECTION 2/DISCLOSURES/APPLICATIONS BEING DRAFTED
     const draftedApplicationDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,
@@ -250,6 +257,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 2/DISCLOSURES/APPLICATIONS BEING DRAFTED/INTERMEDIATE DATA
     const draftedApplicationDisclosureCountRawData = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,
@@ -272,6 +280,7 @@ export const generateMonthlyIpReport = async ({
       data: draftedApplicationDisclosureCount,
     });
 
+    //02-25-v1:Global/SECTION 2/DISCLOSURES/PROJECTS OPENED IN CURRENT YEAR
     const openApplicationDisclosureCount = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,
@@ -282,6 +291,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 2/DISCLOSURES/PROJECTS OPENED IN CURRENT YEAR/INTERMEDIATE DATA
     const openApplicationDisclosureCountRawData = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,
@@ -309,6 +319,7 @@ export const generateMonthlyIpReport = async ({
       totalColumnName: 'Totals',
     });
 
+    //02-25-v1:Global/SECTION 2/DISCLOSURES/TOTAL ACTIVE PROJECTS
     const totalActiveProjects = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,
@@ -320,6 +331,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 2/DISCLOSURES/TOTAL ACTIVE PROJECTS/INTERMEDIATE DATA
     const totalActiveProjectsRawData = await getDisclosureCount({
       disclosureDataSourceVersionId,
       currentYear,
@@ -347,6 +359,7 @@ export const generateMonthlyIpReport = async ({
       totalColumnName: 'Totals',
     });
 
+    //02-25-v1:Global/SECTION 3/CURRENT YEAR ISSUED/CURRENT YEAR US ISSUED
     const currentYearUsIssued = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -356,6 +369,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 3/CURRENT YEAR ISSUED/CURRENT YEAR US ISSUED/INTERMEDIATE DATA
     const currentYearUsIssuedRawData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -377,6 +391,7 @@ export const generateMonthlyIpReport = async ({
       data: currentYearUsIssued,
     });
 
+    //02-25-v1:Global/SECTION 3/CURRENT YEAR ISSUED/CURRENT YEAR INT. ISSUED
     const currentYearIntlssued = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -386,6 +401,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 3/CURRENT YEAR ISSUED/CURRENT YEAR INT. ISSUED/INTERMEDIATE DATA
     const currentYearIntlssuedRawData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -407,6 +423,7 @@ export const generateMonthlyIpReport = async ({
       data: currentYearIntlssued,
     });
 
+    //02-25-v1:Global/SECTION 4/PENDING APPLICATIONS/US APPLICATIONS PENDING
     const usPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -416,6 +433,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 4/PENDING APPLICATIONS/US APPLICATIONS PENDING/INTERMEDIATE DATA
     const usPendingApplicationRawData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -437,6 +455,7 @@ export const generateMonthlyIpReport = async ({
       data: usPendingApplication,
     });
 
+    //02-25-v1:Global/SECTION 4/PENDING APPLICATIONS/EP APPLICATIONS PENDING
     const epPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -446,6 +465,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 4/PENDING APPLICATIONS/EP APPLICATIONS PENDING/INTERMEDIATE DATA
     const epPendingApplicationRawData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -467,6 +487,7 @@ export const generateMonthlyIpReport = async ({
       data: epPendingApplication,
     });
 
+    //02-25-v1:Global/SECTION 4/PENDING APPLICATIONS/CN APPLICATIONS PENDING
     const cnPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -476,6 +497,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 4/PENDING APPLICATIONS/CN APPLICATIONS PENDING/INTERMEDIATE DATA
     const cnPendingApplicationRawData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -497,6 +519,7 @@ export const generateMonthlyIpReport = async ({
       data: cnPendingApplication,
     });
 
+    //02-25-v1:Global/SECTION 4/PENDING APPLICATIONS/OTHER COUNTRY APPLICATIONS PENDING
     const otherPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -506,6 +529,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 4/PENDING APPLICATIONS/OTHER COUNTRY APPLICATIONS PENDING/INTERMEDIATE DATA
     const otherPendingApplicationRawData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -527,6 +551,7 @@ export const generateMonthlyIpReport = async ({
       data: otherPendingApplication,
     });
 
+    //02-25-v1:Global/SECTION 4/PENDING APPLICATIONS/TOTAL APPLICATIONS PENDING
     const totalPendingApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -536,6 +561,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 4/PENDING APPLICATIONS/TOTAL APPLICATIONS PENDING/INTERMEDIATE DATA
     const totalPendingApplicationRawData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -558,6 +584,7 @@ export const generateMonthlyIpReport = async ({
       defaultValue: { 'Scientific Design': 0 },
     });
 
+    //02-25-v1:Global/SECTION 5/ISSUED PATENTS /US ISSUED
     const usIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -567,6 +594,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 5/ISSUED PATENTS /US ISSUED/INTERMEDIATE DATA
     const usIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -588,6 +616,7 @@ export const generateMonthlyIpReport = async ({
       data: usIssuedApplication,
     });
 
+    //02-25-v1:Global/SECTION 5/ISSUED PATENTS /EP ISSUED
     const epIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -597,6 +626,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 5/ISSUED PATENTS /EP ISSUED/INTERMEDIATE DATA
     const epIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -617,6 +647,7 @@ export const generateMonthlyIpReport = async ({
       data: epIssuedApplication,
     });
 
+    //02-25-v1:Global/SECTION 5/ISSUED PATENTS /CN ISSUED
     const cnIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -626,6 +657,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 5/ISSUED PATENTS /CN ISSUED/INTERMEDIATE DATA
     const cnIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -646,6 +678,7 @@ export const generateMonthlyIpReport = async ({
       data: cnIssuedApplication,
     });
 
+    //02-25-v1:Global/SECTION 5/ISSUED PATENTS /OTHER COUNTRY ISSUED
     const otherIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -655,6 +688,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 5/ISSUED PATENTS /OTHER COUNTRY ISSUED/INTERMEDIATE DATA
     const otherIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -676,6 +710,7 @@ export const generateMonthlyIpReport = async ({
       data: otherIssuedApplication,
     });
 
+    //02-25-v1:Global/SECTION 5/ISSUED PATENTS /TOTAL ISSUED
     const totalIssuedApplication = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -685,6 +720,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 5/ISSUED PATENTS /TOTAL ISSUED/INTERMEDIATE DATA
     const totalIssuedApplicationRawData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -753,6 +789,7 @@ export const generateMonthlyIpReport = async ({
     const totalPortFolioPercentage = getTotalPortfolioPercentage({ data: processedTotalPortFolioData });
     const processedTotalPortFolioPercentageData = { ...totalPortFolioPercentage, SBU: '% of Total Portfolio' };
 
+    //02-25-v1:Global/SECTION 6/CURRENT YEAR RENEWALS DUE /CURRENT YEAR RENEWAL DUE
     const currentYearRenewalDue = await getCurrentYearRenewalDue({
       portfolioDataSourceVersionId,
       sabicipDataSourceVersionId,
@@ -764,6 +801,7 @@ export const generateMonthlyIpReport = async ({
       sbuHeaders: globalSBUHeadersAll,
     });
 
+    //02-25-v1:Global/SECTION 6/CURRENT YEAR RENEWALS DUE /CURRENT YEAR RENEWAL DUE/INTERMEDIATE DATA
     const currentYearRenewalDueRawData = await getCurrentYearRenewalDue({
       portfolioDataSourceVersionId,
       sabicipDataSourceVersionId,
@@ -785,6 +823,7 @@ export const generateMonthlyIpReport = async ({
       data: currentYearRenewalDue,
     });
 
+    //02-25-v1:Global/SECTION 7/REDUCTIONS & COST SAVINGS/TOTAL NO. OF CURRENT YEAR REDUCTIONS (INCLUDING REDUCTIONS DURING PROSECUTION)
     let reductionData = await getReductions({
       portfolioDataSourceVersionId,
       currentYear,
@@ -820,6 +859,7 @@ export const generateMonthlyIpReport = async ({
       data: reductionData.dropCountResult,
     });
 
+    //02-25-v1:Global/SECTION 7/REDUCTIONS & COST SAVINGS/CURRENT YEAR ANNUITY SAVINGS FROM CURRENT YEAR REDUCTIONS
     const annuitySavingsForCurrentYear = await getAnnuitySavingsFromReductions({
       sabicipDataSourceVersionId,
       ctclinsabDataSourceVersionId,
@@ -833,6 +873,7 @@ export const generateMonthlyIpReport = async ({
       isRowData,
     });
 
+    //02-25-v1:Global/SECTION 7/REDUCTIONS & COST SAVINGS/CURRENT YEAR ANNUITY SAVINGS FROM CURRENT YEAR REDUCTIONS/INTERMEDIATE DATA
     const annuitySavingsForCurrentYearRawData = await getAnnuitySavingsFromReductions({
       sabicipDataSourceVersionId,
       ctclinsabDataSourceVersionId,
@@ -856,6 +897,7 @@ export const generateMonthlyIpReport = async ({
       data: annuitySavingsForCurrentYear,
     });
 
+    //02-25-v1:Global/SECTION 7/REDUCTIONS & COST SAVINGS/NEXT YEAR ANNUITY SAVINGS FROM CURRENT YEAR REDUCTIONS /INTERMEDIATE DATA
     const annuitySavingsForNextYear = await getAnnuitySavingsFromReductions({
       sabicipDataSourceVersionId,
       ctclinsabDataSourceVersionId,
@@ -869,6 +911,7 @@ export const generateMonthlyIpReport = async ({
       isRowData,
     });
 
+    //02-25-v1:Global/SECTION 7/REDUCTIONS & COST SAVINGS/NEXT YEAR ANNUITY SAVINGS FROM CURRENT YEAR REDUCTIONS /INTERMEDIATE DATA
     const annuitySavingsForNextYearRawData = await getAnnuitySavingsFromReductions({
       sabicipDataSourceVersionId,
       ctclinsabDataSourceVersionId,
@@ -903,6 +946,7 @@ export const generateMonthlyIpReport = async ({
       totalAnnuitySavingsMap[entry.SBU] = (totalAnnuitySavingsMap[entry.SBU] || 0) + entry.value;
     });
 
+    //02-25-v1:Global/SECTION 7/REDUCTIONS & COST SAVINGS/NO. OF PROSECUTION REDUCTIONS IN CURRENT YEAR
     const allProsecutionDrop = await getNumberOfProsecutionReduction({
       priorityDrop: reductionData.priorityDropArray,
       pctDrop: reductionData.pctDropArray,
@@ -914,6 +958,7 @@ export const generateMonthlyIpReport = async ({
       data: allProsecutionDrop,
     });
 
+    //02-25-v1:Global/SECTION 7/REDUCTIONS & COST SAVINGS/PROSECUTION COST SAVINGS
     const allProsecutionSavings = await getAllProsecutionSavings({
       priorityDrop: reductionData.priorityDropArray,
       pctDrop: reductionData.pctDropArray,
@@ -921,6 +966,7 @@ export const generateMonthlyIpReport = async ({
       isRowData,
     });
 
+    //02-25-v1:Global/SECTION 7/REDUCTIONS & COST SAVINGS/PROSECUTION COST SAVINGS/INTERMEDIATE DATA
     const allProsecutionSavingsRawData = await getAllProsecutionSavings({
       priorityDrop: reductionData.priorityDropArray,
       pctDrop: reductionData.pctDropArray,
@@ -939,6 +985,7 @@ export const generateMonthlyIpReport = async ({
       data: allProsecutionSavings,
     });
 
+    //02-25-v1:Global/SECTION 7/REDUCTIONS & COST SAVINGS/TOTAL COST SAVINGS: ANNUITY SAVINGS + PROSECUTION SAVINGS FROM CURRENT YEAR REDUCTIONS
     const totalCostSavings = await getTotalCostSavings({
       totalAnnuitySavings: totalAnnuitySavingsMap,
       allProsecutionSaving: allProsecutionSavings,
@@ -980,6 +1027,8 @@ export const generateMonthlyIpReport = async ({
     const stcSBUHeadersFilters = customReportDetails.filters.find((filter) => filter.sheetCode === 'stc');
     const stcSBUHeaders = stcSBUHeadersFilters?.['columns'] ? stcSBUHeadersFilters?.['columns'] : [];
     const stcSBUHeadersAll = stcSBUHeaders.flatMap((item) => item.attributeValues);
+
+    //02-25-v1:STC
     //first table
     const newProjectOpenedBasedOnStc = await getProjectBasedOnStcs({
       disclosureDataSourceVersionId,
@@ -1120,6 +1169,7 @@ export const generateMonthlyIpReport = async ({
     let allSBUsArray = Array.from(allSBUs);
     allSBUsArray.push('Totals');
 
+    //02-25-v1:STC/SBU
     allSBUsArray.forEach((sbu) => {
       // Construct the final combined object for this SBU
       const result = {
