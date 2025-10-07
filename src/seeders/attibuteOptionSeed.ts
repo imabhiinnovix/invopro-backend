@@ -36,7 +36,12 @@ export const seedAttributeOptions = async ({ organizationId, createdBy, updatedB
 
     for (const item of dataToSeed) {
       const existing = await AttributeOption.findById(item.id);
+      const existingUniqueKey = await AttributeOption.findOne({
+        attributeName: item.attributeName,
+        organizationId: item.organizationId,
+      });
 
+      if (existingUniqueKey) continue;
       if (existing) {
         // ✅ Update only if it exists
         await AttributeOption.findByIdAndUpdate(
