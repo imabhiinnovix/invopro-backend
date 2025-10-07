@@ -358,6 +358,8 @@ export const generateCustomReportsFunction = async ({
         supplementalIpAgreementsFinalAgreementType,
         versionMap
       );
+
+      //Function to generate supplemental ip report
       const data = await generateSupplementalIpReport({
         reportRequestPayload,
         requestedReportId: reportRequestId,

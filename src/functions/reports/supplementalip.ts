@@ -96,6 +96,7 @@ export const generateSupplementalIpReport = async ({
     const customReportId = reportRequestPayload.customReportId;
     const versionValue = reportRequestPayload.versionValue;
 
+    //02-25-v1:AGREEMENTS SIGNED IN CURRENT YEAR-AGREEMENTS
     const currentYearAgreementSigned: any = await getAgreementSigned({
       sabicContractsDataSourceVersionId,
       shppContractsDataSourceVersionId,
@@ -160,6 +161,7 @@ export const generateSupplementalIpReport = async ({
       orgCode,
     });
 
+    //02-25-v1:BANGALORE IP GROUP – CURRENT YEAR IP ANALYSIS- ANALYST DASHBOARD
     const currentYearIpAnalysis = await getIpAnalysis({
       ipAnalystDataSourceVersionId,
       customReportModel,
@@ -213,6 +215,8 @@ export const generateSupplementalIpReport = async ({
       });
 
     //Supplement ip part-2
+
+    //02-25-v1:PREPARE ACCOLADE MAPPING SHEET
     const accoladeMappingSheetData: any = await getAccoladeMappingSheet({
       portfolioDataSourceVersionId,
       disclosureDataSourceVersionId,
@@ -428,6 +432,7 @@ export const generateSupplementalIpReport = async ({
       orgCode,
     });
 
+    //02-25-v1:PATENT VALUE COVERAGE-ACTIVE FILINGS
     const activePatentValueCoverage = getActivePatentValueCoverage({
       allAccoladeMappingSheetData: allAccoladeMappingSheet,
     });
@@ -456,6 +461,8 @@ export const generateSupplementalIpReport = async ({
     const patentValueCoverageNewSBUHeadersAll = patentValueCoverageNewSBUHeaders.flatMap(
       (item) => item.attributeValues
     );
+
+    //02-25-v1:PATENT VALUE COVERAGE-CURRENT YEAR NEW FILINGS
     const newPatentValueCoverageRawData = await getCurrentYearNewApplicationFiled({
       portfolioDataSourceVersionId,
       currentYear,
@@ -514,6 +521,7 @@ export const generateSupplementalIpReport = async ({
       organizationId,
       orgCode,
     });
+    //02-25-v1:STRATEGIC PROJECTS CAPTURED BY ACTIVE PATENT FILINGS
     const strategicReportingClassData = getStrategicReportingClass({
       allAccoladeMappingSheetData: allAccoladeMappingSheet,
     });
