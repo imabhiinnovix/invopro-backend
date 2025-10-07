@@ -327,9 +327,9 @@ const buildOptions = async (
     if (refSetting?.refEntityId) {
       const nestedEntityId = refSetting.refEntityId.toString();
       const relationType = refSetting.relationType;
-      const uniqueVisitedId = currentAttrId + '_' + nestedEntityId; 
-      if (!visited.has(uniqueVisitedId)) {
-        visited.add(uniqueVisitedId);
+
+      if (!visited.has(nestedEntityId)) {
+        visited.add(nestedEntityId);
 
         const nestedEntity: any = await Entity.findById(nestedEntityId).lean();
         if (!nestedEntity || !Array.isArray(nestedEntity.attributes)) continue;
