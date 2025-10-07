@@ -59,7 +59,7 @@ export async function seedUsers(payload: OrganizationSeedPayload[]) {
 
     // Create users
     for (const user of org.users) {
-      const existingUser = await User.findOne({ email: user.email });
+      const existingUser = await User.findOne({ _id: user.customId });
 
       if (existingUser) {
         if (existingUser.get('role')) {
