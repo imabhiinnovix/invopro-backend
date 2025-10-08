@@ -673,7 +673,7 @@ const customReportMapSabic = {
 const attributeOptionMapReportivix = {
   sbu: {
     id: new mongoose.Types.ObjectId('679232a1753ceb4945e5b396'),
-    attributeName: 'SBU',
+    attributeName: 'SBU STATIC',
     attributeValue: [
       'Corp T&I',
       'Metals',
@@ -711,11 +711,31 @@ const attributeOptionMapReportivix = {
     attributeName: 'FO Name',
     attributeValue: [],
   },
+  procedureAgentName: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f833'),
+    attributeName: 'ProcedureAgentName',
+    attributeValue: [],
+  },
+  localAgentName: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f837'),
+    attributeName: 'LocalAgentName',
+    attributeValue: [],
+  },
+  notivixSBU: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f83b'),
+    attributeName: 'SBU',
+    attributeValue: [],
+  },
+  country: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f83f'),
+    attributeName: 'Country',
+    attributeValue: [],
+  },
 };
 const attributeOptionMapSabic = {
   sbu: {
     id: new mongoose.Types.ObjectId('679232a1753ceb4945e5b397'),
-    attributeName: 'SBU',
+    attributeName: 'SBU STATIC',
     attributeValue: [
       'Corp T&I',
       'Metals',
@@ -751,6 +771,26 @@ const attributeOptionMapSabic = {
   foName: {
     id: new mongoose.Types.ObjectId('68a7160121450a2ddaeaeb62'),
     attributeName: 'FO Name',
+    attributeValue: [],
+  },
+  procedureAgentName: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f834'),
+    attributeName: 'ProcedureAgentName',
+    attributeValue: [],
+  },
+  localAgentName: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f838'),
+    attributeName: 'LocalAgentName',
+    attributeValue: [],
+  },
+  notivixSBU: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f83e'),
+    attributeName: 'SBU',
+    attributeValue: [],
+  },
+  country: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f83a'),
+    attributeName: 'Country',
     attributeValue: [],
   },
 };
