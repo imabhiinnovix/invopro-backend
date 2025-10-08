@@ -292,94 +292,202 @@ function trimTrailingRepeats(label: string): string {
 }
 
 
+// export const getEntityFieldOptions = async (entityId: string): Promise<FieldOption[]> => {
+//   const buildOptions = async (
+//     currentEntityId: string,
+//     pathLabels: string[] = [],
+//     attributeIdChain: Types.ObjectId[] = [],
+//     visited = new Set<string>() // moved inside, so we can reset per root attr
+//   ): Promise<FieldOption[]> => {
+//     const options: FieldOption[] = [];
+
+//     const entity = await Entity.findById(currentEntityId).lean();
+//     if (!entity || !Array.isArray(entity.attributes)) return options;
+
+//     for (const attr of entity.attributes) {
+//       // ✅ Reset visited for each root-level attribute (only when pathLabels is empty)
+//       const localVisited = pathLabels.length === 0 ? new Set<string>() : visited;
+
+//       const currentAttrId = (attr as any)?._id;
+//       const currentLabelPath = [...pathLabels, attr.name];
+//       const currentRefPath = [...attributeIdChain, currentAttrId];
+
+//       const refSetting = attr.referenceEntitySetting;
+
+//       // Always include the current field itself
+//       options.push({
+//         label: currentLabelPath.join('.'),
+//         value: {
+//           attributeId: currentAttrId,
+//           refAttributeId: attributeIdChain,
+//           type: attr?.type || 'text',
+//           optionAttributeId: attr?.optionAttributeId || null,
+//         },
+//       });
+
+//       // If it has a reference entity
+//       if (refSetting?.refEntityId) {
+//         const nestedEntityId = refSetting.refEntityId.toString();
+//         const relationType = refSetting.relationType;
+
+//         if (!localVisited.has(nestedEntityId)) {
+//           localVisited.add(nestedEntityId);
+
+//           const nestedEntity: any = await Entity.findById(nestedEntityId).lean();
+//           if (!nestedEntity || !Array.isArray(nestedEntity.attributes)) continue;
+
+//           for (const subAttr of nestedEntity.attributes) {
+//             // Skip the refFieldId itself for mapping relations
+//             if (
+//               (relationType === 'mapping_one_to_one' || relationType === 'mapping_many_to_one') &&
+//               refSetting.refEntityField?.toString() === subAttr._id.toString()
+//             ) {
+//               continue;
+//             }
+
+//             const nestedLabelPath = [...currentLabelPath, subAttr.name];
+//             const nestedRefPath = [...currentRefPath, subAttr._id];
+
+//             // Recurse if the sub-attribute itself is a reference
+//             if (subAttr.referenceEntitySetting?.refEntityId) {
+//               const nestedOptions = await buildOptions(
+//                 subAttr.referenceEntitySetting.refEntityId.toString(),
+//                 nestedLabelPath,
+//                 nestedRefPath,
+//                 localVisited // pass same visited for sublevels
+//               );
+//               options.push(...nestedOptions);
+//             } else {
+//               const [rootAttributeId, ...refAttributeId] = nestedRefPath;
+//               options.push({
+//                 label: nestedLabelPath.join('.'),
+//                 value: {
+//                   attributeId: rootAttributeId,
+//                   refAttributeId,
+//                   type: subAttr.type || 'text',
+//                   optionAttributeId: subAttr?.optionAttributeId || null,
+//                 },
+//               });
+//             }
+//           }
+//         }
+//       }
+//     }
+
+//     return options;
+//   };
+
+//   // Example usage
+//   const fieldOptions = await buildOptions(entityId);
+
+//   // Add derived fields
+//   const derivedFields: any = await getAllDerivedFields({ entityId });
+//   for (const df of derivedFields) {
+//     fieldOptions.push({
+//       label: df.name,
+//       value: {
+//         attributeId: df._id,
+//         refAttributeId: [],
+//         isDerived: true,
+//         type: df?.type || 'text',
+//         optionAttributeId: df?.optionAttributeId || null,
+//       },
+//     });
+//   }
+
+//   // Cleanup duplicate trailing labels
+//   for (const option of fieldOptions) {
+//     option.label = trimTrailingRepeats(option.label);
+//   }
+
+//   return fieldOptions;
+// };
 export const getEntityFieldOptions = async (entityId: string): Promise<FieldOption[]> => {
-  const buildOptions = async (
-    currentEntityId: string,
-    pathLabels: string[] = [],
-    attributeIdChain: Types.ObjectId[] = [],
-    visited = new Set<string>() // moved inside, so we can reset per root attr
-  ): Promise<FieldOption[]> => {
-    const options: FieldOption[] = [];
-
-    const entity = await Entity.findById(currentEntityId).lean();
-    if (!entity || !Array.isArray(entity.attributes)) return options;
-
-    for (const attr of entity.attributes) {
-      // ✅ Reset visited for each root-level attribute (only when pathLabels is empty)
-      const localVisited = pathLabels.length === 0 ? new Set<string>() : visited;
-
-      const currentAttrId = (attr as any)?._id;
-      const currentLabelPath = [...pathLabels, attr.name];
-      const currentRefPath = [...attributeIdChain, currentAttrId];
-
-      const refSetting = attr.referenceEntitySetting;
-
-      // Always include the current field itself
-      options.push({
-        label: currentLabelPath.join('.'),
-        value: {
-          attributeId: currentAttrId,
-          refAttributeId: attributeIdChain,
-          type: attr?.type || 'text',
-          optionAttributeId: attr?.optionAttributeId || null,
-        },
-      });
-
-      // If it has a reference entity
-      if (refSetting?.refEntityId) {
-        const nestedEntityId = refSetting.refEntityId.toString();
-        const relationType = refSetting.relationType;
-
-        if (!localVisited.has(nestedEntityId)) {
-          localVisited.add(nestedEntityId);
-
-          const nestedEntity: any = await Entity.findById(nestedEntityId).lean();
-          if (!nestedEntity || !Array.isArray(nestedEntity.attributes)) continue;
-
-          for (const subAttr of nestedEntity.attributes) {
-            // Skip the refFieldId itself for mapping relations
-            if (
-              (relationType === 'mapping_one_to_one' || relationType === 'mapping_many_to_one') &&
-              refSetting.refEntityField?.toString() === subAttr._id.toString()
-            ) {
-              continue;
-            }
-
-            const nestedLabelPath = [...currentLabelPath, subAttr.name];
-            const nestedRefPath = [...currentRefPath, subAttr._id];
-
-            // Recurse if the sub-attribute itself is a reference
-            if (subAttr.referenceEntitySetting?.refEntityId) {
-              const nestedOptions = await buildOptions(
-                subAttr.referenceEntitySetting.refEntityId.toString(),
-                nestedLabelPath,
-                nestedRefPath,
-                localVisited // pass same visited for sublevels
-              );
-              options.push(...nestedOptions);
-            } else {
-              const [rootAttributeId, ...refAttributeId] = nestedRefPath;
-              options.push({
-                label: nestedLabelPath.join('.'),
-                value: {
-                  attributeId: rootAttributeId,
-                  refAttributeId,
-                  type: subAttr.type || 'text',
-                  optionAttributeId: subAttr?.optionAttributeId || null,
-                },
-              });
-            }
+  const visited = new Set<string>(); // avoid circular references
+ 
+const buildOptions = async (
+  currentEntityId: string,
+  pathLabels: string[] = [],
+  attributeIdChain: Types.ObjectId[] = []
+): Promise<FieldOption[]> => {
+  const options: FieldOption[] = [];
+ 
+  const entity = await Entity.findById(currentEntityId).lean();
+  if (!entity || !Array.isArray(entity.attributes)) return options;
+ 
+  for (const attr of entity.attributes) {
+    const currentAttrId = (attr as any)?._id;
+    const currentLabelPath = [...pathLabels, attr.name];
+    const currentRefPath = [...attributeIdChain, currentAttrId];
+ 
+    const refSetting = attr.referenceEntitySetting;
+ 
+    // Always include the current field itself
+    options.push({
+      label: currentLabelPath.join('.'),
+      value: {
+        attributeId: currentAttrId,
+        refAttributeId: attributeIdChain,
+        type: attr?.type || 'text',
+        optionAttributeId: attr?.optionAttributeId || null
+      },
+    });
+ 
+    // If it has a reference entity
+    if (refSetting?.refEntityId) {
+      const nestedEntityId = refSetting.refEntityId.toString();
+      const relationType = refSetting.relationType;
+ 
+      if (!visited.has(nestedEntityId)) {
+        visited.add(nestedEntityId);
+ 
+        const nestedEntity: any = await Entity.findById(nestedEntityId).lean();
+        if (!nestedEntity || !Array.isArray(nestedEntity.attributes)) continue;
+ 
+        for (const subAttr of nestedEntity.attributes) {
+          // Skip the refFieldId itself for mapping relations
+          if (
+            (relationType === 'mapping_one_to_one' || relationType === 'mapping_many_to_one') &&
+            refSetting.refEntityField?.toString() === subAttr._id.toString()
+          ) {
+            continue;
+          }
+ 
+          const nestedLabelPath = [...currentLabelPath, subAttr.name];
+          const nestedRefPath = [...currentRefPath, subAttr._id];
+ 
+          // Recurse if the sub-attribute itself is a reference
+          if (subAttr.referenceEntitySetting?.refEntityId) {
+            const nestedOptions = await buildOptions(
+              subAttr.referenceEntitySetting.refEntityId.toString(),
+              nestedLabelPath,
+              nestedRefPath
+            );
+            options.push(...nestedOptions);
+          } else {
+            const [rootAttributeId, ...refAttributeId] = nestedRefPath;
+            options.push({
+              label: nestedLabelPath.join('.'),
+              value: {
+                attributeId: rootAttributeId,
+                refAttributeId,
+                type: subAttr.type || 'text',
+                optionAttributeId: subAttr?.optionAttributeId || null
+              },
+            });
           }
         }
       }
     }
-
-    return options;
-  };
-
-  // Example usage
-  const fieldOptions = await buildOptions(entityId);
-
+  }
+ 
+  return options;
+};
+ 
+// Example usage
+const fieldOptions = await buildOptions(entityId);
+ 
+ 
   // Add derived fields
   const derivedFields: any = await getAllDerivedFields({ entityId });
   for (const df of derivedFields) {
@@ -390,19 +498,19 @@ export const getEntityFieldOptions = async (entityId: string): Promise<FieldOpti
         refAttributeId: [],
         isDerived: true,
         type: df?.type || 'text',
-        optionAttributeId: df?.optionAttributeId || null,
+        optionAttributeId: df?.optionAttributeId || null
       },
     });
   }
-
-  // Cleanup duplicate trailing labels
+ 
+    // Cleanup duplicate trailing labels
   for (const option of fieldOptions) {
     option.label = trimTrailingRepeats(option.label);
   }
-
+ 
+ 
   return fieldOptions;
 };
-
 
 
 
