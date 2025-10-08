@@ -10,6 +10,7 @@ export interface IRoleHasPermission extends Document {
   createdAt: Date;
   updatedAt: Date;
   statusName?: string;
+  isChangeable: boolean;
 }
 
 // Define schema
@@ -29,6 +30,10 @@ const roleHasPermissionSchema = new Schema<IRoleHasPermission>(
       type: String,
       enum: ['active', 'inactive'],
       default: 'active',
+    },
+    isChangeable: {
+      type: Boolean,
+      default: true,
     },
   },
   {

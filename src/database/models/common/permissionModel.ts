@@ -18,6 +18,7 @@ export interface IPermission extends Document {
   dataSourceId: Types.ObjectId;
   resourceCode: string;
   methodName: 'create' | 'update' | 'delete' | 'list' | 'view';
+  isChangeable: boolean;
 }
 
 // Define schema
@@ -72,6 +73,10 @@ const permissionSchema = new Schema<IPermission>(
     organizationId: {
       type: Schema.Types.ObjectId,
       ref: 'Organization',
+    },
+    isChangeable: {
+      type: Boolean,
+      default: true,
     },
   },
   {
