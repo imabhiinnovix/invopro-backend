@@ -52,8 +52,8 @@ const payload = {
   radarChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bbb'),
   scatterChartId: new mongoose.Types.ObjectId('67f75cd8b28822189f7ae71c'),
   tabularChartId: new mongoose.Types.ObjectId('67f75cd8b28822189f7ae71d'),
-  stackedBarLineId: new mongoose.Types.ObjectId('67f75cd8b28822189f7ae71e'),
-  comboBarLineId: new mongoose.Types.ObjectId('67f75cd8b28822189f7ae71f'),
+  stackedBarLineId: new mongoose.Types.ObjectId('68cd5d2a33e110208844cfc8'),
+  comboBarLineId: new mongoose.Types.ObjectId('68cd5d2a33e110208844cfcb'),
   widgetThemeId: new mongoose.Types.ObjectId('67f783d7d2001cac19c75961'),
 };
 
