@@ -943,6 +943,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'text',
+          mappedAttributeName: 'CaseNumber',
         },
         {
           attributeId: entityDataSourceMap.case_list.attorneyAttributeId,
@@ -954,6 +955,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'multioption',
+          mappedAttributeName: 'Attorney',
         },
         {
           attributeId: entityDataSourceMap.case_list.disclosureAttributeId,
@@ -965,6 +967,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: false,
           isDerived: false,
           type: 'text',
+          mappedAttributeName: 'DisclosureNumber',
         },
         {
           attributeId: entityDataSourceMap.case_list.activeSwitchAttributeId,
@@ -976,6 +979,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: false,
           isDerived: false,
           type: 'text',
+          mappedAttributeName: 'ActiveSwitch',
         },
         {
           attributeId: entityDataSourceMap.case_list.procedureAgentNameAttributeId,
@@ -987,6 +991,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'multioption',
+          mappedAttributeName: 'ProcedureAgentName',
         },
         {
           attributeId: entityDataSourceMap.case_list.localAgentNameAttributeId,
@@ -998,6 +1003,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'multioption',
+          mappedAttributeName: 'LocalAgentName',
         },
         {
           attributeId: entityDataSourceMap.case_list.caseTypeAttributeId,
@@ -1009,6 +1015,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: false,
           isDerived: false,
           type: 'text',
+          mappedAttributeName: 'CaseType',
         },
         {
           attributeId: entityDataSourceMap.case_list.attorneyAttributeId,
@@ -1024,6 +1031,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: false,
           isDerived: false,
           type: 'email',
+          mappedAttributeName: 'Attorney.AttorneyName.FOName.FOEmail',
         },
         {
           attributeId: entityDataSourceMap.case_list.attorneyAttributeId,
@@ -1039,6 +1047,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: false,
           isDerived: false,
           type: 'email',
+          mappedAttributeName: 'Attorney.AttorneyName.FOName.Escalation1EmailID',
         },
         {
           attributeId: entityDataSourceMap.case_list.attorneyAttributeId,
@@ -1054,6 +1063,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: false,
           isDerived: false,
           type: 'email',
+          mappedAttributeName: 'Attorney.AttorneyName.FOName.Escalation2EmailID',
         },
         {
           attributeId: entityDataSourceMap.case_list.actionDueAttributeId,
@@ -1065,6 +1075,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'text',
+          mappedAttributeName: 'ActionDue.ReportCriticalEvent',
         },
         {
           attributeId: entityDataSourceMap.case_list.actionDueAttributeId,
@@ -1076,6 +1087,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'text',
+          mappedAttributeName: 'ActionDue.ReportPersonalScheduler',
         },
         {
           attributeId: entityDataSourceMap.case_list.actionDueAttributeId,
@@ -1084,9 +1096,10 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isFilterEnable: false,
           isDashboardFilter: true,
           isSortingEnable: false,
-          isDisplayEnable: false,
+          isDisplayEnable: true,
           isDerived: false,
           type: 'text',
+          mappedAttributeName: 'ActionDue.ReportActionDue',
         },
         {
           attributeId: entityDataSourceMap.case_list.statusAttributeId,
@@ -1098,6 +1111,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: false,
           isDerived: false,
           type: 'text',
+          mappedAttributeName: 'Status',
         },
         {
           attributeId: entityDataSourceMap.case_list.actionDueAttributeId,
@@ -1109,6 +1123,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'option',
+          mappedAttributeName: 'ActionDue',
         },
         {
           attributeId: entityDataSourceMap.case_list.dateTakenAttributeId,
@@ -1117,9 +1132,10 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isFilterEnable: false,
           isDashboardFilter: true,
           isSortingEnable: false,
-          isDisplayEnable: false,
+          isDisplayEnable: true,
           isDerived: false,
           type: 'date',
+          mappedAttributeName: 'DateTaken',
         },
         {
           attributeId: entityDataSourceMap.case_list.countryAttributeId,
@@ -1131,6 +1147,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'multioption',
+          mappedAttributeName: 'Country',
         },
         {
           attributeId: entityDataSourceMap.case_list.dueDateAttributeId,
@@ -1142,6 +1159,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'date-range',
+          mappedAttributeName: 'DueDate',
         },
         {
           attributeId: entityDataSourceMap.case_list.legalAssistantAttributeId,
@@ -1152,7 +1170,8 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isSortingEnable: false,
           isDisplayEnable: true,
           isDerived: false,
-          type: 'text',
+          type: 'multioption',
+          mappedAttributeName: 'LegalAssistant',
         },
         {
           attributeId: entityDataSourceMap.case_list.actionDueAttributeId,
@@ -1173,14 +1192,13 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
             entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
             entityDataSourceMap.formality_officers.foNameAttributeId,
           ],
-          label: 'FO Name',
+          label: 'Formality Officer',
           isFilterEnable: false,
           isDashboardFilter: true,
           isSortingEnable: false,
           isDisplayEnable: false,
           isDerived: false,
           type: 'multioption',
-
           mappedAttributeName: 'Attorney.AttorneyName.FOName.FOName',
         },
         {
@@ -1218,6 +1236,42 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDerived: true,
           type: 'option',
           mappedAttributeName: 'Case Status',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.sbuAttributeId,
+          refAttributeId: [],
+          label: 'SBU',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'multioption',
+          mappedAttributeName: 'SBU',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.actionDueAttributeId,
+          refAttributeId: [entityDataSourceMap.action_due.stdActionsAttributeId],
+          label: 'Standard Action',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'option',
+          mappedAttributeName: 'ActionDue.STDActions',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.actionDueAttributeId,
+          refAttributeId: [entityDataSourceMap.action_due.actionCategoryAttributeId],
+          label: 'Action Category',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'option',
+          mappedAttributeName: 'ActionDue.ActionCategory',
         },
       ],
       isShowMenu: true,
