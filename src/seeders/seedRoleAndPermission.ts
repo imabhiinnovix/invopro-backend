@@ -7,154 +7,454 @@ import UserRole from '../database/models/common/userRole';
 import RoleHasPermission from '../database/models/common/roleHasPermissionModel';
 import Organization from '../database/models/common/organization';
 
+// ------------------ Default Permission Sets ------------------ //
 const defaultPermissionsUser = [
-  'GET:/common/user/get-current-user',
-  'PUT:/common/user/update-current-user',
-  'PUT:/common/user/change-password',
-  'GET:/common/entities/list',
-  'GET:/common/entities/:entityId',
-  'GET:/common/dataSource/code/:code',
-  'GET:/common/dataSource/name/:name',
-  'GET:/common/dataSource/list',
-  'GET:/common/dataSource/dataSourceId/:dataSourceId',
-  'POST:/common/dataSource/getWidgetDataByFilter',
-  'GET:/common/attributeOptions/list',
-  'GET:/common/attributeOptions/get/:attributeId',
-  'POST:/common/files/upload',
-  'GET:/common/dataSourceVersion/list',
-  'GET:/common/dataSourceVersion/dataSourceId/:dataSourceId/versionValue/:versionValue/versionName/:versionName',
-  'POST:/common/dataSourceVersion/create',
-  'GET:/common/dataSourceVersion/versionData',
-  'POST:/common/dataSourceVersion/versionData/create',
-  'PUT:/common/dataSourceVersion/versionData/update/:rowId',
-  'DELETE:/common/dataSourceVersion/versionData/delete',
-  'GET:/common/dataSourceVersion/listVersionData/:customReportId',
-  'GET:/common/dataSourceVersion/listAllAvailableDataSourceVersionValue',
-  'GET:/common/dataImportError/list',
-  'GET:/common/dashboard/list',
-  'GET:/common/dashboard/get/:dashboardId',
-  'GET:/common/dashboard/widget/getWidgets/:dashboardId',
-  'POST:/common/dashboard/widget/getWidgetData',
-  'GET:/common/widgetType/get/:widgetTypeId',
-  'GET:/common/widgetType/list',
-  'GET:/common/operator/get/:operatorId',
-  'POST:/common/operator/list',
-  'GET:/common/widgetTheme/list',
-  'GET:/common/widgetTheme/:widgetThemeId',
-  'GET:/common/dashboardShare/list/:dashboardId',
-  'POST:/common/dashboardShare/create',
-  'POST:/common/dashboardShare/:dashboardShareId',
-  'GET:/reportivix/customReports/list',
-  'GET:/reportivix/customReports/listReportRequest',
-  'GET:/reportivix/customReports/getVersionValue',
-  'POST:/reportivix/customReports/generate',
-  'GET:/reportivix/customReports/download/:reportRequestId',
-  'GET:/reportivix/customReports/reportDataOnDataSourceVersionId/:dataSourceVersionId',
-  'GET:/reportivix/customReports/customReportDesignData/:customReportId',
-  'GET:/reportivix/customReports/reportDetails/:reportRequestId',
-  'GET:/reportivix/customReports/reportData/:dataSourceId',
-  'GET:/reportivix/customReports/listSettings',
-  'GET:/reportivix/nlQuery/getData',
-  'GET:/reportivix/nlQuery/insights',
-  'POST:/common/dataSourceVersion/chartData',
-  'GET:/common/user/image',
-  'DELETE:/common/user/image',
-  'GET:/common/designation/list',
-  'GET:/common/department/list',
+  {
+    permission: 'GET:/common/user/get-current-user',
+    isChangeable: false,
+  },
+  {
+    permission: 'PUT:/common/user/update-current-user',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/common/user/change-password',
+    isChangeable: true,
+  },
+  { permission: 'GET:/common/entities/list', isChangeable: true },
+  { permission: 'GET:/common/entities/:entityId', isChangeable: true },
+  {
+    permission: 'GET:/common/dataSource/code/:code',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/dataSource/name/:name',
+    isChangeable: true,
+  },
+  { permission: 'GET:/common/dataSource/list', isChangeable: true },
+  {
+    permission: 'GET:/common/dataSource/dataSourceId/:dataSourceId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dataSource/getWidgetDataByFilter',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/attributeOptions/list',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/attributeOptions/get/:attributeId',
+    isChangeable: true,
+  },
+  { permission: 'POST:/common/files/upload', isChangeable: true },
+  {
+    permission: 'GET:/common/dataSourceVersion/list',
+    isChangeable: true,
+  },
+  {
+    permission:
+      'GET:/common/dataSourceVersion/dataSourceId/:dataSourceId/versionValue/:versionValue/versionName/:versionName',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dataSourceVersion/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/dataSourceVersion/versionData',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dataSourceVersion/versionData/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/common/dataSourceVersion/versionData/update/:rowId',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/common/dataSourceVersion/versionData/delete',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/dataSourceVersion/listVersionData/:customReportId',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/dataSourceVersion/listAllAvailableDataSourceVersionValue',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/dataImportError/list',
+    isChangeable: true,
+  },
+  { permission: 'GET:/common/dashboard/list', isChangeable: true },
+  {
+    permission: 'GET:/common/dashboard/get/:dashboardId',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/dashboard/widget/getWidgets/:dashboardId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dashboard/widget/getWidgetData',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/widgetType/get/:widgetTypeId',
+    isChangeable: true,
+  },
+  { permission: 'GET:/common/widgetType/list', isChangeable: true },
+  {
+    permission: 'GET:/common/operator/get/:operatorId',
+    isChangeable: true,
+  },
+  { permission: 'POST:/common/operator/list', isChangeable: true },
+  { permission: 'GET:/common/widgetTheme/list', isChangeable: true },
+  {
+    permission: 'GET:/common/widgetTheme/:widgetThemeId',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/dashboardShare/list/:dashboardId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dashboardShare/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dashboardShare/:dashboardShareId',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/reportivix/customReports/list',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/reportivix/customReports/listReportRequest',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/reportivix/customReports/getVersionValue',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/reportivix/customReports/generate',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/reportivix/customReports/download/:reportRequestId',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/reportivix/customReports/reportDataOnDataSourceVersionId/:dataSourceVersionId',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/reportivix/customReports/customReportDesignData/:customReportId',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/reportivix/customReports/reportDetails/:reportRequestId',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/reportivix/customReports/reportData/:dataSourceId',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/reportivix/customReports/listSettings',
+    isChangeable: true,
+  },
+  { permission: 'GET:/reportivix/nlQuery/getData', isChangeable: true },
+  {
+    permission: 'GET:/reportivix/nlQuery/insights',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dataSourceVersion/chartData',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/user/image',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/common/user/image',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/designation/list',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/department/list',
+    isChangeable: true,
+  },
 ];
 
 const defaultPermissionsAdmin = [
   ...defaultPermissionsUser,
-  'POST:/common/user/create',
-  'GET:/common/user/list',
-  'GET:/common/user/:userId',
-  'PUT:/common/user/update/:userId',
-  'DELETE:/common/user/delete/:userId',
-  'GET:/common/permission/list',
-  'POST:/common/permission/create',
-  'PUT:/common/permission/update/:permissionId',
-  'DELETE:/common/permission/delete/:permissionId',
-  'GET:/common/role/list',
-  'GET:/common/role/:roleId',
-  'POST:/common/role/create',
-  'PUT:/common/role/update/:roleId',
-  'DELETE:/common/role/delete/:roleId',
-  'GET:/common/product-subscription/list',
-  'GET:/common/organization/get-current-organization',
-  'GET:/common/organization/list',
-  'POST:/common/entities/create',
-  'PUT:/common/entities/update/:entityId',
-  'POST:/common/dataSource/create',
-  'PUT:/common/dataSource/update/:dataSourceId',
-  'POST:/common/attributeOptions/create',
-  'PUT:/common/attributeOptions/update/:attributeId',
-  'POST:/common/dashboard/create',
-  'POST:/common/dashboard/update/:dashboardId',
-  'POST:/common/dashboard/delete/:dashboardId',
-  'POST:/common/dashboard/selectTheme/:dashboardId',
-  'POST:/common/dashboard/widget/create',
-  'POST:/common/dashboard/widget/save',
-  'POST:/common/dashboard/widget/update/:dashboardWidgetId',
-  'POST:/common/dashboard/widget/delete/:dashboardWidgetId',
-  'POST:/common/widgetTheme/create',
-  'POST:/common/widgetTheme/duplicate/:widgetThemeId',
-  'POST:/common/widgetTheme/update/:widgetThemeId',
-  'POST:/common/widgetTheme/delete/:widgetThemeId',
-  'POST:/reportivix/customReports/updateSettings/:customReportId',
-  'POST:/common/derivedField/create',
-  'PUT:/common/derivedField/update/:id',
-  'DELETE:/common/derivedField/delete/:id',
-  'GET:/common/derivedField/list',
-  'GET:/common/derivedField/:id',
-  'GET:/notivix/notification-setting/type/list',
-  'POST:/notivix/notification-setting/type/create',
-  'PUT:/notivix/notification-setting/type/update/:id',
-  'DELETE:/notivix/notification-setting/type/delete/:id',
-  'GET:/notivix/notification-setting/type/:id',
-  'GET:/notivix/notification-setting/frequency/list',
-  'POST:/notivix/notification-setting/frequency/create',
-  'PUT:/notivix/notification-setting/frequency/update/:id',
-  'DELETE:/notivix/notification-setting/frequency/delete/:id',
-  'GET:/notivix/notification-setting/frequency/:id',
-  'GET:/notivix/notification-setting/template/list',
-  'POST:/notivix/notification-setting/template/create',
-  'PUT:/notivix/notification-setting/template/update/:id',
-  'DELETE:/notivix/notification-setting/template/delete/:id',
-  'GET:/notivix/notification-setting/template/:id',
-  'GET:/notivix/notification-setting/medium/list',
-  'POST:/notivix/notification-setting/medium/create',
-  'PUT:/notivix/notification-setting/medium/update/:id',
-  'DELETE:/notivix/notification-setting/medium/delete',
-  'GET:/common/dashboardFont/list',
-  'GET:/common/dashboardFont/download/:fontId',
-  'DELETE:/common/dashboardFont/delete/:fontId',
-  'GET:/common/dashboardTheme/list',
-  'POST:/common/dashboardTheme/create',
-  'PUT:/common/dashboardTheme/update/:themeId',
-  'DELETE:/common/dashboardTheme/delete/:themeId',
-  'GET:/notivix/notification-setting/medium/:id',
-  'POST:/common/designation/create',
-  'PUT:/common/designation/update/:designationId',
-  'DELETE:/common/designation/delete/:designationId',
-  'POST:/common/department/create',
-  'PUT:/common/department/update/:departmentId',
-  'DELETE:/common/department/delete/:departmentId',
+  { permission: 'POST:/common/user/create', isChangeable: true },
+  { permission: 'GET:/common/user/list', isChangeable: true },
+  { permission: 'GET:/common/user/:userId', isChangeable: true },
+  { permission: 'PUT:/common/user/update/:userId', isChangeable: true },
+  {
+    permission: 'DELETE:/common/user/delete/:userId',
+    isChangeable: true,
+  },
+  { permission: 'GET:/common/permission/list', isChangeable: true },
+  { permission: 'POST:/common/permission/create', isChangeable: true },
+  {
+    permission: 'PUT:/common/permission/update/:permissionId',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/common/permission/delete/:permissionId',
+    isChangeable: true,
+  },
+  { permission: 'GET:/common/role/list', isChangeable: true },
+  { permission: 'GET:/common/role/:roleId', isChangeable: true },
+  { permission: 'POST:/common/role/create', isChangeable: true },
+  { permission: 'PUT:/common/role/update/:roleId', isChangeable: true },
+  {
+    permission: 'DELETE:/common/role/delete/:roleId',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/product-subscription/list',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/organization/get-current-organization',
+    isChangeable: true,
+  },
+  { permission: 'GET:/common/organization/list', isChangeable: true },
+  { permission: 'POST:/common/entities/create', isChangeable: true },
+  {
+    permission: 'PUT:/common/entities/update/:entityId',
+    isChangeable: true,
+  },
+  { permission: 'POST:/common/dataSource/create', isChangeable: true },
+  {
+    permission: 'PUT:/common/dataSource/update/:dataSourceId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/attributeOptions/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/common/attributeOptions/update/:attributeId',
+    isChangeable: true,
+  },
+  { permission: 'POST:/common/dashboard/create', isChangeable: true },
+  {
+    permission: 'POST:/common/dashboard/update/:dashboardId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dashboard/delete/:dashboardId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dashboard/selectTheme/:dashboardId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dashboard/widget/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dashboard/widget/save',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dashboard/widget/update/:dashboardWidgetId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dashboard/widget/delete/:dashboardWidgetId',
+    isChangeable: true,
+  },
+  { permission: 'POST:/common/widgetTheme/create', isChangeable: true },
+  {
+    permission: 'POST:/common/widgetTheme/duplicate/:widgetThemeId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/widgetTheme/update/:widgetThemeId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/widgetTheme/delete/:widgetThemeId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/reportivix/customReports/updateSettings/:customReportId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/derivedField/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/common/derivedField/update/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/common/derivedField/delete/:id',
+    isChangeable: true,
+  },
+  { permission: 'GET:/common/derivedField/list', isChangeable: true },
+  { permission: 'GET:/common/derivedField/:id', isChangeable: true },
+  {
+    permission: 'GET:/notivix/notification-setting/type/list',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/notivix/notification-setting/type/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/notivix/notification-setting/type/update/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/notivix/notification-setting/type/delete/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/notivix/notification-setting/type/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/notivix/notification-setting/frequency/list',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/notivix/notification-setting/frequency/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/notivix/notification-setting/frequency/update/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/notivix/notification-setting/frequency/delete/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/notivix/notification-setting/frequency/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/notivix/notification-setting/template/list',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/notivix/notification-setting/template/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/notivix/notification-setting/template/update/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/notivix/notification-setting/template/delete/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/notivix/notification-setting/template/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/notivix/notification-setting/medium/list',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/notivix/notification-setting/medium/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/notivix/notification-setting/medium/update/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/notivix/notification-setting/medium/delete',
+    isChangeable: true,
+  },
+  { permission: 'GET:/common/dashboardFont/list', isChangeable: true },
+  {
+    permission: 'GET:/common/dashboardFont/download/:fontId',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/common/dashboardFont/delete/:fontId',
+    isChangeable: true,
+  },
+  { permission: 'GET:/common/dashboardTheme/list', isChangeable: true },
+  {
+    permission: 'POST:/common/dashboardTheme/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/common/dashboardTheme/update/:themeId',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/common/dashboardTheme/delete/:themeId',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/notivix/notification-setting/medium/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/designation/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/common/designation/update/:designationId',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/common/designation/delete/:designationId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/department/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/common/department/update/:departmentId',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/common/department/delete/:departmentId',
+    isChangeable: true,
+  },
 ];
 
 const defaultPermissionsPrimarySuperAdmin = [
   ...defaultPermissionsAdmin,
-  'GET:/common/product/list',
-  'POST:/common/organization/create',
-  'PUT:/common/organization/update/:organizationId',
-  'DELETE:/common/organization/delete/:organizationId',
-  'GET:/common/organization/:organizationId',
-  'POST:/common/widgetType/create',
-  'POST:/common/widgetType/update/:widgetTypeId',
-  'POST:/common/widgetType/delete/:widgetTypeId',
-  'POST:/common/operator/update/:operatorId',
-  'POST:/common/operator/create',
+  { permission: 'GET:/common/product/list', isChangeable: true },
+  { permission: 'POST:/common/organization/create', isChangeable: true },
+  { permission: 'PUT:/common/organization/update/:organizationId', isChangeable: true },
+  { permission: 'DELETE:/common/organization/delete/:organizationId', isChangeable: true },
+  { permission: 'GET:/common/organization/:organizationId', isChangeable: true },
+  { permission: 'POST:/common/widgetType/create', isChangeable: true },
+  { permission: 'POST:/common/widgetType/update/:widgetTypeId', isChangeable: true },
+  { permission: 'POST:/common/widgetType/delete/:widgetTypeId', isChangeable: true },
+  { permission: 'POST:/common/operator/update/:operatorId', isChangeable: true },
+  { permission: 'POST:/common/operator/create', isChangeable: true },
 ];
 
+// ------------------ Default Roles ------------------ //
 const defaultRolesAndPermissions = [
   {
     roleName: 'User',
@@ -177,6 +477,7 @@ interface SeedPayload {
   organizationId: Types.ObjectId[];
 }
 
+// ------------------ Seeder Function ------------------ //
 export async function seedRolesAndPermissions(payload: SeedPayload) {
   const { organizationId } = payload;
 
@@ -195,7 +496,6 @@ export async function seedRolesAndPermissions(payload: SeedPayload) {
     for (const roleItem of defaultRolesAndPermissions) {
       const { roleName, isSuperUser, permissionsList } = roleItem;
 
-      // ❌ Only allow Super Admin creation for master organizations
       if (isSuperUser && !organization.isMaster) {
         console.info(`⏭️ Skipping Super Admin role for non-master organization: ${organization.name}`);
         continue;
@@ -213,19 +513,21 @@ export async function seedRolesAndPermissions(payload: SeedPayload) {
           isSuperUser,
           status: 'active',
         });
-
         await role.save();
         console.log(`✅ Role "${roleName}" created for org "${organization.name}"`);
       } else {
         console.log(`ℹ️ Role "${roleName}" already exists for org "${organization.name}"`);
       }
 
-      for (const methodResource of permissionsList) {
-        const [method, ...rest] = methodResource.split(':');
+      for (const permItem of permissionsList) {
+        // backward compatibility: allow plain string
+        const { permission, isChangeable } =
+          typeof permItem === 'string' ? { permission: permItem, isChangeable: true } : permItem;
+
+        const [method, ...rest] = permission.split(':');
         const resourceId = rest.join(':');
 
         const permissionDoc = await Permission.findOne({ method, resourceId });
-
         if (!permissionDoc) {
           console.warn(`⚠️ Permission not found: ${method}:${resourceId}`);
           continue;
@@ -240,6 +542,7 @@ export async function seedRolesAndPermissions(payload: SeedPayload) {
           await new RoleHasPermission({
             roleId: role._id,
             permissionId: permissionDoc._id,
+            isChangeable, // ✅ store new flag
             status: 'active',
           }).save();
 

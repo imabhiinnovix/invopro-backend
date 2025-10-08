@@ -46,7 +46,7 @@ export const getRolePermissionList = async (req: Request, res: Response, next: N
     if (isSuperUser && paramOrgId) {
       organizationId = paramOrgId;
     }
-    const query: any = { roleId };
+    const query: any = { roleId, isChangeable: true };
     if (!paginate || paginate === 'false') {
       page = 1;
       limit = Number.MAX_SAFE_INTEGER; // effectively unlimited

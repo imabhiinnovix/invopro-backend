@@ -20,6 +20,9 @@ import { seedProducts } from './product.seed';
 import { seedRolesAndPermissions } from './seedRoleAndPermission';
 import { seedPermissions } from './permission.seed';
 import { createProductSubscription } from './organizationHasProduct.seed';
+import { seedDashboardsForOrganization } from './userLevelDashboard.seed';
+import { seedAttributeOptions } from './attibuteOptionSeed';
+import { seedDerivedField } from './derivedField.seed';
 
 const payload = {
   reportivixSuperAdminUserId: new mongoose.Types.ObjectId('66b34cbbd40e24fca2e3e312'),
@@ -49,6 +52,8 @@ const payload = {
   radarChartId: new mongoose.Types.ObjectId('67f75909ecc4ad15736f7bbb'),
   scatterChartId: new mongoose.Types.ObjectId('67f75cd8b28822189f7ae71c'),
   tabularChartId: new mongoose.Types.ObjectId('67f75cd8b28822189f7ae71d'),
+  stackedBarLineId: new mongoose.Types.ObjectId('68cd5d2a33e110208844cfc8'),
+  comboBarLineId: new mongoose.Types.ObjectId('68cd5d2a33e110208844cfcb'),
   widgetThemeId: new mongoose.Types.ObjectId('67f783d7d2001cac19c75961'),
 };
 
@@ -286,20 +291,62 @@ const entityDataSourceMapReportivix = {
     dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08bed'),
   },
   case_list: {
-    entityId: new mongoose.Types.ObjectId('6880a9d9c7f126fbdf3a991c'),
-    dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08bee'),
+    entityId: new mongoose.Types.ObjectId('6877d4c5db2c6e01d9a86cae'),
+    dataSourceId: new mongoose.Types.ObjectId('6878fab8a1dfb7e7aabb0f00'),
+    caseNumberAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c34'),
+    otherReferenceNumberAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c35'),
+    titleAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c36'),
+    statusAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c37'),
+    actionDueAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c38'),
+    dueDateAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c39'),
+    dateTakenAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c3a'),
+    remarksAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c3b'),
+    attorneyAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c3c'),
+    legalAssistantAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c3d'),
+    assignedToAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c3e'),
+    procedureAgentNameAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c3f'),
+    localAgentNameAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c40'),
+    sbuAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c41'),
+    buAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c42'),
+    blAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c43'),
+    countryAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c44'),
+    caseTypeAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c45'),
+    activeSwitchAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4c46'),
+    disclosureAttributeId: new mongoose.Types.ObjectId('68b01d62dda97879b399ede0'),
   },
   action_due: {
-    entityId: new mongoose.Types.ObjectId('6880b07573ff870ac0c67aa8'),
-    dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08bef'),
+    entityId: new mongoose.Types.ObjectId('6877cd611e202b200594b36e'),
+    dataSourceId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d4b'),
+    actionDueAttributeId: new mongoose.Types.ObjectId('68889f1440e7e5582836a7ed'),
+    stdActionsAttributeId: new mongoose.Types.ObjectId('68889f1440e7e5582836a7ee'),
+    actionCategoryAttributeId: new mongoose.Types.ObjectId('68889f1440e7e5582836a7ef'),
+    alertRequiredAttributeId: new mongoose.Types.ObjectId('68889f1440e7e5582836a7f0'),
+    reportCriticalEventAttributeId: new mongoose.Types.ObjectId('68889f1440e7e5582836a7f1'),
+    reportPersonalSchedulerAttributeId: new mongoose.Types.ObjectId('68889f1440e7e5582836a7f2'),
+    reportActionsDueAttributeId: new mongoose.Types.ObjectId('68889f1440e7e5582836a7f3'),
+    excludedAttributeId: new mongoose.Types.ObjectId('68889f1440e7e5582836a7f4'),
   },
-  ip_counsel: {
-    entityId: new mongoose.Types.ObjectId('6880b07573ff870ac0c67aa9'),
-    dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08beb'),
+  attorney_fo_mapping: {
+    entityId: new mongoose.Types.ObjectId('68a726f696481808fce1aede'),
+    dataSourceId: new mongoose.Types.ObjectId('68a729e596481808fce1b233'),
+    foNameAttributeId: new mongoose.Types.ObjectId('68a726f696481808fce1aee0'),
+    attorneyNameAttributeId: new mongoose.Types.ObjectId('68a726f696481808fce1aedf'),
   },
   formality_officers: {
-    entityId: new mongoose.Types.ObjectId('6880b70e279a1a50d220e5ae'),
-    dataSourceId: new mongoose.Types.ObjectId('6846791aa0e6c029f6d08b0e'),
+    entityId: new mongoose.Types.ObjectId('687a295c7245e607088f68b0'),
+    dataSourceId: new mongoose.Types.ObjectId('687a2a5e7245e607088f695b'),
+    foNameAttributeId: new mongoose.Types.ObjectId('689ee486e35b2b9634d729d3'),
+    foEmailAttributeId: new mongoose.Types.ObjectId('689ee486e35b2b9634d729d4'),
+    escalation1AttributeId: new mongoose.Types.ObjectId('689ee486e35b2b9634d729d5'),
+    escalation1EmailIDAttributeId: new mongoose.Types.ObjectId('689ee486e35b2b9634d729d6'),
+    escalation2AttributeId: new mongoose.Types.ObjectId('689ee486e35b2b9634d729d7'),
+    escalation2EmailIDAttributeId: new mongoose.Types.ObjectId('689ee486e35b2b9634d729d8'),
+  },
+  ip_counsel: {
+    entityId: new mongoose.Types.ObjectId('687a29fb7245e607088f6900'),
+    dataSourceId: new mongoose.Types.ObjectId('687a2a367245e607088f693b'),
+    attorneyNameAttributeId: new mongoose.Types.ObjectId('68a70ab921450a2ddaeadd01'),
+    emailAttributeId: new mongoose.Types.ObjectId('68ac02abd6e377def33ee296'),
   },
 };
 
@@ -551,20 +598,62 @@ const entityDataSourceMapSabic = {
     dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda34'),
   },
   case_list: {
-    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e113'),
-    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda35'),
+    entityId: new mongoose.Types.ObjectId('68befd179b60f43d4dfc61cc'),
+    dataSourceId: new mongoose.Types.ObjectId('6878fab8a1dfb7e7aabb0f01'),
+    caseNumberAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d45'),
+    otherReferenceNumberAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d46'),
+    titleAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d47'),
+    statusAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d48'),
+    actionDueAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d49'),
+    dueDateAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d50'),
+    dateTakenAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d51'),
+    remarksAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d52'),
+    attorneyAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d53'),
+    legalAssistantAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d54'),
+    assignedToAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d55'),
+    procedureAgentNameAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d56'),
+    localAgentNameAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d57'),
+    sbuAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d58'),
+    buAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d59'),
+    blAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d60'),
+    countryAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d61'),
+    caseTypeAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d62'),
+    activeSwitchAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d63'),
+    disclosureAttributeId: new mongoose.Types.ObjectId('689ee71b82768ac30a6e4d64'),
   },
   action_due: {
-    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e110'),
-    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda36'),
+    entityId: new mongoose.Types.ObjectId('68bef9f69b60f43d4dfc5c48'),
+    dataSourceId: new mongoose.Types.ObjectId('68befa979b60f43d4dfc5f00'),
+    actionDueAttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d4d'),
+    stdActionsAttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d4e'),
+    actionCategoryAttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d4f'),
+    alertRequiredAttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d41'),
+    reportCriticalEventAttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d42'),
+    reportPersonalSchedulerAttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d43'),
+    reportActionsDueAttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d44'),
+    excludedAttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d45'),
   },
-  ip_counsel: {
-    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e111'),
-    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda37'),
+  attorney_fo_mapping: {
+    entityId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d46'),
+    dataSourceId: new mongoose.Types.ObjectId('68beb0ac1ce7c309aa93a6fa'),
+    foNameAttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d48'),
+    attorneyNameAttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d49'),
   },
   formality_officers: {
-    entityId: new mongoose.Types.ObjectId('67caaf4d598bffd31565e112'),
-    dataSourceId: new mongoose.Types.ObjectId('6810c4a680b5a97f62abda38'),
+    entityId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d50'),
+    dataSourceId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d51'),
+    foNameAttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d52'),
+    foEmailAttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d53'),
+    escalation1AttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d54'),
+    escalation1EmailIDAttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d55'),
+    escalation2AttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d56'),
+    escalation2EmailIDAttributeId: new mongoose.Types.ObjectId('6877d52fdb2c6e01d9a86d57'),
+  },
+  ip_counsel: {
+    entityId: new mongoose.Types.ObjectId('68be8acf71f7e4d13f155137'),
+    dataSourceId: new mongoose.Types.ObjectId('68be8c3071f7e4d13f156605'),
+    attorneyNameAttributeId: new mongoose.Types.ObjectId('687a29fb7245e607088f6912'),
+    emailAttributeId: new mongoose.Types.ObjectId('687a29fb7245e607088f6913'),
   },
 };
 
@@ -579,6 +668,137 @@ const customReportMapSabic = {
   supplementalip: {
     reportId: new mongoose.Types.ObjectId('6810cbd11ecbf1ab5b047f1a'),
   },
+};
+
+const attributeOptionMapReportivix = {
+  sbu: {
+    id: new mongoose.Types.ObjectId('679232a1753ceb4945e5b396'),
+    attributeName: 'SBU STATIC',
+    attributeValue: [
+      'Corp T&I',
+      'Metals',
+      'Agri-Nutrients',
+      'Chemicals',
+      'Polymers',
+      'PetChem -Total',
+      'Specialties',
+      'Strategy & Transformation',
+      'Totals',
+    ],
+  },
+  actionDue: {
+    id: new mongoose.Types.ObjectId('68bfe9a29b60f43d4d0ab7d3'),
+    attributeName: 'Action Due',
+    attributeValue: [],
+  },
+  stdAction: {
+    id: new mongoose.Types.ObjectId('68a7140721450a2ddaeae545'),
+    attributeName: 'STD Actions Due',
+    attributeValue: [],
+  },
+  actionCategory: {
+    id: new mongoose.Types.ObjectId('68a7140721450a2ddaeae548'),
+    attributeName: 'Action Category',
+    attributeValue: [],
+  },
+  attorneyName: {
+    id: new mongoose.Types.ObjectId('68a7163221450a2ddaeaec85'),
+    attributeName: 'Attorney Name',
+    attributeValue: [],
+  },
+  foName: {
+    id: new mongoose.Types.ObjectId('68a7160121450a2ddaeaeb61'),
+    attributeName: 'FO Name',
+    attributeValue: [],
+  },
+  procedureAgentName: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f833'),
+    attributeName: 'ProcedureAgentName',
+    attributeValue: [],
+  },
+  localAgentName: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f837'),
+    attributeName: 'LocalAgentName',
+    attributeValue: [],
+  },
+  notivixSBU: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f83b'),
+    attributeName: 'SBU',
+    attributeValue: [],
+  },
+  country: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f83f'),
+    attributeName: 'Country',
+    attributeValue: [],
+  },
+};
+const attributeOptionMapSabic = {
+  sbu: {
+    id: new mongoose.Types.ObjectId('679232a1753ceb4945e5b397'),
+    attributeName: 'SBU STATIC',
+    attributeValue: [
+      'Corp T&I',
+      'Metals',
+      'Agri-Nutrients',
+      'Chemicals',
+      'Polymers',
+      'PetChem -Total',
+      'Specialties',
+      'Strategy & Transformation',
+      'Totals',
+    ],
+  },
+  actionDue: {
+    id: new mongoose.Types.ObjectId('68bfe9a29b60f43d4d0ab7e3'),
+    attributeName: 'Action Due',
+    attributeValue: [],
+  },
+  stdAction: {
+    id: new mongoose.Types.ObjectId('68a7140721450a2ddaeae546'),
+    attributeName: 'STD Actions Due',
+    attributeValue: [],
+  },
+  actionCategory: {
+    id: new mongoose.Types.ObjectId('68a7140721450a2ddaeae549'),
+    attributeName: 'Action Category',
+    attributeValue: [],
+  },
+  attorneyName: {
+    id: new mongoose.Types.ObjectId('68a7163221450a2ddaeaec86'),
+    attributeName: 'Attorney Name',
+    attributeValue: [],
+  },
+  foName: {
+    id: new mongoose.Types.ObjectId('68a7160121450a2ddaeaeb62'),
+    attributeName: 'FO Name',
+    attributeValue: [],
+  },
+  procedureAgentName: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f834'),
+    attributeName: 'ProcedureAgentName',
+    attributeValue: [],
+  },
+  localAgentName: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f838'),
+    attributeName: 'LocalAgentName',
+    attributeValue: [],
+  },
+  notivixSBU: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f83e'),
+    attributeName: 'SBU',
+    attributeValue: [],
+  },
+  country: {
+    id: new mongoose.Types.ObjectId('68d64e82494cb308cee3f83a'),
+    attributeName: 'Country',
+    attributeValue: [],
+  },
+};
+
+const derivedField = {
+  inHouseDerivedFieldId: new mongoose.Types.ObjectId('68d646483c915b838889d92c'),
+  caseListStatusPendingDerivedFieldId: new mongoose.Types.ObjectId('68d646f33c915b838889d936'),
+  reportCategoryDerivedFieldId: new mongoose.Types.ObjectId('68d646ca3c915b838889d930'),
 };
 
 export async function seedDatabase() {
@@ -719,7 +939,7 @@ export async function seedDatabase() {
         isMaster: false,
         users: [
           {
-            email: 'admin@sabic.com',
+            email: 'cs.sabic@innovix-labs.com',
             password: 'Sabic@1234',
             firstName: 'Sabic',
             lastName: 'Admin',
@@ -738,12 +958,26 @@ export async function seedDatabase() {
       },
     ]);
 
+    await seedAttributeOptions({
+      organizationId: payload.reportivixOrganizationId,
+      createdBy: payload.reportivixSuperAdminUserId,
+      updatedBy: payload.reportivixSuperAdminUserId,
+      attributeOptionMap: attributeOptionMapReportivix,
+    });
+
+    await seedAttributeOptions({
+      organizationId: payload.sabicOrganizationId,
+      createdBy: payload.sabicAdminUserId,
+      updatedBy: payload.sabicAdminUserId,
+      attributeOptionMap: attributeOptionMapSabic,
+    });
     console.info('\n====> Seeding Entities Reportivix <====');
     await seedEntities({
       organizationId: payload.reportivixOrganizationId,
       createdBy: payload.reportivixSuperAdminUserId,
       updatedBy: payload.reportivixSuperAdminUserId,
       entityDataSourceMap: entityDataSourceMapReportivix,
+      attributeOptionMap: attributeOptionMapReportivix,
     });
 
     console.info('\n====> Seeding Data source Reportivix <====');
@@ -752,6 +986,7 @@ export async function seedDatabase() {
       createdBy: payload.reportivixSuperAdminUserId,
       updatedBy: payload.reportivixSuperAdminUserId,
       entityDataSourceMap: entityDataSourceMapReportivix,
+      derivedFieldMapping: derivedField,
     });
 
     console.info('\n====> Seeding Custom Report Reportivx<====');
@@ -767,6 +1002,7 @@ export async function seedDatabase() {
       createdBy: payload.sabicAdminUserId,
       updatedBy: payload.sabicAdminUserId,
       entityDataSourceMap: entityDataSourceMapSabic,
+      attributeOptionMap: attributeOptionMapSabic,
     });
 
     console.info('\n====> Seeding Data source Sabic <====');
@@ -775,8 +1011,13 @@ export async function seedDatabase() {
       createdBy: payload.sabicAdminUserId,
       updatedBy: payload.sabicAdminUserId,
       entityDataSourceMap: entityDataSourceMapSabic,
+      derivedFieldMapping: derivedField,
     });
 
+    await seedDerivedField({
+      derivedFieldMapping: derivedField,
+      entityMapping: entityDataSourceMapReportivix,
+    });
     console.info('\n====> Seeding Custom Report Sabic<====');
     await seedCustomReports({
       organizationId: payload.sabicOrganizationId,
@@ -793,6 +1034,46 @@ export async function seedDatabase() {
     console.info('\n====> Seeding Operators <====');
     await seedOperators();
 
+    await seedDashboardsForOrganization({
+      organizationId: payload.reportivixOrganizationId,
+      widgetThemeId: payload.widgetThemeId,
+      dashboardName: 'Notivix Dashboard',
+      entityDataSourceMap: entityDataSourceMapReportivix,
+      widgets: [
+        {
+          widgetTypeId: payload.verticalBarChartId,
+          name: 'Formality Officers',
+          dimensions: 'Attorney.AttorneyName.FOName.FOName',
+          groupBy: ['ActionDue.ReportCriticalEvent'],
+          aggregation: { type: 'Count', attributeName: 'CaseNumber' },
+          position: { x: 0, y: 0, index: 0 },
+          conditions: [{ field: 'Attorney.AttorneyName.FOName.FOName', operator: 'notblank', value: '' }],
+          dataSourceId: entityDataSourceMapReportivix.case_list.dataSourceId,
+          entityId: entityDataSourceMapReportivix.case_list.entityId,
+          isIncremental: false,
+        },
+      ],
+    });
+    await seedDashboardsForOrganization({
+      organizationId: payload.sabicOrganizationId,
+      widgetThemeId: payload.widgetThemeId,
+      dashboardName: 'Notivix Dashboard',
+      entityDataSourceMap: entityDataSourceMapSabic,
+      widgets: [
+        {
+          widgetTypeId: payload.verticalBarChartId,
+          name: 'Formality Officers',
+          dimensions: 'Attorney.AttorneyName.FOName.FOName',
+          groupBy: ['ActionDue.ReportCriticalEvent'],
+          aggregation: { type: 'Count', attributeName: 'CaseNumber' },
+          position: { x: 0, y: 0, index: 0 },
+          conditions: [{ field: 'Attorney.AttorneyName.FOName.FOName', operator: 'notblank', value: '' }],
+          dataSourceId: entityDataSourceMapSabic.case_list.dataSourceId,
+          entityId: entityDataSourceMapSabic.case_list.entityId,
+          isIncremental: false,
+        },
+      ],
+    });
     // console.info('\n====> Seeding Dashboard Widget <====');
     // await seedDashboardWidget();
 
