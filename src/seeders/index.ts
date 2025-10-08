@@ -22,6 +22,7 @@ import { seedPermissions } from './permission.seed';
 import { createProductSubscription } from './organizationHasProduct.seed';
 import { seedDashboardsForOrganization } from './userLevelDashboard.seed';
 import { seedAttributeOptions } from './attibuteOptionSeed';
+import { seedDerivedField } from './derivedField.seed';
 
 const payload = {
   reportivixSuperAdminUserId: new mongoose.Types.ObjectId('66b34cbbd40e24fca2e3e312'),
@@ -753,6 +754,12 @@ const attributeOptionMapSabic = {
     attributeValue: [],
   },
 };
+
+const derivedFieldReportivix = {
+  inHouseDerivedFieldId: new mongoose.Types.ObjectId('68d646483c915b838889d92c'),
+  caseListStatusPendingDerivedFieldId: new mongoose.Types.ObjectId('68d646f33c915b838889d936'),
+};
+
 export async function seedDatabase() {
   try {
     // Connect to MongoDB
@@ -964,6 +971,10 @@ export async function seedDatabase() {
       entityDataSourceMap: entityDataSourceMapSabic,
     });
 
+    await seedDerivedField({
+      derivedFieldMapping: derivedFieldReportivix,
+      entityMapping: entityDataSourceMapReportivix,
+    });
     console.info('\n====> Seeding Custom Report Sabic<====');
     await seedCustomReports({
       organizationId: payload.sabicOrganizationId,
