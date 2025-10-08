@@ -6455,7 +6455,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
 
     {
       _id: entityDataSourceMap.formality_officers.entityId,
-      name: 'Formality Officers',
+      name: 'Formality Officer',
       description: '',
       attributes: [
         {
@@ -6543,7 +6543,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
     },
     {
       _id: entityDataSourceMap.ip_counsel.entityId,
-      name: 'IP Counsel',
+      name: 'IP Counsels',
       description: '',
       attributes: [
         {
