@@ -53,6 +53,63 @@ export async function seedDerivedField({ derivedFieldMapping, entityMapping }) {
       ],
     },
     {
+      _id: derivedFieldMapping.reportCategoryDerivedFieldId,
+      name: 'Report Category',
+      entityId: entityMapping.case_list.entityId,
+      persist: false,
+      type: 'option',
+      valueRules: [
+        {
+          value: 'Critical Event',
+          conditionOperator: 'AND',
+          conditions: [
+            {
+              fieldId: entityMapping.case_list.reportTypeAttributeId,
+              refFieldId: entityMapping.case_list.criticalEventRefFieldId,
+              operator: 'equals',
+              matchValues: ['Y'],
+            },
+          ],
+        },
+        {
+          value: 'Actions Due',
+          conditionOperator: 'AND',
+          conditions: [
+            {
+              fieldId: entityMapping.case_list.reportTypeAttributeId,
+              refFieldId: entityMapping.case_list.actionsDueRefFieldId,
+              operator: 'equals',
+              matchValues: ['Y'],
+            },
+          ],
+        },
+        {
+          value: 'Personal Scheduler',
+          conditionOperator: 'AND',
+          conditions: [
+            {
+              fieldId: entityMapping.case_list.reportTypeAttributeId,
+              refFieldId: entityMapping.case_list.personalSchedulerRefFieldId,
+              operator: 'equals',
+              matchValues: ['Y'],
+            },
+          ],
+        },
+        {
+          value: 'National Phase Report',
+          conditionOperator: 'AND',
+          conditions: [
+            {
+              fieldId: entityMapping.case_list.reportTypeAttributeId,
+              refFieldId: entityMapping.case_list.nationalPhaseRefFieldId,
+              operator: 'equals',
+              matchValues: ['National phase'],
+            },
+          ],
+        },
+      ],
+    },
+    {
       _id: derivedFieldMapping.caseListStatusPendingDerivedFieldId,
       name: 'Case Status',
       entityId: entityMapping.case_list.entityId,
