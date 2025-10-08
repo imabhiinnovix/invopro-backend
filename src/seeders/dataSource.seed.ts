@@ -1310,6 +1310,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'text-with-option',
+          mappedAttributeName: 'actiondue6',
         },
         {
           attributeId: entityDataSourceMap.action_due.stdActionsAttributeId,
@@ -1321,6 +1322,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'option',
+          mappedAttributeName: 'STDActions',
         },
         {
           attributeId: entityDataSourceMap.action_due.actionCategoryAttributeId,
@@ -1332,6 +1334,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'option',
+          mappedAttributeName: 'ActionCategory',
         },
         {
           attributeId: entityDataSourceMap.action_due.alertRequiredAttributeId,
@@ -1343,6 +1346,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'text',
+          mappedAttributeName: 'AlertRequired',
         },
       ],
       isShowMenu: true,
@@ -1372,6 +1376,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'text-with-option',
+          mappedAttributeName: 'AttorneyName',
         },
         {
           attributeId: entityDataSourceMap.formality_officers.foNameAttributeId,
@@ -1386,6 +1391,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'text-with-option',
+          mappedAttributeName: 'AttorneyName.FOName.FOName',
         },
       ],
       isShowMenu: true,
@@ -1415,6 +1421,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'text-with-option',
+          mappedAttributeName: 'FOName',
         },
         {
           attributeId: entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
@@ -1429,6 +1436,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'text-with-option',
+          mappedAttributeName: 'FOName.AttorneyName.AttorneyName',
         },
         {
           attributeId: entityDataSourceMap.formality_officers.foEmailAttributeId,
@@ -1440,6 +1448,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: true,
           isDerived: false,
           type: 'email',
+          mappedAttributeName: 'FOEmail',
         },
       ],
       isShowMenu: true,
