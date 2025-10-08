@@ -4,7 +4,7 @@
 import Entity from '../database/models/common/entity';
 import mongoose from 'mongoose';
 
-function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, updatedBy }) {
+function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizationId, createdBy, updatedBy }) {
   return [
     {
       _id: entityDataSourceMap.disclosure.entityId,
@@ -18,7 +18,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: true,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -28,7 +28,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -38,7 +38,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -48,7 +48,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -58,7 +58,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -68,7 +68,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -78,7 +78,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -88,7 +88,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -98,7 +98,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -108,7 +108,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -118,7 +118,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -128,7 +128,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -138,7 +138,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -148,7 +148,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -158,7 +158,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -168,7 +168,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -178,7 +178,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -200,7 +200,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -210,7 +210,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -220,7 +220,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -230,7 +230,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -240,7 +240,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -250,7 +250,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -260,7 +260,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -270,7 +270,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -280,7 +280,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -290,7 +290,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -300,7 +300,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -310,7 +310,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -320,7 +320,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -330,7 +330,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -340,7 +340,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -350,7 +350,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -360,7 +360,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -370,7 +370,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -380,7 +380,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -390,7 +390,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -400,7 +400,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -410,7 +410,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -420,7 +420,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -430,7 +430,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -440,7 +440,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -450,7 +450,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -460,7 +460,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -470,7 +470,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -480,7 +480,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -490,7 +490,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -500,7 +500,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -510,7 +510,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -520,7 +520,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -530,7 +530,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -540,7 +540,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -550,7 +550,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -560,7 +560,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -583,7 +583,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -593,7 +593,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -603,7 +603,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -613,7 +613,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -623,7 +623,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -633,7 +633,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -643,7 +643,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -653,7 +653,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -663,7 +663,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -673,7 +673,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -683,7 +683,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -693,7 +693,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -703,7 +703,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -713,7 +713,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -723,7 +723,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -733,7 +733,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -743,7 +743,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -753,7 +753,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -763,7 +763,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -773,7 +773,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -783,7 +783,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -793,7 +793,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -803,7 +803,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -813,7 +813,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -823,7 +823,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -833,7 +833,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -843,7 +843,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -853,7 +853,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -863,7 +863,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -873,7 +873,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -883,7 +883,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -893,7 +893,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -915,7 +915,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -925,7 +925,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -935,7 +935,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -945,7 +945,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -955,7 +955,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -965,7 +965,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -975,7 +975,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -985,7 +985,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -995,7 +995,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1005,7 +1005,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1015,7 +1015,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1025,7 +1025,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1035,7 +1035,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1045,7 +1045,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1055,7 +1055,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1065,7 +1065,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1075,7 +1075,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1085,7 +1085,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1095,7 +1095,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1105,7 +1105,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1115,7 +1115,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1125,7 +1125,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1135,7 +1135,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1145,7 +1145,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1155,7 +1155,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1165,7 +1165,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1175,7 +1175,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1185,7 +1185,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1195,7 +1195,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1205,7 +1205,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1215,7 +1215,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1225,7 +1225,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1235,7 +1235,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1245,7 +1245,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1255,7 +1255,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1265,7 +1265,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1275,7 +1275,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1285,7 +1285,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1295,7 +1295,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1305,7 +1305,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1315,7 +1315,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1325,7 +1325,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -1347,7 +1347,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1357,7 +1357,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1367,7 +1367,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1377,7 +1377,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1387,7 +1387,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1397,7 +1397,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1407,7 +1407,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1417,7 +1417,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1427,7 +1427,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1437,7 +1437,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1447,7 +1447,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -1469,7 +1469,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1479,7 +1479,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1489,7 +1489,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1499,7 +1499,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1509,7 +1509,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1519,7 +1519,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1529,7 +1529,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1539,7 +1539,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1549,7 +1549,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1559,7 +1559,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1569,7 +1569,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1579,7 +1579,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1589,7 +1589,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1599,7 +1599,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1609,7 +1609,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1619,7 +1619,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1629,7 +1629,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1639,7 +1639,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1649,7 +1649,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1659,7 +1659,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1669,7 +1669,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1679,7 +1679,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1689,7 +1689,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1699,7 +1699,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1709,7 +1709,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -1731,7 +1731,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1741,7 +1741,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1751,7 +1751,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1761,7 +1761,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1771,7 +1771,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1781,7 +1781,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1791,7 +1791,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1801,7 +1801,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1811,7 +1811,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1821,7 +1821,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1831,7 +1831,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1841,7 +1841,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1851,7 +1851,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1861,7 +1861,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1871,7 +1871,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1881,7 +1881,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1891,7 +1891,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1901,7 +1901,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1911,7 +1911,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1921,7 +1921,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1931,7 +1931,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1941,7 +1941,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1951,7 +1951,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1961,7 +1961,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -1971,7 +1971,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -1994,7 +1994,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2004,7 +2004,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2014,7 +2014,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2024,7 +2024,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2034,7 +2034,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2044,7 +2044,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2054,7 +2054,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2064,7 +2064,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2074,7 +2074,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2084,7 +2084,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2094,7 +2094,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2104,7 +2104,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2114,7 +2114,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2124,7 +2124,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2134,7 +2134,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2144,7 +2144,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2154,7 +2154,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2164,7 +2164,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2174,7 +2174,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2184,7 +2184,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -2206,7 +2206,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2216,7 +2216,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2226,7 +2226,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -2248,7 +2248,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2258,7 +2258,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -2280,7 +2280,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2290,7 +2290,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2300,7 +2300,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2310,7 +2310,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2320,7 +2320,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2330,7 +2330,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2340,7 +2340,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2350,7 +2350,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2360,7 +2360,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2370,7 +2370,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2380,7 +2380,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2390,7 +2390,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2400,7 +2400,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2410,7 +2410,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2420,7 +2420,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2430,7 +2430,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2440,7 +2440,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2450,7 +2450,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2460,7 +2460,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2470,7 +2470,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2480,7 +2480,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2490,7 +2490,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2500,7 +2500,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2510,7 +2510,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2520,7 +2520,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2530,7 +2530,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2540,7 +2540,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2550,7 +2550,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2560,7 +2560,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2570,7 +2570,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -2592,7 +2592,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2602,7 +2602,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2612,7 +2612,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2622,7 +2622,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2632,7 +2632,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2642,7 +2642,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2652,7 +2652,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2662,7 +2662,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2672,7 +2672,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2682,7 +2682,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2692,7 +2692,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2702,7 +2702,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2712,7 +2712,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2722,7 +2722,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2732,7 +2732,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2742,7 +2742,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2752,7 +2752,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2762,7 +2762,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2772,7 +2772,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2782,7 +2782,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2792,7 +2792,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2802,7 +2802,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2812,7 +2812,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2822,7 +2822,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2832,7 +2832,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2842,7 +2842,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2852,7 +2852,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2862,7 +2862,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2872,7 +2872,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2882,7 +2882,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2892,7 +2892,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -2913,7 +2913,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2923,7 +2923,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2933,7 +2933,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2943,7 +2943,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2953,7 +2953,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2963,7 +2963,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2973,7 +2973,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2983,7 +2983,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -2993,7 +2993,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3003,7 +3003,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3013,7 +3013,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3023,7 +3023,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3033,7 +3033,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3043,7 +3043,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3053,7 +3053,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3063,7 +3063,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3073,7 +3073,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3083,7 +3083,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3093,7 +3093,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3103,7 +3103,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3113,7 +3113,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3123,7 +3123,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3133,7 +3133,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3143,7 +3143,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3153,7 +3153,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3163,7 +3163,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3173,7 +3173,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3183,7 +3183,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3193,7 +3193,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3203,7 +3203,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3213,7 +3213,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -3234,7 +3234,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '679232a1753ceb4945e5b396',
+          optionAttributeId: attributeOptionMap.sbu.id,
           cleaner: [],
         },
         {
@@ -3244,7 +3244,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -3265,7 +3265,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '679232a1753ceb4945e5b396',
+          optionAttributeId: attributeOptionMap.sbu.id,
           cleaner: [],
         },
         {
@@ -3275,7 +3275,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -3296,7 +3296,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '679232a1753ceb4945e5b396',
+          optionAttributeId: attributeOptionMap.sbu.id,
           cleaner: [],
         },
         {
@@ -3306,7 +3306,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -3327,7 +3327,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: true,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3337,7 +3337,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3347,7 +3347,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3357,7 +3357,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3367,7 +3367,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3377,7 +3377,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3387,7 +3387,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3397,7 +3397,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3407,7 +3407,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3417,7 +3417,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3427,7 +3427,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3437,7 +3437,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3447,7 +3447,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3457,7 +3457,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3467,7 +3467,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3477,7 +3477,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3487,7 +3487,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3497,7 +3497,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3507,7 +3507,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3517,7 +3517,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3527,7 +3527,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3537,7 +3537,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3547,7 +3547,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3557,7 +3557,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3567,7 +3567,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3577,7 +3577,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3587,7 +3587,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3597,7 +3597,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3607,7 +3607,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3617,7 +3617,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3627,7 +3627,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3637,7 +3637,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3647,7 +3647,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3657,7 +3657,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3667,7 +3667,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3677,7 +3677,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3688,7 +3688,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -3710,7 +3710,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: true,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3720,7 +3720,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3730,7 +3730,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3740,7 +3740,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -3761,7 +3761,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: true,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3771,7 +3771,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3781,7 +3781,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3791,7 +3791,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -3812,7 +3812,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: true,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3822,7 +3822,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3832,7 +3832,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3842,7 +3842,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3852,7 +3852,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3862,7 +3862,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3872,7 +3872,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -3894,7 +3894,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: true,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3904,7 +3904,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3914,7 +3914,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3924,7 +3924,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3934,7 +3934,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3944,7 +3944,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3954,7 +3954,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -3975,7 +3975,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: true,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -3985,7 +3985,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -4006,7 +4006,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: true,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4016,7 +4016,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -4037,7 +4037,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: true,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4047,7 +4047,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -4068,7 +4068,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: true,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4078,7 +4078,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -4099,7 +4099,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4109,7 +4109,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4119,7 +4119,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4129,7 +4129,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4139,7 +4139,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4149,7 +4149,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4159,7 +4159,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4169,7 +4169,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4179,7 +4179,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4189,7 +4189,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4199,7 +4199,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4209,7 +4209,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4219,7 +4219,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4229,7 +4229,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4239,7 +4239,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4249,7 +4249,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4259,7 +4259,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4269,7 +4269,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4279,7 +4279,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4289,7 +4289,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4299,7 +4299,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4309,7 +4309,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4319,7 +4319,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4329,7 +4329,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4339,7 +4339,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4349,7 +4349,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4359,7 +4359,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4369,7 +4369,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4379,7 +4379,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -4401,7 +4401,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4411,7 +4411,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4421,7 +4421,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4431,7 +4431,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4441,7 +4441,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4451,7 +4451,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4461,7 +4461,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4471,7 +4471,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4481,7 +4481,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4491,7 +4491,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -4512,7 +4512,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: true,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4522,7 +4522,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4532,7 +4532,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4542,7 +4542,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4552,7 +4552,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -4573,7 +4573,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: true,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4583,7 +4583,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4593,7 +4593,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4603,7 +4603,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4613,7 +4613,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -4634,7 +4634,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: true,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4644,7 +4644,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4654,7 +4654,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4664,7 +4664,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4674,7 +4674,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4684,7 +4684,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4694,7 +4694,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -4715,7 +4715,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4725,7 +4725,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4735,7 +4735,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4745,7 +4745,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4755,7 +4755,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4765,7 +4765,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4775,7 +4775,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4785,7 +4785,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4795,7 +4795,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4805,7 +4805,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4815,7 +4815,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4825,7 +4825,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4835,7 +4835,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4845,7 +4845,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4855,7 +4855,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4865,7 +4865,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4875,7 +4875,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4885,7 +4885,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4895,7 +4895,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4905,7 +4905,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4915,7 +4915,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4925,7 +4925,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4935,7 +4935,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4945,7 +4945,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4955,7 +4955,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4965,7 +4965,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4975,7 +4975,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4985,7 +4985,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -4995,7 +4995,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5005,7 +5005,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5015,7 +5015,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5025,7 +5025,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5035,7 +5035,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5045,7 +5045,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5055,7 +5055,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5065,7 +5065,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5075,7 +5075,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5085,7 +5085,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5095,7 +5095,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5105,7 +5105,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5115,7 +5115,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5125,7 +5125,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5135,7 +5135,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5145,7 +5145,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5155,7 +5155,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5165,7 +5165,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5175,7 +5175,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5185,7 +5185,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5195,7 +5195,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5205,7 +5205,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5215,7 +5215,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5225,7 +5225,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5235,7 +5235,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5245,7 +5245,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5255,7 +5255,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5265,7 +5265,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5275,7 +5275,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5285,7 +5285,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5295,7 +5295,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5305,7 +5305,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5315,7 +5315,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5325,7 +5325,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5335,7 +5335,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5345,7 +5345,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5355,7 +5355,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5365,7 +5365,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5375,7 +5375,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5385,7 +5385,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5395,7 +5395,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5405,7 +5405,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5415,7 +5415,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5425,7 +5425,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5435,7 +5435,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5445,7 +5445,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5455,7 +5455,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5465,7 +5465,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5475,7 +5475,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5485,7 +5485,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5495,7 +5495,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5505,7 +5505,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5515,7 +5515,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5525,7 +5525,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -5546,7 +5546,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5556,7 +5556,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5566,7 +5566,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5576,7 +5576,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5586,7 +5586,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5596,7 +5596,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5606,7 +5606,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5616,7 +5616,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5626,7 +5626,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5636,7 +5636,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5646,7 +5646,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5656,7 +5656,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5666,7 +5666,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5676,7 +5676,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5686,7 +5686,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5696,7 +5696,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5706,7 +5706,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5716,7 +5716,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5726,7 +5726,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5736,7 +5736,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5746,7 +5746,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5756,7 +5756,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5766,7 +5766,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5776,7 +5776,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5786,7 +5786,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5796,7 +5796,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5806,7 +5806,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5816,7 +5816,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5826,7 +5826,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5836,7 +5836,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5846,7 +5846,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5856,7 +5856,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5866,7 +5866,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5876,7 +5876,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5886,7 +5886,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5896,7 +5896,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5906,7 +5906,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5916,7 +5916,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5926,7 +5926,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5936,7 +5936,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5946,7 +5946,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5956,7 +5956,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -5977,7 +5977,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5987,7 +5987,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -5997,7 +5997,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6007,7 +6007,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6017,7 +6017,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6027,7 +6027,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6037,7 +6037,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6047,7 +6047,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6057,7 +6057,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6067,7 +6067,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6077,7 +6077,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6087,7 +6087,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6097,7 +6097,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6107,7 +6107,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6117,7 +6117,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6127,7 +6127,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6137,7 +6137,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6147,7 +6147,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6157,7 +6157,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6167,7 +6167,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6177,7 +6177,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6187,7 +6187,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6197,7 +6197,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6207,7 +6207,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6217,7 +6217,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6227,7 +6227,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6237,7 +6237,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6247,7 +6247,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6257,7 +6257,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6267,7 +6267,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6277,7 +6277,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6287,7 +6287,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6297,7 +6297,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6307,7 +6307,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6317,7 +6317,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6327,7 +6327,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
         {
@@ -6337,7 +6337,7 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
         },
       ],
@@ -6345,6 +6345,240 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
       createdBy,
       isActive: true,
       __v: 0,
+    },
+    {
+      name: 'Action Due',
+      _id: entityDataSourceMap.action_due.entityId,
+      description: '',
+      attributes: [
+        {
+          name: 'actiondue6',
+          mappingName: 'actiondue',
+          type: 'text-with-option',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: attributeOptionMap.actionDue.id,
+          isReferenceEditable: 'EDIT',
+          cleaner: [],
+          _id: entityDataSourceMap.action_due.actionDueAttributeId,
+        },
+        {
+          name: 'STDActions',
+          mappingName: 'STD. Actions',
+          type: 'text',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: attributeOptionMap.stdAction.id,
+          isReferenceEditable: 'HIDE',
+          cleaner: [],
+          _id: entityDataSourceMap.action_due.stdActionsAttributeId,
+        },
+        {
+          name: 'ActionCategory',
+          mappingName: 'Action Category',
+          type: 'option',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: attributeOptionMap.actionCategory.id,
+          cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.action_due.actionCategoryAttributeId,
+        },
+        {
+          name: 'AlertRequired',
+          mappingName: 'Alert Required?',
+          type: 'text',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: null,
+          cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.action_due.alertRequiredAttributeId,
+        },
+        {
+          name: 'ReportCriticalEvent',
+          mappingName: 'Report Critical Event',
+          type: 'text',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: null,
+          cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.action_due.reportCriticalEventAttributeId,
+        },
+        {
+          name: 'ReportPersonalScheduler',
+          mappingName: 'Report Personal Scheduler',
+          type: 'text',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: null,
+          cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.action_due.reportPersonalSchedulerAttributeId,
+        },
+        {
+          name: 'Report Actions Due',
+          mappingName: 'Report Actions Due',
+          type: 'text',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: null,
+          cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.action_due.reportActionsDueAttributeId,
+        },
+        {
+          name: 'Excluded',
+          mappingName: 'Excluded',
+          type: 'text',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: null,
+          cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.action_due.excludedAttributeId,
+        },
+      ],
+      organizationId,
+      createdBy,
+      isActive: true,
+    },
+
+    {
+      _id: entityDataSourceMap.formality_officers.entityId,
+      name: 'Formality Officer',
+      description: '',
+      attributes: [
+        {
+          name: 'FOName',
+          mappingName: 'FO Name',
+          type: 'text-with-option',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: attributeOptionMap.foName.id,
+          referenceEntitySetting: {
+            refEntityId: entityDataSourceMap.attorney_fo_mapping.entityId,
+            refEntityField: entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
+            relationType: 'mapping_many_to_one',
+          },
+          isReferenceEditable: 'EDIT',
+          cleaner: [],
+          _id: entityDataSourceMap.formality_officers.foNameAttributeId,
+        },
+        {
+          name: 'FOEmail',
+          mappingName: 'Email ID',
+          type: 'email',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: null,
+          isReferenceEditable: 'HIDE',
+          cleaner: [],
+          _id: entityDataSourceMap.formality_officers.foEmailAttributeId,
+        },
+        {
+          name: 'Escalation1',
+          mappingName: 'Escalation 1',
+          type: 'text',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: null,
+          cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.formality_officers.escalation1AttributeId,
+        },
+        {
+          name: 'Escalation1EmailID',
+          mappingName: 'Escalation 1 Email ID',
+          type: 'email',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: null,
+          cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.formality_officers.escalation1EmailIDAttributeId,
+        },
+        {
+          name: 'Escalation2',
+          mappingName: 'Escalation 2',
+          type: 'text',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: null,
+          cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.formality_officers.escalation2AttributeId,
+        },
+        {
+          name: 'Escalation2EmailID',
+          mappingName: 'Escalation 2 Email ID',
+          type: 'email',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: null,
+          cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.formality_officers.escalation2EmailIDAttributeId,
+        },
+      ],
+      organizationId,
+      createdBy,
+      isActive: true,
+      __v: 0,
+    },
+    {
+      _id: entityDataSourceMap.ip_counsel.entityId,
+      name: 'IP Counsels',
+      description: '',
+      attributes: [
+        {
+          name: 'AttorneyName',
+          mappingName: 'Attorney Name',
+          type: 'text-with-option',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: attributeOptionMap.attorneyName.id,
+          referenceEntitySetting: {
+            refEntityId: entityDataSourceMap.attorney_fo_mapping.entityId,
+            refEntityField: entityDataSourceMap.attorney_fo_mapping.attorneyNameAttributeId,
+            relationType: 'mapping_many_to_one',
+          },
+          isReferenceEditable: 'VIEW',
+          cleaner: [],
+          _id: entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
+        },
+        {
+          name: 'Email',
+          mappingName: 'Email',
+          type: 'email',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: null,
+          cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.ip_counsel.emailAttributeId,
+        },
+      ],
+      organizationId,
+      createdBy,
+      isActive: true,
     },
     {
       _id: entityDataSourceMap.case_list.entityId,
@@ -6355,11 +6589,13 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           name: 'CaseNumber',
           mappingName: 'CaseNumber',
           type: 'text',
-          required: true,
+          required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.caseNumberAttributeId,
         },
         {
           name: 'OtherReferenceNumber',
@@ -6368,8 +6604,10 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.otherReferenceNumberAttributeId,
         },
         {
           name: 'Title',
@@ -6378,8 +6616,10 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.titleAttributeId,
         },
         {
           name: 'Status',
@@ -6388,28 +6628,39 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.statusAttributeId,
         },
         {
           name: 'ActionDue',
           mappingName: 'ActionDue',
-          type: 'text',
+          type: 'option',
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: attributeOptionMap.actionDue.id,
           cleaner: [],
+          referenceEntitySetting: {
+            refEntityId: entityDataSourceMap.action_due.entityId,
+            refEntityField: entityDataSourceMap.action_due.actionDueAttributeId,
+            relationType: 'many_to_one',
+          },
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.actionDueAttributeId,
         },
         {
           name: 'DueDate',
           mappingName: 'DueDate',
-          type: 'date',
+          type: 'date-range',
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.dueDateAttributeId,
         },
         {
           name: 'DateTaken',
@@ -6418,8 +6669,10 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.dateTakenAttributeId,
         },
         {
           name: 'Remarks',
@@ -6428,18 +6681,27 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.remarksAttributeId,
         },
         {
           name: 'Attorney',
           mappingName: 'Attorney',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: attributeOptionMap.attorneyName.id,
           cleaner: [],
+          referenceEntitySetting: {
+            refEntityId: entityDataSourceMap.ip_counsel.entityId,
+            refEntityField: entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
+            relationType: 'many_to_one',
+          },
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.attorneyAttributeId,
         },
         {
           name: 'LegalAssistant',
@@ -6448,8 +6710,10 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.legalAssistantAttributeId,
         },
         {
           name: 'Assignedto',
@@ -6458,38 +6722,46 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.assignedToAttributeId,
         },
         {
           name: 'ProcedureAgentName',
           mappingName: 'ProcedureAgentName',
-          type: 'text',
+          type: 'multioption',
+          optionAttributeId: attributeOptionMap.procedureAgentName.id,
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.procedureAgentNameAttributeId,
         },
         {
           name: 'LocalAgentName',
           mappingName: 'LocalAgentName',
-          type: 'text',
+          type: 'multioption',
+          optionAttributeId: attributeOptionMap.localAgentName.id,
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.localAgentNameAttributeId,
         },
         {
           name: 'SBU',
           mappingName: 'SBU',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: attributeOptionMap.notivixSBU.id,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.sbuAttributeId,
         },
         {
           name: 'BU',
@@ -6498,8 +6770,10 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.buAttributeId,
         },
         {
           name: 'BL',
@@ -6508,18 +6782,22 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.blAttributeId,
         },
         {
           name: 'Country',
           mappingName: 'Country',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: attributeOptionMap.country.id,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.countryAttributeId,
         },
         {
           name: 'CaseType',
@@ -6528,18 +6806,34 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.caseTypeAttributeId,
         },
         {
           name: 'ActiveSwitch',
           mappingName: 'ActiveSwitch',
-          type: 'number',
+          type: 'text',
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: null,
           cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.activeSwitchAttributeId,
+        },
+        {
+          name: 'DisclosureNumber',
+          mappingName: 'DisclosureNumber',
+          type: 'text',
+          required: false,
+          validation: [],
+          transformations: [],
+          optionAttributeId: null,
+          cleaner: [],
+          isReferenceEditable: 'HIDE',
+          _id: entityDataSourceMap.case_list.disclosureAttributeId,
         },
       ],
       organizationId,
@@ -6547,184 +6841,108 @@ function getEntityToBeSeed({ entityDataSourceMap, organizationId, createdBy, upd
       isActive: true,
     },
     {
-      name: 'Action Due',
-      _id: entityDataSourceMap.action_due.entityId,
-      description: '',
-      attributes: [
-        {
-          name: 'actiondue',
-          mappingName: 'actiondue',
-          type: 'text',
-          required: false,
-          validation: [],
-          transformations: [],
-          optionAttributeId: '',
-          cleaner: [],
-        },
-        {
-          name: 'STDActions',
-          mappingName: 'STD. Actions',
-          type: 'text',
-          required: false,
-          validation: [],
-          transformations: [],
-          optionAttributeId: '',
-          cleaner: [],
-        },
-        {
-          name: 'ActionCategory',
-          mappingName: 'Action Category',
-          type: 'text',
-          required: false,
-          validation: [],
-          transformations: [],
-          optionAttributeId: '',
-          cleaner: [],
-        },
-        {
-          name: 'AlertRequired',
-          mappingName: 'Alert Required?',
-          type: 'text',
-          required: false,
-          validation: [],
-          transformations: [],
-          optionAttributeId: '',
-          cleaner: [],
-        },
-        {
-          name: 'ReportCriticalEvent',
-          mappingName: 'Report Critical Event',
-          type: 'text',
-          required: false,
-          validation: [],
-          transformations: [],
-          optionAttributeId: '',
-          cleaner: [],
-        },
-        {
-          name: 'ReportPersonalScheduler',
-          mappingName: 'Report Personal Scheduler',
-          type: 'text',
-          required: false,
-          validation: [],
-          transformations: [],
-          optionAttributeId: '',
-          cleaner: [],
-        },
-        {
-          name: 'Report Actions Due',
-          mappingName: 'Report Actions Due',
-          type: 'text',
-          required: false,
-          validation: [],
-          transformations: [],
-          optionAttributeId: '',
-          cleaner: [],
-        },
-      ],
-      organizationId,
-      createdBy,
-      isActive: true,
-    },
-    {
-      _id: entityDataSourceMap.ip_counsel.entityId,
-      name: 'IP Counsel',
-      description: '',
+      _id: entityDataSourceMap.attorney_fo_mapping.entityId,
+      name: 'Attorney FO Mapping',
+      description: 'Attorney FO Mapping ',
       attributes: [
         {
           name: 'AttorneyName',
           mappingName: 'Attorney Name',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: attributeOptionMap.attorneyName.id,
           cleaner: [],
+          referenceEntitySetting: {
+            refEntityId: entityDataSourceMap.ip_counsel.entityId,
+            refEntityField: entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
+            relationType: 'many_to_one',
+          },
+          isReferenceEditable: 'VIEW',
+          _id: entityDataSourceMap.attorney_fo_mapping.attorneyNameAttributeId,
         },
-        {
-          name: 'FormalityOfficerFO',
-          mappingName: 'Formality Officer (FO)',
-          type: 'text',
-          required: false,
-          validation: [],
-          transformations: [],
-          optionAttributeId: '',
-          cleaner: [],
-        },
-      ],
-      organizationId,
-      createdBy,
-      isActive: true,
-    },
-    {
-      _id: entityDataSourceMap.formality_officers.entityId,
-      name: 'Formality Officers',
-      description: '',
-      attributes: [
         {
           name: 'FOName',
           mappingName: 'FO Name',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: '',
+          optionAttributeId: attributeOptionMap.foName.id,
           cleaner: [],
-        },
-        {
-          name: 'FOEmail',
-          mappingName: 'FO Email',
-          type: 'text',
-          required: false,
-          validation: [],
-          transformations: [],
-          optionAttributeId: '',
-          cleaner: [],
-        },
-        {
-          name: 'ManagerName',
-          mappingName: 'Manager Name',
-          type: 'text',
-          required: false,
-          validation: [],
-          transformations: [],
-          optionAttributeId: '',
-          cleaner: [],
+          referenceEntitySetting: {
+            refEntityId: entityDataSourceMap.formality_officers.entityId,
+            refEntityField: entityDataSourceMap.formality_officers.foNameAttributeId,
+            relationType: 'many_to_one',
+          },
+          isReferenceEditable: 'EDIT',
+          _id: entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
         },
       ],
       organizationId,
       createdBy,
       isActive: true,
-      __v: 0,
     },
   ];
 }
-export async function seedEntities({ organizationId, createdBy, updatedBy, entityDataSourceMap }) {
+// export async function seedEntities({ organizationId, createdBy, updatedBy, entityDataSourceMap, attributeOptionMap }) {
+//   const entities = getEntityToBeSeed({
+//     entityDataSourceMap,
+//     attributeOptionMap,
+//     organizationId,
+//     createdBy,
+//     updatedBy,
+//   });
+
+//   for (const entity of entities) {
+//     // check both id and unique keys (name + orgId)
+//     const existingEntity = await Entity.findOne({
+//       $or: [{ _id: entity._id }, { name: entity.name, organizationId: entity.organizationId }],
+//     });
+
+//     if (!existingEntity) {
+//       const newEntity = new Entity(entity);
+//       await newEntity.save();
+//       console.info(`New entity '${entity.name}' created successfully.`);
+//     } else {
+//       console.info(`Entity '${entity.name}' already exists for org ${entity.organizationId}. Skipping.`);
+//     }
+//   }
+// }
+
+export async function seedEntities({ organizationId, createdBy, updatedBy, entityDataSourceMap, attributeOptionMap }) {
+  console.log(entityDataSourceMap);
   const entities = getEntityToBeSeed({
     entityDataSourceMap,
     organizationId,
     createdBy,
     updatedBy,
+    attributeOptionMap,
   });
 
   for (const entity of entities) {
-  // check both id and unique keys (name + orgId)
-  const existingEntity = await Entity.findOne({
-    $or: [
-      { _id: entity._id },
-      { name: entity.name, organizationId: entity.organizationId },
-    ],
-  });
+    try {
+      // Use findByIdAndUpdate with upsert option
+      const result = await Entity.findByIdAndUpdate(
+        entity._id,
+        {
+          ...entity,
+        },
+        {
+          upsert: true, // Create if doesn't exist
+          new: true, // Return the updated document
+          runValidators: true, // Run schema validations
+        }
+      );
 
-  if (!existingEntity) {
-    const newEntity = new Entity(entity);
-    await newEntity.save();
-    console.info(`New entity '${entity.name}' created successfully.`);
-  } else {
-    console.info(
-      `Entity '${entity.name}' already exists for org ${entity.organizationId}. Skipping.`
-    );
+      if (result.isNew) {
+        console.info(`New entity created with ID: ${entity._id}`);
+      } else {
+        console.info(`Entity updated with ID: ${entity._id}`);
+      }
+    } catch (error) {
+      console.error(`Error upserting entity with ID ${entity._id}:`, error);
+    }
   }
-}
-
 }

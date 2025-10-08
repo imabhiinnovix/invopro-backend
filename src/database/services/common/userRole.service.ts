@@ -134,29 +134,28 @@ export const updateRole = async ({
     if (name !== undefined) updateData.name = name;
 
     const updatedRole = await UserRole.findByIdAndUpdate(roleId, updateData, { new: true });
-
     if (!updatedRole) throw new Error('Role not found');
 
-    // 2. If permissionIds provided, validate and update role_permission mapping
+    // 2. Update permissions only if provided
     if (permissionIds) {
-      // Validate
+      // 🔹 Delete only changeable ones
+      await RoleHasPermission.deleteMany({ roleId, isChangeable: true });
+
+      // 🔹 Validate only changeable permissionIds
       const validPermissions = await Permission.find({
+        isChangeable: true,
         _id: { $in: permissionIds },
-      });
+      }).select('_id');
 
-      if (validPermissions.length !== permissionIds.length) {
-        throw new Error('Some permissionIds are invalid.');
-      }
-
-      // Remove existing role-permission mappings
-      await RoleHasPermission.deleteMany({ roleId });
-
-      // Insert new mappings
-      const rolePermissionDocs = permissionIds.map((permId) => ({
+      // 🔹 Create new mappings (isChangeable: true)
+      const rolePermissionDocs = validPermissions.map((perm) => ({
         roleId: updatedRole._id,
-        permissionId: permId,
+        permissionId: perm._id,
+        isChangeable: true,
+        updatedBy: userId,
       }));
 
+      // 🔹 Insert only changeable ones
       await RoleHasPermission.insertMany(rolePermissionDocs);
     }
 
