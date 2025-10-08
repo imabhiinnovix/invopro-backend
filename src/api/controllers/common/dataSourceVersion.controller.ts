@@ -1759,7 +1759,7 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       status: 'active',
     };
 
-    await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, [newRow]);
+    const newRowData = await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, [newRow]);
 
     // 🔹 Handle reference subfields
     await handleReferenceSubFields({
@@ -1802,7 +1802,7 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         errorSchema,
         { dataSourceVersionId: new ObjectId(errorDataSourceVersionId), rowNumber: { $in: rowNumbersToUpdate } },
-        {},
+        { [`rowData.${attributeName}`]: newRowData[0]._id},
         {
           isErrorLog: -1,
         }
