@@ -41,34 +41,18 @@ export const seedAttributeOptions = async ({ organizationId, createdBy, updatedB
         organizationId: item.organizationId,
       });
 
-      if (existingUniqueKey) continue;
-      if (existing) {
-        // ✅ Update only if it exists
-        await AttributeOption.findByIdAndUpdate(
-          item.id,
-          {
-            $set: {
-              attributeName: item.attributeName,
-              organizationId: new mongoose.Types.ObjectId(organizationId),
-              attributeValue: item.attributeValue,
-              isActive: true,
-              updatedBy: item.updatedBy,
-            },
-          },
-          { new: true }
-        );
-      } else {
-        // ✅ Insert only if not exists
-        await AttributeOption.create({
-          _id: new mongoose.Types.ObjectId(item.id),
-          attributeName: item.attributeName,
-          organizationId: new mongoose.Types.ObjectId(organizationId),
-          attributeValue: item.attributeValue,
-          isActive: true,
-          createdBy: item.createdBy,
-          updatedBy: item.updatedBy,
-        });
-      }
+      if (existing || existingUniqueKey) continue;
+
+      // ✅ Insert only if not exists
+      await AttributeOption.create({
+        _id: new mongoose.Types.ObjectId(item.id),
+        attributeName: item.attributeName,
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+        attributeValue: item.attributeValue,
+        isActive: true,
+        createdBy: item.createdBy,
+        updatedBy: item.updatedBy,
+      });
     }
 
     console.log('✅ Attribute options seeded successfully');
