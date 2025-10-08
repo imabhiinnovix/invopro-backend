@@ -755,9 +755,10 @@ const attributeOptionMapSabic = {
   },
 };
 
-const derivedFieldReportivix = {
+const derivedField = {
   inHouseDerivedFieldId: new mongoose.Types.ObjectId('68d646483c915b838889d92c'),
   caseListStatusPendingDerivedFieldId: new mongoose.Types.ObjectId('68d646f33c915b838889d936'),
+  reportCategoryDerivedFieldId: new mongoose.Types.ObjectId('68d646ca3c915b838889d930'),
 };
 
 export async function seedDatabase() {
@@ -945,6 +946,7 @@ export async function seedDatabase() {
       createdBy: payload.reportivixSuperAdminUserId,
       updatedBy: payload.reportivixSuperAdminUserId,
       entityDataSourceMap: entityDataSourceMapReportivix,
+      derivedFieldMapping: derivedField,
     });
 
     console.info('\n====> Seeding Custom Report Reportivx<====');
@@ -969,10 +971,11 @@ export async function seedDatabase() {
       createdBy: payload.sabicAdminUserId,
       updatedBy: payload.sabicAdminUserId,
       entityDataSourceMap: entityDataSourceMapSabic,
+      derivedFieldMapping: derivedField,
     });
 
     await seedDerivedField({
-      derivedFieldMapping: derivedFieldReportivix,
+      derivedFieldMapping: derivedField,
       entityMapping: entityDataSourceMapReportivix,
     });
     console.info('\n====> Seeding Custom Report Sabic<====');
