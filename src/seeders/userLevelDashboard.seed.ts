@@ -14,6 +14,7 @@ export async function seedDashboardsForOrganization({
   dashboardDescription,
   dashboardSettings,
   widgets,
+  entityDataSourceMap,
 }: {
   organizationId: Types.ObjectId;
   widgetThemeId: Types.ObjectId;
@@ -21,6 +22,7 @@ export async function seedDashboardsForOrganization({
   dashboardDescription?: string;
   dashboardSettings?: any;
   widgets?: any[];
+  entityDataSourceMap: any;
 }) {
   try {
     // Fetch all users for this organization
@@ -51,12 +53,14 @@ export async function seedDashboardsForOrganization({
         widgetThemeId: widgetThemeId,
         name: dashboardName,
         description: dashboardDescription || '',
+        isDefaultNotivix: true,
         settings: {
           columnsGrid: 2,
           dashboardType: 'normal',
           startVersionValue: '',
           endVersionValue: '',
           dynamicVersionValue: '1m',
+          dataSourceId: entityDataSourceMap.case_list.dataSourceId,
         },
         isActive: true,
         isShareble: false,
