@@ -1170,7 +1170,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isSortingEnable: false,
           isDisplayEnable: true,
           isDerived: false,
-          type: 'multioption',
+          type: 'text',
           mappedAttributeName: 'LegalAssistant',
         },
         {
