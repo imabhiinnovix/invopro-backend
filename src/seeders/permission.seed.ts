@@ -11,6 +11,7 @@ let permissions = [
     extraOptions: {},
     resourceType: 'User',
     resourceCode: 'user__list',
+    isChangeable: true,
   },
   {
     name: 'Get Current User',
@@ -19,6 +20,7 @@ let permissions = [
     extraOptions: {},
     resourceType: 'User',
     isSuperUser: false,
+    isChangeable: false,
     resourceCode: 'user__get_current_user',
   },
   {
@@ -27,6 +29,7 @@ let permissions = [
     resourceId: '/common/user/:userId',
     resourceType: 'User',
     isSuperUser: false,
+    isChangeable: true,
     resourceCode: 'user__get_user',
   },
   {
@@ -37,6 +40,7 @@ let permissions = [
     resourceType: 'User',
     resourceCode: 'user__create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Current User',
@@ -46,6 +50,7 @@ let permissions = [
     resourceType: 'User',
     resourceCode: 'user__update_current_user',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Current User Password',
@@ -55,6 +60,7 @@ let permissions = [
     resourceType: 'User',
     resourceCode: 'user__change_password',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update User',
@@ -64,6 +70,7 @@ let permissions = [
     resourceType: 'User',
     resourceCode: 'user__update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete User',
@@ -73,6 +80,7 @@ let permissions = [
     resourceType: 'User',
     resourceCode: 'user__delete',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Permission',
@@ -82,6 +90,7 @@ let permissions = [
     resourceType: 'Permission',
     resourceCode: 'permission__list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Permission',
@@ -91,6 +100,7 @@ let permissions = [
     resourceType: 'Permission',
     resourceCode: 'permission__create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Permission',
@@ -100,6 +110,7 @@ let permissions = [
     resourceType: 'Permission',
     resourceCode: 'permission__update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Permission',
@@ -109,6 +120,7 @@ let permissions = [
     resourceType: 'Permission',
     resourceCode: 'permission__delete',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Role',
@@ -118,6 +130,7 @@ let permissions = [
     resourceType: 'Role',
     resourceCode: 'role__list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Role Permission',
@@ -127,6 +140,7 @@ let permissions = [
     resourceType: 'Role',
     resourceCode: 'role__permission_list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Role',
@@ -136,6 +150,7 @@ let permissions = [
     resourceType: 'Role',
     resourceCode: 'role__create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Role',
@@ -145,6 +160,7 @@ let permissions = [
     resourceType: 'Role',
     resourceCode: 'role__update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Role',
@@ -154,6 +170,7 @@ let permissions = [
     resourceType: 'Role',
     resourceCode: 'role__delete',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Product List',
@@ -217,6 +234,7 @@ let permissions = [
     resourceType: 'Organization',
     resourceCode: 'organization__get_current',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Organization Product Subscription List',
@@ -235,6 +253,7 @@ let permissions = [
     resourceType: 'Entities',
     resourceCode: 'entities__list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Entity Details',
@@ -244,6 +263,7 @@ let permissions = [
     resourceType: 'Entities',
     resourceCode: 'entities__get',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Entity Details',
@@ -253,6 +273,7 @@ let permissions = [
     resourceType: 'Entities',
     resourceCode: 'entities__update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Entity',
@@ -262,6 +283,7 @@ let permissions = [
     resourceType: 'Entities',
     resourceCode: 'entities__create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Check Data Source Code Availability',
@@ -271,6 +293,7 @@ let permissions = [
     resourceType: 'Data Source',
     resourceCode: 'dataSource__check_code',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Check Data Source Name Availability',
@@ -280,6 +303,7 @@ let permissions = [
     resourceType: 'Data Source',
     resourceCode: 'dataSource__check_name',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Data Source',
@@ -289,6 +313,7 @@ let permissions = [
     resourceType: 'Data Source',
     resourceCode: 'dataSource__create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Data Source',
@@ -298,6 +323,7 @@ let permissions = [
     resourceType: 'Data Source',
     resourceCode: 'dataSource__update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Data Sources',
@@ -307,6 +333,7 @@ let permissions = [
     resourceType: 'Data Source',
     resourceCode: 'dataSource__list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Data Source By ID',
@@ -316,6 +343,7 @@ let permissions = [
     resourceType: 'Data Source',
     resourceCode: 'dataSource__get',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Widget Data By Filter',
@@ -325,6 +353,7 @@ let permissions = [
     resourceType: 'Data Source',
     resourceCode: 'dataSource__get_widget_data',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Attribute Option',
@@ -334,6 +363,7 @@ let permissions = [
     resourceType: 'Attribute Option',
     resourceCode: 'attributeOption__create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Attribute Option',
@@ -343,6 +373,7 @@ let permissions = [
     resourceType: 'Attribute Option',
     resourceCode: 'attributeOption__update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Attribute Options',
@@ -352,6 +383,7 @@ let permissions = [
     resourceType: 'Attribute Option',
     resourceCode: 'attributeOption__list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Attribute Option By ID',
@@ -361,6 +393,7 @@ let permissions = [
     resourceType: 'Attribute Option',
     resourceCode: 'attributeOption__get',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'File Upload',
@@ -370,6 +403,7 @@ let permissions = [
     resourceType: 'File Upload',
     resourceCode: 'fileUpload__upload',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Data Source Versions',
@@ -379,6 +413,7 @@ let permissions = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion__list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Check Data Source Version Name Availability',
@@ -389,6 +424,7 @@ let permissions = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion__check_name',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create or Update Data Source Version Value',
@@ -398,6 +434,7 @@ let permissions = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion__create_update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Data Source Version Data by Data Source and Version Value',
@@ -407,6 +444,7 @@ let permissions = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion__get_data',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Data Source Version Value',
@@ -416,6 +454,7 @@ let permissions = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion_create_data',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Data Source Version Value',
@@ -425,6 +464,7 @@ let permissions = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion_update_data',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Data Source Version Value',
@@ -434,6 +474,7 @@ let permissions = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion_delete_data',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Latest Data Source Version Detail by Custom Report ID',
@@ -443,6 +484,7 @@ let permissions = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion__get_latest_detail',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List All Available Data Source Version Values',
@@ -452,6 +494,7 @@ let permissions = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion__list_all_available',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Chart Data',
@@ -462,6 +505,7 @@ let permissions = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion__get_chart_data',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Data Import Errors',
@@ -471,6 +515,7 @@ let permissions = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion__list_import_errors',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Dashboards',
@@ -480,6 +525,7 @@ let permissions = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Dashboard By ID',
@@ -489,6 +535,7 @@ let permissions = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__get',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Dashboard',
@@ -498,6 +545,7 @@ let permissions = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Dashboard',
@@ -507,6 +555,7 @@ let permissions = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Dashboard',
@@ -516,6 +565,7 @@ let permissions = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__delete',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Select Dashboard Theme',
@@ -525,6 +575,7 @@ let permissions = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__select_theme',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Dashboard Widgets',
@@ -534,6 +585,7 @@ let permissions = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__get_widgets',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Widget Data',
@@ -543,6 +595,7 @@ let permissions = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__get_widget_data',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Widget',
@@ -552,6 +605,7 @@ let permissions = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__create_widget',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Save Dashboard Widgets',
@@ -561,6 +615,7 @@ let permissions = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__save_widgets',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Widget',
@@ -570,6 +625,7 @@ let permissions = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__update_widget',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Widget',
@@ -579,6 +635,7 @@ let permissions = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__delete_widget',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Widget Type',
@@ -615,6 +672,7 @@ let permissions = [
     resourceType: 'Widget Type',
     resourceCode: 'widgetType__get',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Widget Types',
@@ -624,6 +682,7 @@ let permissions = [
     resourceType: 'Widget Type',
     resourceCode: 'widgetType__list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Operator By ID',
@@ -633,6 +692,7 @@ let permissions = [
     resourceType: 'Operator',
     resourceCode: 'operator__get',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Operators',
@@ -642,6 +702,7 @@ let permissions = [
     resourceType: 'Operator',
     resourceCode: 'operator__list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Operator',
@@ -669,6 +730,7 @@ let permissions = [
     resourceType: 'get_data_by_version_idWidget Theme',
     resourceCode: 'widgetTheme__list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Widget Theme By ID',
@@ -678,6 +740,7 @@ let permissions = [
     resourceType: 'Widget Theme',
     resourceCode: 'widgetTheme__get',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Widget Theme',
@@ -687,6 +750,7 @@ let permissions = [
     resourceType: 'Widget Theme',
     resourceCode: 'widgetTheme__create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Duplicate Widget Theme',
@@ -696,6 +760,7 @@ let permissions = [
     resourceType: 'Widget Theme',
     resourceCode: 'widgetTheme__duplicate',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Widget Theme',
@@ -705,6 +770,7 @@ let permissions = [
     resourceType: 'Widget Theme',
     resourceCode: 'widgetTheme__update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Widget Theme',
@@ -714,6 +780,7 @@ let permissions = [
     resourceType: 'Widget Theme',
     resourceCode: 'widgetTheme__delete',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Dashboard Shares',
@@ -723,6 +790,7 @@ let permissions = [
     resourceType: 'Dashboard Share',
     resourceCode: 'dashboardShare__list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Dashboard Share',
@@ -732,6 +800,7 @@ let permissions = [
     resourceType: 'Dashboard Share',
     resourceCode: 'dashboardShare__create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Dashboard Share',
@@ -741,6 +810,7 @@ let permissions = [
     resourceType: 'Dashboard Share',
     resourceCode: 'dashboardShare__delete',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Custom Reports',
@@ -750,6 +820,7 @@ let permissions = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Report Requests',
@@ -759,6 +830,7 @@ let permissions = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__list_requests',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Report Version Values',
@@ -768,6 +840,7 @@ let permissions = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__get_version_values',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Generate Custom Report',
@@ -777,6 +850,7 @@ let permissions = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__generate',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Download Report',
@@ -786,6 +860,7 @@ let permissions = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__download',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Report Data by Data Source Version ID',
@@ -795,6 +870,7 @@ let permissions = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__get_data_by_version_id',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Custom Report Design Details',
@@ -804,6 +880,7 @@ let permissions = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__get_design_details',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Report Request Details',
@@ -813,6 +890,7 @@ let permissions = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__get_request_details',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Custom Report Data by Data Source & Version Range',
@@ -822,6 +900,7 @@ let permissions = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__get_data_by_range',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Custom Report Settings',
@@ -831,6 +910,7 @@ let permissions = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__list_settings',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Custom Report Settings',
@@ -840,6 +920,7 @@ let permissions = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__update_settings',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Run Natural Language Query',
@@ -849,6 +930,7 @@ let permissions = [
     resourceType: 'NL Query',
     resourceCode: 'nlQuery__get_data',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Run Natural Language Insights',
@@ -858,6 +940,7 @@ let permissions = [
     resourceType: 'NL Query',
     resourceCode: 'nlQuery__insights',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Derived Field',
@@ -867,6 +950,7 @@ let permissions = [
     resourceType: 'Derived Field',
     resourceCode: 'derived_field_create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Derived Field',
@@ -876,6 +960,7 @@ let permissions = [
     resourceType: 'Derived Field',
     resourceCode: 'derived_field_update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Derived Field',
@@ -885,6 +970,7 @@ let permissions = [
     resourceType: 'Derived Field',
     resourceCode: 'derived_field_delete',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Derived Fields',
@@ -894,6 +980,7 @@ let permissions = [
     resourceType: 'Derived Field',
     resourceCode: 'derived_field_list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Derived Field',
@@ -903,6 +990,7 @@ let permissions = [
     resourceType: 'Derived Field',
     resourceCode: 'derived_field_get',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Notification Types',
@@ -912,6 +1000,7 @@ let permissions = [
     resourceType: 'Notification Setting Type',
     resourceCode: 'notification_setting_type_list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Notification Type',
@@ -921,6 +1010,7 @@ let permissions = [
     resourceType: 'Notification Setting Type',
     resourceCode: 'notification_setting_type_create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Notification Type',
@@ -930,6 +1020,7 @@ let permissions = [
     resourceType: 'Notification Setting Type',
     resourceCode: 'notification_setting_type_update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Notification Type',
@@ -939,6 +1030,7 @@ let permissions = [
     resourceType: 'Notification Setting Type',
     resourceCode: 'notification_setting_type_delete',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Notification Type',
@@ -948,6 +1040,7 @@ let permissions = [
     resourceType: 'Notification Setting Type',
     resourceCode: 'notification_setting_type_get',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Notification Frequencies',
@@ -957,6 +1050,7 @@ let permissions = [
     resourceType: 'Notification Setting Frequency',
     resourceCode: 'notification_setting_frequency_list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Notification Frequency',
@@ -966,6 +1060,7 @@ let permissions = [
     resourceType: 'Notification Setting Frequency',
     resourceCode: 'notification_setting_frequency_create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Notification Frequency',
@@ -975,6 +1070,7 @@ let permissions = [
     resourceType: 'Notification Setting Frequency',
     resourceCode: 'notification_setting_frequency_update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Notification Frequency',
@@ -984,6 +1080,7 @@ let permissions = [
     resourceType: 'Notification Setting Frequency',
     resourceCode: 'notification_setting_frequency_delete',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Notification Frequency',
@@ -993,6 +1090,7 @@ let permissions = [
     resourceType: 'Notification Setting Frequency',
     resourceCode: 'notification_setting_frequency_get',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Notification Templates',
@@ -1002,6 +1100,7 @@ let permissions = [
     resourceType: 'Notification Setting Template',
     resourceCode: 'notification_setting_template_list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Notification Template',
@@ -1011,6 +1110,7 @@ let permissions = [
     resourceType: 'Notification Setting Template',
     resourceCode: 'notification_setting_template_create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Notification Template',
@@ -1020,6 +1120,7 @@ let permissions = [
     resourceType: 'Notification Setting Template',
     resourceCode: 'notification_setting_template_update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Notification Template',
@@ -1029,6 +1130,7 @@ let permissions = [
     resourceType: 'Notification Setting Template',
     resourceCode: 'notification_setting_template_delete',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Get Notification Template',
@@ -1038,6 +1140,7 @@ let permissions = [
     resourceType: 'Notification Setting Template',
     resourceCode: 'notification_setting_template_get',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Notification Medium Settings',
@@ -1047,6 +1150,7 @@ let permissions = [
     resourceType: 'Notification Medium Setting',
     resourceCode: 'notification_setting_medium_list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Notification Medium Setting',
@@ -1056,6 +1160,7 @@ let permissions = [
     resourceType: 'Notification Medium Setting',
     resourceCode: 'notification_setting_medium_create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Notification Medium Setting',
@@ -1065,6 +1170,7 @@ let permissions = [
     resourceType: 'Notification Medium Setting',
     resourceCode: 'notification_setting_medium_update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Notification Medium Setting',
@@ -1074,6 +1180,7 @@ let permissions = [
     resourceType: 'Notification Medium Setting',
     resourceCode: 'notification_setting_medium_delete',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Dashboard Font Themes',
@@ -1083,6 +1190,7 @@ let permissions = [
     resourceType: 'Dashboard Font Theme',
     resourceCode: 'dashboard_font_theme_list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Download Dashboard Font Theme',
@@ -1092,6 +1200,7 @@ let permissions = [
     resourceType: 'Dashboard Font Theme',
     resourceCode: 'dashboard_font_theme_download',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Dashboard Font Theme',
@@ -1101,6 +1210,7 @@ let permissions = [
     resourceType: 'Dashboard Font Theme',
     resourceCode: 'dashboard_font_theme_delete',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Dashboard Themes',
@@ -1110,6 +1220,7 @@ let permissions = [
     resourceType: 'Dashboard Theme',
     resourceCode: 'dashboard_theme_list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Dashboard Theme',
@@ -1119,6 +1230,7 @@ let permissions = [
     resourceType: 'Dashboard Theme',
     resourceCode: 'dashboard_theme_create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Dashboard Theme',
@@ -1128,6 +1240,7 @@ let permissions = [
     resourceType: 'Dashboard Theme',
     resourceCode: 'dashboard_theme_update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Dashboard Theme',
@@ -1137,6 +1250,7 @@ let permissions = [
     resourceType: 'Dashboard Theme',
     resourceCode: 'dashboard_theme_delete',
     isSuperUser: false,
+    isChangeable: true,
   },
   // GET current user profile image
   {
@@ -1147,6 +1261,7 @@ let permissions = [
     resourceType: 'User Profile Image',
     resourceCode: 'user_profile_image_get',
     isSuperUser: false,
+    isChangeable: true,
   },
 
   // DELETE current user profile image
@@ -1158,6 +1273,7 @@ let permissions = [
     resourceType: 'User Profile Image',
     resourceCode: 'user_profile_image_delete',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Department',
@@ -1167,6 +1283,7 @@ let permissions = [
     resourceType: 'Department',
     resourceCode: 'department_create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Department',
@@ -1176,6 +1293,7 @@ let permissions = [
     resourceType: 'Department',
     resourceCode: 'department_update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Departments',
@@ -1185,6 +1303,7 @@ let permissions = [
     resourceType: 'Department',
     resourceCode: 'department_list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Department',
@@ -1194,6 +1313,7 @@ let permissions = [
     resourceType: 'Department',
     resourceCode: 'department_delete',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Create Designation',
@@ -1203,6 +1323,7 @@ let permissions = [
     resourceType: 'Designation',
     resourceCode: 'designation_create',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Update Designation',
@@ -1212,6 +1333,7 @@ let permissions = [
     resourceType: 'Designation',
     resourceCode: 'designation_update',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'List Designations',
@@ -1221,6 +1343,7 @@ let permissions = [
     resourceType: 'Designation',
     resourceCode: 'designation_list',
     isSuperUser: false,
+    isChangeable: true,
   },
   {
     name: 'Delete Designation',
@@ -1230,6 +1353,7 @@ let permissions = [
     resourceType: 'Designation',
     resourceCode: 'designation_delete',
     isSuperUser: false,
+    isChangeable: true,
   },
 ];
 
@@ -1251,7 +1375,7 @@ function getDynamicPermission(
     {
       action: 'Update',
       method: 'PUT',
-      resourceId: 'common/dataSourceVersion/versionData/update/',
+      resourceId: 'common/dataSourceVersion/versionData/update/:rowId',
       codeSuffix: 'update',
     },
     {
@@ -1281,6 +1405,7 @@ function getDynamicPermission(
         resourceCode: `dataSource__${code}__${codeSuffix}`,
         status: 'active',
         isSuperUser: false,
+        isChangeable: true,
         organizationId,
       });
     });
