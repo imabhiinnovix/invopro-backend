@@ -2,8 +2,9 @@
 /* @ts-nocheck */
 
 import DataSource from '../database/models/common/dataSource';
+import Entity from '../database/models/common/entity';
 
-function getDataSourceToBeSeed({ entityDataSourceMap, organizationId, createdBy, updatedBy }) {
+function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organizationId, createdBy, updatedBy }) {
   return [
     {
       _id: entityDataSourceMap.disclosure.dataSourceId,
@@ -17,6 +18,34 @@ function getDataSourceToBeSeed({ entityDataSourceMap, organizationId, createdBy,
       createdBy,
       __v: 0,
       isVisible: true,
+      fieldSettings: [
+        {
+          attributeId: {
+            $oid: '6878bd762e47e0703407dede',
+          },
+          refAttributeId: [],
+          label: 'DisclosureNumber',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: false,
+          isDerived: false,
+          type: 'text',
+        },
+        {
+          attributeId: {
+            $oid: '6878bd762e47e0703407dedf',
+          },
+          refAttributeId: [],
+          label: 'SBU',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: false,
+          isDerived: false,
+          type: 'text',
+        },
+      ],
     },
     {
       _id: entityDataSourceMap.portfolio.dataSourceId,
@@ -894,17 +923,367 @@ function getDataSourceToBeSeed({ entityDataSourceMap, organizationId, createdBy,
       _id: entityDataSourceMap.case_list.dataSourceId,
       organizationId,
       entityId: entityDataSourceMap.case_list.entityId,
-      name: 'Case List',
+      name: 'CaseList',
       description: '',
-      code: 'case_list',
-      versionType: 'weekly',
+      code: 'caselists',
+      versionType: 'monthly',
       isActive: true,
       createdBy,
       canEditInline: false,
-      uniqueAttributeName: [],
+      uniqueAttributeRules: [],
+      isVisible: true,
+      fieldSettings: [
+        {
+          attributeId: entityDataSourceMap.case_list.caseNumberAttributeId,
+          refAttributeId: [],
+          label: 'Case Number',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: true,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'text',
+          mappedAttributeName: 'CaseNumber',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.attorneyAttributeId,
+          refAttributeId: [],
+          label: 'Attorney Name',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: true,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'multioption',
+          mappedAttributeName: 'Attorney',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.disclosureAttributeId,
+          refAttributeId: [],
+          label: 'DisclosureNumber',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: false,
+          isDerived: false,
+          type: 'text',
+          mappedAttributeName: 'DisclosureNumber',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.activeSwitchAttributeId,
+          refAttributeId: [],
+          label: 'ActiveSwitch',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: false,
+          isDerived: false,
+          type: 'text',
+          mappedAttributeName: 'ActiveSwitch',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.procedureAgentNameAttributeId,
+          refAttributeId: [],
+          label: 'ProcedureAgentName',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: true,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'multioption',
+          mappedAttributeName: 'ProcedureAgentName',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.localAgentNameAttributeId,
+          refAttributeId: [],
+          label: 'LocalAgentName',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: true,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'multioption',
+          mappedAttributeName: 'LocalAgentName',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.caseTypeAttributeId,
+          refAttributeId: [],
+          label: 'CaseType',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: false,
+          isDerived: false,
+          type: 'text',
+          mappedAttributeName: 'CaseType',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.attorneyAttributeId,
+          refAttributeId: [
+            entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
+            entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
+            entityDataSourceMap.formality_officers.foEmailAttributeId,
+          ],
+          label: 'FO Email',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: false,
+          isDerived: false,
+          type: 'email',
+          mappedAttributeName: 'Attorney.AttorneyName.FOName.FOEmail',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.attorneyAttributeId,
+          refAttributeId: [
+            entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
+            entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
+            entityDataSourceMap.formality_officers.escalation1EmailIDAttributeId,
+          ],
+          label: 'FO Escalation 1 Email',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: false,
+          isDerived: false,
+          type: 'email',
+          mappedAttributeName: 'Attorney.AttorneyName.FOName.Escalation1EmailID',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.attorneyAttributeId,
+          refAttributeId: [
+            entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
+            entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
+            entityDataSourceMap.formality_officers.escalation2EmailIDAttributeId,
+          ],
+          label: 'FO Escalation 2 Email',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: false,
+          isDerived: false,
+          type: 'email',
+          mappedAttributeName: 'Attorney.AttorneyName.FOName.Escalation2EmailID',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.actionDueAttributeId,
+          refAttributeId: [entityDataSourceMap.action_due.reportCriticalEventAttributeId],
+          label: 'ReportCriticalEvent',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'text',
+          mappedAttributeName: 'ActionDue.ReportCriticalEvent',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.actionDueAttributeId,
+          refAttributeId: [entityDataSourceMap.action_due.reportPersonalSchedulerAttributeId],
+          label: 'ReportPersonalScheduler',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'text',
+          mappedAttributeName: 'ActionDue.ReportPersonalScheduler',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.actionDueAttributeId,
+          refAttributeId: [entityDataSourceMap.action_due.reportActionsDueAttributeId],
+          label: 'ReportActionDue',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'text',
+          mappedAttributeName: 'ActionDue.ReportActionDue',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.statusAttributeId,
+          refAttributeId: [],
+          label: 'Status',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: false,
+          isDerived: false,
+          type: 'text',
+          mappedAttributeName: 'Status',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.actionDueAttributeId,
+          refAttributeId: [],
+          label: 'ActionDue',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'option',
+          mappedAttributeName: 'ActionDue',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.dateTakenAttributeId,
+          refAttributeId: [],
+          label: 'DateTaken',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'date',
+          mappedAttributeName: 'DateTaken',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.countryAttributeId,
+          refAttributeId: [],
+          label: 'Country',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'multioption',
+          mappedAttributeName: 'Country',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.dueDateAttributeId,
+          refAttributeId: [],
+          label: 'DueDate',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'date-range',
+          mappedAttributeName: 'DueDate',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.legalAssistantAttributeId,
+          refAttributeId: [],
+          label: 'legal assistant',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'text',
+          mappedAttributeName: 'LegalAssistant',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.actionDueAttributeId,
+          refAttributeId: [entityDataSourceMap.action_due.alertRequiredAttributeId],
+          label: 'Alert Required',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: false,
+          isDerived: false,
+          type: 'text',
+        },
+        {
+          attributeId: entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
+          refAttributeId: [
+            entityDataSourceMap.case_list.attorneyAttributeId,
+            entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
+            entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
+            entityDataSourceMap.formality_officers.foNameAttributeId,
+          ],
+          label: 'Formality Officer',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'multioption',
+          mappedAttributeName: 'Attorney.AttorneyName.FOName.FOName',
+        },
+        {
+          attributeId: derivedFieldMapping.reportCategoryDerivedFieldId,
+          refAttributeId: [],
+          label: 'Report Category',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: false,
+          isDerived: true,
+          type: 'option',
+          mappedAttributeName: 'Report Category',
+        },
+        {
+          attributeId: derivedFieldMapping.inHouseDerivedFieldId,
+          refAttributeId: [],
+          label: 'Handled By',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: false,
+          isDerived: true,
+          type: 'option',
+          mappedAttributeName: 'Handled By',
+        },
+        {
+          attributeId: derivedFieldMapping.caseListStatusPendingDerivedFieldId,
+          refAttributeId: [],
+          label: 'Status',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: false,
+          isDerived: true,
+          type: 'option',
+          mappedAttributeName: 'Case Status',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.sbuAttributeId,
+          refAttributeId: [],
+          label: 'SBU',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'multioption',
+          mappedAttributeName: 'SBU',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.actionDueAttributeId,
+          refAttributeId: [entityDataSourceMap.action_due.stdActionsAttributeId],
+          label: 'Standard Action',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'option',
+          mappedAttributeName: 'ActionDue.STDActions',
+        },
+        {
+          attributeId: entityDataSourceMap.case_list.actionDueAttributeId,
+          refAttributeId: [entityDataSourceMap.action_due.actionCategoryAttributeId],
+          label: 'Action Category',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'option',
+          mappedAttributeName: 'ActionDue.ActionCategory',
+        },
+      ],
       isShowMenu: true,
-      __v: 0,
-      isVisible: false,
+      updatedBy,
+      condition: [
+        {
+          field: 'ActionDue.Excluded',
+          operator: 'eq',
+          value: 'N',
+          fieldType: 'text',
+        },
+      ],
     },
     {
       _id: entityDataSourceMap.action_due.dataSourceId,
@@ -912,77 +1291,307 @@ function getDataSourceToBeSeed({ entityDataSourceMap, organizationId, createdBy,
       entityId: entityDataSourceMap.action_due.entityId,
       name: 'Action Due',
       description: '',
-      code: 'action_due',
+      code: 'actiondues',
       versionType: 'constant',
       isActive: true,
       createdBy,
       canEditInline: false,
-      uniqueAttributeName: [],
+      uniqueAttributeRules: [[entityDataSourceMap.action_due.actionDueAttributeId]],
+      isVisible: true,
+
+      fieldSettings: [
+        {
+          attributeId: entityDataSourceMap.action_due.actionDueAttributeId,
+          refAttributeId: [],
+          label: 'Action Due',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: true,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'text-with-option',
+          mappedAttributeName: 'actiondue6',
+        },
+        {
+          attributeId: entityDataSourceMap.action_due.stdActionsAttributeId,
+          refAttributeId: [],
+          label: 'Standard Action',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'option',
+          mappedAttributeName: 'STDActions',
+        },
+        {
+          attributeId: entityDataSourceMap.action_due.actionCategoryAttributeId,
+          refAttributeId: [],
+          label: 'Action Category',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'option',
+          mappedAttributeName: 'ActionCategory',
+        },
+        {
+          attributeId: entityDataSourceMap.action_due.alertRequiredAttributeId,
+          refAttributeId: [],
+          label: 'Alert required',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'text',
+          mappedAttributeName: 'AlertRequired',
+        },
+      ],
       isShowMenu: true,
-      __v: 0,
-      isVisible: false,
+      updatedBy,
     },
     {
       _id: entityDataSourceMap.ip_counsel.dataSourceId,
       organizationId,
       entityId: entityDataSourceMap.ip_counsel.entityId,
-      name: 'IP Counsel',
-      description: '',
-      code: 'ip_counsel',
+      name: 'IP Counsels',
+      description: 'IP Counsels',
+      code: 'ipcounsels',
       versionType: 'constant',
       isActive: true,
       createdBy,
       canEditInline: false,
-      uniqueAttributeName: [],
+      uniqueAttributeRules: [[entityDataSourceMap.ip_counsel.attorneyNameAttributeId]],
+      isVisible: true,
+      fieldSettings: [
+        {
+          attributeId: entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
+          refAttributeId: [],
+          label: 'Attorney Name',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: true,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'text-with-option',
+          mappedAttributeName: 'AttorneyName',
+        },
+        {
+          attributeId: entityDataSourceMap.formality_officers.foNameAttributeId,
+          refAttributeId: [
+            entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
+            entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
+          ],
+          label: 'FO Name',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: true,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'text-with-option',
+          mappedAttributeName: 'AttorneyName.FOName.FOName',
+        },
+      ],
       isShowMenu: true,
-      __v: 0,
-      isVisible: false,
+      updatedBy,
     },
     {
       _id: entityDataSourceMap.formality_officers.dataSourceId,
       organizationId,
       entityId: entityDataSourceMap.formality_officers.entityId,
-      name: 'Formality Officers',
-      description: '',
-      code: 'formality_officers',
+      name: 'Formality Officer',
+      description: 'Formality Officer',
+      code: 'formalityofficers',
       versionType: 'constant',
       isActive: true,
       createdBy,
       canEditInline: false,
-      uniqueAttributeName: [],
+      uniqueAttributeRules: [[entityDataSourceMap.formality_officers.foNameAttributeId]],
+      isVisible: true,
+      fieldSettings: [
+        {
+          attributeId: entityDataSourceMap.formality_officers.foNameAttributeId,
+          refAttributeId: [],
+          label: 'Formality Officer',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'text-with-option',
+          mappedAttributeName: 'FOName',
+        },
+        {
+          attributeId: entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
+          refAttributeId: [
+            entityDataSourceMap.formality_officers.foNameAttributeId,
+            entityDataSourceMap.attorney_fo_mapping.attorneyNameAttributeId,
+          ],
+          label: 'Attorney',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'text-with-option',
+          mappedAttributeName: 'FOName.AttorneyName.AttorneyName',
+        },
+        {
+          attributeId: entityDataSourceMap.formality_officers.foEmailAttributeId,
+          refAttributeId: [],
+          label: 'FO Email',
+          isFilterEnable: true,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'email',
+          mappedAttributeName: 'FOEmail',
+        },
+      ],
       isShowMenu: true,
-      __v: 0,
-      isVisible: false,
+      updatedBy,
+    },
+    {
+      _id: entityDataSourceMap.attorney_fo_mapping.dataSourceId,
+      organizationId,
+      entityId: entityDataSourceMap.attorney_fo_mapping.entityId,
+      name: 'Attorney FO Mapping',
+      description: '',
+      code: 'attorneyfomapping',
+      versionType: 'constant',
+      isActive: true,
+      createdBy,
+      canEditInline: false,
+      uniqueAttributeRules: [
+        [
+          entityDataSourceMap.attorney_fo_mapping.attorneyNameAttributeId,
+          entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
+        ],
+      ],
+      isVisible: true,
+      fieldSettings: [
+        {
+          attributeId: entityDataSourceMap.attorney_fo_mapping.attorneyNameAttributeId,
+          refAttributeId: [],
+          label: 'Attorney',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'multioption',
+        },
+        {
+          attributeId: entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
+          refAttributeId: [],
+          label: 'FO Name',
+          isFilterEnable: false,
+          isDashboardFilter: true,
+          isSortingEnable: false,
+          isDisplayEnable: true,
+          isDerived: false,
+          type: 'multioption',
+        },
+      ],
+      isShowMenu: false,
+      condition: [],
+      updatedBy,
     },
   ];
 }
-export async function seedDataSource({ organizationId, createdBy, updatedBy, entityDataSourceMap }) {
+// export async function seedDataSource({ organizationId, createdBy, updatedBy, entityDataSourceMap }) {
+//   const dataSources = getDataSourceToBeSeed({
+//     entityDataSourceMap,
+//     organizationId,
+//     createdBy,
+//     updatedBy,
+//   });
+
+//   for (const dataSource of dataSources) {
+//     const existingDataSource = await DataSource.findOne({
+//       $or: [{ _id: dataSource._id }, { name: dataSource.name, organizationId: dataSource.organizationId }],
+//     });
+
+//     if (!existingDataSource) {
+//       const newDataSource = new DataSource(dataSource);
+//       await newDataSource.save();
+//       console.info(`New data source '${dataSource.name}' created successfully for org ${dataSource.organizationId}.`);
+//     } else {
+//       console.info(`Data source '${dataSource.name}' already exists for org ${dataSource.organizationId}. Skipping.`);
+//     }
+//   }
+// }
+
+export async function seedDataSource({
+  organizationId,
+  createdBy,
+  updatedBy,
+  entityDataSourceMap,
+  derivedFieldMapping,
+}) {
   const dataSources = getDataSourceToBeSeed({
     entityDataSourceMap,
     organizationId,
+    derivedFieldMapping,
     createdBy,
     updatedBy,
   });
 
   for (const dataSource of dataSources) {
-  const existingDataSource = await DataSource.findOne({
-    $or: [
-      { _id: dataSource._id },
-      { name: dataSource.name, organizationId: dataSource.organizationId },
-    ],
-  });
+    try {
+      let dataSourceWithFieldSetting = dataSource;
+      if (
+        !['caselists', 'actiondues', 'ipcounsels', 'formalityofficers', 'attorneyfomapping'].includes(
+          dataSourceWithFieldSetting.code
+        )
+      ) {
+        const entityDetails = await Entity.findOne({
+          _id: dataSource.entityId,
+        });
 
-  if (!existingDataSource) {
-    const newDataSource = new DataSource(dataSource);
-    await newDataSource.save();
-    console.info(
-      `New data source '${dataSource.name}' created successfully for org ${dataSource.organizationId}.`
-    );
-  } else {
-    console.info(
-      `Data source '${dataSource.name}' already exists for org ${dataSource.organizationId}. Skipping.`
-    );
+        if (entityDetails && entityDetails.attributes) {
+          const fieldSettings = entityDetails.attributes.map((data: any) => {
+            return {
+              attributeId: data?._id,
+              refAttributeId: [],
+              label: data.name,
+              isFilterEnable: false,
+              isDashboardFilter: true,
+              isSortingEnable: false,
+              isDisplayEnable: false,
+              isDerived: false,
+              type: data.type,
+            };
+          });
+          if (fieldSettings && fieldSettings.length > 0) {
+            dataSourceWithFieldSetting['fieldSettings'] = fieldSettings;
+          }
+        }
+      }
+
+      // Use findByIdAndUpdate with upsert option
+      const result = await DataSource.findByIdAndUpdate(
+        dataSource._id,
+        {
+          ...dataSourceWithFieldSetting,
+        },
+        {
+          upsert: true, // Create if doesn't exist
+          new: true, // Return the updated document
+          runValidators: true, // Run schema validations
+        }
+      );
+
+      if (result.isNew) {
+        console.info(`New data source created with ID: ${dataSource._id}`);
+      } else {
+        console.info(`Data source updated with ID: ${dataSource._id}`);
+      }
+    } catch (error) {
+      console.error(`Error upserting data source with ID ${dataSource._id}:`, error);
+    }
   }
-}
-
 }

@@ -13,6 +13,7 @@ export const getPermissionList = async (req: Request, res: Response, next: NextF
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
     const query: any = {
+      isChangeable: true,
       $or: [{ organizationId: { $exists: false } }, { organizationId: new Types.ObjectId(organizationId) }],
     };
     if (search) query.name = { $regex: search, $options: 'i' };
