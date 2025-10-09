@@ -674,7 +674,20 @@ async function resolveRefAttribute(
 
   // --- Pagination loop ---
   let skip = 0;
-const lookups = await generateLookupsForAllReferences(attributesMap);
+// const lookups = await generateLookupsForAllReferences(attributesMap);
+// --- Build lookups for each root-level attribute separately ---
+let lookups: any[] = [];
+
+for (const [attrName, attr] of Object.entries(attributesMap)) {
+  // Reset visitedEntities for each root-level attribute
+  const visitedEntities = new Set<string>();
+
+  const singleAttrMap: Record<string, any> = { [attrName]: attr };
+  const rootLookups = await generateLookupsForAllReferences(singleAttrMap, "", visitedEntities);
+
+  lookups.push(...rootLookups);
+}
+
 
 while (true) {
   const aggregationPipeline: any[] = [...lookups];
