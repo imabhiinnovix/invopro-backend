@@ -178,7 +178,7 @@ export const sendOtp = async (req: Request, res: Response, next: NextFunction) =
     await sendEmail({
       name: user.firstName,
       email,
-      subject: `Searchivix ${type === 'login' ? 'Login' : 'Reset Password'} OTP Verification`,
+      subject: `Reportivix ${type === 'login' ? 'Login' : 'Reset Password'} OTP Verification`,
       message: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6;">
         <h1 style="color: #4CAF50;">Hello ${user.firstName},</h1>

@@ -221,7 +221,7 @@ export const sendSupportEmail = async (payload: any) => {
   return sendMail({
     from: `"${name}" <${email}>`,
     to: [SUPPORT_EMAIL],
-    subject: `Searchivix Support Request: ${subject}`,
+    subject: `Reportivix Support Request: ${subject}`,
     body: htmlBody,
   });
 };
