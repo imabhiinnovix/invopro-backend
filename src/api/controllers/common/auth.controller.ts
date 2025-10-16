@@ -202,7 +202,15 @@ export const sendOtp = async (req: Request, res: Response, next: NextFunction) =
 export const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, otp, type = 'login' } = req.body;
-    const user: any = await authService.findUserByEmail(email);
+     // Find the user and populate the organization details
+    const user: any = await authService.findUserByEmail(email.toLowerCase(), [
+      { path: 'organizationId', select: 'id name code status' },
+      'roleIds',
+      {
+        path: 'organizationProductSubscriptionIds',
+        populate: { path: 'productId', select: 'name code status' }, // nested population
+      },
+    ]);
 
     if (!user) {
       return res.status(400).json({ success: false, message: 'User not found' });
@@ -227,15 +235,68 @@ export const verifyOtp = async (req: Request, res: Response, next: NextFunction)
     otpEntry.isVerified = true;
     await otpEntry.save();
 
+    // Check if user account is inactive
+    if (user.status === 'inactive') {
+      return res.status(400).json({
+        success: false,
+        message: 'Your account is currently inactive. Please contact support for further help.',
+      });
+    }
+
+    // Check if organization is inactive or expired
+    const organization = user.organizationId;
+    if (organization) {
+      // If organization is already inactive
+      if (organization.status === 'inactive') {
+        return res.status(400).json({
+          success: false,
+          message: 'Your organization is currently inactive. Please contact support for further help.',
+        });
+      }
+    }
+
+    const now = new Date();
+    const validSubscriptions = (user.organizationProductSubscriptionIds || []).filter(
+      (sub: any) => sub.status === 'active' && (!sub.licenseExpiresAt || new Date(sub.licenseExpiresAt) > now)
+    );
+
+    if (validSubscriptions.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'All your assigned products are either expired or inactive. Please contact support for further help.',
+      });
+    }
+
+    const roleIds = (user.roleIds || []).map((role: any) => String(role._id));
+    const productLicenses: Record<string, string | null> = {};
+
+    validSubscriptions.forEach((sub: any) => {
+      if (sub.productId && sub.productId.code) {
+        productLicenses[sub.productId.code] = sub.licenseExpiresAt
+          ? new Date(sub.licenseExpiresAt).toISOString()
+          : null;
+      }
+    });
+
     // Generate JWT token for login OTP
     if (type === 'login') {
+      const isSuperUser = (user.roleIds || []).some((role: any) => role.isSuperUser === true);
+      // Generate JWT token
       const token = generateToken({
-        userId: user._id,
-        organizationId: user.organizationId,
-        roleId: user.roleId,
+        userId: String(user._id),
+        organizationId: String(user.organizationId?._id),
         orgCode: user.organizationId?.code,
+        roleIds,
+        ...productLicenses,
+        isSuperUser,
       });
-      return res.status(200).json({ success: true, message: 'OTP verified successfully', data: { token } });
+
+      // Send response
+      return res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        data: { token },
+      });
     }
 
     // For reset-password OTP, just return success
