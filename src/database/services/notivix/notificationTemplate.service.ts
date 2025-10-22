@@ -12,7 +12,7 @@ export const getNotificationTemplates = async ({
   query = {},
   select = '',
   page = 1,
-  limit = 20,
+  limit = 10,
   sort = { updatedAt: -1 },
   populate = '',
 }: {

@@ -103,7 +103,7 @@ export const createNotificationTemplate = async (req: Request, res: Response, ne
 
 export const listNotificationTemplate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { page, limit, sort, select, populate, ...filters } = req.query as any;
+    const { page = 1, limit = 10, sort, select, populate, ...filters } = req.query as any;
     const result = await notificationTemplateService.getNotificationTemplates({
       query: filters,
       select,
