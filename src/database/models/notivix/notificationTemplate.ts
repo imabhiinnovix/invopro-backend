@@ -29,6 +29,7 @@ export interface INotificationTemplate extends Document {
   type: 'single' | 'overall';
   groupBy?: IGroupByItem[];
   attachmentSettings?: IAttachmentField[];
+  status: 'active' | 'in-active';
 }
 
 const attachmentFieldSchema = new Schema<IAttachmentField>(
@@ -92,6 +93,7 @@ const notificationTemplateSchema = new Schema<INotificationTemplate>(
       type: [attachmentFieldSchema],
       default: [],
     },
+    status: { type: String, enum: ["active", "in-active"], default: "active" },
   },
   {
     timestamps: true,
