@@ -103,14 +103,19 @@ export const createNotificationTemplate = async (req: Request, res: Response, ne
 
 export const listNotificationTemplate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { page = 1, limit = 10, sort, select, populate, ...filters } = req.query as any;
+    const { page = 1, limit = 10, sort, search } = req.query as any;
+
+    const { organizationId } = req.user;
+    const query: any = { organizationId };
+    if (search) {
+      query.name = { $regex: search, $options: 'i' };
+    }
+
     const result = await notificationTemplateService.getNotificationTemplates({
-      query: filters,
-      select,
+      query,
       page: Number(page),
       limit: Number(limit),
       sort: sort ? JSON.parse(sort) : undefined,
-      populate,
     });
     res.json(result);
   } catch (error) {
