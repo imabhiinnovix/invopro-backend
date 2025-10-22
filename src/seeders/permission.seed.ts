@@ -1434,8 +1434,7 @@ export async function seedPermissions(permissionList: any[]) {
     POST: 'create',
     PUT: 'update',
     DELETE: 'delete',
-    GET: 'view',
-    LIST: 'list',
+    GET: 'list',
   };
 
   for (const perm of permissions) {
