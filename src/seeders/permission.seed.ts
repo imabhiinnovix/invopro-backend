@@ -1033,6 +1033,16 @@ let permissions = [
     isChangeable: true,
   },
   {
+    name: 'Summary Notification Type',
+    method: 'GET',
+    resourceId: '/notivix/notification-setting/type/summary',
+    extraOptions: {},
+    resourceType: 'Notification Setting Type',
+    resourceCode: 'notification_setting_type_summary_get',
+    isSuperUser: false,
+    isChangeable: true,
+  },
+  {
     name: 'Get Notification Type',
     method: 'GET',
     resourceId: '/notivix/notification-setting/type/:id',

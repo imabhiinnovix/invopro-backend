@@ -329,6 +329,10 @@ const defaultPermissionsAdmin = [
     isChangeable: true,
   },
   {
+    permission: 'GET:/notivix/notification-setting/type/summary',
+    isChangeable: true,
+  },
+  {
     permission: 'GET:/notivix/notification-setting/type/:id',
     isChangeable: true,
   },

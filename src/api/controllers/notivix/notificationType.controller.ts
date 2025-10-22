@@ -132,3 +132,25 @@ export const getNotificationType = async (req: Request, res: Response, next: Nex
     next(err);
   }
 };
+
+export const getNotificationTypeSummary = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { organizationId } = req.user;
+
+    const { conditions } = req.body;
+
+    console.log('filter conditions', conditions);
+
+    const parsedConditions = conditions ? JSON.parse(conditions) : {};
+
+    const result = 'Show all records where the Disclosure Number is not blank and the Status is one of open, rated to search, rated to draft ih, rated to draft oc, review rate to draft, filing requested, or submitted, and the Active Switch equals 1; the Date Taken is blank but the Due Date is today or earlier; and the Report Action Due equals “Y.”';
+
+    res.status(200).json({
+      success: true,
+      message: 'Notification Type Summary Retrieved Successfully',
+      data: { result },
+    });
+  } catch (err) {
+    next(err);
+  }
+};

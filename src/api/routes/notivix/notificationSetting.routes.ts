@@ -7,6 +7,7 @@ import {
   deleteNotificationType,
   listNotificationType,
   getNotificationType,
+  getNotificationTypeSummary,
 
 } from '../../controllers/notivix/notificationType.controller';
 
@@ -46,6 +47,7 @@ router.post('/type/create', permissionMiddleware(), createNotificationType);
 router.put('/type/update/:id', permissionMiddleware(), updateNotificationType);
 router.delete('/type/delete/:id', permissionMiddleware(), deleteNotificationType);
 router.get('/type/list', permissionMiddleware(), listNotificationType);
+router.get('/type/summary', permissionMiddleware(), getNotificationTypeSummary);
 router.get('/type/:id', permissionMiddleware(), getNotificationType);
 
 // Notification Frequency Settings
