@@ -17,7 +17,11 @@ export const updateNotificationType = async (
 };
 
 export const deleteNotificationType = async (query: Record<string, any>) => {
-  const doc = await NotificationType.findOneAndDelete(query);
+  const doc = await NotificationType.findOneAndUpdate(
+    query,
+    { $set: { status: 'in-active' } },
+    { new: true } // return the updated document
+  );
   if (!doc) throw new Error('Notification type not found or unauthorized');
   return doc;
 };

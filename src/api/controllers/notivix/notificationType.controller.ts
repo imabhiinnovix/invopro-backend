@@ -78,7 +78,7 @@ export const listNotificationType = async (req: Request, res: Response, next: Ne
     const parsedPage = parseInt(page as string, 10) || 1;
     const parsedLimit = parseInt(limit as string, 10) || 10;
 
-    const query: any = { organizationId };
+    const query: any = { organizationId, status: 'active' };
 
     if (search) {
       query.name = { $regex: search, $options: 'i' };

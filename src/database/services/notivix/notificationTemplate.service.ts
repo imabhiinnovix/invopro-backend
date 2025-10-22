@@ -52,5 +52,11 @@ export const updateNotificationTemplate = async (id: string, data: any) => {
 };
 
 export const deleteNotificationTemplate = async (id: string) => {
-  return await NotificationTemplate.findByIdAndDelete(id);
+  const result = await NotificationTemplate.findOneAndUpdate(
+    { _id: id },
+    { $set: { status: 'in-active' } },
+    { new: true } // return the updated document
+  );
+
+  return result;
 };

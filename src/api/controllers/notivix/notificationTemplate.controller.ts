@@ -106,7 +106,7 @@ export const listNotificationTemplate = async (req: Request, res: Response, next
     const { page = 1, limit = 10, sort, search } = req.query as any;
 
     const { organizationId } = req.user;
-    const query: any = { organizationId };
+    const query: any = { organizationId, status: 'active' };
     if (search) {
       query.name = { $regex: search, $options: 'i' };
     }
