@@ -1424,19 +1424,32 @@ function getDynamicPermission(
   return permissions;
 }
 
-export async function seedPermissions(perissionList: any[]) {
-  const dynamicPerission = getDynamicPermission(perissionList);
-  console.log(dynamicPerission);
-  permissions = [...permissions, ...dynamicPerission];
+export async function seedPermissions(permissionList: any[]) {
+  const dynamicPermission = getDynamicPermission(permissionList);
+  console.log(dynamicPermission);
+  permissions = [...permissions, ...dynamicPermission];
+
+  // 🔹 Define method → methodName mapping
+  const methodNameArr: Record<string, string> = {
+    POST: 'create',
+    PUT: 'update',
+    DELETE: 'delete',
+    GET: 'view',
+    LIST: 'list',
+  };
+
   for (const perm of permissions) {
     const { resourceCode } = perm;
 
     const existing = await Permission.findOne({ resourceCode });
 
     if (!existing) {
+      const methodName = methodNameArr[perm.method?.toUpperCase()] || 'UNKNOWN';
+
       const newPermission = new Permission({
         ...perm,
         status: 'active',
+        methodName,
         extraOptions: perm.extraOptions || {},
       });
 
@@ -1447,3 +1460,4 @@ export async function seedPermissions(perissionList: any[]) {
     }
   }
 }
+
