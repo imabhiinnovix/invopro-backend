@@ -1384,18 +1384,24 @@ async function addDueDaysDimensionWithTotal({
     },
   });
 
-// Step 5: Re-group by groupBy fields only (keep dimension out)
+// Step 5: Re-group by groupBy fields only (use label-mapped names)
+const labelMap = (await getLabelByMappedAttributeName?.(dataSourceDetails)) ?? {};
+
 aggregationPipeline.push({
   $group: {
     _id: Object.fromEntries(
-      groupBy.map((g) => [g.split(".").pop(), `$${g.split(".").pop()}`])
+      groupBy.map((g) => {
+        const fieldKey = g.split(".").pop();
+        const label = labelMap[g] ?? fieldKey;
+        return [label, `$${label}`];
+      })
     ),
     data: { $push: "$$ROOT" },
     total: { $sum: "$data" },
   },
 });
 
-// Step 6: Add one "Total" row per group
+// Step 6: Add one "Total" row per group (preserve group labels)
 aggregationPipeline.push({
   $project: {
     _id: 0,
@@ -1406,12 +1412,13 @@ aggregationPipeline.push({
           {
             name: isCompleted ? "Total Completed" : "Total Dues",
             data: "$total",
-            // copy groupBy values into this total row
+            // include group label fields into total row
             ...Object.fromEntries(
-              groupBy.map((g) => [
-                g.split(".").pop(),
-                `$_id.${g.split(".").pop()}`,
-              ])
+              groupBy.map((g) => {
+                const fieldKey = g.split(".").pop();
+                const label = labelMap[g] ?? fieldKey;
+                return [label, `$_id.${label}`];
+              })
             ),
           },
         ],
@@ -1420,6 +1427,7 @@ aggregationPipeline.push({
     totalCount: "$total",
   },
 });
+
 
  // Step 7: Assign custom sort order for buckets
   const bucketOrder = isCompleted
