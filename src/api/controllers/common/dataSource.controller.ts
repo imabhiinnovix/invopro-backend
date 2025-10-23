@@ -519,58 +519,111 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
 
     
 
-    if(isReferenceField == true){
-      const query = { 
-                dataSourceId: new Types.ObjectId(dataSourceId),
-                dataSourceVersionId: { $in: dataSourceVersionIdArray }, 
-                status: 'active' 
-              };
-      const filters = {};        
+    if (isReferenceField) {
+  const query = {
+    dataSourceId: new Types.ObjectId(dataSourceId),
+    dataSourceVersionId: { $in: dataSourceVersionIdArray.map(id => new Types.ObjectId(id)) },
+    status: "active",
+  };
 
-      // Add dimension conditions to match
-      if (dimensions && Array.isArray(dimensions)) {
-        dimensions.forEach((dimension) => {
-          if (dimension && typeof dimension === "object" && Object.keys(dimension).length > 0) {
-            const [field, value] = Object.entries(dimension)[0];
-            if (dashBoardType === 'trend') {
-              query[`${field}`] = value;
-            } else {
-              filters[`${field}`] = value;
-            }
-          }
-        });
+  const filters: Record<string, any> = {};
+  let dueDaysFilterValue: string | null = null;
+
+  const isDueDaysField = (key: string) => key === "dueDays";
+
+  // Determine case status
+  const statusFilter = dashboardFilters?.filters?.["Derived.Case Status"] ?? "Pending";
+  const isCompleted = statusFilter === "Completed";
+
+  // Handle dimensions
+  if (dimensions && Array.isArray(dimensions)) {
+    dimensions.forEach(dimension => {
+      if (dimension && typeof dimension === "object" && Object.keys(dimension).length > 0) {
+        const [field, value] = Object.entries(dimension)[0];
+        if (isDueDaysField(field)) {
+          dueDaysFilterValue = value as string;
+        } else if (dashBoardType === "trend") {
+          query[`${field}`] = value;
+        } else {
+          filters[`${field}`] = value;
+        }
       }
+    });
+  }
 
-      // Add groupBy conditions to match
-      if (groupBy && Array.isArray(groupBy)) {
-        groupBy.forEach((group) => {
-          if (group && typeof group === "object" && Object.keys(group).length > 0) {
-            const [field, value] = Object.entries(group)[0];
-            filters[`${field}`] = value;
-          }
-        });
+  // Handle groupBy
+  if (groupBy && Array.isArray(groupBy)) {
+    groupBy.forEach(group => {
+      if (group && typeof group === "object" && Object.keys(group).length > 0) {
+        const [field, value] = Object.entries(group)[0];
+        if (isDueDaysField(field)) {
+          dueDaysFilterValue = value as string;
+        } else {
+          filters[`${field}`] = value;
+        }
       }
+    });
+  }
+  console.log('dueDaysFilterValue',dueDaysFilterValue);
+  // Handle dueDays filter using DueDate/DateTaken
+  if (dueDaysFilterValue && dueDaysFilterValue !== "Total Dues") {
+    const now = new Date();
+    const bucketMap: Record<string, [number, number]> = isCompleted
+      ? {
+          "0-1 Months": [0, 30],
+          "2-3 Months": [31, 90],
+          "4-6 Months": [91, 180],
+          "7-12 Months": [181, 365],
+        }
+      : {
+          "0-3 Days": [0, 3],
+          "4-7 Days": [4, 7],
+          "8-15 Days": [8, 15],
+          "16-30 Days": [16, 30],
+        };
 
-      dashboardFilters.filters = filters;
+    const range = bucketMap[dueDaysFilterValue];
+    if (range) {
+      const [startDays, endDays] = range;
+      const dateField = isCompleted ? "DateTaken" : "DueDate";
 
-      const result = await defaultDataSourceVersionValue.getDataSourceVersionValueWidgetDataV2({
-        schemaName,
-        query,
-        dashboardFilters,
-        entityId: dataSource.entityId,
-        aggregation:{type: 'count',attributeName: '_id'},
-        conditions,
-        dashBoardType,
-        dataSourceDetails: dataSource,
-        isPaginate: true,
-        page,
-        limit
-      });
-      console.log('results',JSON.stringify(result));
-      dataResults = result?.data ?? [];
-      pagination = result?.pagination || {};
-     
-    }else{
+      // Only consider date portion, always midnight
+      const startDate = new Date(now);
+      startDate.setUTCDate(startDate.getUTCDate() + (isCompleted ? -endDays : startDays));
+      startDate.setUTCHours(0, 0, 0, 0);
+
+      const endDate = new Date(now);
+      endDate.setUTCDate(endDate.getUTCDate() + (isCompleted ? -startDays : endDays));
+      endDate.setUTCHours(0, 0, 0, 0);
+
+
+      // Add date range to filters directly
+      filters[`${dateField}`] = { $gte: startDate, $lte: endDate };
+    }
+  }
+  console.log('filters',JSON.stringify(filters));
+  // Assign filters to dashboardFilters
+  dashboardFilters.filters = filters;
+
+  // Fetch data
+  const result = await defaultDataSourceVersionValue.getDataSourceVersionValueWidgetDataV2({
+    schemaName,
+    query,
+    dashboardFilters,
+    entityId: dataSource.entityId,
+    aggregation: { type: "count", attributeName: "_id" },
+    conditions,
+    dashBoardType,
+    dataSourceDetails: dataSource,
+    isPaginate: true,
+    page,
+    limit,
+  });
+
+  console.log("results", JSON.stringify(result));
+  dataResults = result?.data ?? [];
+  pagination = result?.pagination || {};
+}else{
       // Helper function to get field type from entity
       const getFieldType = (fieldName: string) => {
         const attribute = entity.attributes.find((attr: any) => attr.name === fieldName);

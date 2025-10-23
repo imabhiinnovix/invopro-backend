@@ -1300,7 +1300,7 @@ async function addDueDaysDimensionWithTotal({
   getLabelByMappedAttributeName?: (details: any) => Promise<Record<string, string>>;
   dataSourceDetails?: any;
 }) {
-  const statusFilter = dashboardFilters?.filters?.["Derived.Status"] ?? "Pending";
+  const statusFilter = dashboardFilters?.filters?.["Derived.Case Status"] ?? "Pending";
   const isCompleted = statusFilter === "Completed";
 
   // Step 1: Compute dueDays
