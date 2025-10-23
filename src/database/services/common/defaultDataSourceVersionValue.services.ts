@@ -1515,10 +1515,6 @@ export const getDataSourceVersionValueV2 = async ({
     const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
     const entity: any = await findEntityById(entityId);
 
-    // Normalize dimension and groupBy: remove "Derived." prefix from all fields
-    dimension = dimension.map((d) => d.replace(/^Derived\./, ""));
-    groupBy = groupBy.map((g) => g.replace(/^Derived\./, ""));
-
 
     // const attributesMap: Record<string, any> = entity.attributes.reduce((acc, attr) => {
     //   acc[attr.name] = attr;

@@ -665,6 +665,7 @@ export const getNewChartData = async ({
               dataSourceVersionId: { $in: dataSourceVersionIdArray }, 
               status: 'active' 
             };
+
     const result = await getDataSourceVersionValueV2({
       schemaName,
       query,
@@ -737,6 +738,10 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
 
     const dataSourceDetails: any= await dataSourceService.findDataSourceById(dataSourceId);
     let result: any;
+
+    // Normalize dimension and groupBy: remove "Derived." prefix from all fields
+    dimensions = dimensions.map((d) => d.replace(/^Derived\./, ""));
+    groupBy = groupBy.map((g) => g.replace(/^Derived\./, ""));
 
     const isReferenceField = await checkReferenceFieldExist(dataSourceDetails);
     if(isReferenceField == true){
