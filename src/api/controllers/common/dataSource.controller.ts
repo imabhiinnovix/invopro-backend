@@ -529,7 +529,7 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
   const filters: Record<string, any> = {};
   let dueDaysFilterValue: string | null = null;
 
-  const isDueDaysField = (key: string) => key === "dueDays";
+  const isDueDaysField = (key: string) => key === "Derived.dueDays";
 
   // Determine case status
   const statusFilter = dashboardFilters?.filters?.["Derived.Case Status"] ?? "Pending";
@@ -564,7 +564,6 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
       }
     });
   }
-  console.log('dueDaysFilterValue',dueDaysFilterValue);
   // Handle dueDays filter using DueDate/DateTaken
   if (dueDaysFilterValue && dueDaysFilterValue !== "Total Dues") {
     const now = new Date();
@@ -601,7 +600,6 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
       filters[`${dateField}`] = { $gte: startDate, $lte: endDate };
     }
   }
-  console.log('filters',JSON.stringify(filters));
   // Assign filters to dashboardFilters
   dashboardFilters.filters = filters;
 
