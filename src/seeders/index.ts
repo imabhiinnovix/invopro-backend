@@ -1075,11 +1075,11 @@ export async function seedDatabase() {
           groupBy: [],
           aggregation: { type: 'Count', attributeName: 'CaseNumber' },
           position: { x: 0, y: 0, index: 3 },
-          conditions: [[{
+          conditions: [{
                     field: "ActionDue.ReportCriticalEvent",
                     operator: "eq",
                     value: "N",
-                }],],
+                }],
           dataSourceId: entityDataSourceMapReportivix.case_list.dataSourceId,
           entityId: entityDataSourceMapReportivix.case_list.entityId,
           isIncremental: false,
@@ -1139,11 +1139,11 @@ export async function seedDatabase() {
           groupBy: [],
           aggregation: { type: 'Count', attributeName: 'CaseNumber' },
           position: { x: 0, y: 0, index: 3 },
-          conditions: [[{
+          conditions: [{
                     field: "ActionDue.ReportCriticalEvent",
                     operator: "eq",
                     value: "N",
-                }],],
+                }],
           dataSourceId: entityDataSourceMapSabic.case_list.dataSourceId,
           entityId: entityDataSourceMapSabic.case_list.entityId,
           isIncremental: false,
