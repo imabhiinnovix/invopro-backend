@@ -121,7 +121,7 @@ export async function seedDerivedField({ derivedFieldMapping, entityMapping }) {
           conditionOperator: 'AND',
           conditions: [
             {
-              fieldId: entityMapping.case_list.dueDateAttributeId,
+              fieldId: entityMapping.case_list.dateTakenAttributeId,
               operator: 'not_exists',
             },
           ],
@@ -131,7 +131,7 @@ export async function seedDerivedField({ derivedFieldMapping, entityMapping }) {
           conditionOperator: 'AND',
           conditions: [
             {
-              fieldId: entityMapping.case_list.dueDateAttributeId,
+              fieldId: entityMapping.case_list.dateTakenAttributeId,
               operator: 'exists',
             },
           ],
