@@ -6,8 +6,16 @@ import config from '../../../config';
 
 const ConditionSchema = new Schema(
   {
-    fieldId: { type: Schema.Types.ObjectId, required: true }, // e.g., "Entity", "ActionDueItem"
-    refFieldId: { type: Schema.Types.ObjectId, required: false }, // e.g., "owner_id", "_id"
+    fieldId: {
+      type: Schema.Types.ObjectId,
+      required: false, // ← allow seeding when undefined
+      default: null,
+    },
+    refFieldId: {
+      type: Schema.Types.ObjectId,
+      required: false,
+      default: null,
+    },
     operator: {
       type: String,
       enum: [
@@ -21,7 +29,10 @@ const ConditionSchema = new Schema(
       ],
       required: true,
     },
-    matchValues: [{ type: Schema.Types.Mixed }],
+    matchValues: {
+      type: [Schema.Types.Mixed],
+      default: [],
+    },
   },
   { _id: false }
 );
@@ -30,7 +41,10 @@ const ValueRuleSchema = new Schema(
   {
     value: { type: String, required: true },
     conditionOperator: { type: String, enum: ['AND', 'OR'], default: 'AND' },
-    conditions: [ConditionSchema],
+    conditions: {
+      type: [ConditionSchema],
+      default: [], // safe default
+    },
   },
   { _id: true }
 );
@@ -38,14 +52,17 @@ const ValueRuleSchema = new Schema(
 const DerivedFieldSchema = new Schema(
   {
     name: { type: String, required: true, unique: true }, // e.g., "report_category"
-    entityId: { type: Schema.Types.ObjectId, ref: 'Entity', required: true }, // Entities this derived field applies to
-    persist: { type: Boolean, default: false }, // If value should be saved in DB
+    entityId: { type: Schema.Types.ObjectId, ref: 'Entity', required: true },
+    persist: { type: Boolean, default: false },
     type: {
       type: String,
       required: true,
       enum: config.FIELD_TYPE_ENUM,
     },
-    valueRules: [ValueRuleSchema],
+    valueRules: {
+      type: [ValueRuleSchema],
+      default: [], // ✅ Ensures null or undefined is treated as empty array
+    },
   },
   { timestamps: true }
 );

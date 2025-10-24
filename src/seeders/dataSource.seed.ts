@@ -1018,10 +1018,8 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           mappedAttributeName: 'CaseType',
         },
         {
-          attributeId: entityDataSourceMap.case_list.attorneyAttributeId,
+          attributeId: entityDataSourceMap.case_list.legalAssistantAttributeId,
           refAttributeId: [
-            entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
-            entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
             entityDataSourceMap.formality_officers.foEmailAttributeId,
           ],
           label: 'FO Email',
@@ -1031,13 +1029,11 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: false,
           isDerived: false,
           type: 'email',
-          mappedAttributeName: 'Attorney.AttorneyName.FOName.FOEmail',
+          mappedAttributeName: 'LegalAssistant.FOEmail',
         },
         {
-          attributeId: entityDataSourceMap.case_list.attorneyAttributeId,
+          attributeId: entityDataSourceMap.case_list.legalAssistantAttributeId,
           refAttributeId: [
-            entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
-            entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
             entityDataSourceMap.formality_officers.escalation1EmailIDAttributeId,
           ],
           label: 'FO Escalation 1 Email',
@@ -1047,13 +1043,11 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: false,
           isDerived: false,
           type: 'email',
-          mappedAttributeName: 'Attorney.AttorneyName.FOName.Escalation1EmailID',
+          mappedAttributeName: 'LegalAssistant.Escalation1EmailID',
         },
         {
-          attributeId: entityDataSourceMap.case_list.attorneyAttributeId,
+          attributeId: entityDataSourceMap.case_list.legalAssistantAttributeId,
           refAttributeId: [
-            entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
-            entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
             entityDataSourceMap.formality_officers.escalation2EmailIDAttributeId,
           ],
           label: 'FO Escalation 2 Email',
@@ -1063,7 +1057,7 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: false,
           isDerived: false,
           type: 'email',
-          mappedAttributeName: 'Attorney.AttorneyName.FOName.Escalation2EmailID',
+          mappedAttributeName: 'LegalAssistant.Escalation2EmailID',
         },
         {
           attributeId: entityDataSourceMap.case_list.actionDueAttributeId,
@@ -1164,13 +1158,13 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
         {
           attributeId: entityDataSourceMap.case_list.legalAssistantAttributeId,
           refAttributeId: [],
-          label: 'legal assistant',
-          isFilterEnable: false,
+          label: 'Formality Officer',
+          isFilterEnable: true,
           isDashboardFilter: true,
           isSortingEnable: false,
           isDisplayEnable: true,
           isDerived: false,
-          type: 'text',
+          type: 'multioption',
           mappedAttributeName: 'LegalAssistant',
         },
         {
@@ -1183,23 +1177,6 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           isDisplayEnable: false,
           isDerived: false,
           type: 'text',
-        },
-        {
-          attributeId: entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
-          refAttributeId: [
-            entityDataSourceMap.case_list.attorneyAttributeId,
-            entityDataSourceMap.ip_counsel.attorneyNameAttributeId,
-            entityDataSourceMap.attorney_fo_mapping.foNameAttributeId,
-            entityDataSourceMap.formality_officers.foNameAttributeId,
-          ],
-          label: 'Formality Officer',
-          isFilterEnable: true,
-          isDashboardFilter: true,
-          isSortingEnable: false,
-          isDisplayEnable: true,
-          isDerived: false,
-          type: 'multioption',
-          mappedAttributeName: 'Attorney.AttorneyName.FOName.FOName',
         },
         {
           attributeId: derivedFieldMapping.reportCategoryDerivedFieldId,

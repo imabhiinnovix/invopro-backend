@@ -799,6 +799,7 @@ const derivedField = {
   inHouseDerivedFieldId: new mongoose.Types.ObjectId('68d646483c915b838889d92c'),
   caseListStatusPendingDerivedFieldId: new mongoose.Types.ObjectId('68d646f33c915b838889d936'),
   reportCategoryDerivedFieldId: new mongoose.Types.ObjectId('68d646ca3c915b838889d930'),
+  dueDaysDerivedFieldId: new mongoose.Types.ObjectId('68d646ca3c915b838889d945'),
 };
 
 export async function seedDatabase() {
@@ -1037,17 +1038,17 @@ export async function seedDatabase() {
     await seedDashboardsForOrganization({
       organizationId: payload.reportivixOrganizationId,
       widgetThemeId: payload.widgetThemeId,
-      dashboardName: 'Notivix Dashboard',
+      dashboardName: 'Notification Dashboard',
       entityDataSourceMap: entityDataSourceMapReportivix,
       widgets: [
         {
           widgetTypeId: payload.verticalBarChartId,
           name: 'Formality Officers',
-          dimensions: 'Attorney.AttorneyName.FOName.FOName',
+          dimensions: 'LegalAssistant',
           groupBy: ['ActionDue.ReportCriticalEvent'],
           aggregation: { type: 'Count', attributeName: 'CaseNumber' },
           position: { x: 0, y: 0, index: 0 },
-          conditions: [{ field: 'Attorney.AttorneyName.FOName.FOName', operator: 'notblank', value: '' }],
+          conditions: [{ field: 'LegalAssistant', operator: 'notblank', value: '' }],
           dataSourceId: entityDataSourceMapReportivix.case_list.dataSourceId,
           entityId: entityDataSourceMapReportivix.case_list.entityId,
           isIncremental: false,
@@ -1057,17 +1058,17 @@ export async function seedDatabase() {
     await seedDashboardsForOrganization({
       organizationId: payload.sabicOrganizationId,
       widgetThemeId: payload.widgetThemeId,
-      dashboardName: 'Notivix Dashboard',
+      dashboardName: 'Notification Dashboard',
       entityDataSourceMap: entityDataSourceMapSabic,
       widgets: [
         {
           widgetTypeId: payload.verticalBarChartId,
           name: 'Formality Officers',
-          dimensions: 'Attorney.AttorneyName.FOName.FOName',
+          dimensions: 'LegalAssistant',
           groupBy: ['ActionDue.ReportCriticalEvent'],
           aggregation: { type: 'Count', attributeName: 'CaseNumber' },
           position: { x: 0, y: 0, index: 0 },
-          conditions: [{ field: 'Attorney.AttorneyName.FOName.FOName', operator: 'notblank', value: '' }],
+          conditions: [{ field: 'LegalAssistant', operator: 'notblank', value: '' }],
           dataSourceId: entityDataSourceMapSabic.case_list.dataSourceId,
           entityId: entityDataSourceMapSabic.case_list.entityId,
           isIncremental: false,

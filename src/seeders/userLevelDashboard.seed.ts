@@ -39,7 +39,7 @@ export async function seedDashboardsForOrganization({
       // Check if dashboard already exists for this user
       const exists = await Dashboard.findOne({
         createdBy: user._id,
-        name: dashboardName,
+        name: dashboardName
       });
 
       if (exists) {
