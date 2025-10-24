@@ -103,12 +103,17 @@ export const createNotificationTemplate = async (req: Request, res: Response, ne
 
 export const listNotificationTemplate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { page = 1, limit = 10, sort, search } = req.query as any;
+    let { page = 1, limit = 10, sort, search, paginate = true } = req.query as any;
 
     const { organizationId } = req.user;
     const query: any = { organizationId, status: 'active' };
     if (search) {
       query.name = { $regex: search, $options: 'i' };
+    }
+
+    if (!paginate || paginate === 'false') {
+      page = 1;
+      limit = Number.MAX_SAFE_INTEGER; // effectively unlimited
     }
 
     const result = await notificationTemplateService.getNotificationTemplates({
