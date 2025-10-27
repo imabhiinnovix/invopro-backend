@@ -195,6 +195,20 @@ const defaultPermissionsUser = [
     permission: 'GET:/common/department/list',
     isChangeable: true,
   },
+  {
+    permission: 'POST:/common/derivedField/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/common/derivedField/update/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/common/derivedField/delete/:id',
+    isChangeable: true,
+  },
+  { permission: 'GET:/common/derivedField/list', isChangeable: true },
+  { permission: 'GET:/common/derivedField/:id', isChangeable: true },
 ];
 
 const defaultPermissionsAdmin = [
@@ -298,20 +312,6 @@ const defaultPermissionsAdmin = [
     permission: 'POST:/reportivix/customReports/updateSettings/:customReportId',
     isChangeable: true,
   },
-  {
-    permission: 'POST:/common/derivedField/create',
-    isChangeable: true,
-  },
-  {
-    permission: 'PUT:/common/derivedField/update/:id',
-    isChangeable: true,
-  },
-  {
-    permission: 'DELETE:/common/derivedField/delete/:id',
-    isChangeable: true,
-  },
-  { permission: 'GET:/common/derivedField/list', isChangeable: true },
-  { permission: 'GET:/common/derivedField/:id', isChangeable: true },
   {
     permission: 'GET:/notivix/notification-setting/type/list',
     isChangeable: true,
