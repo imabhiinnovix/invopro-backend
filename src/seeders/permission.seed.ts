@@ -1034,11 +1034,11 @@ let permissions = [
   },
   {
     name: 'Summary Notification Type',
-    method: 'GET',
+    method: 'POST',
     resourceId: '/notivix/notification-setting/type/summary',
     extraOptions: {},
     resourceType: 'Notification Setting Type',
-    resourceCode: 'notification_setting_type__summary_get',
+    resourceCode: 'notification_setting_type__summary_create',
     isSuperUser: false,
     isChangeable: true,
   },
