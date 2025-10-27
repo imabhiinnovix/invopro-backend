@@ -256,10 +256,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         errorSchemaName,
         { _id: new ObjectId(errorDataId) },
-        { rowData: rowData },
-        {
-          isErrorLog: -1,
-        }
+        { rowData: rowData, isErrorLog: -1 },
       );
       await dataImportErrorServices.updateDataImportErrors(
         { dataSourceVersionId: dataSourceVersionId, rowNumber: rowNumber },
