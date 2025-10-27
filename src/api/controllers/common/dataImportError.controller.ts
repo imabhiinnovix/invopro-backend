@@ -103,7 +103,6 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       rowNumber,
       dataSourceVersionId,
       dataSourceId,
-      errorDataId,
       rowData,
       attributeOptionId,
       fileAttributeValue,
@@ -253,10 +252,21 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
 
       await updateCustomDataSourceVersionIsCurrentFunction({ dataSourceVersionId });
     } else if (action === 'update') {
+
+      const updateFields: any = {};
+      for (const [key, value] of Object.entries(rowData)) {
+        updateFields[`rowData.${key}`] = value;
+      }
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         errorSchemaName,
-        { _id: new ObjectId(errorDataId) },
-        { rowData: rowData, isErrorLog: -1 },
+        {
+          dataSourceVersionId: new ObjectId(dataSourceVersionId),
+          rowNumber: rowNumber,
+        },
+        updateFields, // ✅ only update given keys inside rowData
+        {
+          isErrorLog: -1,
+        }
       );
       await dataImportErrorServices.updateDataImportErrors(
         { dataSourceVersionId: dataSourceVersionId, rowNumber: rowNumber },
