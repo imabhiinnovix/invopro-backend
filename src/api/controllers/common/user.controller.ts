@@ -195,7 +195,7 @@ export const getUserList = async (req: Request, res: Response, next: NextFunctio
 
 export const getUserById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.user;
+    const { userId, organizationId } = req.user;
 
     let user = await userService.findUserById(userId, [
       { path: 'organizationId', select: 'id name code status' },
@@ -223,9 +223,12 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
       user.imagePath = `${process.env.BASE_BACKEND_URL}/${user.imagePath}`;
     }
     const permissionDetails = await roleHasPermissionService.getPermissionsByRoleIds(roleIds);
-
+    const query: any = {
+      isChangeable: true,
+      $or: [{ organizationId: { $exists: false } }, { organizationId: new Types.ObjectId(organizationId) }],
+    };
     let allPermissionResult = await permissionService.getPermissionList({
-      query: {},
+      query,
       page: 1,
       limit: 0,
       populate: ['dataSourceId'],
