@@ -1215,6 +1215,18 @@ function getDataSourceToBeSeed({ entityDataSourceMap, derivedFieldMapping, organ
           mappedAttributeName: 'Case Status',
         },
         {
+          attributeId: derivedFieldMapping.dueDaysDerivedFieldId,
+          refAttributeId: [],
+          label: 'Due Days',
+          isFilterEnable: false,
+          isDashboardFilter: false,
+          isSortingEnable: false,
+          isDisplayEnable: false,
+          isDerived: true,
+          type: 'text',
+          mappedAttributeName: 'dueDays',
+        },
+        {
           attributeId: entityDataSourceMap.case_list.sbuAttributeId,
           refAttributeId: [],
           label: 'SBU',
