@@ -6706,11 +6706,11 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'LegalAssistant',
           mappingName: 'LegalAssistant',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
-          optionAttributeId: null,
+          optionAttributeId: attributeOptionMap.foName.id,
           cleaner: [],
           referenceEntitySetting: {
             refEntityId: entityDataSourceMap.formality_officers.entityId,
