@@ -20,7 +20,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     let {
       email,
       password,
-      moblie,
+      mobile,
       organizationId,
       firstName,
       lastName,
@@ -129,7 +129,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       firstName,
       lastName,
       roleIds,
-      moblie,
+      mobile,
       organizationId: createUserOrganizationId,
       status: 'active',
       isVerified: true,
@@ -331,7 +331,7 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
     const {
       firstName,
       lastName,
-      moblie,
+      mobile,
       roleIds,
       status,
       password,
@@ -438,7 +438,7 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
 
     if (firstName) updateData.firstName = firstName;
     if (lastName) updateData.lastName = lastName;
-    if (moblie) updateData.moblie = moblie;
+    if (mobile) updateData.mobile = mobile;
     if (roleIds) updateData.roleIds = roleIds;
     if (status) updateData.status = status;
     if (password) updateData.password = await hashPassword(password);
