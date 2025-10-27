@@ -97,7 +97,7 @@ export async function seedChart(payload) {
         required: true,
         multiple: true,
         label: 'Dimensions',
-        type: 'multiselect',
+        type: 'multiselect' as const,
       },
       {
         fieldName: 'groupBy',
@@ -105,7 +105,7 @@ export async function seedChart(payload) {
         required: true,
         multiple: true,
         label: 'Group By',
-        type: 'multiselect',
+        type: 'multiselect' as const,
       },
       {
         fieldName: 'size',
@@ -113,7 +113,7 @@ export async function seedChart(payload) {
         required: false,
         multiple: true,
         label: 'Size',
-        type: 'select',
+        type: 'select' as const,
       },
       {
         fieldName: 'aggregation',
@@ -121,7 +121,7 @@ export async function seedChart(payload) {
         required: true,
         multiple: false,
         label: 'Aggregation',
-        type: 'select',
+        type: 'select' as const,
       },
       {
         fieldName: 'conditions',
@@ -129,7 +129,7 @@ export async function seedChart(payload) {
         required: false,
         multiple: true,
         label: 'Conditions',
-        type: 'multiselect',
+        type: 'multiselect' as const,
       },
     ],
     number: [
@@ -434,8 +434,13 @@ export async function seedChart(payload) {
   ];
 
   for (const chart of chartData) {
-    const existingChart: any = await WidgetType.findById(chart.id);
-
+    // const existingChart: any = await WidgetType.findById(chart.id);
+    const existingChart = await WidgetType.findOne({
+      $or: [
+        { _id: chart.id },
+        { name: chart.name, code: chart.code },
+      ],
+    });
     if (!existingChart) {
       const newChart = new WidgetType({
         _id: chart.id,

@@ -6712,6 +6712,11 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
           transformations: [],
           optionAttributeId: null,
           cleaner: [],
+          referenceEntitySetting: {
+            refEntityId: entityDataSourceMap.formality_officers.entityId,
+            refEntityField: entityDataSourceMap.formality_officers.foNameAttributeId,
+            relationType: 'many_to_one',
+          },
           isReferenceEditable: 'HIDE',
           _id: entityDataSourceMap.case_list.legalAssistantAttributeId,
         },

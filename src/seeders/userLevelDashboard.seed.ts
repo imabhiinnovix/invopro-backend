@@ -15,6 +15,7 @@ export async function seedDashboardsForOrganization({
   dashboardSettings,
   widgets,
   entityDataSourceMap,
+  isDefaultNotivix = false
 }: {
   organizationId: Types.ObjectId;
   widgetThemeId: Types.ObjectId;
@@ -23,6 +24,7 @@ export async function seedDashboardsForOrganization({
   dashboardSettings?: any;
   widgets?: any[];
   entityDataSourceMap: any;
+  isDefaultNotivix?: boolean
 }) {
   try {
     // Fetch all users for this organization
@@ -39,7 +41,7 @@ export async function seedDashboardsForOrganization({
       // Check if dashboard already exists for this user
       const exists = await Dashboard.findOne({
         createdBy: user._id,
-        name: dashboardName,
+        name: dashboardName
       });
 
       if (exists) {
@@ -53,7 +55,6 @@ export async function seedDashboardsForOrganization({
         widgetThemeId: widgetThemeId,
         name: dashboardName,
         description: dashboardDescription || '',
-        isDefaultNotivix: true,
         settings: {
           columnsGrid: 2,
           dashboardType: 'normal',
@@ -65,6 +66,7 @@ export async function seedDashboardsForOrganization({
         isActive: true,
         isShareble: false,
         isDeleted: false,
+        isDefaultNotivix
       });
     }
 

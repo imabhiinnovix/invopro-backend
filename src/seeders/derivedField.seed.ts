@@ -121,7 +121,7 @@ export async function seedDerivedField({ derivedFieldMapping, entityMapping }) {
           conditionOperator: 'AND',
           conditions: [
             {
-              fieldId: entityMapping.case_list.dueDateAttributeId,
+              fieldId: entityMapping.case_list.dateTakenAttributeId,
               operator: 'not_exists',
             },
           ],
@@ -131,18 +131,28 @@ export async function seedDerivedField({ derivedFieldMapping, entityMapping }) {
           conditionOperator: 'AND',
           conditions: [
             {
-              fieldId: entityMapping.case_list.dueDateAttributeId,
+              fieldId: entityMapping.case_list.dateTakenAttributeId,
               operator: 'exists',
             },
           ],
         },
       ],
     },
+    {
+      _id: derivedFieldMapping.dueDaysDerivedFieldId,
+      name: 'dueDays',
+      entityId: entityMapping.case_list.entityId,
+      persist: true,
+      type: 'text',
+      valueRules: [],
+    },
   ];
 
   try {
     for (const derivedField of derivedFields) {
-      const existing = await DerivedField.findById(derivedField._id);
+       const existing = await DerivedField.findOne({
+        $or: [{ _id: derivedField._id }, { name: derivedField.name }],
+      });
 
       if (!existing) {
         await DerivedField.create(derivedField);
