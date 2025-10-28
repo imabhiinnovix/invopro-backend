@@ -526,7 +526,7 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
     status: "active",
   };
 
-  const filters: Record<string, any> = {};
+  const filters: Record<string, any> = dashboardFilters?.filters ?? {};
   let dueDaysFilterValue: string | null = null;
 
   const isDueDaysField = (key: string) => key === "Derived.dueDays";
