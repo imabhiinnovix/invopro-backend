@@ -10,6 +10,7 @@ import mongoose from 'mongoose';
 import * as attributeOptionService from '../../../database/services/common/attributeOption.services';
 import * as dataSourceVersionValueService from '../../../database/services/common/defaultDataSourceVersionValue.services';
 import { updateCustomDataSourceVersionIsCurrentFunction } from './dataSourceVersion.controller';
+import { getAttributeByName } from '../../../utils/entity.utils';
 const ObjectId = mongoose.Types.ObjectId;
 
 export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
@@ -254,8 +255,14 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
     } else if (action === 'update') {
 
       const updateFields: any = {};
+      const entityDetails = dataSourceDetails?.entityId as any;
       for (const [key, value] of Object.entries(rowData)) {
-        updateFields[`rowData.${key}`] = value;
+        const attribute: any = await getAttributeByName(entityDetails, key);
+        if(attribute.type == 'date' || attribute.type == 'date-range' && value){
+          updateFields[`rowData.${key}`] = new Date(value as string);
+        }else{
+          updateFields[`rowData.${key}`] = value;
+        }
       }
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         errorSchemaName,
