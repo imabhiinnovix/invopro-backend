@@ -54,6 +54,7 @@ export const generateSupplementalIpReport = async ({
   userId,
   orgCode,
   organizationId,
+  isSupplementalIntermediate
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
@@ -89,6 +90,7 @@ export const generateSupplementalIpReport = async ({
   userId: string;
   orgCode: string;
   organizationId: string;
+  isSupplementalIntermediate: boolean;
 }) => {
   try {
     const newFilePath = reportRequestPayload.filePath;
@@ -470,6 +472,10 @@ export const generateSupplementalIpReport = async ({
       isRowData: true,
       sbuHeaders: patentValueCoverageNewSBUHeadersAll,
     });
+
+    if(isSupplementalIntermediate === true){
+      return newPatentValueCoverageRawData;
+    }
 
     const newPatentValueCoverage: any[] = [];
     const total = {

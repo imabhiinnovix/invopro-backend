@@ -151,6 +151,10 @@ const defaultPermissionsUser = [
     isChangeable: true,
   },
   {
+    permission: 'GET:/reportivix/customReports/downloadSupplementalIntermediate/:customReportId',
+    isChangeable: true,
+  },
+  {
     permission: 'GET:/reportivix/customReports/reportDataOnDataSourceVersionId/:dataSourceVersionId',
     isChangeable: true,
   },

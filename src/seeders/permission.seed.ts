@@ -855,6 +855,16 @@ let permissions = [
   {
     name: 'Download Report',
     method: 'GET',
+    resourceId: '/reportivix/customReports/downloadSupplementalIntermediate/:customReportId',
+    extraOptions: {},
+    resourceType: 'Custom Report',
+    resourceCode: 'customReport__download_supplemental_intermediate',
+    isSuperUser: false,
+    isChangeable: true,
+  },
+  {
+    name: 'Download Supplemental Report',
+    method: 'GET',
     resourceId: '/reportivix/customReports/download/:reportRequestId',
     extraOptions: {},
     resourceType: 'Custom Report',

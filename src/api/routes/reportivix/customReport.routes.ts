@@ -13,6 +13,7 @@ import {
   getCustomReportDesignDetailsBasedOnReportId,
   getCustomReportSettings,
   updateCustomReportSettings,
+  downloadSupplementalIntermediateReport,
 } from '../../controllers/reportivix/customReport.controller';
 import { permissionMiddleware } from '../../../middlewares/permission.middleware';
 
@@ -29,6 +30,7 @@ router.get(
 router.post('/generate', permissionMiddleware(), generateCustomReports);
 
 router.get('/download/:reportRequestId', permissionMiddleware(), downloadReport);
+router.get('/downloadSupplementalIntermediate/:customReportId', permissionMiddleware(), downloadSupplementalIntermediateReport);
 router.get(
   '/reportDataOnDataSourceVersionId/:dataSourceVersionId',
   permissionMiddleware(),

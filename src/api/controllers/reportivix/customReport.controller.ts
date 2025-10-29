@@ -17,6 +17,8 @@ import * as dataSourceVersionValueService from '../../../database/services/commo
 import mongoose from 'mongoose';
 import { generateCustomReportBasedOnReportRequestId, transformFunctionsMap } from '../../../utils/common.report';
 import * as entityService from '../../../database/services/common/entity.services';
+import fs from "fs";
+import ExcelJS from "exceljs";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -28,6 +30,7 @@ export const generateCustomReportsFunction = async ({
   orgCode,
   reportRequestId,
   isRowData,
+  isSupplementalIntermediate = false
 }: {
   userId: string;
   organizationId: string;
@@ -36,6 +39,7 @@ export const generateCustomReportsFunction = async ({
   orgCode: string;
   reportRequestId?: any;
   isRowData?: boolean;
+  isSupplementalIntermediate?: boolean;
 }) => {
   try {
     const customReportDetails: any = await customReportServices.findCustomReportById(customReportId);
@@ -396,6 +400,7 @@ export const generateCustomReportsFunction = async ({
         userId,
         organizationId,
         orgCode,
+        isSupplementalIntermediate
       });
 
       return data;
@@ -426,6 +431,80 @@ export const generateCustomReports = async (req: Request, res: Response, next: N
     });
   } catch (e) {
     console.log('Error in generateCustomReportsFunction', e);
+    next(e);
+  }
+};
+
+export const downloadSupplementalIntermediateReport = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { customReportId } = req.params;
+    const { versionValue } = req.query;
+    const { userId, organizationId, orgCode } = req?.user;
+
+    // ✅ Ensure versionValue is a plain string
+    const versionValueStr = versionValue?.toString() || "";
+
+    const data = await generateCustomReportsFunction({
+      versionValue: versionValueStr,
+      userId,
+      organizationId,
+      orgCode,
+      customReportId,
+      isRowData: false,
+      isSupplementalIntermediate: true,
+    });
+
+    // 🔹 Create Excel workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Report");
+
+    if (Array.isArray(data) && data.length > 0) {
+      // Set header row from keys
+      const headers = Object.keys(data[0]);
+      worksheet.addRow(headers);
+
+      // Add all data rows
+      data.forEach((item: any) => {
+        worksheet.addRow(Object.values(item));
+      });
+
+      // Apply some basic styling
+      worksheet.columns.forEach((col) => {
+        col.width = 20;
+      });
+      worksheet.getRow(1).font = { bold: true };
+    } else {
+      worksheet.addRow(["No data found"]);
+    }
+
+    // 🔹 Prepare directory and file
+    const tempDir = path.join(__dirname, "../../temp");
+    fs.mkdirSync(tempDir, { recursive: true });
+
+    const fileName = `custom_report_${Date.now()}.xlsx`;
+    const filePath = path.join(tempDir, fileName);
+
+    // Save Excel file temporarily
+    await workbook.xlsx.writeFile(filePath);
+
+    // 🔹 Trigger download
+    res.download(filePath, fileName, (err) => {
+      if (err) {
+        console.error("Error downloading file:", err);
+        res.status(500).send("Error downloading file");
+      }
+
+      // Optional cleanup after download
+      fs.unlink(filePath, (unlinkErr) => {
+        if (unlinkErr) console.warn("Error deleting temp file:", unlinkErr);
+      });
+    });
+  } catch (e) {
+    console.error("Error in downloadSupplementalIntermediateReport:", e);
     next(e);
   }
 };
