@@ -442,11 +442,11 @@ const defaultPermissionsAdmin = [
     permission: 'DELETE:/common/department/delete/:departmentId',
     isChangeable: true,
   },
+  { permission: 'GET:/common/product/list', isChangeable: true },
 ];
 
 const defaultPermissionsPrimarySuperAdmin = [
   ...defaultPermissionsAdmin,
-  { permission: 'GET:/common/product/list', isChangeable: true },
   { permission: 'POST:/common/organization/create', isChangeable: true },
   { permission: 'PUT:/common/organization/update/:organizationId', isChangeable: true },
   { permission: 'DELETE:/common/organization/delete/:organizationId', isChangeable: true },
