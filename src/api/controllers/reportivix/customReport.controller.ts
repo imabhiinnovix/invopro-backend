@@ -10,7 +10,7 @@ import { generateMonthlyIpReport } from '../../../functions/reports/monthlyip';
 import path from 'path';
 
 import * as dataSourceVersionService from '../../../database/services/common/dataSourceVersion.services';
-import { generateSupplementalIpReport } from '../../../functions/reports/supplementalip';
+import { generateSupplementalIntermediateReport, generateSupplementalIpReport } from '../../../functions/reports/supplementalip';
 import { CustomReportModelAccess } from '../../../database/models/reportivix/customReportModels';
 import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
 import * as dataSourceVersionValueService from '../../../database/services/common/defaultDataSourceVersionValue.services';
@@ -30,7 +30,6 @@ export const generateCustomReportsFunction = async ({
   orgCode,
   reportRequestId,
   isRowData,
-  isSupplementalIntermediate = false
 }: {
   userId: string;
   organizationId: string;
@@ -39,7 +38,6 @@ export const generateCustomReportsFunction = async ({
   orgCode: string;
   reportRequestId?: any;
   isRowData?: boolean;
-  isSupplementalIntermediate?: boolean;
 }) => {
   try {
     const customReportDetails: any = await customReportServices.findCustomReportById(customReportId);
@@ -400,7 +398,6 @@ export const generateCustomReportsFunction = async ({
         userId,
         organizationId,
         orgCode,
-        isSupplementalIntermediate
       });
 
       return data;
@@ -447,17 +444,28 @@ export const downloadSupplementalIntermediateReport = async (
 
     // ✅ Ensure versionValue is a plain string
     const versionValueStr = versionValue?.toString() || "";
+    const customReportDetails: any = await customReportServices.findCustomReportById(customReportId);
 
-    const data = await generateCustomReportsFunction({
-      versionValue: versionValueStr,
-      userId,
-      organizationId,
-      orgCode,
-      customReportId,
-      isRowData: false,
-      isSupplementalIntermediate: true,
+    if (!customReportDetails) {
+      throw new Error('Custom report not found');
+    }
+     // Extract all data source IDs
+    const dataSourceIds = customReportDetails.dataSourceIds.map((ds) => ds.dataSourceId);
+
+    const dataSourceVersionDetails = await dataSourceVersionServices.getDataSourceVersionList({
+      query: { dataSourceId: { $in: dataSourceIds }, versionValue: versionValue, isCurrent: true },
     });
-
+    const versionMap = Object.fromEntries(
+      dataSourceVersionDetails.data.map((v) => [v.dataSourceId.toString(), v._id.toString()])
+    );
+    const customReportModel = await CustomReportModelAccess({ orgCode });
+    const portfolioDataSource = customReportDetails.dataSourceIds.find((ds) => ds.code === 'portfolio');
+    const data = await generateSupplementalIntermediateReport({
+        versionValue: versionValueStr,
+        portfolioDataSourceVersionId: versionMap[portfolioDataSource?.dataSourceId!],
+        customReportDetails: customReportDetails,
+        customReportModel,
+      });
     // 🔹 Create Excel workbook
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Report");

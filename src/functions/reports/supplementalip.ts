@@ -54,7 +54,6 @@ export const generateSupplementalIpReport = async ({
   userId,
   orgCode,
   organizationId,
-  isSupplementalIntermediate
 }: {
   reportRequestPayload: any;
   requestedReportId: string;
@@ -90,7 +89,6 @@ export const generateSupplementalIpReport = async ({
   userId: string;
   orgCode: string;
   organizationId: string;
-  isSupplementalIntermediate: boolean;
 }) => {
   try {
     const newFilePath = reportRequestPayload.filePath;
@@ -473,10 +471,6 @@ export const generateSupplementalIpReport = async ({
       sbuHeaders: patentValueCoverageNewSBUHeadersAll,
     });
 
-    if(isSupplementalIntermediate === true){
-      return newPatentValueCoverageRawData;
-    }
-
     const newPatentValueCoverage: any[] = [];
     const total = {
       SBU: 'Total',
@@ -689,5 +683,46 @@ export const generateSupplementalIpReport = async ({
   } catch (e) {
     console.log('Error in generateSupplementalIpReport.', e);
     await reportRequestService.updateReportRequest(requestedReportId, { status: 'failed' });
+  }
+};
+
+
+export const generateSupplementalIntermediateReport = async ({
+  versionValue,
+  portfolioDataSourceVersionId,
+  customReportModel,
+  customReportDetails,
+}: {
+  versionValue: string;
+  portfolioDataSourceVersionId: string;
+  customReportModel: CustomReportModelAccessReturnType;
+  customReportDetails: ICustomReport;
+}) => {
+  try {
+    const currentYear = versionValue.split('-')[0];
+
+    const patentValueCoverageNewSBUHeadersFilter = customReportDetails.filters.find(
+      (filter) => filter.sheetCode === 'patentvaluecoveragenew' && filter.section === 'patentvaluecoveragenew'
+    );
+    const patentValueCoverageNewSBUHeaders = patentValueCoverageNewSBUHeadersFilter?.['columns']
+      ? patentValueCoverageNewSBUHeadersFilter?.['columns']
+      : [];
+    const patentValueCoverageNewSBUHeadersAll = patentValueCoverageNewSBUHeaders.flatMap(
+      (item) => item.attributeValues
+    );
+
+    //02-25-v1:PATENT VALUE COVERAGE-CURRENT YEAR NEW FILINGS
+    const newPatentValueCoverageRawData = await getCurrentYearNewApplicationFiled({
+      portfolioDataSourceVersionId,
+      currentYear,
+      customReportModel,
+      isRowData: true,
+      sbuHeaders: patentValueCoverageNewSBUHeadersAll,
+    });
+
+      return newPatentValueCoverageRawData;
+    
+  } catch (e) {
+    console.log('Error in generateSupplementalIpReport.', e);
   }
 };
