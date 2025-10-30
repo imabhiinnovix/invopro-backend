@@ -9,8 +9,10 @@ import * as importLogDataSourceVersionValueService from '../../../database/servi
 import mongoose from 'mongoose';
 import * as attributeOptionService from '../../../database/services/common/attributeOption.services';
 import * as dataSourceVersionValueService from '../../../database/services/common/defaultDataSourceVersionValue.services';
-import { updateCustomDataSourceVersionIsCurrentFunction } from './dataSourceVersion.controller';
+import { updateCustomDataSourceVersionIsCurrentFunction, validateRowData, handleReferenceSubFields } from './dataSourceVersion.controller';
 import { getAttributeByName } from '../../../utils/entity.utils';
+import { getDataSourceVersion } from '../../../database/services/common/dataSourceVersion.services';
+import { autoPopulateAttributeOptionFromRow } from '../../../utils/attributeOption.utils';
 const ObjectId = mongoose.Types.ObjectId;
 
 export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
@@ -123,7 +125,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       attributeOptionId,
       fileAttributeValue,
     } = req.body;
-    const { orgCode, userId } = req.user;
+    const { orgCode, userId, organizationId } = req.user;
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
     const errorSchemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
       orgCode,
@@ -269,17 +271,50 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       await updateCustomDataSourceVersionIsCurrentFunction({ dataSourceVersionId });
     } else if (action === 'update') {
 
-      const updateFields: any = {};
+      // const updateFields: any = {};
       const entityDetails = dataSourceDetails?.entityId as any;
-      for (const [key, value] of Object.entries(rowData)) {
-        const attribute: any = await getAttributeByName(entityDetails, key);
-        if(attribute.type == 'date' || attribute.type == 'date-range' && value){
-          updateFields[`rowData.${key}`] = new Date(value as string);
-        }else{
-          updateFields[`rowData.${key}`] = value;
-        }
-      }
-      await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+      // for (const [key, value] of Object.entries(rowData)) {
+      //   const attribute: any = await getAttributeByName(entityDetails, key);
+      //   if(attribute.type == 'date' || attribute.type == 'date-range' && value){
+      //     updateFields[`rowData.${key}`] = new Date(value as string);
+      //   }else{
+      //     updateFields[`rowData.${key}`] = value;
+      //   }
+      // }
+      
+      // await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+      //   errorSchemaName,
+      //   {
+      //     dataSourceVersionId: new ObjectId(dataSourceVersionId),
+      //     rowNumber: rowNumber,
+      //   },
+      //   updateFields, // ✅ only update given keys inside rowData
+      //   {
+      //     isErrorLog: -1,
+      //   }
+      // );
+
+    await autoPopulateAttributeOptionFromRow({
+      entityId: entityDetails?._id,
+      attributes: entityDetails.attributes,
+      rowData,
+      userId,
+      organizationId,
+    });
+
+    const { isValid, errors, validatedRowData } = await validateRowData({
+      rowData,
+      attributes: entityDetails.attributes,
+    });
+
+    if (!isValid) {
+      return res.status(400).json({ success: false, errors });
+    }
+    const updateFields: any = {};
+    for (const [key, value] of Object.entries(validatedRowData)) {
+        updateFields[`rowData.${key}`] = value;
+    }
+    await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         errorSchemaName,
         {
           dataSourceVersionId: new ObjectId(dataSourceVersionId),
@@ -289,7 +324,23 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
         {
           isErrorLog: -1,
         }
-      );
+    );
+
+    let version = await getDataSourceVersion({
+      query: {_id: dataSourceVersionId}
+    });
+
+    // 🔹 Handle reference subfields
+    await handleReferenceSubFields({
+      rowData: validatedRowData,
+      attributes: entityDetails.attributes,
+      dataSourceId,
+      versionId: version?._id,
+      versionValue: version?.versionValue,
+      userId,
+      organizationId,
+    });
+
       await dataImportErrorServices.updateDataImportErrors(
         { dataSourceVersionId: dataSourceVersionId, rowNumber: rowNumber },
         { status: 'resolved' }
