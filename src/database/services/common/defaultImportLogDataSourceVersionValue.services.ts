@@ -107,6 +107,20 @@ export const getDataSourceVersionValue = async ({
   }
 };
 
+export const getDataSourceVersionValueCount = async (
+  schemaName: string,
+  query: Record<string, any>,
+  ) => {
+    try {
+      const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
+      const totalCount = DataSourceVersionValue.countDocuments(query);
+
+      return totalCount;
+    } catch (err) {
+      throw err;
+    }
+};
+
 export const updateImportLogDataSourceVersionValue = async (
   schemaName: string,
   query: Record<string, any>,

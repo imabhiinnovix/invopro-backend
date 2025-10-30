@@ -22,6 +22,7 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
     const {
       paginate = 'false',
       dataSourceVersionId,
+      dataSourceId,
       sortBy = 'rowNumber',
       sortOrder = 'asc',
       search,
@@ -30,8 +31,9 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
 
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
+    const { orgCode, userId } = req.user;
 
-    const query: any = { dataSourceVersionId: dataSourceVersionId, status: 'open' };
+    const query: any = { dataSourceVersionId: dataSourceVersionId };
 
     let searchCondition: any[] = [];
     if (search) {
@@ -79,6 +81,17 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
         query,
       });
     }
+    query.status =  {$ne:'open'};
+    const totalActionCount = await dataImportErrorServices.getDataImportErrorRecordsCount(query)
+    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+    const errorSchemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSourceDetails?.code!,
+    });
+    const totalUploadedRecords = await importLogDataSourceVersionValueService.getDataSourceVersionValueCount(
+                                                                    errorSchemaName, 
+                                                                    { dataSourceVersionId: new ObjectId(dataSourceVersionId) }
+                                                                  );
 
     res.status(200).json({
       success: true,
@@ -91,6 +104,8 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
         totalRecords: result.totalCount,
       },
       totalCount: result.totalCount,
+      totalActionCount,
+      totalUploadedRecords
     });
   } catch (err) {
     next(err);

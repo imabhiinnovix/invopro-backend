@@ -436,7 +436,7 @@ async function validateFileData({
           status: 'open',
           fileRowNumber: rowNum,
           fileName,
-          errorMessage: `Error: File ${fileName}, Row ${rowNum} - The attribute "${attrName}" is required but is missing.`,
+          errorMessage: `The attribute "${attrName}" is required but is missing.`,
         });
         newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
       } else if (value !== undefined && value != null && value) {
@@ -476,7 +476,7 @@ async function validateFileData({
               fileRowNumber: rowNum,
               fileName,
               status: 'open',
-              errorMessage: `Error: File ${fileName}, Row ${rowNum} - ${fileKey}, has a value ${value}, but it could not be resolved from the reference entity for the attribute ${attrName}.`,
+              errorMessage: `${attrName}- ${value} not found.`,
             });
             newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
           } else {
@@ -510,7 +510,7 @@ async function validateFileData({
                 status: 'open',
                 fileRowNumber: rowNum,
                 fileName,
-                errorMessage: `Error: File ${fileName}, Row ${rowNum} - ${fileKey} has a value ${value}, but a value of type ${attr.type} was expected from one of the valid settings attribute(${attrName}) options ${attributeOptionValue}.`,
+                errorMessage: `${attrName}- ${value} is not a valid ${attr.type}.Expected value from options: ${attributeOptionValue}.`,
               });
             } else {
               errors.push({
@@ -528,7 +528,7 @@ async function validateFileData({
                 errorCode: ERROR_CODES.INVALID_TYPE.code,
                 fileRowNumber: rowNum,
                 fileName,
-                errorMessage: `Error: File ${fileName}, Row ${rowNum} - ${fileKey}, has a value ${value} of type ${typeof value}, but a value of type ${attr.type} was expected for the settings attribute ${attrName}.`,
+                errorMessage: `${attrName}- Invalid value ${value} for ${attr.type} type`,
               });
             }
             newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
@@ -582,7 +582,7 @@ async function validateFileData({
               fileAttributeValue: displayCompositeKey,
               fileRowNumber: rowNum,
               fileName,
-              errorMessage: `Error: File ${fileName}, Row ${rowNum} - Duplicate combination found for unique keys: ${displayCompositeKey}.`,
+              errorMessage: `Duplicate combination found for unique keys: ${displayCompositeKey}.`,
             });
             newRow.isErrorLog = 1;
           } else {
@@ -659,7 +659,7 @@ export async function validateRowData({
           attributeName: attr.name,
           errorType: 'Reference Error',
           errorCode: '404',
-          errorMessage: `Value "${value}" could not be resolved from reference entity for "${attr.name}".`,
+          errorMessage: `"${attr.name}"- "${value}" not found".`,
         });
       } else {
         validatedRowData[attr.name] = referencedDoc._id;
@@ -679,14 +679,14 @@ export async function validateRowData({
             attributeName: attr.name,
             errorType: 'Type Error',
             errorCode: '400',
-            errorMessage: `Invalid value "${value}" for "${attr.name}". Expected one of: ${attributeOptionValue}`,
+            errorMessage: `${attr.name}- ${value} is not valid ${attr.type}. Expected value from options: ${attributeOptionValue}`,
           });
         } else {
           errors.push({
             attributeName: attr.name,
             errorType: 'Type Error',
             errorCode: '400',
-            errorMessage: `Invalid value "${value}" (expected type ${attr.type}) for "${attr.name}".`,
+            errorMessage: `${attr.name}- Invalid value ${value} for ${attr.type} type`,
           });
         }
       } else {
