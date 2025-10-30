@@ -1448,7 +1448,7 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
   }
 };
 
-async function handleReferenceSubFields({
+export async function handleReferenceSubFields({
   rowData,
   attributes,
   dataSourceId,
