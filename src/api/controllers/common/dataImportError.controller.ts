@@ -410,10 +410,12 @@ export const getErrorRowDataBasedOnDataSourceVersionIdAndRowNumber = async (
       orgCode,
       versionCode: dataSourceDetails?.code!,
     });
-    const rawData = await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(schemaName, {
+    const rawData = await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValuesV1(schemaName, {
       dataSourceVersionId: new ObjectId(dataSourceVersionId),
       rowNumber: Number(rowNumber),
-    });
+    },
+    dataSourceDetails?.entityId
+  );
 
     res.status(200).json({
       success: true,
