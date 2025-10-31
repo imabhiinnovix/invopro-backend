@@ -124,6 +124,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       rowData,
       attributeOptionId,
       fileAttributeValue,
+      attributeName,
     } = req.body;
     const { orgCode, userId, organizationId } = req.user;
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
@@ -342,7 +343,12 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
     });
 
       await dataImportErrorServices.updateDataImportErrors(
-        { dataSourceVersionId: dataSourceVersionId, rowNumber: rowNumber },
+        { 
+          dataSourceVersionId: dataSourceVersionId, 
+          rowNumber: rowNumber,
+          attributeName,
+          fileAttributeValue,
+        },
         { status: 'resolved' }
       );
     } else if (action === 'addOption') {
