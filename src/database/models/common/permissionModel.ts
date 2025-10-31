@@ -85,7 +85,7 @@ const permissionSchema = new Schema<IPermission>(
 );
 
 // Add compound unique index on method + resource
-permissionSchema.index({ resourceCode: 1, OrganizationId: 1 }, { unique: true });
+permissionSchema.index({ resourceCode: 1, organizationId: 1 }, { unique: true });
 
 // Export model
 const Permission = model<IPermission>('permission', permissionSchema);

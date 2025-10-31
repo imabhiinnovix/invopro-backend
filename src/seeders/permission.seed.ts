@@ -2,8 +2,19 @@
 /* @ts-nocheck */
 
 import Permission from '../database/models/common/permissionModel'; // Your Mongoose model
+interface PermissionSeed {
+  name: string;
+  method: string;
+  resourceId: string;
+  extraOptions?: Record<string, any>;
+  resourceType: string;
+  resourceCode: string;
+  isChangeable: boolean;
+  isSuperUser?: boolean;
+  organizationId?: string; // 👈 added optional field
+}
 
-let permissions = [
+let permissions: PermissionSeed[] = [
   {
     name: 'List User',
     method: 'GET',
@@ -180,6 +191,7 @@ let permissions = [
     resourceType: 'Product',
     resourceCode: 'product__list',
     isSuperUser: true,
+    isChangeable: true,
   },
   {
     name: 'Create Organization',
@@ -189,6 +201,7 @@ let permissions = [
     resourceType: 'Organization',
     resourceCode: 'organization__create',
     isSuperUser: true,
+    isChangeable: true,
   },
   {
     name: 'Update Organization',
@@ -198,6 +211,7 @@ let permissions = [
     resourceType: 'Organization',
     resourceCode: 'organization__update',
     isSuperUser: true,
+    isChangeable: true,
   },
   {
     name: 'Delete Organization',
@@ -207,6 +221,7 @@ let permissions = [
     resourceType: 'Organization',
     resourceCode: 'organization__delete',
     isSuperUser: true,
+    isChangeable: true,
   },
   {
     name: 'Organization List',
@@ -216,6 +231,7 @@ let permissions = [
     resourceType: 'Organization',
     resourceCode: 'organization__list',
     isSuperUser: true,
+    isChangeable: true,
   },
   {
     name: 'Get Organization',
@@ -225,6 +241,7 @@ let permissions = [
     resourceType: 'Organization',
     resourceCode: 'organization__get',
     isSuperUser: true,
+    isChangeable: true,
   },
   {
     name: 'Get Current Organization',
@@ -244,6 +261,7 @@ let permissions = [
     resourceType: 'Product Subscription',
     resourceCode: 'productSubscription__list',
     isSuperUser: true,
+    isChangeable: true,
   },
   {
     name: 'Get Entities List',
@@ -499,7 +517,6 @@ let permissions = [
   {
     name: 'Get Chart Data',
     method: 'POST',
-    methodName: 'view',
     resourceId: '/common/dataSourceVersion/chartData',
     extraOptions: {},
     resourceType: 'Data Source Version',
@@ -645,6 +662,7 @@ let permissions = [
     resourceType: 'Widget Type',
     resourceCode: 'widgetType__create',
     isSuperUser: true,
+    isChangeable: true,
   },
   {
     name: 'Update Widget Type',
@@ -654,6 +672,7 @@ let permissions = [
     resourceType: 'Widget Type',
     resourceCode: 'widgetType__update',
     isSuperUser: true,
+    isChangeable: true,
   },
   {
     name: 'Delete Widget Type',
@@ -663,6 +682,7 @@ let permissions = [
     resourceType: 'Widget Type',
     resourceCode: 'widgetType__delete',
     isSuperUser: true,
+    isChangeable: true,
   },
   {
     name: 'Get Widget Type By ID',
@@ -712,6 +732,7 @@ let permissions = [
     resourceType: 'Operator',
     resourceCode: 'operator__update',
     isSuperUser: true,
+    isChangeable: true
   },
   {
     name: 'Create Operator',
@@ -721,6 +742,7 @@ let permissions = [
     resourceType: 'Operator',
     resourceCode: 'operator__create',
     isSuperUser: true,
+    isChangeable: true
   },
   {
     name: 'List Widget Themes',
@@ -1450,7 +1472,14 @@ export async function seedPermissions(permissionList: any[]) {
   for (const perm of permissions) {
     const { resourceCode } = perm;
 
-    const existing = await Permission.findOne({ resourceCode });
+    const query: any = { resourceCode };
+
+    if (perm.organizationId) {
+      query.organizationId = perm.organizationId;
+    }
+
+    const existing = await Permission.findOne(query);
+
 
     if (!existing) {
       const methodName = methodNameArr[perm.method?.toUpperCase()] || 'UNKNOWN';

@@ -19,7 +19,7 @@ const userRoleSchema = new Schema<IUserRole>(
     organizationId: {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: 'organization',
+      ref: 'Organization',
     },
     name: {
       type: String,
