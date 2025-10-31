@@ -471,7 +471,7 @@ export const getErrorRowDataBasedOnDataSourceVersionIdAndRowNumber = async (
     res.status(200).json({
       success: true,
       message: 'Data retrieved sucessfully.',
-      data: rawData,
+      data: rawData[0] ?? rawData,
     });
   } catch (err) {
     console.log('Error in getDataBasedOnDataSourceVersionIdAndRowNumber', err);
