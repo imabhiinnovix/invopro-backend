@@ -55,6 +55,7 @@ const payload = {
   stackedBarLineId: new mongoose.Types.ObjectId('68cd5d2a33e110208844cfc8'),
   comboBarLineId: new mongoose.Types.ObjectId('68cd5d2a33e110208844cfcb'),
   widgetThemeId: new mongoose.Types.ObjectId('67f783d7d2001cac19c75961'),
+  widgetSabicThemeId: new mongoose.Types.ObjectId('67f783d7d2001cac19c75962'),
 };
 
 const entityDataSourceMapReportivix = {
@@ -829,6 +830,13 @@ export async function seedDatabase() {
       ...payload,
       organizationId: payload.reportivixOrganizationId,
       superAdminUserId: payload.reportivixSuperAdminUserId,
+      widgetThemeId: payload.widgetThemeId
+    });
+    await seedWidgetTheme({
+      ...payload,
+      organizationId: payload.sabicOrganizationId,
+      superAdminUserId: payload.reportivixSuperAdminUserId,
+      widgetThemeId: payload.widgetSabicThemeId
     });
 
     await seedProducts(payload);
@@ -1101,7 +1109,7 @@ export async function seedDatabase() {
     });
     await seedDashboardsForOrganization({
       organizationId: payload.sabicOrganizationId,
-      widgetThemeId: payload.widgetThemeId,
+      widgetThemeId: payload.widgetSabicThemeId,
       dashboardName: 'Notification Dashboard',
       entityDataSourceMap: entityDataSourceMapSabic,
       widgets: [
@@ -1218,7 +1226,7 @@ export async function seedDatabase() {
     });
        await seedDashboardsForOrganization({
         organizationId: payload.sabicOrganizationId,
-        widgetThemeId: payload.widgetThemeId,
+        widgetThemeId: payload.widgetSabicThemeId,
         dashboardName: 'Report Dashboard',
         entityDataSourceMap: entityDataSourceMapSabic,
         widgets: [
