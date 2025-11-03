@@ -396,6 +396,22 @@ const defaultPermissionsAdmin = [
     permission: 'DELETE:/notivix/notification-setting/medium/delete',
     isChangeable: true,
   },
+  {
+    permission: 'GET:/notivix/notification-setting/medium/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/notivix/notification-setting/prepared/trigger',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/notivix/notification-setting/prepared/notification/list',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/notivix/notification-setting/prepared/notification/resend',
+    isChangeable: true,
+  },
   { permission: 'GET:/common/dashboardFont/list', isChangeable: true },
   {
     permission: 'GET:/common/dashboardFont/download/:fontId',
