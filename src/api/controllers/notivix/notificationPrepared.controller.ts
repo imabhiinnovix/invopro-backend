@@ -281,7 +281,7 @@ export const resendNotification = async (req: Request, res: Response, next: Next
 
     res.status(200).json({
       success: true,
-      message: `✅ Resend job queued for notification ${notificationId}`,
+      message: `✅ Resend job queued successfully.`,
     });
   } catch (err) {
     console.error(`[${new Date().toISOString()}] ❌ resendNotification failed:`, err);
