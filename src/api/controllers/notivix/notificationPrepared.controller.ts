@@ -13,6 +13,7 @@ import {
   getRecipientName,
   parseTemplate,
 } from '../../../utils/notification.utils';
+import { Queue } from "bullmq";
 
 export const triggerPrepareTodayNotifications = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -249,6 +250,41 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
     });
   } catch (err) {
     console.error(`[${new Date().toISOString()}] Failed to fetch prepared notifications`, err);
+    next(err);
+  }
+};
+
+export const resendNotification = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    console.log(`[${new Date().toISOString()}] 🔁 resendNotification triggered`);
+
+    const { notificationId } = req.body;
+
+    if (!notificationId) {
+      return res.status(400).json({
+        success: false,
+        message: "❌ notificationId is required",
+      });
+    }
+
+    // ✅ Create BullMQ connection (same name as worker uses)
+    const emailQueue = new Queue("emailQueue", {
+      connection: {
+        host: "redis", // or your Redis host
+      },
+    });
+
+    // ✅ Add job to queue — worker will handle the actual sending
+    await emailQueue.add("sendEmail", { notificationId });
+
+    console.log(`[${new Date().toISOString()}] 📬 Queued resend job for notification ${notificationId}`);
+
+    res.status(200).json({
+      success: true,
+      message: `✅ Resend job queued successfully.`,
+    });
+  } catch (err) {
+    console.error(`[${new Date().toISOString()}] ❌ resendNotification failed:`, err);
     next(err);
   }
 };
