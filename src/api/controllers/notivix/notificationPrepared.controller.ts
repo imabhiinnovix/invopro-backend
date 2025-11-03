@@ -256,35 +256,35 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
 
 export const resendNotification = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    console.log(`[${new Date().toISOString()}] 🔁 resendNotification triggered`);
+    console.log(`[${new Date().toISOString()}] resendNotification triggered`);
 
     const { notificationId } = req.body;
 
     if (!notificationId) {
       return res.status(400).json({
         success: false,
-        message: "❌ notificationId is required",
+        message: "notificationId is required",
       });
     }
 
-    // ✅ Create BullMQ connection (same name as worker uses)
+    // Create BullMQ connection (same name as worker uses)
     const emailQueue = new Queue("emailQueue", {
       connection: {
         host: "redis", // or your Redis host
       },
     });
 
-    // ✅ Add job to queue — worker will handle the actual sending
+    // Add job to queue — worker will handle the actual sending
     await emailQueue.add("sendEmail", { notificationId });
 
-    console.log(`[${new Date().toISOString()}] 📬 Queued resend job for notification ${notificationId}`);
+    console.log(`[${new Date().toISOString()}] Queued resend job for notification ${notificationId}`);
 
     res.status(200).json({
       success: true,
-      message: `✅ Resend job queued successfully.`,
+      message: `Resend job queued successfully.`,
     });
   } catch (err) {
-    console.error(`[${new Date().toISOString()}] ❌ resendNotification failed:`, err);
+    console.error(`[${new Date().toISOString()}] resendNotification failed:`, err);
     next(err);
   }
 };
