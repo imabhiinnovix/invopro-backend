@@ -127,6 +127,10 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       attributeName,
     } = req.body;
     const { orgCode, userId, organizationId } = req.user;
+
+    // ✅ Normalize rowNumber to always be an array
+    const rowNumbers = Array.isArray(rowNumber) ? rowNumber : [rowNumber];
+
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
     const errorSchemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
       orgCode,
@@ -139,14 +143,14 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
     });
     if (action === 'discard') {
       await dataImportErrorServices.updateDataImportErrors(
-        { dataSourceVersionId: dataSourceVersionId, rowNumber: rowNumber },
+        { dataSourceVersionId: dataSourceVersionId, rowNumber: { $in: rowNumbers } },
         { status: 'discarded' }
       );
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         errorSchemaName,
         {
           dataSourceVersionId: new ObjectId(dataSourceVersionId),
-          rowNumber: rowNumber,
+          rowNumber: { $in: rowNumbers },
         },
         {
           isErrorLog: 1000,
@@ -319,7 +323,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
         errorSchemaName,
         {
           dataSourceVersionId: new ObjectId(dataSourceVersionId),
-          rowNumber: rowNumber,
+          rowNumber: { $in: rowNumbers },
         },
         updateFields, // ✅ only update given keys inside rowData
         {
@@ -345,7 +349,7 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       await dataImportErrorServices.updateDataImportErrors(
         { 
           dataSourceVersionId: dataSourceVersionId, 
-          rowNumber: rowNumber,
+          rowNumber: { $in: rowNumbers },
           attributeName,
           fileAttributeValue,
         },
@@ -407,12 +411,12 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       await updateCustomDataSourceVersionIsCurrentFunction({ dataSourceVersionId });
     } else if (action === 'unique') {
       await dataImportErrorServices.updateDataImportErrors(
-        { dataSourceVersionId: dataSourceVersionId, rowNumber: rowNumber },
+        { dataSourceVersionId: dataSourceVersionId, rowNumber: { $in: rowNumbers } },
         { status: 'resolved' }
       );
       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
         errorSchemaName,
-        { dataSourceVersionId: new ObjectId(dataSourceVersionId), rowNumber: rowNumber },
+        { dataSourceVersionId: new ObjectId(dataSourceVersionId), rowNumber: { $in: rowNumbers } },
         {},
         {
           isErrorLog: -1,
