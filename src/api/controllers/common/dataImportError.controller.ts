@@ -22,35 +22,64 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
 ) => {
   try {
     const {
-      paginate = 'false',
+      paginate = "false",
       dataSourceVersionId,
       dataSourceId,
-      sortBy = 'rowNumber',
-      sortOrder = 'asc',
+      sortBy = "rowNumber",
+      sortOrder = "asc",
       search,
-      searchFields,
+      searchFields = [],
+      filters = {},
     }: any = req.query;
 
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
-    const { orgCode, userId } = req.user;
+    const { orgCode } = req.user;
 
-    const query: any = { dataSourceVersionId: dataSourceVersionId };
+    // ✅ Base query
+    const query: any = { dataSourceVersionId };
+    // Parse filters safely (GET query sends them as string)
+    let parsedFilters: Record<string, any> = {};
+    if (filters) {
+      try {
+        if (typeof filters === "string") {
+          parsedFilters = JSON.parse(filters);
+        } else if (typeof filters === "object") {
+          parsedFilters = filters;
+        }
+      } catch (err) {
+        console.warn("Invalid filters format, ignoring filters:", filters);
+      }
+    }    
+    // ✅ Apply filters (with multi-value $in support)
+    if (parsedFilters && typeof parsedFilters === "object") {
+      const filterableFields = [
+        "errorCode",
+        "status",
+        "fileName",
+        "attributeName",
+        "fileAttributeValue",
+      ];
 
+      for (const field of filterableFields) {
+        const value = parsedFilters[field];
+        if (value !== undefined && value !== null && value !== "") {
+          if (Array.isArray(value)) {
+            query[field] = { $in: value };
+          } else {
+            query[field] = value;
+          }
+        }
+      }
+    }
+
+    // ✅ Build search conditions (to apply within filtered data)
     let searchCondition: any[] = [];
-    if (search) {
-      const regex = new RegExp(search as string, 'i');
 
-      searchCondition = [
-        // rowNumber is number → convert to string for regex
-        {
-          $expr: {
-            $regexMatch: {
-              input: { $toString: '$rowNumber' },
-              regex: regex,
-            },
-          },
-        },
+    if (search) {
+      const regex = new RegExp(search as string, "i");
+      const defaultSearchFields = [
+        { $expr: { $regexMatch: { input: { $toString: "$rowNumber" }, regex } } },
         { errorCode: { $regex: regex } },
         { fileName: { $regex: regex } },
         { errorMessage: { $regex: regex } },
@@ -58,61 +87,79 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
         { status: { $regex: regex } },
       ];
 
-      // Support dynamic searchFields array
-      if (Array.isArray(searchFields) && searchFields.length > 0) {
-        searchFields.forEach((field: string) => {
-          searchCondition.push({ [field]: { $regex: regex } });
-        });
-      }
+      searchCondition.push(...defaultSearchFields);
 
-      if (searchCondition.length > 0) {
-        query.$or = searchCondition;
+      // ✅ Include dynamic fields if not already covered
+      if (Array.isArray(searchFields) && searchFields.length > 0) {
+        for (const field of searchFields) {
+          if (!defaultSearchFields.some((obj) => Object.keys(obj)[0] === field)) {
+            searchCondition.push({ [field]: { $regex: regex } });
+          }
+        }
       }
     }
-    const sort: any = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+
+    // ✅ Combine filters + search
+    const finalQuery =
+      searchCondition.length > 0
+        ? { $and: [query, { $or: searchCondition }] }
+        : query;
+
+    // ✅ Sorting
+    const sort: any = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
     let result: any = {};
-    if (paginate) {
+    if (paginate === "true") {
       result = await dataImportErrorServices.getDataSourceVersionErrrorList({
-        query,
+        query: finalQuery,
         page,
         limit,
         sort,
       });
     } else {
       result = await dataImportErrorServices.getDataSourceVersionErrrorList({
-        query,
+        query: finalQuery,
+        sort,
       });
     }
-    query.status =  {$ne:'open'};
-    const totalActionCount = await dataImportErrorServices.getDataImportErrorRecordsCount(query)
+
+    // ✅ Count non-open errors
+    const closedQuery = { ...finalQuery, status: { $ne: "open" } };
+    const totalActionCount = await dataImportErrorServices.getDataImportErrorRecordsCount(closedQuery);
+
+    // ✅ Get total uploaded records
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
     const errorSchemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
       orgCode,
       versionCode: dataSourceDetails?.code!,
     });
-    const totalUploadedRecords = await importLogDataSourceVersionValueService.getDataSourceVersionValueCount(
-                                                                    errorSchemaName, 
-                                                                    { dataSourceVersionId: new ObjectId(dataSourceVersionId) }
-                                                                  );
 
+    const totalUploadedRecords =
+      await importLogDataSourceVersionValueService.getDataSourceVersionValueCount(
+        errorSchemaName,
+        { dataSourceVersionId: new ObjectId(dataSourceVersionId) }
+      );
+
+    // ✅ Final response
     res.status(200).json({
       success: true,
-      message: 'Data Import Error Fetched Successfully',
+      message: "Data Import Error Fetched Successfully",
       data: result.data,
       pagination: {
-        page: page,
+        page,
         limit,
         totalPage: Math.ceil(result.totalCount / limit),
         totalRecords: result.totalCount,
       },
       totalCount: result.totalCount,
       totalActionCount,
-      totalUploadedRecords
+      totalUploadedRecords,
     });
   } catch (err) {
+    console.error(`[${new Date().toISOString()}] Error fetching data import errors:`, err);
     next(err);
   }
 };
+
 
 export const resolveDataImportError = async (req: Request, res: Response, next: NextFunction) => {
   try {
