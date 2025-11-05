@@ -155,6 +155,166 @@ export async function transformRowDataWithLabels(
   return transformed;
 }
 
+/**
+ * Create a MongoDB condition object from an array of simple filter conditions.
+ *
+ * Each condition should have:
+ * {
+ *   field: string,
+ *   operator: string,
+ *   value?: any
+ * }
+ */
+export async function createMongoCondition(conditions: any[] = []): Promise<Record<string, any>> {
+  if (!Array.isArray(conditions) || conditions.length === 0) return {};
+
+  // Escape special regex characters
+  const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const trimValues = (values: any): string[] => {
+    if (!values) return [];
+    if (!Array.isArray(values)) values = [values];
+    return values
+      .flatMap((v) => (typeof v === "string" && v.includes(",") ? v.split(",") : v))
+      .map((v) => (typeof v === "string" ? v.trim() : v))
+      .filter((v) => v !== "");
+  };
+
+  const buildRegexOr = (field: string, values: string[], negate = false) => {
+    if (values.length === 1) {
+      return negate
+        ? { [field]: { $not: { $regex: `^${escapeRegExp(values[0])}$`, $options: "i" } } }
+        : { [field]: { $regex: `^${escapeRegExp(values[0])}$`, $options: "i" } };
+    }
+    const orConditions = values.map((v) => ({
+      [field]: negate
+        ? { $not: { $regex: `^${escapeRegExp(v)}$`, $options: "i" } }
+        : { $regex: `^${escapeRegExp(v)}$`, $options: "i" },
+    }));
+    return negate ? { $and: orConditions } : { $or: orConditions };
+  };
+
+  const now = new Date();
+  const getTargetDate = (offset: number, timeUnit: string, reverse = false): Date => {
+    const multiplier =
+      timeUnit === "d" ? 86400000 : timeUnit === "h" ? 3600000 : 1000; // days, hours, seconds
+    const sign = reverse ? -1 : 1;
+    return new Date(now.getTime() + offset * multiplier * sign);
+  };
+
+  const allConditions: any[] = [];
+
+  for (const cond of conditions) {
+    const { field, operator, value, timeUnit } = cond;
+    if (!field) continue;
+
+    const trimmedValues = trimValues(value);
+    let mongoCond: any = {};
+
+    switch (operator) {
+      case "eq":
+        mongoCond = buildRegexOr(field, trimmedValues, false);
+        break;
+
+      case "ne":
+        mongoCond = buildRegexOr(field, trimmedValues, true);
+        break;
+
+      case "contains":
+        mongoCond = { [field]: { $regex: escapeRegExp(value), $options: "i" } };
+        break;
+
+      case "notcontains":
+        mongoCond = { [field]: { $not: { $regex: escapeRegExp(value), $options: "i" } } };
+        break;
+
+      case "startswith":
+        mongoCond = { [field]: { $regex: `^${escapeRegExp(value)}`, $options: "i" } };
+        break;
+
+      case "endswith":
+        mongoCond = { [field]: { $regex: `${escapeRegExp(value)}$`, $options: "i" } };
+        break;
+
+      case "blank":
+        mongoCond = { [field]: { $in: [null, ""] } };
+        break;
+
+      case "notblank":
+        mongoCond = { [field]: { $nin: [null, ""] } };
+        break;
+
+      case "before":
+        mongoCond = { [field]: { $lt: getTargetDate(Number(value), timeUnit || "d") } };
+        break;
+
+      case "after":
+        mongoCond = { [field]: { $gt: getTargetDate(Number(value), timeUnit || "d") } };
+        break;
+
+      case "on":
+        mongoCond = {
+          [field]: {
+            $gte: new Date(value),
+            $lt: new Date(new Date(value).getTime() + 86400000),
+          },
+        };
+        break;
+
+      case "noton":
+        mongoCond = {
+          [field]: {
+            $not: {
+              $gte: new Date(value),
+              $lt: new Date(new Date(value).getTime() + 86400000),
+            },
+          },
+        };
+        break;
+
+      case "onOrBeforeToday": {
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        mongoCond = { [field]: { $lte: today } };
+        break;
+      }
+
+      case "onOrAfterToday": {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        mongoCond = { [field]: { $gte: today } };
+        break;
+      }
+
+      case "afterToday": {
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        mongoCond = { [field]: { $gt: today } };
+        break;
+      }
+
+      case "beforeToday": {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        mongoCond = { [field]: { $lt: today } };
+        break;
+      }
+
+      default:
+        mongoCond = { [field]: value };
+    }
+
+    allConditions.push(mongoCond);
+  }
+
+  // Combine using $and
+  const finalCondition =
+    allConditions.length > 1 ? { $and: allConditions } : allConditions[0] || {};
+
+  return finalCondition;
+}
+
+
 
 
 
