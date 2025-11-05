@@ -750,14 +750,27 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
 
     // ✅ Merge user conditions with incoming conditions
     if (userPermission?.conditions?.length) {
-      // Avoid duplicate conditions (optional)
-      // const existingFields = new Set(conditions.map((c: any) => c.field));
-      // const newConditions = userPermission.conditions.filter(
-      //   (c: any) => !existingFields.has(c.field)
-      // );
+      const userConditionsMap = new Map(
+        userPermission.conditions.map((c: any) => [c.field, c])
+      );
 
-      conditions = [...conditions, ...userPermission?.conditions];
+      // Merge in one pass
+      const mergedMap = new Map();
+
+      // Step 1: Start with payload conditions
+      for (const cond of conditions || []) {
+        mergedMap.set(cond.field, cond);
+      }
+
+      // Step 2: Overwrite or add user permission conditions
+      for (const [field, cond] of userConditionsMap.entries()) {
+        mergedMap.set(field, cond);
+      }
+
+      // Step 3: Convert back to array
+      conditions = Array.from(mergedMap.values());
     }
+
     // console.log('conditions',JSON.stringify(conditions));
     // Normalize dimension and groupBy: remove "Derived." prefix from all fields
     dimensions = dimensions.map((d) => d.replace(/^Derived\./, ""));
