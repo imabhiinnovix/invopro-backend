@@ -18,6 +18,7 @@ import { DataSourceVersion } from '../../../types/widget.types';
 import { DateTime } from 'luxon';
 import { getDataSourceVersionValueV2 } from '../../../database/services/common/defaultDataSourceVersionValue.services';
 import { getDataSourceById } from './dataSource.controller';
+import { getUserDataPermissionRecord } from '../../../database/services/common/userDataPermission.service';
 
 export const createDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -733,12 +734,31 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       dashboardFilters,
       isIncremental,
     } = req.body;
-    const { orgCode } = req.user;
+    const { orgCode, userId, organizationId } = req.user;
 
 
     const dataSourceDetails: any= await dataSourceService.findDataSourceById(dataSourceId);
     let result: any;
 
+
+    // ✅ Fetch user-level data permission record
+    const userPermission = await getUserDataPermissionRecord({
+      userId,
+      dataSourceId,
+      organizationId,
+    });
+
+    // ✅ Merge user conditions with incoming conditions
+    if (userPermission?.conditions?.length) {
+      // Avoid duplicate conditions (optional)
+      // const existingFields = new Set(conditions.map((c: any) => c.field));
+      // const newConditions = userPermission.conditions.filter(
+      //   (c: any) => !existingFields.has(c.field)
+      // );
+
+      conditions = [...conditions, ...userPermission?.conditions];
+    }
+    // console.log('conditions',JSON.stringify(conditions));
     // Normalize dimension and groupBy: remove "Derived." prefix from all fields
     dimensions = dimensions.map((d) => d.replace(/^Derived\./, ""));
     groupBy = groupBy.map((g) => g.replace(/^Derived\./, ""));

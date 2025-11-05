@@ -1417,7 +1417,7 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     if (dataSourceDetails.versionType != 'constant') {
       query['dataSourceVersionId'] = dataSourceVersionId;
     }
-    console.log(userId,dataSourceId,organizationId);
+    // console.log(userId,dataSourceId,organizationId);
     // 🔹 🧩 Apply user-level data permission filters
     const userPermission = await getUserDataPermissionRecord({
                               userId,

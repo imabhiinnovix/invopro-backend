@@ -14,6 +14,7 @@ import * as cacheService from '../../../database/services/reportivix/aiCache.ser
 import { DateTime } from 'luxon';
 import Entity from '../../../database/models/common/entity';
 import { findDerivedFieldById } from '../../../database/services/common/derivedField.services';
+import { getUserDataPermissionRecord } from '../../../database/services/common/userDataPermission.service';
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -416,7 +417,7 @@ export const getDataSourceWithFieldOptionDetails = async (req: Request, res: Res
 
 export const getWidgetDataByFilter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { dataSourceId, conditions, entityId, dimensions, groupBy, dashBoardType, dashboardFilters } = req.body;
+    let { dataSourceId, conditions, entityId, dimensions, groupBy, dashBoardType, dashboardFilters } = req.body;
 
     let startVersionValue = dashboardFilters?.startVersionValue;
     let endVersionValue = dashboardFilters?.endVersionValue;
@@ -432,7 +433,26 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
     const page = parseInt(req.body.page as string, 10) || 1;
     const limit = parseInt(req.body.limit as string, 10) || 10;
     const skip = (Number(page) - 1) * Number(limit);
-    const { orgCode } = req.user;
+    const { orgCode, userId, organizationId } = req.user;
+
+
+    // ✅ Fetch user-level data permission record
+    const userPermission = await getUserDataPermissionRecord({
+      userId,
+      dataSourceId,
+      organizationId,
+    });
+
+    // ✅ Merge user conditions with incoming conditions
+    if (userPermission?.conditions?.length) {
+      // Avoid duplicate conditions (optional)
+      // const existingFields = new Set(conditions.map((c: any) => c.field));
+      // const newConditions = userPermission.conditions.filter(
+      //   (c: any) => !existingFields.has(c.field)
+      // );
+
+      conditions = [...conditions, ...userPermission?.conditions];
+    }
 
     // 1. Fetch entity and data source information
     const entity: any = await entityService.getEntity({

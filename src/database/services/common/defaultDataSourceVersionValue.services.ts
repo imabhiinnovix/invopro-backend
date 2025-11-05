@@ -2417,9 +2417,11 @@ for (const condition of conditions || []) {
   // }
 
   // Overwrite field name with resolved path
-  const processedCondition = {
-    ...condition,
+   const processedCondition = {
     field: resolvedFieldPath,
+    operator: condition?.operator,
+    value: condition?.value,
+    _id: condition._id?.toString(),
   };
   console.log("processedCondition", JSON.stringify(processedCondition));
 
@@ -3453,9 +3455,11 @@ for (const condition of conditions || []) {
   let resolvedFieldPath = await getReferenceField(originalField);
     resolvedFieldPath =  resolvedFieldPath.replace(/^rowData\./, '');
   // Overwrite field name with resolved path
-  const processedCondition = {
-    ...condition,
+   const processedCondition = {
     field: resolvedFieldPath,
+    operator: condition?.operator,
+    value: condition?.value,
+    _id: condition._id?.toString(),
   };
   console.log("processedCondition", JSON.stringify(processedCondition));
 
@@ -4000,9 +4004,11 @@ export const getDataSourceVersionValueV2Backup = async ({
       }
 
       // Overwrite field name with resolved path
-      const processedCondition = {
-        ...condition,
+       const processedCondition = {
         field: resolvedFieldPath,
+        operator: condition?.operator,
+        value: condition?.value,
+        _id: condition._id?.toString(),
       };
 
       if (!conditionsByField[resolvedFieldPath]) {
