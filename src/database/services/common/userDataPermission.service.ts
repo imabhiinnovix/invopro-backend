@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* @ts-nocheck */
 
-import mongoose from 'mongoose';
-import UserDataPermissionModel from '../../models/common/userDataPermission';
+import mongoose from "mongoose";
+import UserDataPermissionModel from "../../models/common/userDataPermission";
 
 /**
  * -------------------------------------------------------
@@ -21,19 +21,28 @@ export const createUserDataPermission = async (value: any) => {
 
 export const getUserDataPermissionList = async ({
   query,
-  select = '',
-  page,
-  limit,
+  select = "",
+  page = 1,
+  limit = 10,
   sort = { updatedAt: -1 },
   populate,
+  isPaginate = true,
 }: any) => {
   try {
+    // ✅ Default filter: only active records unless explicitly specified
+    if (!query.status) query.status = "active";
+
     let userPermissionQuery: any = UserDataPermissionModel.find(query)
       .select(select)
-      .skip((page - 1) * limit)
-      .limit(limit)
       .sort(sort);
 
+    // ✅ Apply pagination only if isPaginate = true
+    if (isPaginate) {
+      const skip = (page - 1) * limit;
+      userPermissionQuery = userPermissionQuery.skip(skip).limit(limit);
+    }
+
+    // ✅ Populate related fields if specified
     if (populate && Array.isArray(populate)) {
       populate.forEach((field) => {
         userPermissionQuery = userPermissionQuery.populate(field);
@@ -49,9 +58,15 @@ export const getUserDataPermissionList = async ({
   }
 };
 
-export const updateUserDataPermission = async (query: Record<string, any>, updateFields: Record<string, any>) => {
+
+export const updateUserDataPermission = async (
+  query: Record<string, any>,
+  updateFields: Record<string, any>
+) => {
   try {
-    const result = await UserDataPermissionModel.updateMany(query, { $set: updateFields });
+    const result = await UserDataPermissionModel.updateMany(query, {
+      $set: updateFields,
+    });
     return result;
   } catch (err) {
     throw err;
@@ -60,8 +75,10 @@ export const updateUserDataPermission = async (query: Record<string, any>, updat
 
 export const getUserDataPermissionRecord = async (query) => {
   try {
-    const matchingDocs = await UserDataPermissionModel.findOne(query);
-    return matchingDocs;
+    // ✅ Default filter: only active records unless explicitly specified
+    if (!query.status) query.status = "active";
+    const matchingDoc = await UserDataPermissionModel.findOne(query);
+    return matchingDoc;
   } catch (error) {
     throw error;
   }
@@ -73,5 +90,22 @@ export const getUserDataPermissionRecordsCount = async (query) => {
     return totalCount;
   } catch (error) {
     throw error;
+  }
+};
+
+/**
+ * -------------------------------------------------------
+ * 🧩 Soft Delete User Data Permission
+ * -------------------------------------------------------
+ * This will mark the record as 'in-active' instead of removing it
+ */
+export const deleteUserDataPermission = async (query: Record<string, any>) => {
+  try {
+    const result = await UserDataPermissionModel.updateMany(query, {
+      $set: { status: "in-active", updatedAt: new Date() },
+    });
+    return result;
+  } catch (err) {
+    throw err;
   }
 };

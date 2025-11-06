@@ -463,6 +463,26 @@ const defaultPermissionsAdmin = [
     isChangeable: true,
   },
   { permission: 'GET:/common/product/list', isChangeable: true },
+  {
+    permission: 'POST:/common/user-data-permission/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/common/user-data-permission/update/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/common/user-data-permission/delete/:id',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/user-data-permission/list',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/user-data-permission/:id',
+    isChangeable: true,
+  },
 ];
 
 const defaultPermissionsPrimarySuperAdmin = [
