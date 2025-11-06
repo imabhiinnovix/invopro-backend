@@ -17,9 +17,12 @@ import { Types } from "mongoose";
 // ✅ Create new user data permission
 export const createUserPermission = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId, organizationId, dataSourceId, conditions } = req.body;
-    const { userId: createdBy } = req.user;
-
+    const { userId, organizationId: paramOrgId, dataSourceId, conditions } = req.body;
+    let { userId: createdBy, organizationId, isSuperUser } = req.user;
+    // ✅ Super user override
+    if (isSuperUser && paramOrgId) {
+      organizationId = paramOrgId as string;
+    }
     const payload = {
       userId,
       organizationId,
