@@ -624,11 +624,14 @@ export async function validateRowData({
   const validatedRowData: Record<string, any> = { ...rowData };
 
   for (const attr of attributes) {
+    //  Skip if attr.name not found in rowData keys
+    if (!Object.prototype.hasOwnProperty.call(rowData, attr.name)) {
+      continue; //  simply skip validation for this attribute
+    }
     const value = validatedRowData[attr.name];
-
     // 1️⃣ Required check
     if (value === undefined || value === null || value === '') {
-      if (attr.required === 'Mandatory') {
+      if (attr.required === 'Mandatory' || attr.required === true) {
         errors.push({
           attributeName: attr.name,
           errorType: 'Not Found',

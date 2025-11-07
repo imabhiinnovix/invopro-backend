@@ -168,11 +168,11 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       rowNumber,
       dataSourceVersionId,
       dataSourceId,
-      rowData,
       attributeOptionId,
       fileAttributeValue,
       attributeName,
     } = req.body;
+    let { rowData } = req.body;
     const { orgCode, userId, organizationId } = req.user;
 
     // ✅ Normalize rowNumber to always be an array
@@ -345,6 +345,18 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       //     isErrorLog: -1,
       //   }
       // );
+    // 🔹 Filter rowData to only keep the target attributeName
+    rowData = Object.fromEntries(
+      Object.entries(rowData || {}).filter(([key]) => key === attributeName)
+    );
+
+    // Ensure the attribute exists in rowData
+    if (Object.keys(rowData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Attribute "${attributeName}" not found in rowData.`,
+      });
+    }
 
     await autoPopulateAttributeOptionFromRow({
       entityId: entityDetails?._id,
