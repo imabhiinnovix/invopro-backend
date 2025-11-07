@@ -63,6 +63,15 @@ export const getDataImportErrorRecords = async (query) => {
   }
 };
 
+export const getDataImportErrorRecord = async (query) => {
+  try {
+    const matchingDocs = await DataImportErrorModel.findOne(query);
+    return matchingDocs;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const getDataImportErrorRecordsCount = async (query) => {
   try {
     const totalCount = await DataImportErrorModel.countDocuments(query);

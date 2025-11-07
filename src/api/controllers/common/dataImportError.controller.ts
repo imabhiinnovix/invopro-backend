@@ -523,7 +523,7 @@ export const getErrorRowDataBasedOnDataSourceVersionIdAndRowNumber = async (
   next: NextFunction
 ) => {
   try {
-    const { dataSourceId, dataSourceVersionId, rowNumber } = req.query as any;
+    const { dataSourceId, dataSourceVersionId, rowNumber, errorId } = req.query as any;
     const { orgCode } = req.user;
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
     const schemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
@@ -537,10 +537,29 @@ export const getErrorRowDataBasedOnDataSourceVersionIdAndRowNumber = async (
     dataSourceDetails?.entityId
   );
 
+  let errorAction: string = '';
+
+  if (errorId) {
+    const errorRecord = await dataImportErrorServices.getDataImportErrorRecord({ _id: new ObjectId(errorId) });
+
+    if (errorRecord) {
+      const { errorCode, attributeName } = errorRecord;
+
+      if (["1001", "1002"].includes(errorCode)) {
+        errorAction = `Fix ${attributeName}`;
+      } else if (errorCode === "1003") {
+        errorAction = `Create New ${attributeName}`;
+      }
+    }
+  }
+
     res.status(200).json({
       success: true,
-      message: 'Data retrieved sucessfully.',
-      data: rawData[0] ?? rawData,
+      message: 'Data retrieved successfully.',
+      data: {
+        ...rawData[0] ?? rawData,
+        errorAction
+      }
     });
   } catch (err) {
     console.log('Error in getDataBasedOnDataSourceVersionIdAndRowNumber', err);
