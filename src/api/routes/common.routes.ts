@@ -24,6 +24,7 @@ import dashboardFontRoutes from './common/dashboardFont.routes';
 import dashboardThemeRoutes from './common/dashboardTheme.routes';
 import departmentRoutes from './common/department.routes';
 import designationRoutes from './common/designation.routes';
+import userDataPermissionRoutes from './common/userDataPermission.routes';
 
 const router = Router();
 
@@ -52,5 +53,6 @@ router.use('/dashboardFont', dashboardFontRoutes);
 router.use('/dashboardTheme', dashboardThemeRoutes);
 router.use('/department', departmentRoutes);
 router.use('/designation', designationRoutes);
+router.use('/user-data-permission', userDataPermissionRoutes);
 
 export default router;

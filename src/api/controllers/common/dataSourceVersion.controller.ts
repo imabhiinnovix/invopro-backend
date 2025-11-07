@@ -8,6 +8,7 @@ import * as dataSourceService from '../../../database/services/common/dataSource
 import * as attributeOptionService from '../../../database/services/common/attributeOption.services';
 import * as dataImportErrorServices from '../../../database/services/common/dataImportError.services';
 import {
+  createMongoCondition,
   escapeRegExp,
   getImportLogSchemaNameBasedOnVersionCodeAndOrgCode,
   getSchemaNameBasedOnVersionCodeAndOrgCode,
@@ -27,6 +28,7 @@ import { findEntityById } from '../../../database/services/common/entity.service
 import { autoPopulateAttributeOption, autoPopulateAttributeOptionFromRow } from '../../../utils/attributeOption.utils';
 import * as entityService from '../../../database/services/common/entity.services';
 import { findDerivedFieldById } from '../../../database/services/common/derivedField.services';
+import { getUserDataPermissionRecord } from '../../../database/services/common/userDataPermission.service';
 const ObjectId = mongoose.Types.ObjectId;
 
 export const ERROR_CODES = {
@@ -1332,7 +1334,7 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
 
     const pageNumber = page ? parseInt(page, 10) : 1;
     const limitNumber = limit ? parseInt(limit, 10) : 10;
-    const { orgCode } = req.user;
+    const { orgCode, userId, organizationId } = req.user;
 
     const searchFilters = {};
 
@@ -1415,6 +1417,19 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     if (dataSourceDetails.versionType != 'constant') {
       query['dataSourceVersionId'] = dataSourceVersionId;
     }
+    // console.log(userId,dataSourceId,organizationId);
+    // 🔹 🧩 Apply user-level data permission filters
+    const userPermission = await getUserDataPermissionRecord({
+                              userId,
+                              dataSourceId,
+                              organizationId
+                            });
+    // console.log('permissionFilter',userPermission);
+    // if (userPermission?.conditions?.length) {
+    //   const permissionFilter = await createMongoCondition(userPermission.conditions);
+    //   Object.assign(query, permissionFilter);
+    // }
+
 
     const result = await dataSourceVersionValueService.getDataSourceVersionValueV1({
       schemaName,
@@ -1426,6 +1441,7 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
       filters: parsedFilters,
       entityId: dataSourceDetails.entityId,
       searchFilters,
+      conditions: userPermission?.conditions
     });
     const data = result?.data ?? [];
     const totalCount = result?.totalCount ?? 0;

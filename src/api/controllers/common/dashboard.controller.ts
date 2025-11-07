@@ -18,6 +18,7 @@ import { DataSourceVersion } from '../../../types/widget.types';
 import { DateTime } from 'luxon';
 import { getDataSourceVersionValueV2 } from '../../../database/services/common/defaultDataSourceVersionValue.services';
 import { getDataSourceById } from './dataSource.controller';
+import { getUserDataPermissionRecord } from '../../../database/services/common/userDataPermission.service';
 
 export const createDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -733,12 +734,44 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       dashboardFilters,
       isIncremental,
     } = req.body;
-    const { orgCode } = req.user;
+    const { orgCode, userId, organizationId } = req.user;
 
 
     const dataSourceDetails: any= await dataSourceService.findDataSourceById(dataSourceId);
     let result: any;
 
+
+    // ✅ Fetch user-level data permission record
+    const userPermission = await getUserDataPermissionRecord({
+      userId,
+      dataSourceId,
+      organizationId,
+    });
+
+    // ✅ Merge user conditions with incoming conditions
+    if (userPermission?.conditions?.length) {
+      const userConditionsMap = new Map(
+        userPermission.conditions.map((c: any) => [c.field, c])
+      );
+
+      // Merge in one pass
+      const mergedMap = new Map();
+
+      // Step 1: Start with payload conditions
+      for (const cond of conditions || []) {
+        mergedMap.set(cond.field, cond);
+      }
+
+      // Step 2: Overwrite or add user permission conditions
+      for (const [field, cond] of userConditionsMap.entries()) {
+        mergedMap.set(field, cond);
+      }
+
+      // Step 3: Convert back to array
+      conditions = Array.from(mergedMap.values());
+    }
+
+    // console.log('conditions',JSON.stringify(conditions));
     // Normalize dimension and groupBy: remove "Derived." prefix from all fields
     dimensions = dimensions.map((d) => d.replace(/^Derived\./, ""));
     groupBy = groupBy.map((g) => g.replace(/^Derived\./, ""));

@@ -150,7 +150,8 @@ export const getDataSourceVersionValueV1 = async ({
   sort = {},
   filters = {},
   entityId = '',
-  searchFilters = {}
+  searchFilters = {},
+  conditions
 }: {
   schemaName: string;
   query: any;
@@ -161,6 +162,7 @@ export const getDataSourceVersionValueV1 = async ({
   filters?: Record<string, any>;
   searchFilters?: Record<string, any>;
   entityId: any;
+  conditions?: any[];
 }) => {
   try {
     const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
@@ -209,7 +211,7 @@ export const getDataSourceVersionValueV1 = async ({
       }
     }
 
-    const aggregationPipeline: any[] = [{ $match: query }];
+    const aggregationPipeline: any[] = [];
 
     // Step 1: Lookups for all reference fields
     for (const [attrName, attr] of Object.entries(attributesMap)) {
@@ -936,8 +938,186 @@ async function buildNestedLookupsForSearch({
     // }else if(filterConditions.length > 0){
     //   aggregationPipeline.push({ $match: { $and: filterConditions } });
     // }
+async function buildAggregationPathAndReturnExpr({
+  entityId,
+  pathSegments,
+  prefix = 'rowData',
+  pipeline,
+  visited,
+}: {
+  entityId: string;
+  pathSegments: string[];
+  prefix?: string;
+  pipeline: any[];
+  visited: Set<string>;
+}): Promise<string> {
+  if (!pathSegments.length) return prefix; // If empty, return prefix
+
+  const field = pathSegments[0];
+  const attr = await getCachedAttr(entityId, field);
+  if (!attr) return `${prefix}.${field}`; // Default path
+
+  const asField = prefix.endsWith(`${field}_resolved`)? prefix : `${prefix}.${field}_resolved`;
+  const lookupKey = `${entityId}:${pathSegments.join('.')}`;
+
+  if (!visited.has(lookupKey)) {
+    visited.add(lookupKey);
+
+    const alreadyHaveLookup = (fromCollection: string) =>
+      pipeline.some((stage: any) => stage.$lookup?.from === fromCollection);
+
+    // -------- mapping reference --------
+    if (attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
+      const mappingEntityId = attr.referenceEntitySetting.refEntityId.toString();
+      const mappingModel = await getCachedModel(mappingEntityId);
+
+      const refFieldAttr = await getEntityAttribute(
+        mappingEntityId,
+        attr.referenceEntitySetting.refEntityField
+      );
+      const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
+
+      if (!alreadyHaveLookup(mappingModel.collection.name)) {
+        pipeline.push({
+          $lookup: {
+            from: mappingModel.collection.name,
+            localField: prefix?.endsWith('_resolved') ? `${prefix}._id` : '_id',
+            foreignField: `rowData.${displayField}`,
+            as: asField,
+          },
+        });
+        pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
+      }
+
+      if (pathSegments.length > 1) {
+        return buildAggregationPathAndReturnExpr({
+          entityId: mappingEntityId,
+          pathSegments: pathSegments.slice(1),
+          prefix: asField,
+          pipeline,
+          visited,
+        });
+      }
+      return `${asField}.rowData.${displayField}`;
+    }
+
+    // -------- normal reference --------
+    if (attr.referenceEntitySetting?.refEntityId) {
+      const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
+      const refModel = await getCachedModel(refEntityId);
+
+      if (!alreadyHaveLookup(refModel.collection.name)) {
+        pipeline.push({
+          $lookup: {
+            from: refModel.collection.name,
+            localField: `${prefix}.rowData.${field}`,
+            foreignField: '_id',
+            as: asField,
+          },
+        });
+        pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
+      }
+
+      if (pathSegments.length > 1) {
+        return buildAggregationPathAndReturnExpr({
+          entityId: refEntityId,
+          pathSegments: pathSegments.slice(1),
+          prefix: asField,
+          pipeline,
+          visited,
+        });
+      }
+
+      // Last segment: return path to value
+      const refFieldAttr = await getEntityAttribute(refEntityId, attr.referenceEntitySetting.refEntityField);
+      const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
+      return `${asField}.rowData.${displayField}`;
+    }
+  }
+
+  // If no reference, return simple path
+  return `${prefix}.rowData.${field}`;
+}
+const getReferenceField = async (fieldName: string) => {
+    if(fieldName.includes('.')){
+      const visited = new Set<string>();
+      const pathSegments = fieldName.split('.');
+
+      const refField = await buildAggregationPathAndReturnExpr({
+        entityId,
+        pathSegments,
+        pipeline: aggregationPipeline,
+        visited,
+      });
+      return refField;
+    }else{
+        const attr = attributesMap[fieldName];
+      if (attr?.referenceEntitySetting?.refEntityId) {
+        const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
+        const asField = `rowData.${fieldName}_resolved`;
+
+        // ✅ Resolve actual attribute name from reference entity
+        const refFieldAttr = await getEntityAttribute(
+          attr.referenceEntitySetting.refEntityId,
+          attr.referenceEntitySetting.refEntityField
+        );
+        const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
+        return `${asField}.rowData.${displayField}`;
+      }else{
+        return `rowData.${fieldName}`;
+      }
+    }
+  };
+  
+    const conditionsByField: Record<string, any[]> = {};
+console.log("payload conditions", JSON.stringify(conditions));
+
+for (const condition of conditions || []) {
+  const originalField = condition.field;
+  let resolvedFieldPath = await getReferenceField(originalField);
+    resolvedFieldPath =  resolvedFieldPath.replace(/^rowData\./, '');
+ 
+  // Overwrite field name with resolved path
+   const processedCondition = {
+    field: resolvedFieldPath,
+    operator: condition?.operator,
+    value: condition?.value,
+    _id: condition._id?.toString(),
+  };
+  console.log("processedCondition", JSON.stringify(processedCondition));
+
+  if (!conditionsByField[resolvedFieldPath]) {
+    conditionsByField[resolvedFieldPath] = [];
+  }
+
+  conditionsByField[resolvedFieldPath].push(processedCondition);
+}
+
+console.log("conditionsByField", JSON.stringify(conditionsByField));
+
+    const entityFieldOptions = await getEntityFieldOptions(entityId);
+
+    const getFieldType = (fieldName: string) => {
+      const attribute = entityFieldOptions.find((attr: any) => attr.label === fieldName);
+      return attribute?.value?.type ?? 'text';
+    };
+
+    // Process conditions using the common utility
+    const { matchConditions, dateConversions } = processFieldConditions(conditionsByField, getFieldType, query);
+    if (Object.keys(dateConversions).length > 0) {
+      aggregationPipeline.push({ $addFields: dateConversions });
+    }
+
 
    const matchStage: any = { $and: [] };
+  
+
+  // collect user data conditions
+    console.log('matchConditions', JSON.stringify(matchConditions),Object.keys(matchConditions).length);
+    // Add match conditions derived from widget.conditions
+    if (Object.keys(matchConditions).length > 0) {
+      aggregationPipeline.push({ $match: matchConditions });
+    }
 
   // Collect filter conditions
   if (filterConditions.length > 0) {
@@ -2237,9 +2417,11 @@ for (const condition of conditions || []) {
   // }
 
   // Overwrite field name with resolved path
-  const processedCondition = {
-    ...condition,
+   const processedCondition = {
     field: resolvedFieldPath,
+    operator: condition?.operator,
+    value: condition?.value,
+    _id: condition._id?.toString(),
   };
   console.log("processedCondition", JSON.stringify(processedCondition));
 
@@ -3273,9 +3455,11 @@ for (const condition of conditions || []) {
   let resolvedFieldPath = await getReferenceField(originalField);
     resolvedFieldPath =  resolvedFieldPath.replace(/^rowData\./, '');
   // Overwrite field name with resolved path
-  const processedCondition = {
-    ...condition,
+   const processedCondition = {
     field: resolvedFieldPath,
+    operator: condition?.operator,
+    value: condition?.value,
+    _id: condition._id?.toString(),
   };
   console.log("processedCondition", JSON.stringify(processedCondition));
 
@@ -3820,9 +4004,11 @@ export const getDataSourceVersionValueV2Backup = async ({
       }
 
       // Overwrite field name with resolved path
-      const processedCondition = {
-        ...condition,
+       const processedCondition = {
         field: resolvedFieldPath,
+        operator: condition?.operator,
+        value: condition?.value,
+        _id: condition._id?.toString(),
       };
 
       if (!conditionsByField[resolvedFieldPath]) {
