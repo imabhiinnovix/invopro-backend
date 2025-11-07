@@ -546,7 +546,7 @@ export const getErrorRowDataBasedOnDataSourceVersionIdAndRowNumber = async (
       const { errorCode, attributeName } = errorRecord;
 
       if (["1001", "1002"].includes(errorCode)) {
-        errorAction = `Fix ${attributeName}`;
+        errorAction = `Fix Error - ${attributeName}`;
       } else if (errorCode === "1003") {
         errorAction = `Create New ${attributeName}`;
       }
