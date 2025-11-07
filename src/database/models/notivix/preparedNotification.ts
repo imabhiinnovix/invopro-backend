@@ -27,7 +27,7 @@ export interface IPreparedNotification extends Document {
   payload?: any;
   recipients: IPreparedRecipient;
 
-  attachmentPaths?: { filePath: string; fileName?: string }[];
+  attachmentPaths?: { filePath: string; fileName?: string, isDeleted?: boolean }[];
 
   status: PreparedStatus;
   attempts: number;
@@ -64,6 +64,7 @@ const attachmentPathSchema = new Schema(
   {
     filePath: { type: String, required: true },
     fileName: { type: String },
+    isDeleted: {type: Boolean}
   },
   { _id: false }
 );
