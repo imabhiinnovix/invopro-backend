@@ -45,7 +45,7 @@ export async function generateNotificationAttachments(
         }
       }
 
-      const fileName = `${sanitizedSubject}.xlsx`;
+      const fileName = `${sanitizedSubject}_${notif._id}.xlsx`;
       const filePath = path.join(process.cwd(), "tmp", fileName);
 
       fs.mkdirSync(path.dirname(filePath), { recursive: true });
