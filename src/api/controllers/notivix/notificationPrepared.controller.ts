@@ -203,6 +203,7 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
                 return {
                   ...flattened,
                   DaysRemaining,
+                  lastUploadedDate,
                   DaysPassed,
                   AssignedTo: rd.Assignedto || '-',
                   DueDate: dueDate ? formatDate(dueDate) : null,

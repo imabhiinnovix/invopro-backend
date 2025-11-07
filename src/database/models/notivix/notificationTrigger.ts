@@ -35,7 +35,7 @@ const notificationTriggerSchema = new Schema<INotificationTrigger>(
   },
   {
     timestamps: true,
-    collection: "notification_trigger",
+    collection: "notification_triggers",
   }
 );
 
