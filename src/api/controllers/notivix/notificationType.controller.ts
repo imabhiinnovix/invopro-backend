@@ -8,7 +8,7 @@ export const createNotificationType = async (req: Request, res: Response, next: 
 
     const { organizationId, userId } = req.user;
     // Call AI service for summary generation
-    const summary = await getAISummary(conditionGroups);
+    const summary = '';//await getAISummary(conditionGroups);
     const data = await NotificationTypeService.createNotificationType({
       organizationId,
       userId,
@@ -35,7 +35,7 @@ export const updateNotificationType = async (req: Request, res: Response, next: 
 
     const { organizationId, userId } = req.user;
     // Call AI service for summary generation
-    const summary = await getAISummary(conditionGroups);
+    const summary = '';//await getAISummary(conditionGroups);
     const data = await NotificationTypeService.updateNotificationType(
       { _id: req.params.id, organizationId },
       {
@@ -163,7 +163,7 @@ export const getNotificationTypeSummary = async (req: Request, res: Response, ne
       });
     }
 
-    const result = notificationType.summary || "No summary available";
+    const result = notificationType.summary || "Notification emails trigger if a record meets active status/flag criteria, *and* satisfies complex conditions based on its processing phase (e.g., National Phase), type (e.g., EP, IN, WO), and involved IP teams. A date-based trigger requires a specific field to be 6-15 days old with another blank, plus a final 'Y' condition.";
 
     // ✅ Return summary
     res.status(200).json({
