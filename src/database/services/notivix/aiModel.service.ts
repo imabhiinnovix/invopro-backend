@@ -4,7 +4,7 @@ import { execSync } from "child_process";
 export const getAISummary = async (conditionGroups: any) => {
   try {
     // 1 Build a plain-text description
-    const description = `Summarize this notification condition: ${JSON.stringify(conditionGroups)}`;
+    const description = JSON.stringify(conditionGroups);
 
     // 2️ Create the curl command
     const curlCommand = `
