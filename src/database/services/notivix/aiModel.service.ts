@@ -7,9 +7,10 @@ export const getAISummary = async (conditionGroups: any) => {
     const description = JSON.stringify(conditionGroups);
 
     // Call your local AI service
-    const response = await axios.post(`${process.env.BASE_FRONTEND_URL}/notification-summary`, {
+    const response = await axios.post(`${process.env.BASE_FRONTEND_URL}:5100/notification-summary`, {
       notification_description: description,
-    });
+    },
+  { headers: { "Content-Type": "application/json" } });
     console.log('ai response', response);
     // Return the AI’s response text
     return response.data?.response || "";
