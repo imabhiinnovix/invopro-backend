@@ -1,11 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import * as NotificationTypeService from '../../../database/services/notivix/notificationType.service';
+import { getAISummary } from '../../../database/services/notivix/aiModel.service';
 
 export const createNotificationType = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, dataSourceId, triggerFieldId, conditionGroups } = req.body;
 
     const { organizationId, userId } = req.user;
+    // Call AI service for summary generation
+    const summary = await getAISummary(conditionGroups);
     const data = await NotificationTypeService.createNotificationType({
       organizationId,
       userId,
@@ -13,6 +16,7 @@ export const createNotificationType = async (req: Request, res: Response, next: 
       dataSourceId,
       triggerFieldId,
       conditionGroups,
+      summary
     });
 
     res.status(201).json({
@@ -30,7 +34,8 @@ export const updateNotificationType = async (req: Request, res: Response, next: 
     const { name, dataSourceId, triggerFieldId, conditionGroups } = req.body;
 
     const { organizationId, userId } = req.user;
-
+    // Call AI service for summary generation
+    const summary = await getAISummary(conditionGroups);
     const data = await NotificationTypeService.updateNotificationType(
       { _id: req.params.id, organizationId },
       {
@@ -39,6 +44,7 @@ export const updateNotificationType = async (req: Request, res: Response, next: 
         triggerFieldId,
         conditionGroups,
         updatedBy: userId,
+        summary
       }
     );
 
@@ -136,16 +142,33 @@ export const getNotificationType = async (req: Request, res: Response, next: Nex
 export const getNotificationTypeSummary = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { organizationId } = req.user;
+    const { _id } = req.body;
 
-    const { conditionGroups } = req.body;
+    if (!_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Notification Type ID (_id) is required",
+      });
+    }
 
-    console.log('filter conditions', JSON.stringify(conditionGroups));
+    // 🔍 Fetch summary from DB
+    const notificationType = await NotificationTypeService.getNotificationType(
+      { _id, organizationId }
+    );
 
-    const result = 'Show all records where the Disclosure Number is not blank and the Status is one of open, rated to search, rated to draft ih, rated to draft oc, review rate to draft, filing requested, or submitted, and the Active Switch equals 1; the Date Taken is blank but the Due Date is today or earlier; and the Report Action Due equals “Y.”';
+    if (!notificationType) {
+      return res.status(404).json({
+        success: false,
+        message: "Notification Type not found",
+      });
+    }
 
+    const result = notificationType.summary || "No summary available";
+
+    // ✅ Return summary
     res.status(200).json({
       success: true,
-      message: 'Notification Type Summary Retrieved Successfully',
+      message: "Notification Type Summary Retrieved Successfully",
       data: { result },
     });
   } catch (err) {

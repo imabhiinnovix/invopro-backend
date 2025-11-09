@@ -28,6 +28,7 @@ export interface INotificationType extends Document {
   createdBy?: Types.ObjectId;
   updatedBy?: Types.ObjectId;
   conditionGroups: INotificationConditionGroup[];
+  summary: string;
 }
 
 // -------------------
@@ -82,6 +83,7 @@ const notificationTypeSchema = new Schema<INotificationType>(
       type: [conditionOrGroupSchema],
       default: [],
     },
+    summary: { type: String }
   },
   { timestamps: true }
 );
