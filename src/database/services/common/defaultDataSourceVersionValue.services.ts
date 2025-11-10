@@ -1211,7 +1211,7 @@ aggregationPipeline.push({ $replaceRoot: { newRoot: "$doc" } });
           const refValue = refResolved.rowData[refFieldName];
           const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
           // console.log('refFieldName',refFieldName, refValue);
-          const relatedDocs: any[] = await RefModel.find({ _id: refValue }).lean();
+          const relatedDocs: any[] = await RefModel.find({ _id: refValue, 'status': 'active' }).lean();
           // console.log('relatedDocs',relatedDocs);
           if (currentAttr.referenceEntitySetting?.relationType == 'mapping_one_to_one') {
             for (const r of relatedDocs) {
@@ -1313,7 +1313,7 @@ aggregationPipeline.push({ $replaceRoot: { newRoot: "$doc" } });
             const rowIds: any[] = [];
             const subValuesMap: Record<string, any[]> = {};
             // Find the document(s) where display field matches text
-            const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: doc._id }).lean();
+            const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: doc._id, 'status': 'active' }).lean();
 
             for (const doc of relatedDocs) {
               if (!doc?.rowData) continue;
@@ -1390,7 +1390,7 @@ aggregationPipeline.push({ $replaceRoot: { newRoot: "$doc" } });
 
             const parentId = resolvedObj._id; // this is the ObjectId you want
 
-            const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: parentId }).lean();
+            const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: parentId, 'status': 'active' }).lean();
             // console.log('relatedDocs', relatedDocs);
             for (const doc of relatedDocs) {
               if (!doc?.rowData) continue;
@@ -3569,7 +3569,7 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
           const refValue = refResolved.rowData[refFieldName];
           const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
           // console.log('refFieldName',refFieldName, refValue);
-          const relatedDocs: any[] = await RefModel.find({ _id: refValue }).lean();
+          const relatedDocs: any[] = await RefModel.find({ _id: refValue, 'status': 'active' }).lean();
           // console.log('relatedDocs',relatedDocs);
           if (currentAttr.referenceEntitySetting?.relationType == 'mapping_one_to_one') {
             for (const r of relatedDocs) {
@@ -3671,7 +3671,7 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
             const rowIds: any[] = [];
             const subValuesMap: Record<string, any[]> = {};
             // Find the document(s) where display field matches text
-            const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: doc._id }).lean();
+            const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: doc._id, 'status': 'active' }).lean();
 
             for (const doc of relatedDocs) {
               if (!doc?.rowData) continue;
@@ -3748,7 +3748,7 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
 
             const parentId = resolvedObj._id; // this is the ObjectId you want
 
-            const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: parentId }).lean();
+            const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: parentId, 'status': 'active' }).lean();
             // console.log('relatedDocs', relatedDocs);
             for (const doc of relatedDocs) {
               if (!doc?.rowData) continue;

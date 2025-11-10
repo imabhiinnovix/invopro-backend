@@ -265,7 +265,7 @@ export const getImportLogDataSourceVersionValuesV1 = async (schemaName: string, 
           const refValue = refResolved.rowData[refFieldName];
           const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
           // console.log('refFieldName',refFieldName, refValue);
-          const relatedDocs: any[] = await RefModel.find({ _id: refValue }).lean();
+          const relatedDocs: any[] = await RefModel.find({ _id: refValue, 'status': 'active' }).lean();
           // console.log('relatedDocs',relatedDocs);
           if (currentAttr.referenceEntitySetting?.relationType == 'mapping_one_to_one') {
             for (const r of relatedDocs) {
@@ -367,7 +367,7 @@ export const getImportLogDataSourceVersionValuesV1 = async (schemaName: string, 
             const rowIds: any[] = [];
             const subValuesMap: Record<string, any[]> = {};
             // Find the document(s) where display field matches text
-            const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: doc._id }).lean();
+            const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: doc._id, 'status': 'active' }).lean();
 
             for (const doc of relatedDocs) {
               if (!doc?.rowData) continue;
@@ -444,7 +444,7 @@ export const getImportLogDataSourceVersionValuesV1 = async (schemaName: string, 
 
             const parentId = resolvedObj._id; // this is the ObjectId you want
 
-            const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: parentId }).lean();
+            const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: parentId , 'status': 'active'}).lean();
             // console.log('relatedDocs', relatedDocs);
             for (const doc of relatedDocs) {
               if (!doc?.rowData) continue;

@@ -593,7 +593,7 @@ async function resolveRefAttribute(
     if (refFieldName && refResolved?.rowData?.[refFieldName]) {
       const refValue = refResolved.rowData[refFieldName];
       const RefModel = await getModelForEntity(attr.referenceEntitySetting.refEntityId);
-      const relatedDocs: any[] = await RefModel.find({ _id: refValue }).lean();
+      const relatedDocs: any[] = await RefModel.find({ _id: refValue, 'status': 'active' }).lean();
 
       if(currentAttr.referenceEntitySetting?.relationType === "mapping_one_to_one"){
         for (const r of relatedDocs) {
@@ -737,7 +737,7 @@ while (true) {
 
           const parentId = resolvedObj._id; // this is the ObjectId you want
 
-          const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: parentId }).lean();
+          const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: parentId, 'status': 'active' }).lean();
           // console.log('relatedDocs',relatedDocs);
           for (const r of relatedDocs) {
             if (!r?.rowData) continue;

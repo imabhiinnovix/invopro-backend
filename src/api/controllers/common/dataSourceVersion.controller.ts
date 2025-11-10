@@ -209,6 +209,7 @@ export async function validateFileDataCondition({ fileData, attributeSetting, co
 
         const referencedDoc: any = await RefModel.findOne({
           [`rowData.${refEntityField.name}`]: regex,
+          'status': 'active'
         });
 
         if (referencedDoc) {
@@ -457,6 +458,7 @@ async function validateFileData({
 
           const referencedDoc: any = await RefModel.findOne({
             [`rowData.${refEntityField.name}`]: regex,
+            'status': 'active'
           });
 
           if (!referencedDoc) {
@@ -657,6 +659,7 @@ export async function validateRowData({
 
       const referencedDoc = await RefModel.findOne({
         [`rowData.${refEntityField.name}`]: regex,
+        'status': 'active'
       });
 
       if (!referencedDoc) {
@@ -1526,6 +1529,7 @@ export async function handleReferenceSubFields({
       console.log('parentRefFieldName', parentValue, parentRefModel);
       const parentDoc = await parentRefModel.findOne({
         [`rowData.${parentRefFieldName}`]: parentValue,
+        'status': 'active'
       });
       if (!parentDoc) continue;
       const parentId = parentDoc._id;
@@ -1534,7 +1538,7 @@ export async function handleReferenceSubFields({
       // Mark existing mappings as inactive
       // -------------------------------
       console.log('refFieldName', refFieldName, parentId, RefModel, versionId);
-      await RefModel.deleteMany({ [`rowData.${refFieldName}`]: parentId });
+      await RefModel.deleteMany({ [`rowData.${refFieldName}`]: parentId, 'status': 'active' });
 
       // 2️⃣ Resolve subfield doc (_id) → FOName
       const subRefModel = await getModelForEntity(subAttr.referenceEntitySetting.refEntityId);
@@ -1546,7 +1550,7 @@ export async function handleReferenceSubFields({
           console.log('val', val, subAttr.name);
           const escapedValue = escapeRegExp(val.trim());
           const regex = new RegExp(`^${escapedValue}$`, 'i'); // ✅ use RegExp object
-          const subRefDoc = await subRefModel.findOne({ [`rowData.${subAttr.name}`]: regex });
+          const subRefDoc = await subRefModel.findOne({ [`rowData.${subAttr.name}`]: regex, 'status': 'active' });
           console.log('subRefDoc', subRefDoc, regex, parentId);
           if (!subRefDoc) continue;
           const subId = subRefDoc._id;
@@ -1574,7 +1578,7 @@ export async function handleReferenceSubFields({
         // mapping_one_to_one → single subValue
         const escapedValue = escapeRegExp(subValue.trim());
         const regex = new RegExp(`^${escapedValue}$`, 'i'); // ✅ use RegExp object
-        const subRefDoc = await subRefModel.findOne({ [`rowData.${subAttr.name}`]: regex });
+        const subRefDoc = await subRefModel.findOne({ [`rowData.${subAttr.name}`]: regex, 'status': 'active' });
         if (!subRefDoc) continue;
         const subId = subRefDoc._id;
 
@@ -1627,6 +1631,7 @@ export async function handleReferenceSubFields({
       // Mark inactive any missing entries
       const existingRows: any[] = await RefModel.find({
         [`rowData.${refFieldName}`]: { $in: parentValueResolved },
+        'status': 'active'
       });
 
       for (const r of existingRows) {
