@@ -3,6 +3,7 @@
 
 import { Types } from 'mongoose';
 import Attribute from '../../models/common/attributeOption';
+import { escapeRegExp } from '../../../utils/common.utils';
 
 export const createAttribute = async (attributeData: any) => {
   try {
@@ -71,11 +72,13 @@ export const getAttributeList = async ({
 
 export const findAttributeByNameAndOrganization = async (attributeName: string, organizationId: string) => {
   try {
-    const attributeData = await Attribute.findOne(
-      { attributeName, organizationId },
-      null, // Projection (null means no specific fields are excluded or included)
-      { collation: { locale: 'en', strength: 2 } } // Case-sensitive collation
-    );
+    const escapedValue = escapeRegExp(attributeName.trim());
+    const regex = new RegExp(`^${escapedValue}$`, "i"); // case-insensitive exact match
+
+    const attributeData = await Attribute.findOne({
+      attributeName: regex,
+      organizationId,
+    });
     return attributeData;
   } catch (err) {
     throw err;
