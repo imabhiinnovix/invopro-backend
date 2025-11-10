@@ -8,7 +8,7 @@ export const createNotificationType = async (req: Request, res: Response, next: 
 
     const { organizationId, userId } = req.user;
     // Call AI service for summary generation
-    const summary = '';//await getAISummary(conditionGroups);
+    const summary = await getAISummary(conditionGroups);
     const data = await NotificationTypeService.createNotificationType({
       organizationId,
       userId,
@@ -35,7 +35,7 @@ export const updateNotificationType = async (req: Request, res: Response, next: 
 
     const { organizationId, userId } = req.user;
     // Call AI service for summary generation
-    const summary = '';//await getAISummary(conditionGroups);
+    const summary = await getAISummary(conditionGroups);
     const data = await NotificationTypeService.updateNotificationType(
       { _id: req.params.id, organizationId },
       {
