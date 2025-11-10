@@ -134,6 +134,10 @@ export const processFieldConditions = (
             handleNumberOperators(condition, convertedValue, fieldPath, matchConditions);
             break;
           case 'string':
+          case 'text':
+          case 'option':
+          case 'multioption':
+          case 'text-with-option':  
             handleStringOperators(condition, convertedValue, fieldPath, matchConditions);
             break;
           case 'date':

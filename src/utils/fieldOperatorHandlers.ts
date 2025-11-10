@@ -62,36 +62,62 @@ export const handleStringOperators = (
 ) => {
   const fieldName = `rowData.${condition.field}`;
 
+  // Split comma-separated values and trim spaces
+  const values =
+    convertedValue
+      ?.split(',')
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0) || [];
+
   switch (condition.operator) {
     case 'eq':
       matchConditions[fieldName] = convertedValue;
       break;
+
     case 'ne':
       matchConditions[fieldName] = { $ne: convertedValue };
       break;
+
+    // Case-insensitive $in
     case 'contains':
-      matchConditions[fieldName] = { $regex: convertedValue, $options: 'i' };
+      if (values.length > 0) {
+        matchConditions.$or = values.map((v) => ({
+          [fieldName]: { $regex: new RegExp(v, 'i') },
+        }));
+      }
       break;
+
+    // Case-insensitive $nin
     case 'notcontains':
-      matchConditions[fieldName] = { $not: { $regex: convertedValue, $options: 'i' } };
+      if (values.length > 0) {
+        matchConditions.$nor = values.map((v) => ({
+          [fieldName]: { $regex: new RegExp(v, 'i') },
+        }));
+      }
       break;
+
     case 'startswith':
       matchConditions[fieldName] = { $regex: `^${convertedValue}`, $options: 'i' };
       break;
+
     case 'endswith':
       matchConditions[fieldName] = { $regex: `${convertedValue}$`, $options: 'i' };
       break;
+
     case 'blank':
       matchConditions[fieldName] = null;
       break;
+
     case 'notblank':
       matchConditions[fieldName] = { $ne: null };
       break;
+
     default:
       console.warn(`Unsupported string operator: ${condition.operator}`);
       break;
   }
 };
+
 
 /**
  * Handles date operator conditions
