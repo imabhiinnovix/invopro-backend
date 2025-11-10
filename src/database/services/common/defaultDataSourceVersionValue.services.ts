@@ -715,11 +715,40 @@ async function buildNestedLookupsForSearch({
             const path = await resolveFieldPath(cond, entity.attributes);
             if (!path) continue;
 
-            if (cond.operator === 'equals') conditionExpressions.push({ [path]: cond.matchValues[0] });
-            else if (cond.operator === 'in') conditionExpressions.push({ [path]: { $in: cond.matchValues } });
-            else if (cond.operator === 'not_in') conditionExpressions.push({ [path]: { $nin: cond.matchValues } });
-            else if (cond.operator === 'exists') conditionExpressions.push({ [path]: { $exists: true, $ne: null } });
-            else if (cond.operator === 'not_exists') conditionExpressions.push({ [path]: { $in: [null, undefined] } });
+            if (cond.operator === 'equals') {
+  conditionExpressions.push({ [path]: cond.matchValues[0] });
+} 
+else if (cond.operator === 'in') {
+  conditionExpressions.push({ [path]: { $in: cond.matchValues } });
+} 
+else if (cond.operator === 'not_in') {
+  conditionExpressions.push({ [path]: { $nin: cond.matchValues } });
+} 
+else if (cond.operator === 'exists') {
+  conditionExpressions.push({ [path]: { $exists: true, $ne: null } });
+} 
+else if (cond.operator === 'not_exists') {
+  conditionExpressions.push({ [path]: { $in: [null, undefined] } });
+} 
+else if (cond.operator === 'match_case_insensitive_array') {
+  const regexArray = (cond.matchValues || []).map((val: string) => ({
+    [path]: { $regex: `^${val}$`, $options: 'i' },
+  }));
+
+  if (regexArray.length > 0) {
+    conditionExpressions.push({ $or: regexArray });
+  }
+} 
+else if (cond.operator === 'not_match_case_insensitive_array') {
+  const regexArray = (cond.matchValues || []).map((val: string) => ({
+    [path]: { $regex: `^${val}$`, $options: 'i' },
+  }));
+
+  if (regexArray.length > 0) {
+    conditionExpressions.push({ $nor: regexArray });
+  }
+}
+
           }
           if (conditionExpressions.length > 0) {
             derivedRuleConditions.push(
@@ -2188,11 +2217,40 @@ async function buildAggregationPathAndReturnExpr({
             const path = await resolveFieldPath(cond, entity.attributes);
             if (!path) continue;
 
-            if (cond.operator === 'equals') conditionExpressions.push({ [path]: cond.matchValues[0] });
-            else if (cond.operator === 'in') conditionExpressions.push({ [path]: { $in: cond.matchValues } });
-            else if (cond.operator === 'not_in') conditionExpressions.push({ [path]: { $nin: cond.matchValues } });
-            else if (cond.operator === 'exists') conditionExpressions.push({ [path]: { $exists: true, $ne: null } });
-            else if (cond.operator === 'not_exists') conditionExpressions.push({ [path]: { $in: [null, undefined] } });
+           if (cond.operator === 'equals') {
+  conditionExpressions.push({ [path]: cond.matchValues[0] });
+} 
+else if (cond.operator === 'in') {
+  conditionExpressions.push({ [path]: { $in: cond.matchValues } });
+} 
+else if (cond.operator === 'not_in') {
+  conditionExpressions.push({ [path]: { $nin: cond.matchValues } });
+} 
+else if (cond.operator === 'exists') {
+  conditionExpressions.push({ [path]: { $exists: true, $ne: null } });
+} 
+else if (cond.operator === 'not_exists') {
+  conditionExpressions.push({ [path]: { $in: [null, undefined] } });
+} 
+else if (cond.operator === 'match_case_insensitive_array') {
+  const regexArray = (cond.matchValues || []).map((val: string) => ({
+    [path]: { $regex: `^${val}$`, $options: 'i' },
+  }));
+
+  if (regexArray.length > 0) {
+    conditionExpressions.push({ $or: regexArray });
+  }
+} 
+else if (cond.operator === 'not_match_case_insensitive_array') {
+  const regexArray = (cond.matchValues || []).map((val: string) => ({
+    [path]: { $regex: `^${val}$`, $options: 'i' },
+  }));
+
+  if (regexArray.length > 0) {
+    conditionExpressions.push({ $nor: regexArray });
+  }
+}
+
           }
           if (conditionExpressions.length > 0) {
             derivedRuleConditions.push(
@@ -3305,11 +3363,40 @@ async function buildAggregationPathAndReturnExpr({
             const path = await resolveFieldPath(cond, entity.attributes);
             if (!path) continue;
 
-            if (cond.operator === 'equals') conditionExpressions.push({ [path]: cond.matchValues[0] });
-            else if (cond.operator === 'in') conditionExpressions.push({ [path]: { $in: cond.matchValues } });
-            else if (cond.operator === 'not_in') conditionExpressions.push({ [path]: { $nin: cond.matchValues } });
-            else if (cond.operator === 'exists') conditionExpressions.push({ [path]: { $exists: true, $ne: null } });
-            else if (cond.operator === 'not_exists') conditionExpressions.push({ [path]: { $in: [null, undefined] } });
+            if (cond.operator === 'equals') {
+  conditionExpressions.push({ [path]: cond.matchValues[0] });
+} 
+else if (cond.operator === 'in') {
+  conditionExpressions.push({ [path]: { $in: cond.matchValues } });
+} 
+else if (cond.operator === 'not_in') {
+  conditionExpressions.push({ [path]: { $nin: cond.matchValues } });
+} 
+else if (cond.operator === 'exists') {
+  conditionExpressions.push({ [path]: { $exists: true, $ne: null } });
+} 
+else if (cond.operator === 'not_exists') {
+  conditionExpressions.push({ [path]: { $in: [null, undefined] } });
+} 
+else if (cond.operator === 'match_case_insensitive_array') {
+  const regexArray = (cond.matchValues || []).map((val: string) => ({
+    [path]: { $regex: `^${val}$`, $options: 'i' },
+  }));
+
+  if (regexArray.length > 0) {
+    conditionExpressions.push({ $or: regexArray });
+  }
+} 
+else if (cond.operator === 'not_match_case_insensitive_array') {
+  const regexArray = (cond.matchValues || []).map((val: string) => ({
+    [path]: { $regex: `^${val}$`, $options: 'i' },
+  }));
+
+  if (regexArray.length > 0) {
+    conditionExpressions.push({ $nor: regexArray });
+  }
+}
+
           }
           if (conditionExpressions.length > 0) {
             derivedRuleConditions.push(
