@@ -301,46 +301,59 @@ async function validateAndConvert({
   }
 
   if (type === 'option' || type === 'multioption') {
-    if (optionAttributeId) {
-      const attributeOptionDetails = await attributeOptionService.findAttributeOptionById(optionAttributeId);
+  if (optionAttributeId) {
+    const attributeOptionDetails = await attributeOptionService.findAttributeOptionById(optionAttributeId);
 
-      const attributeOptionValue: string[] = attributeOptionDetails?.attributeValue || [];
+    const attributeOptionValue: string[] = attributeOptionDetails?.attributeValue || [];
 
-      // normalize available options to lowercase
-      const optionSet = new Set(attributeOptionValue.map((v) => v.toLowerCase()));
+    // normalize available options to lowercase
+    const optionSet = new Set(attributeOptionValue.map((v) => v.trim().toLowerCase()));
 
-      if (type === 'option') {
-        const candidate = String(value).trim();
-        const isValid = optionSet.has(candidate.toLowerCase());
-        return {
-          isValid,
-          convertedValue: isValid ? candidate : null,
-          attributeOptionValue,
-        };
-      } else {
-        // handle both array and string
-        const valuesArray: string[] = Array.isArray(value)
-          ? value.map((v) => String(v).trim())
-          : String(value)
-              .split(separator)
-              .map((v) => v.trim())
-              .filter(Boolean);
-
-        const allValid = valuesArray.every((val) => optionSet.has(val.toLowerCase()));
-
-        return {
-          isValid: allValid,
-          convertedValue: allValid ? valuesArray : null,
-          attributeOptionValue,
-        };
-      }
-    } else {
+    if (type === 'option') {
+      const candidate = String(value).trim();
+      const isValid = optionSet.has(candidate.toLowerCase());
       return {
-        isValid: false,
-        convertedValue: null,
+        isValid,
+        convertedValue: isValid ? candidate : null,
+        attributeOptionValue,
+      };
+    } else {
+      // handle multioption
+      let valuesArray: string[] = [];
+
+      if (Array.isArray(value)) {
+        valuesArray = value.map((v) => String(v).trim()).filter(Boolean);
+      } else if (typeof value === 'string') {
+        const trimmed = value.trim();
+
+        // ✅ Step 1: try full match (handles options with commas)
+        if (optionSet.has(trimmed.toLowerCase())) {
+          valuesArray = [trimmed];
+        } else {
+          // ✅ Step 2: fallback to split by comma
+          valuesArray = trimmed
+            .split(',')
+            .map((v) => v.trim())
+            .filter(Boolean);
+        }
+      }
+
+      const allValid = valuesArray.every((val) => optionSet.has(val.toLowerCase()));
+
+      return {
+        isValid: allValid,
+        convertedValue: allValid ? valuesArray : null,
+        attributeOptionValue,
       };
     }
+  } else {
+    return {
+      isValid: false,
+      convertedValue: null,
+    };
   }
+}
+
 
   return { isValid: true, convertedValue: value };
 }
