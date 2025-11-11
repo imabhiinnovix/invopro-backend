@@ -4,7 +4,7 @@ import { getAISummary } from '../../../database/services/notivix/aiModel.service
 
 export const createNotificationType = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, dataSourceId, triggerFieldId, conditionGroups } = req.body;
+    const { name, dataSourceId, triggerFieldId, conditionGroups, conditionSummaryGroups } = req.body;
     const { organizationId, userId } = req.user;
 
     // 1 Create record first — without waiting for AI
@@ -19,7 +19,7 @@ export const createNotificationType = async (req: Request, res: Response, next: 
     });
 
     // 2️ Call AI service asynchronously — don’t await
-    getAISummary(conditionGroups)
+    getAISummary(conditionSummaryGroups)
       .then(async (summary) => {
         if (summary) {
           // save summary later (background)
@@ -46,7 +46,7 @@ export const createNotificationType = async (req: Request, res: Response, next: 
 
 export const updateNotificationType = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, dataSourceId, triggerFieldId, conditionGroups } = req.body;
+    const { name, dataSourceId, triggerFieldId, conditionGroups, conditionSummaryGroups } = req.body;
     const { organizationId, userId } = req.user;
 
     // 1️ Update main record immediately
@@ -62,7 +62,7 @@ export const updateNotificationType = async (req: Request, res: Response, next: 
     );
 
     // 2️ Trigger AI in background
-    getAISummary(conditionGroups)
+    getAISummary(conditionSummaryGroups)
       .then(async (summary) => {
         if (summary) {
           await NotificationTypeService.updateNotificationType(
