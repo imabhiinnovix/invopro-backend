@@ -220,6 +220,29 @@ export const getDataSourceVersion = async ({ query, populate, sort }: any) => {
   }
 };
 
+export const getAllDataSourceVersions = async ({ query = {}, populate, sort }: any) => {
+  try {
+    let dataSourceVersionQuery = DataSourceVersion.find(query);
+
+    if (populate && Array.isArray(populate)) {
+      populate.forEach((field) => {
+        dataSourceVersionQuery = dataSourceVersionQuery.populate(field);
+      });
+    }
+
+    if (sort) {
+      dataSourceVersionQuery = dataSourceVersionQuery.sort(sort);
+    }
+
+    const dataSourceVersions = await dataSourceVersionQuery.exec();
+
+    return dataSourceVersions;
+  } catch (err) {
+    throw err;
+  }
+};
+
+
 const buildFieldProjection = (fields: string[]) => {
   const projection: any = {};
   fields.forEach((field) => {

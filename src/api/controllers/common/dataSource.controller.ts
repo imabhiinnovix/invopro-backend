@@ -353,10 +353,17 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
               sort: { createdAt: -1 },
             });
 
+            const allDataSourceVersions = await dataSourceVersionService.getAllDataSourceVersions({
+              query: { dataSourceId: ds._id },
+              populate: [],
+              sort: { createdAt: -1 },
+            });
+
             return {
               ...ds.toObject?.() || ds,
               dataSourceVersion: latestVersion || null,
               lastUploadedDate: lastUploadedVersion ? lastUploadedVersion.createdAt : null,
+              allDataSourceVersions
             };
           })
         )
