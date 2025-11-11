@@ -74,7 +74,7 @@ export const updateDataSourceVersionValue = async (
   });
 
   if (bulkOps.length > 0) {
-    await Model.bulkWrite(bulkOps, { ordered: false });
+    await Model.bulkWrite(bulkOps, { ordered: false, strict: false });
   }
 
   return true;

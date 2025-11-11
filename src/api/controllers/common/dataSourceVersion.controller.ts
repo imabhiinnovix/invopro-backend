@@ -1551,7 +1551,16 @@ export async function handleReferenceSubFields({
       // Mark existing mappings as inactive
       // -------------------------------
       console.log('refFieldName', refFieldName, parentId, RefModel, versionId);
-      await RefModel.deleteMany({ [`rowData.${refFieldName}`]: parentId, 'status': 'active' });
+      await RefModel.updateMany(
+        { [`rowData.${refFieldName}`]: parentId },
+        {
+          $set: {
+            status: "in-active",
+            updatedAt: new Date(),
+          },
+        },
+        { strict: false } // Allow dynamic path updates in rowData
+      );
 
       // 2️⃣ Resolve subfield doc (_id) → FOName
       const subRefModel = await getModelForEntity(subAttr.referenceEntitySetting.refEntityId);
@@ -1570,22 +1579,32 @@ export async function handleReferenceSubFields({
 
           // 3️⃣ Upsert mapping table
           await RefModel.updateOne(
-            { [`rowData.${refFieldName}`]: parentId, [`rowData.${subAttr.name}`]: subId },
+            {
+              [`rowData.${refFieldName}`]: parentId,
+              [`rowData.${subAttr.name}`]: subId,
+            },
             {
               $set: {
                 [`rowData.${refFieldName}`]: parentId,
                 [`rowData.${subAttr.name}`]: subId,
-                status: 'active',
+                status: 'active', // ✅ always update status
                 dataSourceId,
                 dataSourceVersionId: versionId,
                 versionValue,
-                createdBy: userId,
                 organizationId,
                 updatedAt: new Date(),
               },
+              $setOnInsert: {
+                createdBy: userId, // ✅ only set on new insert
+                createdAt: new Date(),
+              },
             },
-            { upsert: true }
+            {
+              upsert: true,
+              strict: false, // ✅ allow dynamic rowData paths
+            }
           );
+
         }
       } else {
         // mapping_one_to_one → single subValue
@@ -1595,30 +1614,39 @@ export async function handleReferenceSubFields({
         if (!subRefDoc) continue;
         const subId = subRefDoc._id;
 
-        await RefModel.updateOne(
-          { [`rowData.${refFieldName}`]: parentId },
-          {
-            $set: {
-              [`rowData.${refFieldName}`]: parentId,
-              [`rowData.${subAttr.name}`]: subId,
-              status: 'active',
-              dataSourceId,
-              dataSourceVersionId: versionId,
-              versionValue,
-              createdBy: userId,
-              organizationId,
-              updatedAt: new Date(),
-            },
+       await RefModel.updateOne(
+        {
+          [`rowData.${refFieldName}`]: parentId,
+        },
+        {
+          $set: {
+            [`rowData.${refFieldName}`]: parentId,
+            [`rowData.${subAttr.name}`]: subId,
+            status: 'active', // ✅ ensure always updated
+            dataSourceId,
+            dataSourceVersionId: versionId,
+            versionValue,
+            organizationId,
+            updatedAt: new Date(),
           },
-          { upsert: true }
-        );
+          $setOnInsert: {
+            createdBy: userId, // ✅ only on first insert
+            createdAt: new Date(),
+          },
+        },
+        {
+          upsert: true,
+          strict: false, // ✅ allow dynamic rowData.<field> paths
+        }
+      );
+
       }
       // ✅ Remove dotted key from rowData in parent document
       console.log('parentRefModel', parentRefModel, parentId, key);
       const doc: any = await parentRefModel.findById(parentId);
       if (doc && doc.rowData && key in doc.rowData) {
         delete doc.rowData[key]; // remove the literal key with dots
-        await parentRefModel.updateOne({ _id: parentId }, { $set: { rowData: doc.rowData } });
+        await parentRefModel.updateOne({ _id: parentId }, { $set: { rowData: doc.rowData, status: 'active' } });
       }
       continue; // done with mapping case
     }
@@ -1663,21 +1691,26 @@ export async function handleReferenceSubFields({
             },
             {
               $set: {
-                rowData: {
-                  [refFieldName]: parentVal,
-                  [subAttr.name]: val,
-                },
+                [`rowData.${refFieldName}`]: parentVal,
+                [`rowData.${subAttr.name}`]: val,
                 status: 'active',
                 dataSourceId,
                 dataSourceVersionId: versionId,
                 versionValue,
-                createdBy: userId,
                 organizationId,
                 updatedAt: new Date(),
               },
+              $setOnInsert: {
+                createdBy: userId,
+                createdAt: new Date(),
+              },
             },
-            { upsert: true }
+            {
+              upsert: true,
+              strict: false, // ✅ allows flexible rowData paths
+            }
           );
+
         }
       }
     } else {
@@ -1687,24 +1720,31 @@ export async function handleReferenceSubFields({
       parentValueResolved = existingRow.rowData[refFieldName];
 
       await RefModel.updateOne(
-        { [`rowData.${refFieldName}`]: parentValueResolved },
+        {
+          [`rowData.${refFieldName}`]: parentValueResolved,
+        },
         {
           $set: {
-            rowData: {
-              [refFieldName]: parentValueResolved,
-              [subAttr.name]: subValue,
-            },
+            [`rowData.${refFieldName}`]: parentValueResolved,
+            [`rowData.${subAttr.name}`]: subValue,
             status: 'active',
             dataSourceId,
             dataSourceVersionId: versionId,
             versionValue,
-            createdBy: userId,
             organizationId,
             updatedAt: new Date(),
           },
+          $setOnInsert: {
+            createdBy: userId,
+            createdAt: new Date(),
+          },
         },
-        { upsert: true }
+        {
+          upsert: true,
+          strict: false, // ✅ allows flexible rowData fields
+        }
       );
+
     }
   }
 }
@@ -1929,6 +1969,7 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       {
         rowData: validatedRowData,
         updatedBy: userId,
+        status: 'active'
       }
     );
 

@@ -13,7 +13,7 @@ export const getAISummary = async (conditionGroups: any) => {
   { headers: { "Content-Type": "application/json" } });
     console.log('ai response', response);
     // Return the AI’s response text
-    return response.data?.response || "";
+    return response.data?.data || "";
   } catch (error: any) {
     console.error("AI summary service failed:", error.message);
     return ""; // fallback if service not available
