@@ -451,6 +451,7 @@ async function generateLookupsForAllReferences(
           localField,
           foreignField: refField, // field in mapping table pointing to source entity
           as: mappingAsField,
+          pipeline: [{ $match: { status: 'active' } }],
         },
       });
       lookups.push({ $unwind: { path: `$${mappingAsField}`, preserveNullAndEmptyArrays: true } });
@@ -462,6 +463,7 @@ async function generateLookupsForAllReferences(
           localField: `${mappingAsField}.${refField}`, // field in mapping pointing to target _id
           foreignField: "_id",
           as: asField,
+          pipeline: [{ $match: { status: 'active' } }],
         },
       });
       lookups.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
@@ -473,6 +475,7 @@ async function generateLookupsForAllReferences(
           localField,
           foreignField: "_id",
           as: asField,
+          pipeline: [{ $match: { status: 'active' } }],
         },
       });
       lookups.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });

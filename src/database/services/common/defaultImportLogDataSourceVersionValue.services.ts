@@ -203,6 +203,7 @@ export const getImportLogDataSourceVersionValuesV1 = async (schemaName: string, 
                 localField: '_id',
                 foreignField: localField,
                 as: asField,
+                pipeline: [{ $match: { status: 'active' } }],
               },
             });
           }else{
@@ -212,6 +213,7 @@ export const getImportLogDataSourceVersionValuesV1 = async (schemaName: string, 
                 localField,
                 foreignField: '_id',
                 as: asField,
+                pipeline: [{ $match: { status: 'active' } }],
               },
             });
           }
