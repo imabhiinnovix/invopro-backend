@@ -5,10 +5,9 @@ import { getAISummary } from '../../../database/services/notivix/aiModel.service
 export const createNotificationType = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, dataSourceId, triggerFieldId, conditionGroups } = req.body;
-
     const { organizationId, userId } = req.user;
-    // Call AI service for summary generation
-    const summary = await getAISummary(conditionGroups);
+
+    // 1 Create record first — without waiting for AI
     const data = await NotificationTypeService.createNotificationType({
       organizationId,
       userId,
@@ -16,12 +15,28 @@ export const createNotificationType = async (req: Request, res: Response, next: 
       dataSourceId,
       triggerFieldId,
       conditionGroups,
-      summary
+      summary: "", // temporarily empty
     });
 
+    // 2️ Call AI service asynchronously — don’t await
+    getAISummary(conditionGroups)
+      .then(async (summary) => {
+        if (summary) {
+          // save summary later (background)
+          await NotificationTypeService.updateNotificationType(
+            { _id: data._id, organizationId },
+            { summary }
+          );
+        }
+      })
+      .catch((err) => {
+        console.error("AI summary background task failed:", err.message);
+      });
+
+    // 3️ Respond immediately
     res.status(201).json({
       success: true,
-      message: 'Notification Type Created Successfully',
+      message: "Notification Type Created Successfully",
       data,
     });
   } catch (err) {
@@ -32,10 +47,9 @@ export const createNotificationType = async (req: Request, res: Response, next: 
 export const updateNotificationType = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, dataSourceId, triggerFieldId, conditionGroups } = req.body;
-
     const { organizationId, userId } = req.user;
-    // Call AI service for summary generation
-    const summary = await getAISummary(conditionGroups);
+
+    // 1️ Update main record immediately
     const data = await NotificationTypeService.updateNotificationType(
       { _id: req.params.id, organizationId },
       {
@@ -44,13 +58,26 @@ export const updateNotificationType = async (req: Request, res: Response, next: 
         triggerFieldId,
         conditionGroups,
         updatedBy: userId,
-        summary
       }
     );
 
+    // 2️ Trigger AI in background
+    getAISummary(conditionGroups)
+      .then(async (summary) => {
+        if (summary) {
+          await NotificationTypeService.updateNotificationType(
+            { _id: req.params.id, organizationId },
+            { summary }
+          );
+        }
+      })
+      .catch((err) => {
+        console.error("AI summary background task failed:", err.message);
+      });
+
     res.status(200).json({
       success: true,
-      message: 'Notification Type Updated Successfully',
+      message: "Notification Type Updated Successfully",
       data,
     });
   } catch (err) {
