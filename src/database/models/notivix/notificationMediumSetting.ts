@@ -17,7 +17,7 @@ export interface INotificationMediumSetting extends Document {
 const notificationMediumSettingSchema = new Schema<INotificationMediumSetting>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'user', required: true },
     productId: {
       type: Schema.Types.ObjectId,
       ref: 'product',

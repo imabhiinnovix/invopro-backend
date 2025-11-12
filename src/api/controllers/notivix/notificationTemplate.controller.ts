@@ -121,6 +121,7 @@ export const listNotificationTemplate = async (req: Request, res: Response, next
       page: Number(page),
       limit: Number(limit),
       sort: sort ? JSON.parse(sort) : undefined,
+      populate: ["userId"]
     });
     res.json(result);
   } catch (error) {

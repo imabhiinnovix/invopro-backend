@@ -70,7 +70,7 @@ const groupByItemSchema = new Schema<IGroupByItem>(
 const notificationTemplateSchema = new Schema<INotificationTemplate>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', default: null },
-    userId: { type: Schema.Types.ObjectId, ref: 'User' },
+    userId: { type: Schema.Types.ObjectId, ref: 'user' },
     dataSourceId: {
       type: Schema.Types.ObjectId,
       ref: "data_source",

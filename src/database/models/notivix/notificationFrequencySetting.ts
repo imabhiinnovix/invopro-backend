@@ -57,7 +57,7 @@ const notificationRecipientSchema = new Schema<INotificationRecipient>(
 const notificationFrequencySettingSchema = new Schema<INotificationFrequencySetting>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
-    userId: { type: Schema.Types.ObjectId, ref: 'User' },
+    userId: { type: Schema.Types.ObjectId, ref: 'user' },
     notificationTypeId: { type: Schema.Types.ObjectId, ref: 'notification_type', required: true },
 
     frequency: { type: String, enum: ['once', 'daily', 'weekly', 'monthly', 'yearly', 'custom'], required: true },

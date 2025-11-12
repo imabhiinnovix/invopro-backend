@@ -10,27 +10,36 @@ export const createNotificationTemplate = async (data: any) => {
 
 export const getNotificationTemplates = async ({
   query = {},
-  select = '',
+  select = "",
   page = 1,
   limit = 10,
   sort = { updatedAt: -1 },
-  populate = '',
+  populate = [],
 }: {
   query?: any;
   select?: string;
   page?: number;
   limit?: number;
   sort?: any;
-  populate?: string;
+  populate?: string[]; // always expected as array
 }) => {
   const skip = (page - 1) * limit;
   const totalCount = await NotificationTemplate.countDocuments(query);
-  const templates = await NotificationTemplate.find(query)
+
+  let queryBuilder = NotificationTemplate.find(query)
     .select(select)
     .sort(sort)
     .skip(skip)
-    .limit(limit)
-    .populate(populate);
+    .limit(limit);
+
+  // Check if populate is a valid array with at least one element
+  if (Array.isArray(populate) && populate.length > 0) {
+    populate.forEach((field) => {
+      queryBuilder = queryBuilder.populate(field);
+    });
+  }
+
+  const templates = await queryBuilder.exec();
 
   return {
     data: templates,
@@ -42,6 +51,7 @@ export const getNotificationTemplates = async ({
     },
   };
 };
+
 
 export const getNotificationTemplateById = async (id: string) => {
   return await NotificationTemplate.findById(id);
