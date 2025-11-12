@@ -67,6 +67,10 @@ const defaultPermissionsUser = [
     isChangeable: true,
   },
   {
+    permission: 'GET:/common/dataSourceVersion/versionData/export',
+    isChangeable: true,
+  },
+  {
     permission: 'POST:/common/dataSourceVersion/versionData/create',
     isChangeable: true,
   },

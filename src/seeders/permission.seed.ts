@@ -465,6 +465,16 @@ let permissions: PermissionSeed[] = [
     isChangeable: true,
   },
   {
+    name: 'Export Data Source Version Data by Data Source and Version Value',
+    method: 'GET',
+    resourceId: '/common/dataSourceVersion/versionData/export',
+    extraOptions: {},
+    resourceType: 'Data Source Version',
+    resourceCode: 'dataSourceVersion__export_data',
+    isSuperUser: false,
+    isChangeable: true,
+  },
+  {
     name: 'Create Data Source Version Value',
     method: 'POST',
     resourceId: '/common/dataSourceVersion/versionData/create',

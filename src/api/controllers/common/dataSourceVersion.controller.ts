@@ -29,6 +29,8 @@ import { autoPopulateAttributeOption, autoPopulateAttributeOptionFromRow } from 
 import * as entityService from '../../../database/services/common/entity.services';
 import { findDerivedFieldById } from '../../../database/services/common/derivedField.services';
 import { getUserDataPermissionRecord } from '../../../database/services/common/userDataPermission.service';
+import ExcelJS from 'exceljs';
+
 const ObjectId = mongoose.Types.ObjectId;
 
 export const ERROR_CODES = {
@@ -1482,6 +1484,172 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     next(e);
   }
 };
+
+export const exportDataSourceVersionDataToExcel = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { dataSourceId, versionValue, filters, search, selectedFields } = req.query as {
+      dataSourceId: string;
+      versionValue?: string;
+      filters?: string;
+      search?: string;
+      selectedFields?: string[]; // ✅ optional now
+    };
+
+    const { orgCode, userId, organizationId } = req.user;
+
+    // 🔹 Data Source details
+    const dataSourceDetails: any = await dataSourceService.findDataSourceById(dataSourceId, true);
+    if (!dataSourceDetails) {
+      return res.status(404).json({ success: false, message: 'Data source not found.' });
+    }
+
+    // 🔹 Field mappings
+    const fieldOptions = await entityService.getEntityFieldOptions(String(dataSourceDetails.entityId._id));
+
+    if (Array.isArray(dataSourceDetails.fieldSettings)) {
+      for (const field of dataSourceDetails.fieldSettings) {
+        // Derived fields
+        if (field.isDerived && field.attributeId) {
+          const derived = await findDerivedFieldById(field.attributeId);
+          if (derived) {
+            field.mappedAttributeName = `Derived.${derived.name}`;
+            field.values = Array.isArray(derived.valueRules)
+              ? derived.valueRules.map((vr) => vr.value)
+              : [];
+          }
+          continue;
+        }
+
+        // Normal fields
+        const match = fieldOptions.find(
+          (opt) =>
+            String(opt.value.attributeId) === String(field.attributeId) &&
+            JSON.stringify(opt.value.refAttributeId || []) ===
+              JSON.stringify(field.refAttributeId || [])
+        );
+        field.mappedAttributeName = match ? match.label : 'Unknown';
+      }
+    }
+
+    // 🔹 Build search filters using mappedAttributeName (unchanged)
+    const searchFilters: any = {};
+    if (search && search.length > 0) {
+      for (const field of dataSourceDetails.fieldSettings) {
+        if (!field.mappedAttributeName || field.mappedAttributeName === 'Unknown') continue;
+        searchFilters[field.mappedAttributeName] = search;
+      }
+    }
+
+    // 🔹 Build version query
+    const versionQuery: any = {
+      dataSourceId,
+      isCurrent: true,
+    };
+    if (versionValue) versionQuery.versionValue = versionValue;
+
+    const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
+      query: versionQuery,
+    });
+
+    if (!dataSourceVersionDetails?.data?.length) {
+      return res.status(404).json({ success: false, message: 'No version data found.' });
+    }
+
+    const dataSourceVersionId = dataSourceVersionDetails.data[0]._id;
+    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSourceDetails.code,
+    });
+
+    const parsedFilters = filters ? JSON.parse(filters) : {};
+    const query: any = { status: 'active' };
+
+    if (dataSourceDetails.versionType !== 'constant') {
+      query['dataSourceVersionId'] = dataSourceVersionId;
+    }
+
+    // 🔹 Apply user-level data permissions
+    const userPermission = await getUserDataPermissionRecord({
+      userId,
+      dataSourceId,
+      organizationId,
+    });
+
+    // 🔹 Fetch data
+    const result = await dataSourceVersionValueService.getDataSourceVersionValueV1({
+      schemaName,
+      query,
+      select: '',
+      page: 1,
+      limit: Number.MAX_SAFE_INTEGER,
+      sort: {},
+      filters: parsedFilters,
+      entityId: dataSourceDetails.entityId,
+      searchFilters,
+      conditions: userPermission?.conditions,
+    });
+
+    const data = result?.data ?? [];
+    if (!data.length) {
+      return res.status(200).json({ success: true, message: 'No data available for export.' });
+    }
+
+    // 🔹 Prepare Excel workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Export');
+
+    // ✅ If no selectedFields provided, include all fieldSettings
+    const selectedFieldConfigs =
+      Array.isArray(selectedFields) && selectedFields.length > 0
+        ? dataSourceDetails.fieldSettings.filter((f: any) =>
+            selectedFields.includes(f.attributeId?.toString() || f.mappedAttributeName)
+          )
+        : dataSourceDetails.fieldSettings;
+
+    // Headers
+    const headers = selectedFieldConfigs.map((f: any) => ({
+      header: f.mappedAttributeName || f.fieldName || 'Unknown',
+      key: f.mappedAttributeName,
+      width: 25,
+    }));
+
+    worksheet.columns = headers;
+
+    // Data rows
+    data.forEach((row: any) => {
+      const record: any = {};
+      selectedFieldConfigs.forEach((f: any) => {
+        record[f.mappedAttributeName] = row[f.mappedAttributeName] ?? '';
+      });
+      worksheet.addRow(record);
+    });
+
+    // Format headers
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).alignment = { horizontal: 'center' };
+
+    // 🔹 Send Excel file
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=DataSource_${dataSourceDetails.code}_${versionValue || 'latest'}.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (e) {
+    console.error('Error in exportDataSourceVersionDataToExcel:', e);
+    next(e);
+  }
+};
+
 
 export async function handleReferenceSubFields({
   rowData,
