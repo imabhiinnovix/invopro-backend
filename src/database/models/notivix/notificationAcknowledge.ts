@@ -33,7 +33,7 @@ const preparedRecipientSchema = new Schema<IPreparedRecipient>(
 const notificationAcknowledgeSchema = new Schema<INotificationAcknowledge>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: "Organization", index: true },
-    userId: { type: Schema.Types.ObjectId, ref: "User", index: true },
+    userId: { type: Schema.Types.ObjectId, ref: "user", index: true },
     notificationTriggerId: { type: Schema.Types.ObjectId, ref: "notification_trigger", index: true },
     senderId: { type: String },
 

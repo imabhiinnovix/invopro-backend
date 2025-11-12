@@ -19,7 +19,7 @@ const notificationTriggerSchema = new Schema<INotificationTrigger>(
     organizationId: { type: Schema.Types.ObjectId, ref: "Organization", index: true },
 
     // who initiated the trigger
-    userId: { type: Schema.Types.ObjectId, ref: "User", index: true },
+    userId: { type: Schema.Types.ObjectId, ref: "user", index: true },
 
     // source of trigger
     source: { type: String, enum: ["cron", "web", "command"], default: "web", index: true },

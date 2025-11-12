@@ -108,7 +108,7 @@ const preparedNotificationSchema = new Schema<IPreparedNotification>(
     lockedBy: { type: String },
 
     priority: { type: Number, default: 0 },
-    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+    createdBy: { type: Schema.Types.ObjectId, ref: "user" },
     meta: { type: Schema.Types.Mixed },
 
     acknowledgeId: { type: Schema.Types.ObjectId, ref: "notification_acknowledge" },

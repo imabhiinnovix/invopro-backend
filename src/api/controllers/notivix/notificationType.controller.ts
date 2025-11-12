@@ -126,7 +126,7 @@ export const listNotificationType = async (req: Request, res: Response, next: Ne
       page: parsedPage,
       limit: parsedLimit,
       sort: sort ? JSON.parse(sort as string) : { updatedAt: -1 },
-      populate: ['dataSourceId'],
+      populate: ['dataSourceId','userId'],
     });
 
     const totalPages = Math.ceil(result.totalCount / parsedLimit);

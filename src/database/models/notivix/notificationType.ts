@@ -69,7 +69,7 @@ const notificationTypeSchema = new Schema<INotificationType>(
       ref: "Organization",
       required: true,
     },
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true,},
+    userId: { type: Schema.Types.ObjectId, ref: "user", required: true,},
     name: { type: String, required: true },
     dataSourceId: {
       type: Schema.Types.ObjectId,
@@ -77,8 +77,8 @@ const notificationTypeSchema = new Schema<INotificationType>(
       required: true
     },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
-    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
-    updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    createdBy: { type: Schema.Types.ObjectId, ref: "user" },
+    updatedBy: { type: Schema.Types.ObjectId, ref: "user" },
     conditionGroups: {
       type: [conditionOrGroupSchema],
       default: [],
