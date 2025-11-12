@@ -189,21 +189,54 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       versionCode: dataSourceDetails?.code!,
     });
     if (action === 'discard') {
-      await dataImportErrorServices.updateDataImportErrors(
-        { dataSourceVersionId: dataSourceVersionId, rowNumber: { $in: rowNumbers } },
-        { status: 'discarded' }
-      );
-      await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
-        errorSchemaName,
-        {
-          dataSourceVersionId: new ObjectId(dataSourceVersionId),
-          rowNumber: { $in: rowNumbers },
-        },
-        {
-          isErrorLog: 1000,
-        }
-      );
-    } else if (action === 'discardAllSubmit') {
+  // 1️ Check which rows have at least one open record
+  const openRecords = await dataImportErrorServices.getDataImportErrorRecords({
+    dataSourceVersionId,
+    rowNumber: { $in: rowNumbers },
+    status: 'open',
+  });
+
+  const openRowNumbers = [...new Set(openRecords.map((r: any) => r.rowNumber))];
+  // 2️ Find invalid rows (no open record)
+  const invalidRowNumbers = rowNumbers.filter(
+    (num) => !openRowNumbers.includes(num)
+  );
+  if (invalidRowNumbers.length > 0) {
+    // 4️ Get their corresponding fileRowNumbers from all error records (for better user clarity)
+    const allErrorRecords = await dataImportErrorServices.getDataImportErrorRecords({
+      dataSourceVersionId,
+      rowNumber: { $in: invalidRowNumbers },
+    });
+    const invalidFileRows = allErrorRecords.map((r: any) => r.fileRowNumber);
+
+    return res.status(400).json({
+      success: false,
+      message: `Discard not allowed. These rows have no open records: ${invalidFileRows.join(', ')}`,
+    });
+
+  }
+
+  // 3️ Proceed with bulk discard (no status filter now)
+  await Promise.all([
+    dataImportErrorServices.updateDataImportErrors(
+      { dataSourceVersionId, rowNumber: { $in: rowNumbers } },
+      { status: 'discarded' }
+    ),
+    importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+      errorSchemaName,
+      {
+        dataSourceVersionId: new ObjectId(dataSourceVersionId),
+        rowNumber: { $in: rowNumbers },
+      },
+      { isErrorLog: 1000 }
+    ),
+  ]);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Records discarded successfully.',
+  });
+}else if (action === 'discardAllSubmit') {
       await dataImportErrorServices.updateDataImportErrors(
         {
           dataSourceVersionId: dataSourceVersionId,
