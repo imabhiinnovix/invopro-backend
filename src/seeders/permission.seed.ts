@@ -374,6 +374,16 @@ let permissions: PermissionSeed[] = [
     isChangeable: true,
   },
   {
+    name: 'Export Widget Data By Filter',
+    method: 'POST',
+    resourceId: '/common/dataSource/getWidgetDataByFilter/export',
+    extraOptions: {},
+    resourceType: 'Data Source',
+    resourceCode: 'dataSource__export_widget_data',
+    isSuperUser: false,
+    isChangeable: true,
+  },
+  {
     name: 'Create Attribute Option',
     method: 'POST',
     resourceId: '/common/attributeOptions/create',
