@@ -6,6 +6,7 @@ import {
   checkDataSourceCodeAvailableOrNot,
   checkDataSourceNameAvailableOrNot,
   createDataSourcce,
+  exportWidgetDataByFilterToExcel,
   getDataSourceById,
   getDataSourceWithFieldOptionDetails,
   getWidgetDataByFilter,
@@ -25,6 +26,7 @@ router.put('/update/:dataSourceId', authenticateToken, permissionMiddleware(), u
 router.get('/list', authenticateToken, permissionMiddleware(), listDataSource);
 router.get('/dataSourceId/:dataSourceId', authenticateToken, permissionMiddleware(), getDataSourceById);
 router.post('/getWidgetDataByFilter', authenticateToken, permissionMiddleware(), getWidgetDataByFilter);
+router.post('/getWidgetDataByFilter/export', authenticateToken, permissionMiddleware(), exportWidgetDataByFilterToExcel);
 router.get(
   '/dataSourceDetails/:dataSourceId',
   authenticateToken,

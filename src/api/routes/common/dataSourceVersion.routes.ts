@@ -6,6 +6,7 @@ import {
   createSingleRowVersionValue,
   createUpdateCustomDataSourceVersionValue,
   deleteMultipleRowsFromVersion,
+  exportDataSourceVersionDataToExcel,
   getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue,
   getDataSourceVersionDetailsBasedOnId,
   getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue,
@@ -43,6 +44,13 @@ router.get(
   authenticateToken,
   permissionMiddleware(),
   getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue
+);
+
+router.get(
+  '/versionData/export',
+  authenticateToken,
+  permissionMiddleware(),
+  exportDataSourceVersionDataToExcel
 );
 
 router.get(

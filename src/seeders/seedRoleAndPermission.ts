@@ -41,6 +41,10 @@ const defaultPermissionsUser = [
     isChangeable: true,
   },
   {
+    permission: 'POST:/common/dataSource/getWidgetDataByFilter/export',
+    isChangeable: true,
+  },
+  {
     permission: 'GET:/common/attributeOptions/list',
     isChangeable: true,
   },
@@ -64,6 +68,10 @@ const defaultPermissionsUser = [
   },
   {
     permission: 'GET:/common/dataSourceVersion/versionData',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/dataSourceVersion/versionData/export',
     isChangeable: true,
   },
   {
