@@ -630,21 +630,39 @@ export async function validateRowData({
   rowData,
   attributes,
   separator = ',',
+  uniqueAttributeRules = [],
+  entityId,
+  dataSourceId,
+  dataSourceVersionId,
 }: {
   rowData: Record<string, any>;
   attributes: any[];
   separator?: string;
+  uniqueAttributeRules?: Types.ObjectId[][];
+  entityId?: any;
+  dataSourceId?: string;
+  dataSourceVersionId?: string;
 }) {
   const errors: any[] = [];
   const validatedRowData: Record<string, any> = { ...rowData };
 
+  // Create attribute ID → name map for lookup
+  const attributeIdToNameMap = attributes.reduce(
+    (acc, attr) => {
+      acc[attr._id?.toString()] = attr.name;
+      return acc;
+    },
+    {} as Record<string, string>
+  );
+
+  // -----------------------------------------
+  // 1️⃣ Basic type & reference validation
+  // -----------------------------------------
   for (const attr of attributes) {
-    //  Skip if attr.name not found in rowData keys
-    if (!Object.prototype.hasOwnProperty.call(rowData, attr.name)) {
-      continue; //  simply skip validation for this attribute
-    }
+    if (!Object.prototype.hasOwnProperty.call(rowData, attr.name)) continue;
     const value = validatedRowData[attr.name];
-    // 1️⃣ Required check
+
+    // Required validation
     if (value === undefined || value === null || value === '') {
       if (attr.required === 'Mandatory' || attr.required === true) {
         errors.push({
@@ -657,7 +675,7 @@ export async function validateRowData({
       continue;
     }
 
-    // 2️⃣ Reference resolution
+    // Reference resolution
     if (
       attr.referenceEntitySetting?.refEntityId &&
       ['one_to_one', 'many_to_one'].includes(attr.referenceEntitySetting?.relationType)
@@ -670,9 +688,9 @@ export async function validateRowData({
       const escapedValue = escapeRegExp(String(value).trim());
       const regex = new RegExp(`^${escapedValue}$`, 'i');
 
-      const referencedDoc = await RefModel.findOne({
+      const referencedDoc: any = await RefModel.findOne({
         [`rowData.${refEntityField.name}`]: regex,
-        'status': 'active'
+        status: 'active',
       });
 
       if (!referencedDoc) {
@@ -680,13 +698,14 @@ export async function validateRowData({
           attributeName: attr.name,
           errorType: 'Reference Error',
           errorCode: '404',
-          errorMessage: `"${attr.name}"- "${value}" not found".`,
+          errorMessage: `"${attr.name}" - "${value}" not found.`,
         });
       } else {
         validatedRowData[attr.name] = referencedDoc._id;
+        validatedRowData[`${attr.name}__display`] = referencedDoc.rowData?.[refEntityField.name];
       }
     } else {
-      // 3️⃣ Validate against type + options
+      // Type validation
       const { isValid, convertedValue, attributeOptionValue } = await validateAndConvert({
         value,
         type: attr.type,
@@ -695,25 +714,83 @@ export async function validateRowData({
       });
 
       if (!isValid) {
-        if (['option', 'multioption'].includes(attr.type)) {
-          errors.push({
-            attributeName: attr.name,
-            errorType: 'Type Error',
-            errorCode: '400',
-            errorMessage: `${attr.name}- ${value} is not valid ${attr.type}. Expected value from options: ${attributeOptionValue}`,
-          });
-        } else {
-          errors.push({
-            attributeName: attr.name,
-            errorType: 'Type Error',
-            errorCode: '400',
-            errorMessage: `${attr.name}- Invalid value ${value} for ${attr.type} type`,
-          });
-        }
+        errors.push({
+          attributeName: attr.name,
+          errorType: 'Type Error',
+          errorCode: '400',
+          errorMessage: ['option', 'multioption'].includes(attr.type)
+            ? `${attr.name} - ${value} is not valid ${attr.type}. Expected value from options: ${attributeOptionValue}`
+            : `${attr.name} - Invalid value ${value} for ${attr.type} type`,
+        });
       } else {
         validatedRowData[attr.name] = convertedValue;
       }
     }
+  }
+
+  // -----------------------------------------
+  // 2️⃣ Unique Attribute Combination Validation
+  // -----------------------------------------
+  if (Array.isArray(uniqueAttributeRules) && uniqueAttributeRules.length > 0) {
+    for (const rule of uniqueAttributeRules) {
+      const keyValues: string[] = [];
+      const displayKeyValues: string[] = [];
+      let isValidCombination = true;
+
+      for (const attrId of rule) {
+        const attrName = attributeIdToNameMap[attrId.toString()];
+        if (!attrName) {
+          isValidCombination = false;
+          break;
+        }
+
+        const val = validatedRowData[attrName];
+        if (val === undefined || val === null || `${val}`.trim() === '') {
+          isValidCombination = false;
+          break;
+        }
+
+        keyValues.push(`${val}`.toLowerCase().trim());
+        const displayKey = `${attrName}__display`;
+        const displayValue = validatedRowData[displayKey] ?? val;
+        displayKeyValues.push(`${displayValue}`.trim());
+      }
+
+      if (!isValidCombination) continue;
+
+      // Build MongoDB query for duplicate check
+      const compositeConditions = rule.map((attrId) => {
+        const attrName = attributeIdToNameMap[attrId.toString()];
+        return { [`rowData.${attrName}`]: validatedRowData[attrName] };
+      });
+
+      const DataSourceModel = await getModelForEntity(entityId);
+      const duplicateRecord = await DataSourceModel.findOne({
+        dataSourceId,
+        dataSourceVersionId,
+        status: 'active',
+        $and: compositeConditions,
+      });
+
+      if (duplicateRecord) {
+        errors.push({
+          attributeName: displayKeyValues.join('|'),
+          errorType: 'Duplicate Error',
+          errorCode: '409',
+          errorMessage: `Duplicate combination found for unique keys: ${displayKeyValues.join(' | ')}.`,
+        });
+      }
+
+      // Only validate first valid rule
+      break;
+    }
+  }
+
+  // -----------------------------------------
+  // 3️⃣ Cleanup
+  // -----------------------------------------
+  for (const key of Object.keys(validatedRowData)) {
+    if (key.endsWith('__display')) delete validatedRowData[key];
   }
 
   return { isValid: errors.length === 0, errors, validatedRowData };
@@ -1778,7 +1855,7 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       ...(versionValue && { versionValue }),
     };
 
-    let version = await dataSourceVersionService.getDataSourceVersion({
+    let version: any = await dataSourceVersionService.getDataSourceVersion({
       query: versionQuery,
       populate: [],
       sort: { createdAt: -1 },
@@ -1820,6 +1897,10 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
     const { isValid, errors, validatedRowData } = await validateRowData({
       rowData,
       attributes: entity.attributes,
+      entityId: dataSourceDetails.entityId,
+      dataSourceId,
+      dataSourceVersionId: version?._id,
+      uniqueAttributeRules: dataSourceDetails.uniqueAttributeRules
     });
 
     if (!isValid) {
@@ -1860,7 +1941,7 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
         dataSourceVersionId: errorDataSourceVersionId,
         attributeName,
         fileAttributeValue,
-        status: 'open',
+        // status: 'open',
       });
 
       const rowNumbersToUpdate = refrenceRecords.map((record) => record.rowNumber);
