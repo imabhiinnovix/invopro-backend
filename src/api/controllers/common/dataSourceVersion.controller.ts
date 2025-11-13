@@ -1573,7 +1573,7 @@ export const exportDataSourceVersionDataToExcel = async (
       versionValue?: string;
       filters?: string;
       search?: string;
-      selectedFields?: string[]; // ✅ optional now
+      selectedFields?: string; // optional now
     };
 
     const { orgCode, userId, organizationId } = req.user;
@@ -1679,11 +1679,12 @@ export const exportDataSourceVersionDataToExcel = async (
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Export');
 
-    // ✅ If no selectedFields provided, include all fieldSettings
+    // If no selectedFields provided, include all fieldSettings
+    const parseSelectedFields = selectedFields ? JSON.parse(selectedFields) : {};
     const selectedFieldConfigs =
-      Array.isArray(selectedFields) && selectedFields.length > 0
+      Array.isArray(parseSelectedFields) && parseSelectedFields.length > 0
         ? dataSourceDetails.fieldSettings.filter((f: any) =>
-            selectedFields.includes(f.attributeId?.toString() || f.mappedAttributeName)
+            parseSelectedFields.includes(f.attributeId?.toString() || f.mappedAttributeName)
           )
         : dataSourceDetails.fieldSettings;
 
