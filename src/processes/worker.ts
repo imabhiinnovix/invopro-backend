@@ -47,92 +47,164 @@ async function connectDB() {
 
         req.status = "processing";
         await req.save();
-
-        const {
-        schemaName,
-        query,
-        select,
-        page,
-        limit,
-        sort,
-        filters,
-        entityId,
-        searchFilters,
-        conditions,
-        selectedFields,
-        dataSourceDetails,
-      } = req.requestPayload;
         // --------------------------------------------------------------------
-        // Fetch data
-        // --------------------------------------------------------------------
-        const result = await dataSourceVersionValueService.getDataSourceVersionValueV1({
-        schemaName,
-        query,
-        select,
-        page,
-        limit,
-        sort,
-        filters,
-        entityId,
-        searchFilters,
-        conditions
-        });
-        const rows = result?.data ?? [];
-        console.log('rows',JSON.stringify(rows[0]));
-        // --------------------------------------------------------------------
-        // Create Excel
-        // --------------------------------------------------------------------
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet("Export");
+          // Create Excel
+          // --------------------------------------------------------------------
+          const workbook = new ExcelJS.Workbook();
+          const worksheet = workbook.addWorksheet("Export");
 
-       // Parse selected fields safely
-        let selectedFieldsParsed: string[] | null = null;
+         const {
+          schemaName,
+          query,
+          select,
+          page,
+          limit,
+          sort,
+          filters,
+          entityId,
+          searchFilters,
+          conditions,
+          selectedFields,
+          dataSourceDetails,
+          dashboardFilters,
+          aggregation,
+          dashBoardType,
+          isPaginate,
+        } = req.requestPayload;  
+        if (job.name === "exportDSData") {
+          // --------------------------------------------------------------------
+          // Fetch data
+          // --------------------------------------------------------------------
+          const result = await dataSourceVersionValueService.getDataSourceVersionValueV1({
+          schemaName,
+          query,
+          select,
+          page,
+          limit,
+          sort,
+          filters,
+          entityId,
+          searchFilters,
+          conditions
+          });
+          const rows = result?.data ?? [];
+          console.log('rows',JSON.stringify(rows[0]));
+          
 
-        try {
-          selectedFieldsParsed = selectedFields ? JSON.parse(selectedFields) : null;
-        } catch (e) {
-          selectedFieldsParsed = null;
-        }
+        // Parse selected fields safely
+          let selectedFieldsParsed: string[] | null = null;
 
-        // Apply filter
-        const selectedFieldsFiltered = dataSourceDetails.fieldSettings.filter((f) => {
-          if (!f.isDisplayEnable) return false;
-
-          // If selectedFields provided → include only selected mappedAttributeName
-          if (selectedFieldsParsed?.length) {
-            return selectedFieldsParsed.includes(f.mappedAttributeName);
+          try {
+            selectedFieldsParsed = selectedFields ? JSON.parse(selectedFields) : null;
+          } catch (e) {
+            selectedFieldsParsed = null;
           }
 
-          // If no selectedFields → return all displayEnabled fields
-          return true;
-        });
+          // Apply filter
+          const selectedFieldsFiltered = dataSourceDetails.fieldSettings.filter((f) => {
+            if (!f.isDisplayEnable) return false;
 
-        worksheet.columns = selectedFieldsFiltered.map((f) => ({
-          header: f.label,
-          key: f.label,
-          width: 25,
-        }));
-       rows.forEach((row) => {
-  const dataRow: any = {};
+            // If selectedFields provided → include only selected mappedAttributeName
+            if (selectedFieldsParsed?.length) {
+              return selectedFieldsParsed.includes(f.mappedAttributeName);
+            }
 
-  selectedFieldsFiltered.forEach((f) => {
-    let value = row.rowData[f.mappedAttributeName];
+            // If no selectedFields → return all displayEnabled fields
+            return true;
+          });
 
-    // If array → convert to comma-separated
-    if (Array.isArray(value)) {
-      value = value.join(", ");
-    }
+          worksheet.columns = selectedFieldsFiltered.map((f) => ({
+            header: f.label,
+            key: f.label,
+            width: 25,
+          }));
+        rows.forEach((row) => {
+              const dataRow: any = {};
 
-    // If date or date-range → format
-    if (f.type === "date" || f.type === "date-range") {
-      value = formatDateValue(value);
-    }
+              selectedFieldsFiltered.forEach((f) => {
+                let value = row.rowData[f.mappedAttributeName];
 
-    dataRow[f.label] = value ?? "";
-  });
+                // If array → convert to comma-separated
+                if (Array.isArray(value)) {
+                  value = value.join(", ");
+                }
 
-  worksheet.addRow(dataRow);
-});
+                // If date or date-range → format
+                if (f.type === "date" || f.type === "date-range") {
+                  value = formatDateValue(value);
+                }
+
+                dataRow[f.label] = value ?? "";
+              });
+
+              worksheet.addRow(dataRow);
+            });
+          }else{
+             const result =
+                await dataSourceVersionValueService.getDataSourceVersionValueWidgetDataV2({
+                  schemaName,
+                  query,
+                  dashboardFilters,
+                  entityId,
+                  aggregation,
+                  dashBoardType,
+                  dataSourceDetails,
+                  isPaginate,
+                  page,
+                  limit
+                });
+          const dataResults = result?.data ?? [];
+          let headers: string[] = dataSourceDetails?.fieldSettings
+            .filter((f: any) => f.isDisplayEnable === true)  
+            .map((f: any) => f.label);
+
+          const exportHeaders =
+            Array.isArray(selectedFields) && selectedFields.length > 0
+              ? selectedFields
+              : headers;
+
+          worksheet.columns = exportHeaders.map((h) => ({
+            header: h,
+            key: h,
+            width: 25,
+          }));
+
+          // Build a quick lookup: label → field meta
+          const fieldMap = Object.fromEntries(
+            dataSourceDetails.fieldSettings.map((f: any) => [
+              f.label,
+              { key: f.label, type: f.type },
+            ])
+          );
+
+          for (const record of dataResults) {
+            const row: any = {};
+
+            exportHeaders.forEach((label) => {
+              const meta = fieldMap[label];
+              if (!meta) {
+                row[label] = record[label] ?? "";
+                return;
+              }
+
+              const raw = record[meta.key];
+
+              // Only two enhancements: date & array
+              if (meta.type === "date" || meta.type === "date-range") {
+                row[label] = formatDateValue(raw); // you already have this
+              } else if (Array.isArray(raw)) {
+                row[label] = raw.join(", "); // only array handling
+              } else {
+                row[label] = raw ?? "";
+              }
+            });
+
+            worksheet.addRow(row);
+          }
+
+
+    
+        }
 
         // --------------------------------------------------------------------
         // Save Excel

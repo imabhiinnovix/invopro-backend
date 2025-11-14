@@ -2674,7 +2674,7 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
     // Step 5: Execute aggregation
     const versionValueData = await DataSourceVersionValue.aggregate(aggregationPipeline).exec();
 
-    console.log('versionValueData',JSON.stringify(versionValueData));
+    // console.log('versionValueData',JSON.stringify(versionValueData));
 
     // -------------------------
     // Helper: Resolve reference/mapping attributes (reuse your original logic)
@@ -3646,7 +3646,7 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
     // Step 5: Execute aggregation
     const versionValueData = await DataSourceVersionValue.aggregate(aggregationPipeline).exec();
 
-    console.log('versionValueData',JSON.stringify(versionValueData));
+    // console.log('versionValueData',JSON.stringify(versionValueData));
 
     // -------------------------
     // Helper: Resolve reference/mapping attributes (reuse your original logic)
@@ -3856,7 +3856,7 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
             // Find the document(s) where display field matches text
             // const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: doc._id }).lean();
             const topLevelAttribute = await getTopLevelAttribute(key);
-            console.log('doc.rowData.${topLevelAttribute}_resolved._id', `doc.rowData.${topLevelAttribute}_resolved`);
+            // console.log('doc.rowData.${topLevelAttribute}_resolved._id', `doc.rowData.${topLevelAttribute}_resolved`);
             // Find the document(s) where display field matches parent _id
             const resolvedObj = doc.rowData[`${topLevelAttribute}_resolved`];
             if (!resolvedObj) continue;

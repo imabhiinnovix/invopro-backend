@@ -16,6 +16,8 @@ import Entity from '../../../database/models/common/entity';
 import { findDerivedFieldById } from '../../../database/services/common/derivedField.services';
 import { getUserDataPermissionRecord } from '../../../database/services/common/userDataPermission.service';
 import ExcelJS from "exceljs";
+import { createDownloadRequest } from '../../../database/services/common/downloadRequest.service';
+import { Queue } from 'bullmq';
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -894,7 +896,7 @@ export const exportWidgetDataByFilterToExcel = async (
     let dataResults: any;
     let pagination: any;
 
-    if (isReferenceField) {
+    // if (isReferenceField) {
       const query = {
         dataSourceId: new Types.ObjectId(dataSourceId),
         dataSourceVersionId: {
@@ -976,9 +978,29 @@ export const exportWidgetDataByFilterToExcel = async (
       dashboardFilters.filters = filters;
 
       //  Original aggregation call preserved
-      const result =
-        await defaultDataSourceVersionValue.getDataSourceVersionValueWidgetDataV2({
-          schemaName,
+      // const result =
+      //   await defaultDataSourceVersionValue.getDataSourceVersionValueWidgetDataV2({
+      //     schemaName,
+      //     query,
+      //     dashboardFilters,
+      //     entityId: dataSource.entityId,
+      //     aggregation: { type: "count", attributeName: "_id" },
+      //     conditions,
+      //     dashBoardType,
+      //     dataSourceDetails: dataSource,
+      //     isPaginate: true,
+      //     page,
+      //     limit,
+      //   });
+
+      // dataResults = result?.data ?? [];
+      // pagination = result?.pagination || {};
+      // --------------------------------------------------------------------
+    // 2️ CREATE PAYLOAD FOR WORKER
+    // --------------------------------------------------------------------
+
+      const requestPayload = {
+         schemaName,
           query,
           dashboardFilters,
           entityId: dataSource.entityId,
@@ -989,108 +1011,132 @@ export const exportWidgetDataByFilterToExcel = async (
           isPaginate: true,
           page,
           limit,
-        });
-
-      dataResults = result?.data ?? [];
-      pagination = result?.pagination || {};
-    } else {
-      //  Full non-reference logic unchanged
-      const getFieldType = (fieldName: string) => {
-        const attribute = entity.attributes.find((attr: any) => attr.name === fieldName);
-        return attribute ? attribute.type : "string";
       };
 
-      const conditionsByField: Record<string, any[]> = {};
-      conditions?.forEach((condition) => {
-        if (!conditionsByField[condition.field]) {
-          conditionsByField[condition.field] = [];
-        }
-        conditionsByField[condition.field].push(condition);
+      // --------------------------------------------------------------------
+      // 3️ SAVE DOWNLOAD REQUEST
+      // --------------------------------------------------------------------
+
+      const downloadRequest = await createDownloadRequest({
+        organizationId,
+        userId,
+        status: "pending",
+        requestPayload,
       });
 
-      const initialMatchConditions = {
-        dataSourceId: new Types.ObjectId(dataSourceId),
-        dataSourceVersionId: { $in: dataSourceVersionIdArray },
-      };
+      // --------------------------------------------------------------------
+      // 4️ PUSH JOB INTO QUEUE
+      // --------------------------------------------------------------------
 
-      if (dimensions && Array.isArray(dimensions)) {
-        dimensions.forEach((dimension) => {
-          const [field, value] = Object.entries(dimension)[0];
-          if (dashBoardType === "trend") {
-            initialMatchConditions[`${field}`] = value;
-          } else {
-            initialMatchConditions[`rowData.${field}`] = value;
-          }
-        });
-      }
-
-      if (groupBy && Array.isArray(groupBy)) {
-        groupBy.forEach((group) => {
-          const [field, value] = Object.entries(group)[0];
-          initialMatchConditions[`rowData.${field}`] = value;
-        });
-      }
-
-      const { matchConditions, dateConversions } = processFieldConditions(
-        conditionsByField,
-        getFieldType,
-        initialMatchConditions
-      );
-
-      const detailPipeline: any[] = [];
-      if (Object.keys(dateConversions).length > 0) {
-        detailPipeline.push({ $addFields: dateConversions });
-      }
-
-      detailPipeline.push(
-        { $match: matchConditions },
-        { $project: { _id: 0, rowData: 1 } },
-        { $replaceRoot: { newRoot: "$rowData" } }
-      );
-
-      const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
-      dataResults = await DataSourceModel.aggregate(detailPipeline).exec();
-    }
-
-    //  Now just EXPORT the fetched data
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Export Data");
-
-    const exportHeaders =
-      Array.isArray(selectedFields) && selectedFields.length > 0
-        ? selectedFields
-        : headers;
-
-    worksheet.columns = exportHeaders.map((h) => ({
-      header: h,
-      key: h,
-      width: 25,
-    }));
-
-    for (const record of dataResults) {
-      const row: any = {};
-      exportHeaders.forEach((key) => {
-        row[key] = record[key] ?? "";
+      const downloadQueue = new Queue("downloadQueue", {
+        connection: { host: "redis" },
       });
-      worksheet.addRow(row);
-    }
 
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).alignment = { horizontal: "center" };
+      await downloadQueue.add("exportWidgetData", { downloadRequestId: downloadRequest._id });
 
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=WidgetData_${dataSource.code}_${new Date()
-        .toISOString()
-        .split("T")[0]}.xlsx`
-    );
+      res.status(200).json({
+        success: true,
+        message: "Export job queued successfully.",
+        requestId: downloadRequest._id,
+      });
+    // } else {
+    //   //  Full non-reference logic unchanged
+    //   const getFieldType = (fieldName: string) => {
+    //     const attribute = entity.attributes.find((attr: any) => attr.name === fieldName);
+    //     return attribute ? attribute.type : "string";
+    //   };
 
-    await workbook.xlsx.write(res);
-    res.end();
+    //   const conditionsByField: Record<string, any[]> = {};
+    //   conditions?.forEach((condition) => {
+    //     if (!conditionsByField[condition.field]) {
+    //       conditionsByField[condition.field] = [];
+    //     }
+    //     conditionsByField[condition.field].push(condition);
+    //   });
+
+    //   const initialMatchConditions = {
+    //     dataSourceId: new Types.ObjectId(dataSourceId),
+    //     dataSourceVersionId: { $in: dataSourceVersionIdArray },
+    //   };
+
+    //   if (dimensions && Array.isArray(dimensions)) {
+    //     dimensions.forEach((dimension) => {
+    //       const [field, value] = Object.entries(dimension)[0];
+    //       if (dashBoardType === "trend") {
+    //         initialMatchConditions[`${field}`] = value;
+    //       } else {
+    //         initialMatchConditions[`rowData.${field}`] = value;
+    //       }
+    //     });
+    //   }
+
+    //   if (groupBy && Array.isArray(groupBy)) {
+    //     groupBy.forEach((group) => {
+    //       const [field, value] = Object.entries(group)[0];
+    //       initialMatchConditions[`rowData.${field}`] = value;
+    //     });
+    //   }
+
+    //   const { matchConditions, dateConversions } = processFieldConditions(
+    //     conditionsByField,
+    //     getFieldType,
+    //     initialMatchConditions
+    //   );
+
+    //   const detailPipeline: any[] = [];
+    //   if (Object.keys(dateConversions).length > 0) {
+    //     detailPipeline.push({ $addFields: dateConversions });
+    //   }
+
+    //   detailPipeline.push(
+    //     { $match: matchConditions },
+    //     { $project: { _id: 0, rowData: 1 } },
+    //     { $replaceRoot: { newRoot: "$rowData" } }
+    //   );
+
+    //   const DataSourceModel = createDefaultDataSourceVersionModel(schemaName);
+    //   dataResults = await DataSourceModel.aggregate(detailPipeline).exec();
+    // }
+
+    // //  Now just EXPORT the fetched data
+    // const workbook = new ExcelJS.Workbook();
+    // const worksheet = workbook.addWorksheet("Export Data");
+
+    // const exportHeaders =
+    //   Array.isArray(selectedFields) && selectedFields.length > 0
+    //     ? selectedFields
+    //     : headers;
+
+    // worksheet.columns = exportHeaders.map((h) => ({
+    //   header: h,
+    //   key: h,
+    //   width: 25,
+    // }));
+
+    // for (const record of dataResults) {
+    //   const row: any = {};
+    //   exportHeaders.forEach((key) => {
+    //     row[key] = record[key] ?? "";
+    //   });
+    //   worksheet.addRow(row);
+    // }
+
+    // worksheet.getRow(1).font = { bold: true };
+    // worksheet.getRow(1).alignment = { horizontal: "center" };
+
+    // res.setHeader(
+    //   "Content-Type",
+    //   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    // );
+    // res.setHeader(
+    //   "Content-Disposition",
+    //   `attachment; filename=WidgetData_${dataSource.code}_${new Date()
+    //     .toISOString()
+    //     .split("T")[0]}.xlsx`
+    // );
+
+    // await workbook.xlsx.write(res);
+    // res.end();
   } catch (err) {
     console.error("Error in exportWidgetDataByFilterToExcel:", err);
     next(err);

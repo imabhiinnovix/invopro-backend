@@ -1697,7 +1697,7 @@ export const exportDataSourceVersionDataToExcel = async (
       connection: { host: "redis" },
     });
 
-    await downloadQueue.add("export", { downloadRequestId: downloadRequest._id });
+    await downloadQueue.add("exportDSData", { downloadRequestId: downloadRequest._id });
 
     return res.status(200).json({
       success: true,
