@@ -1687,6 +1687,7 @@ export const exportDataSourceVersionDataToExcel = async (
       userId,
       status: "pending",
       requestPayload,
+      dataSourceId
     });
 
     // --------------------------------------------------------------------

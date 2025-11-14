@@ -221,6 +221,14 @@ const defaultPermissionsUser = [
   },
   { permission: 'GET:/common/derivedField/list', isChangeable: true },
   { permission: 'GET:/common/derivedField/:id', isChangeable: true },
+  {
+    permission: "GET:/common/download-request/list",
+    isChangeable: false,
+  },
+  {
+    permission: "GET:/common/download-request/download/:id",
+    isChangeable: false,
+  }
 ];
 
 const defaultPermissionsAdmin = [

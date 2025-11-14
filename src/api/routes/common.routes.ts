@@ -25,6 +25,7 @@ import dashboardThemeRoutes from './common/dashboardTheme.routes';
 import departmentRoutes from './common/department.routes';
 import designationRoutes from './common/designation.routes';
 import userDataPermissionRoutes from './common/userDataPermission.routes';
+import downloadRequests from './common/downloadRequest.routes';
 
 const router = Router();
 
@@ -54,5 +55,6 @@ router.use('/dashboardTheme', dashboardThemeRoutes);
 router.use('/department', departmentRoutes);
 router.use('/designation', designationRoutes);
 router.use('/user-data-permission', userDataPermissionRoutes);
+router.use('/download-request', downloadRequests);
 
 export default router;

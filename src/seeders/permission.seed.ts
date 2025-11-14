@@ -1507,6 +1507,26 @@ let permissions: PermissionSeed[] = [
   isSuperUser: false,
   isChangeable: true,
 },
+{
+    name: 'List Download Requests',
+    method: 'GET',
+    resourceId: '/common/download-request/list',
+    extraOptions: {},
+    resourceType: 'DownloadRequest',
+    resourceCode: 'downloadRequest__list',
+    isSuperUser: false,
+    isChangeable: true,
+  },
+  {
+    name: 'Download File',
+    method: 'GET',
+    resourceId: '/common/download-request/download/:id',
+    extraOptions: {},
+    resourceType: 'DownloadRequest',
+    resourceCode: 'downloadRequest__download',
+    isSuperUser: false,
+    isChangeable: true,
+  }
 ];
 
 function getDynamicPermission(

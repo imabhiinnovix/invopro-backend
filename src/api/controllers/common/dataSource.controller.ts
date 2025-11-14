@@ -1022,6 +1022,7 @@ export const exportWidgetDataByFilterToExcel = async (
         userId,
         status: "pending",
         requestPayload,
+        dataSourceId
       });
 
       // --------------------------------------------------------------------
