@@ -2,6 +2,8 @@ import { Types } from 'mongoose';
 import { getEntityFieldOptions } from '../database/services/common/entity.services';
 import { findDerivedFieldById } from '../database/services/common/derivedField.services';
 const crypto = require('crypto');
+import dayjs from "dayjs";
+
 
 export function getSchemaNameBasedOnVersionCodeAndOrgCode({
   orgCode,
@@ -313,6 +315,17 @@ export async function createMongoCondition(conditions: any[] = []): Promise<Reco
 
   return finalCondition;
 }
+
+
+export const formatDateValue = (value: any) => {
+  if (!value) return "";
+
+  const d = dayjs(value);
+  if (!d.isValid()) return "";
+
+  return d.format("DD-MMM-YYYY"); // → 21-Aug-2025
+};
+
 
 
 

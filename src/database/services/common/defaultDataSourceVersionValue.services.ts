@@ -1423,7 +1423,7 @@ aggregationPipeline.push({ $replaceRoot: { newRoot: "$doc" } });
             // Find the document(s) where display field matches text
             // const relatedDocs: any[] = await RefModel.find({ [`rowData.${displayField}`]: doc._id }).lean();
             const topLevelAttribute = await getTopLevelAttribute(key);
-            console.log('doc.rowData.${topLevelAttribute}_resolved._id', `doc.rowData.${topLevelAttribute}_resolved`);
+            // console.log('doc.rowData.${topLevelAttribute}_resolved._id', `doc.rowData.${topLevelAttribute}_resolved`);
             // Find the document(s) where display field matches parent _id
             const resolvedObj = doc.rowData[`${topLevelAttribute}_resolved`];
             if (!resolvedObj) continue;
@@ -1492,6 +1492,7 @@ aggregationPipeline.push({ $replaceRoot: { newRoot: "$doc" } });
 
     return { data: transformedData, totalCount };
   } catch (err) {
+    console.log('err',err);
     throw err;
   }
 };

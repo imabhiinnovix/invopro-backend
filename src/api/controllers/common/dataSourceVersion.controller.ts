@@ -30,6 +30,8 @@ import * as entityService from '../../../database/services/common/entity.service
 import { findDerivedFieldById } from '../../../database/services/common/derivedField.services';
 import { getUserDataPermissionRecord } from '../../../database/services/common/userDataPermission.service';
 import ExcelJS from 'exceljs';
+import { createDownloadRequest } from '../../../database/services/common/downloadRequest.service';
+import { Queue } from 'bullmq';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -1656,11 +1658,15 @@ export const exportDataSourceVersionDataToExcel = async (
       organizationId,
     });
 
-    // 🔹 Fetch data
-    const result = await dataSourceVersionValueService.getDataSourceVersionValueV1({
+
+    // --------------------------------------------------------------------
+    // 2️ CREATE PAYLOAD FOR WORKER
+    // --------------------------------------------------------------------
+
+    const requestPayload = {
       schemaName,
       query,
-      select: '',
+      select: "",
       page: 1,
       limit: Number.MAX_SAFE_INTEGER,
       sort: {},
@@ -1668,60 +1674,103 @@ export const exportDataSourceVersionDataToExcel = async (
       entityId: dataSourceDetails.entityId,
       searchFilters,
       conditions: userPermission?.conditions,
+      selectedFields,
+      dataSourceDetails,
+    };
+
+    // --------------------------------------------------------------------
+    // 3️ SAVE DOWNLOAD REQUEST
+    // --------------------------------------------------------------------
+
+    const downloadRequest = await createDownloadRequest({
+      organizationId,
+      userId,
+      status: "pending",
+      requestPayload,
     });
 
-    const data = result?.data ?? [];
-    if (!data.length) {
-      return res.status(200).json({ success: true, message: 'No data available for export.' });
-    }
+    // --------------------------------------------------------------------
+    // 4️ PUSH JOB INTO QUEUE
+    // --------------------------------------------------------------------
 
-    // 🔹 Prepare Excel workbook
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Export');
-
-    // If no selectedFields provided, include all fieldSettings
-    const parseSelectedFields = selectedFields ? JSON.parse(selectedFields) : {};
-    const selectedFieldConfigs =
-      Array.isArray(parseSelectedFields) && parseSelectedFields.length > 0
-        ? dataSourceDetails.fieldSettings.filter((f: any) =>
-            parseSelectedFields.includes(f.attributeId?.toString() || f.mappedAttributeName)
-          )
-        : dataSourceDetails.fieldSettings;
-
-    // Headers
-    const headers = selectedFieldConfigs.map((f: any) => ({
-      header: f.mappedAttributeName || f.fieldName || 'Unknown',
-      key: f.mappedAttributeName,
-      width: 25,
-    }));
-
-    worksheet.columns = headers;
-
-    // Data rows
-    data.forEach((row: any) => {
-      const record: any = {};
-      selectedFieldConfigs.forEach((f: any) => {
-        record[f.mappedAttributeName] = row[f.mappedAttributeName] ?? '';
-      });
-      worksheet.addRow(record);
+    const downloadQueue = new Queue("downloadQueue", {
+      connection: { host: "redis" },
     });
 
-    // Format headers
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).alignment = { horizontal: 'center' };
+    await downloadQueue.add("export", { downloadRequestId: downloadRequest._id });
 
-    // 🔹 Send Excel file
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename=DataSource_${dataSourceDetails.code}_${versionValue || 'latest'}.xlsx`
-    );
+    return res.status(200).json({
+      success: true,
+      message: "Export job queued successfully.",
+      requestId: downloadRequest._id,
+    });
 
-    await workbook.xlsx.write(res);
-    res.end();
+    // 🔹 Fetch data
+    // const result = await dataSourceVersionValueService.getDataSourceVersionValueV1({
+    //   schemaName,
+    //   query,
+    //   select: '',
+    //   page: 1,
+    //   limit: Number.MAX_SAFE_INTEGER,
+    //   sort: {},
+    //   filters: parsedFilters,
+    //   entityId: dataSourceDetails.entityId,
+    //   searchFilters,
+    //   conditions: userPermission?.conditions,
+    // });
+
+    // const data = result?.data ?? [];
+    // if (!data.length) {
+    //   return res.status(200).json({ success: true, message: 'No data available for export.' });
+    // }
+
+    // // 🔹 Prepare Excel workbook
+    // const workbook = new ExcelJS.Workbook();
+    // const worksheet = workbook.addWorksheet('Export');
+
+    // // If no selectedFields provided, include all fieldSettings
+    // const parseSelectedFields = selectedFields ? JSON.parse(selectedFields) : {};
+    // const selectedFieldConfigs =
+    //   Array.isArray(parseSelectedFields) && parseSelectedFields.length > 0
+    //     ? dataSourceDetails.fieldSettings.filter((f: any) =>
+    //         parseSelectedFields.includes(f.attributeId?.toString() || f.mappedAttributeName)
+    //       )
+    //     : dataSourceDetails.fieldSettings;
+
+    // // Headers
+    // const headers = selectedFieldConfigs.map((f: any) => ({
+    //   header: f.mappedAttributeName || f.fieldName || 'Unknown',
+    //   key: f.mappedAttributeName,
+    //   width: 25,
+    // }));
+
+    // worksheet.columns = headers;
+
+    // // Data rows
+    // data.forEach((row: any) => {
+    //   const record: any = {};
+    //   selectedFieldConfigs.forEach((f: any) => {
+    //     record[f.mappedAttributeName] = row[f.mappedAttributeName] ?? '';
+    //   });
+    //   worksheet.addRow(record);
+    // });
+
+    // // Format headers
+    // worksheet.getRow(1).font = { bold: true };
+    // worksheet.getRow(1).alignment = { horizontal: 'center' };
+
+    // // 🔹 Send Excel file
+    // res.setHeader(
+    //   'Content-Type',
+    //   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    // );
+    // res.setHeader(
+    //   'Content-Disposition',
+    //   `attachment; filename=DataSource_${dataSourceDetails.code}_${versionValue || 'latest'}.xlsx`
+    // );
+
+    // await workbook.xlsx.write(res);
+    // res.end();
   } catch (e) {
     console.error('Error in exportDataSourceVersionDataToExcel:', e);
     next(e);
