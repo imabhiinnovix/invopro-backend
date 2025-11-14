@@ -13,7 +13,7 @@ export const getNotificationTemplates = async ({
   select = "",
   page = 1,
   limit = 10,
-  sort = { updatedAt: -1 },
+  sort = { createdAt: -1 },
   populate = [],
 }: {
   query?: any;
@@ -61,10 +61,10 @@ export const updateNotificationTemplate = async (id: string, data: any) => {
   return await NotificationTemplate.findByIdAndUpdate(id, data, { new: true });
 };
 
-export const deleteNotificationTemplate = async (id: string) => {
+export const deleteNotificationTemplate = async (id: string, status: any) => {
   const result = await NotificationTemplate.findOneAndUpdate(
     { _id: id },
-    { $set: { status: 'in-active' } },
+    { $set: { status } },
     { new: true } // return the updated document
   );
 

@@ -88,15 +88,18 @@ export const updateNotificationType = async (req: Request, res: Response, next: 
 export const deleteNotificationType = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { organizationId } = req.user;
+    const { status } = req.query;
 
     await NotificationTypeService.deleteNotificationType({
       _id: req.params.id,
       organizationId,
-    });
+    },
+    { status }
+    );
 
     res.status(200).json({
       success: true,
-      message: 'Notification Type Deleted Successfully',
+      message: `Notification ${status === "active" ? "activated" : "deactivated"} successfully`,
     });
   } catch (err) {
     next(err);
@@ -111,7 +114,7 @@ export const listNotificationType = async (req: Request, res: Response, next: Ne
     const parsedPage = parseInt(page as string, 10) || 1;
     const parsedLimit = parseInt(limit as string, 10) || 10;
 
-    const query: any = { organizationId, status: 'active' };
+    const query: any = { organizationId };
 
     if (search) {
       query.name = { $regex: search, $options: 'i' };
@@ -125,7 +128,7 @@ export const listNotificationType = async (req: Request, res: Response, next: Ne
       query,
       page: parsedPage,
       limit: parsedLimit,
-      sort: sort ? JSON.parse(sort as string) : { updatedAt: -1 },
+      sort: sort ? JSON.parse(sort as string) : { createdAt: -1 },
       populate: ['dataSourceId','userId'],
     });
 

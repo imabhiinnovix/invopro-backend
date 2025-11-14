@@ -34,7 +34,16 @@ export const listNotificationFrequency = async ({
   let dbQuery = NotificationFrequencySetting.find(query);
 
   populate.forEach(field => {
-    dbQuery = dbQuery.populate(field);
+    // add status filter only for specific fields
+    if (["notificationTypeId", "templateId"].includes(field)) {
+      dbQuery = dbQuery.populate({
+        path: field,
+        match: { status: "active" },
+      });
+    } else {
+      // regular populate
+      dbQuery = dbQuery.populate(field);
+    }
   });
 
   return await dbQuery.exec();

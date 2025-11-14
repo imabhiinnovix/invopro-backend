@@ -106,7 +106,7 @@ export const listNotificationTemplate = async (req: Request, res: Response, next
     let { page = 1, limit = 10, sort, search, paginate = true } = req.query as any;
 
     const { organizationId } = req.user;
-    const query: any = { organizationId, status: 'active' };
+    const query: any = { organizationId };
     if (search) {
       query.name = { $regex: search, $options: 'i' };
     }
@@ -239,7 +239,8 @@ export const updateNotificationTemplate = async (req: Request, res: Response, ne
 
 export const deleteNotificationTemplate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await notificationTemplateService.deleteNotificationTemplate(req.params.id);
+    const { status } = req.query;
+    const result = await notificationTemplateService.deleteNotificationTemplate(req.params.id, status);
 
     if (!result) {
       return res.status(404).json({
@@ -250,7 +251,7 @@ export const deleteNotificationTemplate = async (req: Request, res: Response, ne
 
     res.json({
       success: true,
-      message: 'Notification Template Deleted Successfully',
+      message: `Template ${status === "active" ? "activated" : "deactivated"} successfully`,
     });
   } catch (error) {
     next(error);
