@@ -211,9 +211,10 @@ async function connectDB() {
         // --------------------------------------------------------------------
         const exportFileName = `${dataSourceDetails.name}_Export_Data_${Date.now()}_${req._id}.xlsx`;
         const filePath = path.join(
-          "downloads",
+          "uploads",
           req.organizationId.toString(),
-          req.userId.toString()
+          req.userId.toString(),
+          "user_exports"
         );
 
         fs.mkdirSync(filePath, { recursive: true });
