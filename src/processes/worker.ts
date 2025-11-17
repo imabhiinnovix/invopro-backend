@@ -214,7 +214,7 @@ async function connectDB() {
           "uploads",
           req.organizationId.toString(),
           req.userId.toString(),
-          "user_exports"
+          "exportsData"
         );
 
         fs.mkdirSync(filePath, { recursive: true });
