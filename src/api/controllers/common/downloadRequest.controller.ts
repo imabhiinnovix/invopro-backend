@@ -29,7 +29,9 @@ export const listDownloadRequests = async (
       sort
     } = req.query;
 
-    const query: any = {};
+    const {organizationId, userId} = req.user;
+
+    const query: any = {organizationId, userId};
 
     // Optional search by file name
     if (search) {
@@ -77,7 +79,9 @@ export const downloadRequestFile = async (
   try {
     const { id } = req.params;
 
-    const doc = await getDownloadRequest({ _id: id });
+    const {organizationId, userId} = req.user;
+
+    const doc = await getDownloadRequest({ _id: id, organizationId, userId });
 
     if (!doc.filePath || !doc.fileName) {
       return res.status(400).json({
