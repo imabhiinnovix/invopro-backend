@@ -207,11 +207,14 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
       dataSourceVersionId,
       rowNumber: { $in: invalidRowNumbers },
     });
-    const invalidFileRows = allErrorRecords.map((r: any) => r.fileRowNumber);
+    const invalidFileRows = [...new Set(
+      allErrorRecords.map((r: any) => r.fileRowNumber)
+    )];
+
 
     return res.status(400).json({
       success: false,
-      message: `Discard not allowed. These rows have no open records: ${invalidFileRows.join(', ')}`,
+      message: `These row numbers can not be discarded: ${invalidFileRows.join(', ')}`,
     });
 
   }
