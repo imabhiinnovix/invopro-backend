@@ -11,4 +11,9 @@ declare module "mongoose" {
       match?: any
     ): this;
   }
+
+  // All mongoose documents will use _id: string | ObjectId
+  interface Document {
+    _id: string | Types.ObjectId;
+  }
 }
