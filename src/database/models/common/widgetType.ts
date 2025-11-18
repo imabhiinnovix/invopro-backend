@@ -2,7 +2,7 @@
 /* @ts-nocheck */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 import config from '../../../config';
 
 export type FieldType = 'string' | 'number' | 'boolean' | 'select' | 'multiselect' | 'date' | 'custom';
@@ -18,7 +18,7 @@ export interface IFieldConfigItem {
 }
 
 export interface IWidgetType extends Document {
-  _id: string;
+  _id: string | Types.ObjectId;
   name: string;
   description?: string;
   chartType: string;

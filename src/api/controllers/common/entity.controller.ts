@@ -37,8 +37,8 @@ export const updateEntity = async (req: Request, res: Response, next: NextFuncti
   try {
     const { name, mappingName, description, attributes } = req.body;
     const { userId, organizationId } = req.user;
-    const entityDetails = await entityService.findEntityByNameAndOrganization(name, organizationId);
-    if (entityDetails && entityDetails._id != req.params.entityId) {
+    const entityDetails: any = await entityService.findEntityByNameAndOrganization(name, organizationId);
+    if (entityDetails && entityDetails._id.toString() != req.params.entityId) {
       return res.status(400).json({ success: false, message: 'Entity Name already exists' });
     }
     await entityService.updateEntity(req.params.entityId, {

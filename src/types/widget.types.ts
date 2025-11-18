@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Types } from "mongoose";
+
 // Enums
 export enum OperatorType {
   EQUALS = 'equal',
@@ -26,6 +28,9 @@ export enum AggregationType {
   AVERAGE = 'Average',
 }
 
+// Helper type for IDs returned by Mongoose
+export type MongoId = string | Types.ObjectId;
+
 // Types
 export interface DateRange {
   startDate: string;
@@ -44,8 +49,8 @@ export interface Aggregation {
 }
 
 export interface Widget {
-  dataSourceId: { _id: string };
-  dataSourceVersionId: string;
+  dataSourceId: { _id: MongoId };
+  dataSourceVersionId: MongoId;
   dimensions: string[];
   groupBy: string[];
   conditions?: Condition[];
@@ -81,9 +86,9 @@ export interface DashboardWidgetResponse {
   success: boolean;
   message: string;
   data: {
-    _id: string;
+    _id: MongoId;
     dataSourceId: {
-      _id: string;
+      _id: MongoId;
       code: string;
     };
     data: any[];
@@ -91,15 +96,15 @@ export interface DashboardWidgetResponse {
 }
 
 export interface DataSourceVersion {
-  _id: string;
+  _id: MongoId;
   isCurrent: boolean;
   isActive: boolean;
 }
 
 export interface DashboardWidget {
-  _id: string;
+  _id: MongoId;
   dataSourceId: {
-    _id: string;
+    _id: MongoId;
     code: string;
   };
   data?: any[];

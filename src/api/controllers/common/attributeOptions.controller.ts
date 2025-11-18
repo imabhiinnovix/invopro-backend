@@ -37,11 +37,11 @@ export const updateAttribute = async (req: Request, res: Response, next: NextFun
     const { attributeName, attributeValue } = req.body;
     const { userId, organizationId } = req.user;
 
-    const attributeData = await attributeOptionService.findAttributeByNameAndOrganization(
+    const attributeData: any = await attributeOptionService.findAttributeByNameAndOrganization(
       attributeName,
       organizationId
     );
-    if (attributeData && attributeData._id != req.params.attributeId) {
+    if (attributeData && attributeData._id.toString() != req.params.attributeId) {
       return res.status(400).json({ success: false, message: 'Attribute Option Name Already Exists' });
     }
 

@@ -4,7 +4,7 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
 export interface IFile extends Document {
-  _id: string;
+  _id: string | Types.ObjectId;
   userId: Types.ObjectId;
   name: string;
   mimeType: string;

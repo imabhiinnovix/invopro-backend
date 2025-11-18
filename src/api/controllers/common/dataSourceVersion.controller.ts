@@ -862,7 +862,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
 
     if (dataSourceDetails && dataSourceDetails.entityId) {
-      const dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
+      const dataSourceVersion: any = await dataSourceVersionService.createDataSourceVersion({
         entityId: dataSourceDetails.entityId._id,
         dataSourceId,
         versionName,
@@ -880,7 +880,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
       });
 
       dataSourceVersionId = dataSourceVersion._id;
-      debounceManager.debounce(dataSourceVersion._id as string, async () => {
+      debounceManager.debounce(dataSourceVersion._id.toString(), async () => {
         try {
           const entityDetails = dataSourceDetails.entityId as any;
           let attributes = entityDetails?.attributes || [];
@@ -909,13 +909,13 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
             mapping: jsonMapping,
             separator: jsonSeparator,
             dataSourceId: dataSourceId,
-            dataSourceVersionId: dataSourceVersion._id as string,
+            dataSourceVersionId: dataSourceVersion._id.toString(),
             entityId: dataSourceDetails.entityId._id,
             uniqueAttributeRules: dataSourceDetails.uniqueAttributeRules,
           });
 
           if (validatedData.errors.length > 0) {
-            await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
+            await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id.toString(), {
               status: 'failed',
             });
             const schemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
@@ -948,7 +948,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
               updateFields: { isCurrent: false },
             });
 
-            await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
+            await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id.toString(), {
               status: 'completed',
               isCurrent: true,
             });
@@ -1311,7 +1311,7 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
         query: { dataSourceId, versionValue },
         updateFields: { isCurrent: false },
       });
-      const dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
+      const dataSourceVersion: any = await dataSourceVersionService.createDataSourceVersion({
         entityId: dataSourceDetails.entityId._id,
         dataSourceId,
         versionValue,
@@ -1346,7 +1346,7 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
       }
       await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, finalData);
 
-      await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
+      await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id.toString(), {
         status: 'completed',
         isCurrent: true,
       });
@@ -1367,7 +1367,7 @@ export const updateCustomDataSourceVersionIsCurrentFunction = async ({
   dataSourceVersionId: string;
 }) => {
   try {
-    const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionDetailBasedOnId({
+    const dataSourceVersionDetails: any = await dataSourceVersionService.getDataSourceVersionDetailBasedOnId({
       _id: new Types.ObjectId(dataSourceVersionId),
     });
     if (dataSourceVersionDetails && dataSourceVersionDetails.dataSourceId) {
@@ -1378,7 +1378,7 @@ export const updateCustomDataSourceVersionIsCurrentFunction = async ({
         },
         updateFields: { isCurrent: false },
       });
-      await dataSourceVersionService.updateDataSourceVersion(dataSourceVersionDetails._id as string, {
+      await dataSourceVersionService.updateDataSourceVersion(dataSourceVersionDetails._id.toString(), {
         status: 'completed',
         isCurrent: true,
       });
