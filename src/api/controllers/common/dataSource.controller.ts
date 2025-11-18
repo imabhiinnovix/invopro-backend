@@ -560,9 +560,9 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
     let dataResults: any;
     let pagination: any;
 
-    
+    const isDefaultForce = true;
 
-    if (isReferenceField) {
+    if (isReferenceField || isDefaultForce == true) {
   const query = {
     dataSourceId: new Types.ObjectId(dataSourceId),
     dataSourceVersionId: { $in: dataSourceVersionIdArray.map(id => new Types.ObjectId(id)) },
