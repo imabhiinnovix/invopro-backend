@@ -18,7 +18,6 @@ export interface IFieldConfigItem {
 }
 
 export interface IWidgetType extends Document {
-  _id: string | Types.ObjectId;
   name: string;
   description?: string;
   chartType: string;
