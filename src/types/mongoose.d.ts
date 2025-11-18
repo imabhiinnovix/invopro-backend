@@ -3,22 +3,34 @@ import "mongoose";
 import { Types } from "mongoose";
 
 declare module "mongoose" {
-  /**
-   * Lightweight populate override
-   */
-  interface Query<ResultType = any, DocType = any, THelpers = any, RawDocType = any> {
-    populate(
-      path: any,
-      select?: any,
-      model?: any,
-      match?: any
-    ): this;
+  // force global ObjectId type to accept string
+  namespace Schema {
+    interface Types {
+      ObjectId: string | Types.ObjectId;
+    }
   }
 
-  /**
-   * Fix: Allow _id to be string | ObjectId
-   */
+  // override global document _id
   interface Document {
     _id: string | Types.ObjectId;
+  }
+
+  // override hydrated docs
+  interface HydratedDocument<T = any> extends Document {
+    _id: string | Types.ObjectId;
+  }
+
+  // override lean docs
+  interface LeanDocument<T = any> {
+    _id: string | Types.ObjectId;
+  }
+
+  // override populate typing
+  interface Query<ResultType = any, DocType = any> {
+    populate(path: any, select?: any, model?: any, match?: any): this;
+  }
+
+  interface Aggregate<R = any> {
+    populate(path: any, select?: any, model?: any, match?: any): this;
   }
 }
