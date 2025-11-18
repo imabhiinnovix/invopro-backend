@@ -2,6 +2,7 @@
 /* @ts-nocheck */
 
 import Permission from '../database/models/common/permissionModel'; // Your Mongoose model
+import { getDynamicPermission } from '../database/services/common/permission.service';
 interface PermissionSeed {
   name: string;
   method: string;
@@ -1529,65 +1530,8 @@ let permissions: PermissionSeed[] = [
   }
 ];
 
-function getDynamicPermission(
-  entities: {
-    name: string;
-    dataSourceId: string;
-    code: string;
-    organizationId: string;
-  }[]
-) {
-  const routes = [
-    {
-      action: 'Create',
-      method: 'POST',
-      resourceId: 'common/dataSourceVersion/versionData/create',
-      codeSuffix: 'create',
-    },
-    {
-      action: 'Update',
-      method: 'PUT',
-      resourceId: 'common/dataSourceVersion/versionData/update/:rowId',
-      codeSuffix: 'update',
-    },
-    {
-      action: 'Delete',
-      method: 'DELETE',
-      resourceId: 'common/dataSourceVersion/versionData/delete',
-      codeSuffix: 'delete',
-    },
-    {
-      action: 'List',
-      method: 'GET',
-      resourceId: 'common/dataSourceVersion/versionData',
-      codeSuffix: 'list',
-    },
-  ];
-
-  const permissions: any[] = [];
-
-  entities.forEach(({ name, dataSourceId, code, organizationId }) => {
-    routes.forEach(({ action, method, resourceId, codeSuffix }) => {
-      permissions.push({
-        name: `${name} ${action}`,
-        method,
-        resourceId,
-        dataSourceId,
-        resourceType: 'Data Source',
-        resourceCode: `dataSource__${code}__${codeSuffix}`,
-        status: 'active',
-        isSuperUser: false,
-        isChangeable: true,
-        organizationId,
-      });
-    });
-  });
-
-  return permissions;
-}
-
 export async function seedPermissions(permissionList: any[]) {
-  const dynamicPermission = getDynamicPermission(permissionList);
+  const dynamicPermission = await getDynamicPermission(permissionList);
   console.log(dynamicPermission);
   permissions = [...permissions, ...dynamicPermission];
 

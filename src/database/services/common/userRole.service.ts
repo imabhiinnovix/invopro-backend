@@ -187,3 +187,12 @@ export const deleteRole = async (roleId: any) => {
     throw err;
   }
 };
+
+export const getUserRole = async (query: any) => {
+  try {
+    const userRole = await UserRole.findOne(query);
+    return userRole;
+  } catch (err) {
+    throw err;
+  }
+};

@@ -5,6 +5,11 @@
 import { Types } from 'mongoose';
 import Entity from '../../models/common/entity';
 import { getAllDerivedFields } from './derivedField.services';
+import { createDataSourcce, findDataSourceByCodeAndOrganization, findDataSourceByNameAndOrganization, findDataSourcesByEntityId } from './dataSource.services';
+import { sanitizeCode } from '../../../utils/common.utils';
+import { createRawPermission, getDynamicPermission, getPermission } from './permission.service';
+import { getUserRole } from './userRole.service';
+import { createUserRoleHasPermission, getRoleHasPermission } from './roleHasPermission.services';
 
 export const createEntity = async (entityData: any) => {
   try {
@@ -539,3 +544,140 @@ export async function updateEntityAttributeOptionId({ entityId, attributeName, a
     throw error;
   }
 }
+
+export const autoCreateDataSourceForEntity = async (entity: Record<string, any>, user: Record<string, any>) => {
+  const { _id: entityId, name, attributes, organizationId, description } = entity;
+  const { userId, roleIds } = user;
+
+  // 1. Check if datasource already exists for this entity
+  const existing = await findDataSourcesByEntityId(
+    entityId
+  );
+
+  if (existing.length > 0) {
+    console.log(`DataSource already exists for entity: ${name}`);
+    return;
+  }
+
+  // 2. Final DataSource name (as is)
+  const cleanName = name.trim();
+
+  // 3. Build DataSource code (simple, clean, lowercase, non-plural)
+  const dataSourceCode = sanitizeCode(name);  // example: "Personality" → "personality"
+
+  // 4. Check name conflict
+  const nameExists = await findDataSourceByNameAndOrganization(
+    cleanName,
+    organizationId
+  );
+
+  if (nameExists) {
+    console.log(`DataSource name already exists: ${cleanName}`);
+    return;
+  }
+
+  // 5. Check code conflict
+  const codeExists = await findDataSourceByCodeAndOrganization(
+    dataSourceCode,
+    organizationId
+  );
+
+  if (codeExists) {
+    console.log(`DataSource code already exists: ${dataSourceCode}`);
+    return;
+  }
+
+  // 6. Build fieldSettings with refAttributeId = []
+  const fieldSettings = attributes.map((attr) => ({
+    attributeId: attr._id,
+    refAttributeId: [],  // always empty
+    label: attr.name,
+    type: attr.type,
+    isFilterEnable: true,
+    isSortingEnable: true,
+    isDisplayEnable: true,
+    isDashboardFilter: true,
+    isDerived: false,
+    mappedAttributeName: attr.name,
+  }));
+
+  // 7. Create DataSource
+  const createdDS: any = await createDataSourcce({
+    entityId,
+    name: cleanName,
+    code: dataSourceCode,
+    versionType: "constant",
+    organizationId,
+    createdBy: userId,
+    isActive: true,
+    description: description || cleanName,
+    uniqueAttributeRules: [],
+    isShowMenu: true,
+    condition: [],
+    fieldSettings,
+  });
+
+  console.log(`Auto-created DataSource for entity: ${name}`);
+  // -----------------------------------------------------------------------
+  // STEP 5 — USE getDynamicPermission()
+  // -----------------------------------------------------------------------
+  const dynamicPermissions = await getDynamicPermission([
+    {
+      name: cleanName,
+      dataSourceId: createdDS._id,
+      code: dataSourceCode,
+      organizationId,
+    },
+  ]);
+
+  // -----------------------------------------------------------------------
+  // STEP 6 — Create permissions
+  // -----------------------------------------------------------------------
+  const createdPermissions: any = [];
+
+  for (const permData of dynamicPermissions) {
+    let perm = await getPermission({
+      resourceCode: permData.resourceCode,
+      organizationId: permData.organizationId,
+    });
+
+    if (!perm) {
+      perm = await createRawPermission(permData);
+      console.log(`🆕 Permission created: ${perm.resourceCode}`);
+    }
+
+    createdPermissions.push(perm);
+  }
+
+  // -----------------------------------------------------------------------
+  // STEP 7 — Assign to logged-in user's role
+  // -----------------------------------------------------------------------
+   // 8. Assign permissions to ALL logged-in user roles
+  for (const roleId of roleIds) {      // LOOP through all roles
+    const role = await getUserRole({ _id: roleId });
+    if (!role) {
+      console.log(`Role not found: ${roleId}`);
+      continue;
+    }
+
+    for (const perm of createdPermissions) {
+      const exists = await getRoleHasPermission({
+        roleId,
+        permissionId: perm._id,
+      });
+
+      if (!exists) {
+        await createUserRoleHasPermission({
+          roleId,
+          permissionId: perm._id,
+          isChangeable: true,
+          status: "active",
+        });
+
+        console.log(`Assigned: ${perm.resourceCode} → Role: ${role.name}`);
+      }
+    }
+  }
+
+  console.log(`DS + Permissions + Assigned to Role: ${cleanName}`);
+};

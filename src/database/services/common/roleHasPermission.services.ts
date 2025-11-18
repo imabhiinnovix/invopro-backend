@@ -79,3 +79,12 @@ export const getPermissionsByRoleIds = async (roleIds: Types.ObjectId[]) => {
 
   return result;
 };
+
+export const getRoleHasPermission = async (query: any) => {
+  try {
+    const permission = await RoleHasPermission.findOne(query);
+    return permission;
+  } catch (err) {
+    throw err;
+  }
+};

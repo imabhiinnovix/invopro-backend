@@ -327,6 +327,12 @@ export const formatDateValue = (value: any) => {
 };
 
 
+// sanitize code -> remove all special characters & spaces
+export const sanitizeCode = (str) => {
+  return str.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+};
+
+
 
 
 

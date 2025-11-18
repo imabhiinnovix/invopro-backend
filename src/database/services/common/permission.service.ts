@@ -53,6 +53,16 @@ export const createPermission = async (data: any) => {
   return await permission.save();
 };
 
+export const createRawPermission = async (permData: any) => {
+  try {
+    const permission = new Permission(permData);
+    await permission.save();
+    return permission;
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const updatePermission = async (id: string, data: any) => {
   const existing = await Permission.findById(id);
   if (!existing) throw new Error('Permission not found.');
@@ -72,6 +82,15 @@ export const updatePermission = async (id: string, data: any) => {
   return updated;
 };
 
+export const getPermission = async (query: any) => {
+  try {
+    const permission = await Permission.findOne(query);
+    return permission;
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const deletePermission = async (id: string, organizationId: string) => {
   const permission = await Permission.findOne({
     _id: id,
@@ -89,3 +108,67 @@ export const deletePermission = async (id: string, organizationId: string) => {
 
   return { success: true, message: 'Permission and associated role mappings deleted' };
 };
+
+export const getDynamicPermission = async (
+  entities: {
+    name: string;
+    dataSourceId: string;
+    code: string;
+    organizationId: string;
+  }[]
+) => {
+  const routes = [
+    {
+      action: 'Create',
+      method: 'POST',
+      resourceId: 'common/dataSourceVersion/versionData/create',
+      codeSuffix: 'create',
+    },
+    {
+      action: 'Update',
+      method: 'PUT',
+      resourceId: 'common/dataSourceVersion/versionData/update/:rowId',
+      codeSuffix: 'update',
+    },
+    {
+      action: 'Delete',
+      method: 'DELETE',
+      resourceId: 'common/dataSourceVersion/versionData/delete',
+      codeSuffix: 'delete',
+    },
+    {
+      action: 'List',
+      method: 'GET',
+      resourceId: 'common/dataSourceVersion/versionData',
+      codeSuffix: 'list',
+    },
+  ];
+
+  const permissions: any[] = [];
+  // 🔹 Define method → methodName mapping
+  const methodNameArr: Record<string, string> = {
+    POST: 'create',
+    PUT: 'update',
+    DELETE: 'delete',
+    GET: 'list',
+  };
+  entities.forEach(({ name, dataSourceId, code, organizationId }) => {
+    routes.forEach(({ action, method, resourceId, codeSuffix }) => {
+      permissions.push({
+        name: `${name} ${action}`,
+        method,
+        resourceId,
+        dataSourceId,
+        resourceType: 'Data Source',
+        resourceCode: `dataSource__${code}__${codeSuffix}`,
+        status: 'active',
+        isSuperUser: false,
+        isChangeable: true,
+        organizationId,
+        methodName: methodNameArr[method?.toUpperCase()] || 'UNKNOWN'
+      });
+    });
+  });
+
+  return permissions;
+}

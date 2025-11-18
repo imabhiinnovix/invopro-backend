@@ -10,7 +10,7 @@ export const createEntity = async (req: Request, res: Response, next: NextFuncti
       return res.status(400).json({ success: false, message: 'Entity Name already exists' });
     }
 
-    await entityService.createEntity({
+    const newEntity = await entityService.createEntity({
       name,
       mappingName,
       description,
@@ -19,11 +19,16 @@ export const createEntity = async (req: Request, res: Response, next: NextFuncti
       createdBy: userId,
       isActive: true,
     });
+
+     // 3. Auto-create datasource for this entity
+    await entityService.autoCreateDataSourceForEntity(newEntity, req.user);
+
     res.status(201).json({
       success: true,
       message: 'Entity created successfully',
     });
   } catch (err) {
+    console.log('error',err);
     next(err);
   }
 };
