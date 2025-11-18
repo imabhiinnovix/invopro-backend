@@ -326,6 +326,15 @@ export const formatDateValue = (value: any) => {
   return d.format("DD-MMM-YYYY"); // → 21-Aug-2025
 };
 
+export const formatDateTime = (value: any) => {
+  if (!value) return "";
+
+  const d = dayjs(value);
+  if (!d.isValid()) return "";
+
+  return d.format("DD MMM YYYY hh:mm:ss"); // → 21-Aug-2025
+};
+
 
 // sanitize code -> remove all special characters & spaces
 export const sanitizeCode = (str) => {

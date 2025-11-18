@@ -209,7 +209,6 @@ async function connectDB() {
         // --------------------------------------------------------------------
         // Save Excel
         // --------------------------------------------------------------------
-        const exportFileName = `${dataSourceDetails.name}_Export_Data_${Date.now()}_${req._id}.xlsx`;
         const filePath = path.join(
           "uploads",
           req.organizationId.toString(),
@@ -218,12 +217,11 @@ async function connectDB() {
         );
 
         fs.mkdirSync(filePath, { recursive: true });
-        const fullFilePath = path.join(filePath, exportFileName);
+        const fullFilePath = path.join(filePath, req.fileName);
         await workbook.xlsx.writeFile(fullFilePath);
 
 
         req.filePath = filePath;
-        req.fileName = exportFileName;
         req.status = "completed";
         await req.save();
 

@@ -5,7 +5,7 @@ import { Types } from 'mongoose';
 import * as dataSourceService from '../../../database/services/common/dataSource.services';
 import * as defaultDataSourceVersionValue from '../../../database/services/common/defaultDataSourceVersionValue.services';
 import * as entityService from '../../../database/services/common/entity.services';
-import { checkReferenceFieldExist, getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
+import { checkReferenceFieldExist, formatDateTime, getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
 import createDefaultDataSourceVersionModel from '../../../database/models/common/defaultDataSourceVersionModel';
 import * as dataSourceVersionService from '../../../database/services/common/dataSourceVersion.services';
 import { DataSourceVersion } from '../../../types/widget.types';
@@ -1016,11 +1016,12 @@ export const exportWidgetDataByFilterToExcel = async (
       // --------------------------------------------------------------------
       // 3️ SAVE DOWNLOAD REQUEST
       // --------------------------------------------------------------------
-
+      const fileName = `${dataSource.name}_Export_Data_${formatDateTime(Date.now())}.xlsx`;
       const downloadRequest = await createDownloadRequest({
         organizationId,
         userId,
         status: "pending",
+        fileName,
         requestPayload,
         dataSourceId
       });

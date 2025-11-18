@@ -10,6 +10,7 @@ import * as dataImportErrorServices from '../../../database/services/common/data
 import {
   createMongoCondition,
   escapeRegExp,
+  formatDateTime,
   getImportLogSchemaNameBasedOnVersionCodeAndOrgCode,
   getSchemaNameBasedOnVersionCodeAndOrgCode,
   sleep,
@@ -1681,11 +1682,12 @@ export const exportDataSourceVersionDataToExcel = async (
     // --------------------------------------------------------------------
     // 3️ SAVE DOWNLOAD REQUEST
     // --------------------------------------------------------------------
-
+    const fileName = `${dataSourceDetails.name}_Export_Data_${formatDateTime(Date.now())}.xlsx`;
     const downloadRequest = await createDownloadRequest({
       organizationId,
       userId,
       status: "pending",
+      fileName,
       requestPayload,
       dataSourceId
     });
