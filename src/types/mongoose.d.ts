@@ -1,42 +1,24 @@
+// src/types/mongoose.d.ts
 import "mongoose";
 import { Types } from "mongoose";
 
 declare module "mongoose" {
-
-  /** Fix populate typing */
-  interface Query<ResultType, DocType, THelpers = {}, RawDocType = DocType> {
+  /**
+   * Lightweight populate override
+   */
+  interface Query<ResultType = any, DocType = any, THelpers = any, RawDocType = any> {
     populate(
-      path: string | any,
-      select?: string | any,
-      model?: any,
-      match?: any
-    ): this;
-  }
-
-  interface Aggregate<R> {
-    populate(
-      path: string | any,
-      select?: string | any,
+      path: any,
+      select?: any,
       model?: any,
       match?: any
     ): this;
   }
 
   /**
-   * --------------------------------------------------
-   * FIX: Patch generic Document definition
-   * --------------------------------------------------
+   * Fix: Allow _id to be string | ObjectId
    */
-  interface Document<TId = Types.ObjectId, TSchema = any>
-    extends NodeJS.EventEmitter {
-    _id: string | Types.ObjectId;
-  }
-
-  interface HydratedDocument<T, TId = Types.ObjectId> extends Document {
-    _id: string | Types.ObjectId;
-  }
-
-  interface LeanDocument<T> {
+  interface Document {
     _id: string | Types.ObjectId;
   }
 }
