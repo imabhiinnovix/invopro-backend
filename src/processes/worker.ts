@@ -102,7 +102,7 @@ async function connectDB() {
 
           // Apply filter
           const selectedFieldsFiltered = dataSourceDetails.fieldSettings.filter((f) => {
-            if (!f.isDisplayEnable) return false;
+            if (f.isDerived === true) return false;
 
             // If selectedFields provided → include only selected mappedAttributeName
             if (selectedFieldsParsed?.length) {
@@ -156,7 +156,7 @@ async function connectDB() {
                 });
           const dataResults = result?.data ?? [];
           let headers: string[] = dataSourceDetails?.fieldSettings
-            .filter((f: any) => f.isDisplayEnable === true)  
+            .filter((f: any) => !f.isDerived)  
             .map((f: any) => f.label);
 
           const exportHeaders =
