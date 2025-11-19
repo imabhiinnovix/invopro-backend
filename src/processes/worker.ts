@@ -145,6 +145,7 @@ async function connectDB() {
                   schemaName,
                   query,
                   dashboardFilters,
+                  conditions,
                   entityId,
                   aggregation,
                   dashBoardType,
