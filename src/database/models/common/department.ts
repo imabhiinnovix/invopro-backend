@@ -20,7 +20,7 @@ interface IDepartment extends Document {
 const departmentSchema = new Schema<IDepartment>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
-    name: { type: String, required: true, unique: true },
+    name: { type: String, required: true },   // removed unique: true
     description: { type: String },
     status: {
       type: String,
@@ -32,6 +32,9 @@ const departmentSchema = new Schema<IDepartment>(
   },
   { timestamps: true }
 );
+
+// ✅ Add compound unique index
+departmentSchema.index({ organizationId: 1, name: 1 }, { unique: true });
 
 const Department = model<IDepartment>('Department', departmentSchema);
 
