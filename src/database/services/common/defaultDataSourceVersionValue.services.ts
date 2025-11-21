@@ -2418,11 +2418,78 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
     let field = fieldRaw;
 
     if (fieldRaw === dimension?.[0]) {
+
+      const key = dimension?.[0];
+      const attr = attributesMap[key] || refAttributesMap[key];
+
+      // groupBy may be array or string — normalize
+      const groupByValue = Array.isArray(groupBy) ? groupBy[0] : groupBy;
+
+      const isDateType =
+        attr?.type === "date" ||
+        attr?.type === "date-range";
+
+      const isValidPeriod =
+        ["yearly", "monthly", "weekly", "daily"].includes(groupByValue);
+
+      // DATE GROUPING (not trend)
+      if (isDateType && dashBoardType !== "trend" && isValidPeriod) {
+
+        const dateFieldPath = getFieldPath(await getReferenceField(field)); 
+        const g = groupByValue;
+
+        if (g === "yearly") {
+          groupFields["name"] = {
+            $dateToString: { format: "%Y", date: { $toDate: dateFieldPath } }
+          };
+        }
+        else if (g === "monthly") {
+          groupFields["name"] = {
+            $dateToString: { format: "%Y-%m", date: { $toDate: dateFieldPath } }
+          };
+        }
+        else if (g === "weekly") {
+          groupFields["name"] = {
+            $concat: [
+              {
+                $dateToString: {
+                  format: "%Y-%m-%d",
+                  date: {
+                    $dateSubtract: {
+                      startDate: { $toDate: dateFieldPath },
+                      unit: "day",
+                      amount: 6
+                    }
+                  }
+                }
+              },
+              "~",
+              {
+                $dateToString: {
+                  format: "%Y-%m-%d",
+                  date: { $toDate: dateFieldPath }
+                }
+              }
+            ]
+          };
+        }
+        else {
+          // daily default
+          groupFields["name"] = {
+            $dateToString: { format: "%Y-%m-%d", date: { $toDate: dateFieldPath } }
+          };
+        }
+
+        continue; 
+      }
+
+      // Default path (non-date or trend)
       if (dashBoardType === "trend") {
         groupFields["name"] = getFieldPath(`${field}`);
       } else {
         groupFields["name"] = getFieldPath(await getReferenceField(field));
       }
+
     } else {
       const labelArr = await getLabelByMappedAttributeName(dataSourceDetails);
       const label = labelArr[field] ?? field;
@@ -2430,6 +2497,7 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
     }
   }
 }
+
 
 console.log(groupFields, 'groupFields');
 

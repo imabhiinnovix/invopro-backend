@@ -577,7 +577,60 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
   // Determine case status
   const statusFilter = dashboardFilters?.filters?.["Derived.Case Status"] ?? "Pending";
   const isCompleted = statusFilter === "Completed";
+  // ---------------------------
+// 1. Determine date grouping mode from groupBy
+// ---------------------------
+let dateGroupingMode: string | null = null;
+if (groupBy) {
+  const firstGroupBy = Array.isArray(groupBy) ? groupBy[0] : groupBy;
+  if (typeof firstGroupBy === "string" && ["monthly","weekly","yearly","daily"].includes(firstGroupBy.toLowerCase())) {
+    dateGroupingMode = firstGroupBy.toLowerCase();
+  }
+}
 
+// ---------------------------
+// 2. If date grouping mode exists, handle it separately
+// ---------------------------
+if (dateGroupingMode && dimensions && dimensions.length > 0) {
+  const firstDimension = dimensions[0];
+  // Only proceed if firstDimension is a non-empty object
+  if (firstDimension && typeof firstDimension === "object" && Object.keys(firstDimension).length > 0) {
+  const [field, value] = Object.entries(firstDimension)[0];
+      if (value != null) { // Ensure value exists
+
+  const raw = String(value);
+
+  let startDate: Date | null = null;
+  let endDate: Date | null = null;
+
+  if (dateGroupingMode === "monthly") {
+    const [yr, mon] = raw.split("-");
+    startDate = new Date(Date.UTC(+yr, +mon - 1, 1));
+    endDate = new Date(Date.UTC(+yr, +mon, 0)); // last day of month
+  } 
+  else if (dateGroupingMode === "weekly") {
+    const [from, to] = raw.split("~");
+    startDate = new Date(from);
+    startDate = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()));
+    endDate = new Date(to);
+    endDate = new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate()));
+  } 
+  else if (dateGroupingMode === "yearly") {
+    startDate = new Date(Date.UTC(+raw, 0, 1));
+    endDate = new Date(Date.UTC(+raw, 11, 31));
+  } 
+  else if (dateGroupingMode === "daily") {
+    const d = new Date(raw);
+    startDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    endDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  }
+
+  if (startDate && endDate) {
+    filters[field] = { $gte: startDate, $lte: endDate };
+  }
+}
+  }
+} else{
   // Handle dimensions
   if (dimensions && Array.isArray(dimensions)) {
     dimensions.forEach(dimension => {
@@ -607,6 +660,7 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
       }
     });
   }
+}
   // Handle dueDays filter using DueDate/DateTaken
   if (dueDaysFilterValue && dueDaysFilterValue !== "Total Dues") {
     const now = new Date();
@@ -911,7 +965,60 @@ export const exportWidgetDataByFilterToExcel = async (
       const isDueDaysField = (key: string) => key === "Derived.dueDays";
       const statusFilter = dashboardFilters?.filters?.["Derived.Case Status"] ?? "Pending";
       const isCompleted = statusFilter === "Completed";
+        // ---------------------------
+// 1. Determine date grouping mode from groupBy
+// ---------------------------
+let dateGroupingMode: string | null = null;
+if (groupBy) {
+  const firstGroupBy = Array.isArray(groupBy) ? groupBy[0] : groupBy;
+  if (typeof firstGroupBy === "string" && ["monthly","weekly","yearly","daily"].includes(firstGroupBy.toLowerCase())) {
+    dateGroupingMode = firstGroupBy.toLowerCase();
+  }
+}
 
+// ---------------------------
+// 2. If date grouping mode exists, handle it separately
+// ---------------------------
+if (dateGroupingMode && dimensions && dimensions.length > 0) {
+  const firstDimension = dimensions[0];
+  // Only proceed if firstDimension is a non-empty object
+  if (firstDimension && typeof firstDimension === "object" && Object.keys(firstDimension).length > 0) {
+  const [field, value] = Object.entries(firstDimension)[0];
+      if (value != null) { // Ensure value exists
+
+  const raw = String(value);
+
+  let startDate: Date | null = null;
+  let endDate: Date | null = null;
+
+  if (dateGroupingMode === "monthly") {
+    const [yr, mon] = raw.split("-");
+    startDate = new Date(Date.UTC(+yr, +mon - 1, 1));
+    endDate = new Date(Date.UTC(+yr, +mon, 0)); // last day of month
+  } 
+  else if (dateGroupingMode === "weekly") {
+    const [from, to] = raw.split("~");
+    startDate = new Date(from);
+    startDate = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()));
+    endDate = new Date(to);
+    endDate = new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate()));
+  } 
+  else if (dateGroupingMode === "yearly") {
+    startDate = new Date(Date.UTC(+raw, 0, 1));
+    endDate = new Date(Date.UTC(+raw, 11, 31));
+  } 
+  else if (dateGroupingMode === "daily") {
+    const d = new Date(raw);
+    startDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    endDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  }
+
+  if (startDate && endDate) {
+    filters[field] = { $gte: startDate, $lte: endDate };
+  }
+}
+  }
+}else{
       //  Dimensions & groupBy logic kept intact
       if (dimensions && Array.isArray(dimensions)) {
         dimensions.forEach((dimension) => {
@@ -940,6 +1047,7 @@ export const exportWidgetDataByFilterToExcel = async (
           }
         });
       }
+    }
 
       //  DueDays logic untouched
       if (dueDaysFilterValue && dueDaysFilterValue !== "Total Dues") {

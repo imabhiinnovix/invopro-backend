@@ -776,8 +776,10 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
     dimensions = dimensions.map((d) => d.replace(/^Derived\./, ""));
     groupBy = groupBy.map((g) => g.replace(/^Derived\./, ""));
 
+    const isDefaultForce = true;
+
     const isReferenceField = await checkReferenceFieldExist(dataSourceDetails);
-    if(isReferenceField == true){
+    if(isReferenceField == true || isDefaultForce == true){
         result = await getNewChartData({
           dataSourceId,
           dimensions,
