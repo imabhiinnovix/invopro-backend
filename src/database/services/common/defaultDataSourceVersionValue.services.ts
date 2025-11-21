@@ -3609,35 +3609,46 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
     
 
   // ✅ Add pagination only if paginate object is valid
-    aggregationPipeline.push(
-  {
-    $facet: {
-      metadata: [{ $count: 'totalRecords' }],
-      data: [
-        { $skip: (page - 1) * limit },
-        { $limit: limit },
-      ],
+  if(limit == Number.MAX_SAFE_INTEGER){
+     aggregationPipeline.push(
+    {
+      $project: {
+        _id: 1,
+        rowData: 1
+      }
+    }
+  );
+  }else{
+      aggregationPipeline.push(
+    {
+      $facet: {
+        metadata: [{ $count: 'totalRecords' }],
+        data: [
+          { $skip: (page - 1) * limit },
+          { $limit: limit },
+        ],
+      },
     },
-  },
-  {
-    $project: {
-      data: 1,
-      pagination: {
-        // currentPage: { $literal: page },   // wrap in $literal
-        // limit: { $literal: limit },        // wrap in $literal
-        totalRecords: { $arrayElemAt: ['$metadata.totalRecords', 0] },
-        totalPages: {
-          $ceil: {
-            $divide: [
-              { $arrayElemAt: ['$metadata.totalRecords', 0] },
-              limit,
-            ],
+    {
+      $project: {
+        data: 1,
+        pagination: {
+          // currentPage: { $literal: page },   // wrap in $literal
+          // limit: { $literal: limit },        // wrap in $literal
+          totalRecords: { $arrayElemAt: ['$metadata.totalRecords', 0] },
+          totalPages: {
+            $ceil: {
+              $divide: [
+                { $arrayElemAt: ['$metadata.totalRecords', 0] },
+                limit,
+              ],
+            },
           },
         },
       },
-    },
-  }
-);
+    }
+  );
+}
 
   
     
@@ -3645,7 +3656,9 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
     console.log('aggregationPipeline',JSON.stringify(aggregationPipeline));
     // Step 5: Execute aggregation
     const versionValueData = await DataSourceVersionValue.aggregate(aggregationPipeline).exec();
-
+    const docs = limit === Number.MAX_SAFE_INTEGER
+                  ? versionValueData                // raw docs
+                  : versionValueData[0].data        // facet docs
     // console.log('versionValueData',JSON.stringify(versionValueData));
 
     // -------------------------
@@ -3761,7 +3774,7 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
 
  // Step 6: Transform
     const transformedData = await Promise.all(
-      versionValueData[0]['data'].map(async (doc: any) => {
+      docs.map(async (doc: any) => {
         const newDoc = { ...doc };
         const rowData: Record<string, any> = { ...doc.rowData };
 
