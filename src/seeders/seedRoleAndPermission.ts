@@ -112,6 +112,10 @@ const defaultPermissionsUser = [
     isChangeable: true,
   },
   {
+    permission: 'GET:/common/dashboard/widget/getPlotTypes',
+    isChangeable: true,
+  },
+  {
     permission: 'GET:/common/widgetType/get/:widgetTypeId',
     isChangeable: true,
   },

@@ -636,6 +636,16 @@ let permissions: PermissionSeed[] = [
     isChangeable: true,
   },
   {
+    name: 'Get Widget Plot Types',
+    method: 'GET',
+    resourceId: '/common/dashboard/widget/getPlotTypes',
+    extraOptions: {},
+    resourceType: 'Dashboard',
+    resourceCode: 'dashboard__get_widget_plot_types',
+    isSuperUser: false,
+    isChangeable: true,
+  },
+  {
     name: 'Create Widget',
     method: 'POST',
     resourceId: '/common/dashboard/widget/create',

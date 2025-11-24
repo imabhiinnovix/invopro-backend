@@ -18,6 +18,7 @@ import { getUserDataPermissionRecord } from '../../../database/services/common/u
 import ExcelJS from "exceljs";
 import { createDownloadRequest } from '../../../database/services/common/downloadRequest.service';
 import { Queue } from 'bullmq';
+import { getPlotTypeConfig, plotTypesConfig } from "../../../config/plotType.config";
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -577,13 +578,18 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
   // Determine case status
   const statusFilter = dashboardFilters?.filters?.["Derived.Case Status"] ?? "Pending";
   const isCompleted = statusFilter === "Completed";
-  // ---------------------------
-// 1. Determine date grouping mode from groupBy
+// ---------------------------
+// 1. Determine date grouping mode from groupBy using config file
 // ---------------------------
 let dateGroupingMode: string | null = null;
+
 if (groupBy) {
   const firstGroupBy = Array.isArray(groupBy) ? groupBy[0] : groupBy;
-  if (typeof firstGroupBy === "string" && ["monthly","weekly","yearly","daily"].includes(firstGroupBy.toLowerCase())) {
+
+  // dynamic valid plot types from config
+  const validModes = plotTypesConfig.map(pt => pt.type.toLowerCase());
+
+  if (typeof firstGroupBy === "string" && validModes.includes(firstGroupBy.toLowerCase())) {
     dateGroupingMode = firstGroupBy.toLowerCase();
   }
 }
@@ -593,44 +599,64 @@ if (groupBy) {
 // ---------------------------
 if (dateGroupingMode && dimensions && dimensions.length > 0) {
   const firstDimension = dimensions[0];
-  // Only proceed if firstDimension is a non-empty object
+
   if (firstDimension && typeof firstDimension === "object" && Object.keys(firstDimension).length > 0) {
-  const [field, value] = Object.entries(firstDimension)[0];
-      if (value != null) { // Ensure value exists
 
-  const raw = String(value);
+    const [field, value] = Object.entries(firstDimension)[0];
+    if (value != null) {
+      const raw = String(value);
 
-  let startDate: Date | null = null;
-  let endDate: Date | null = null;
+      let startDate: Date | null = null;
+      let endDate: Date | null = null;
 
-  if (dateGroupingMode === "monthly") {
-    const [yr, mon] = raw.split("-");
-    startDate = new Date(Date.UTC(+yr, +mon - 1, 1));
-    endDate = new Date(Date.UTC(+yr, +mon, 0)); // last day of month
-  } 
-  else if (dateGroupingMode === "weekly") {
-    const [from, to] = raw.split("~");
-    startDate = new Date(from);
-    startDate = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()));
-    endDate = new Date(to);
-    endDate = new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate()));
-  } 
-  else if (dateGroupingMode === "yearly") {
-    startDate = new Date(Date.UTC(+raw, 0, 1));
-    endDate = new Date(Date.UTC(+raw, 11, 31));
-  } 
-  else if (dateGroupingMode === "daily") {
-    const d = new Date(raw);
-    startDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-    endDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+      const config = getPlotTypeConfig(dateGroupingMode as any);
+
+      // ----------------------------------
+      // MONTHLY / WEEKLY / YEARLY / DAILY
+      // ----------------------------------
+      if (dateGroupingMode === "monthly") {
+        const [yr, mon] = raw.split("-");
+        startDate = new Date(Date.UTC(+yr, +mon - 1, 1));
+        endDate = new Date(Date.UTC(+yr, +mon, 0));
+      }
+      else if (dateGroupingMode === "weekly") {
+        const [from, to] = raw.split("~");
+        startDate = new Date(Date.UTC(new Date(from).getUTCFullYear(), new Date(from).getUTCMonth(), new Date(from).getUTCDate()));
+        endDate = new Date(Date.UTC(new Date(to).getUTCFullYear(),   new Date(to).getUTCMonth(),   new Date(to).getUTCDate()));
+      }
+      else if (dateGroupingMode === "yearly") {
+        startDate = new Date(Date.UTC(+raw, 0, 1));
+        endDate = new Date(Date.UTC(+raw, 11, 31));
+      }
+      else if (dateGroupingMode === "daily") {
+        const d = new Date(raw);
+        startDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+        endDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+      }
+
+      // ----------------------------------
+      // QUARTERS — Now using monthRange from config
+      // ----------------------------------
+      else if (dateGroupingMode === "quarterly" && config?.monthRange) {
+        const [yearStr, quarterStr] = raw.split("-");
+        const year = +yearStr;
+        const quarterKey = quarterStr.toLowerCase() as keyof typeof config.monthRange;
+
+        const range = config.monthRange[quarterKey];
+
+        if (range) {
+          const [startMonth, endMonth] = range;
+          startDate = new Date(Date.UTC(year, startMonth, 1));
+          endDate = new Date(Date.UTC(year, endMonth + 1, 0));
+        }
+      }
+
+      if (startDate && endDate) {
+        filters[field] = { $gte: startDate, $lte: endDate };
+      }
+    }
   }
-
-  if (startDate && endDate) {
-    filters[field] = { $gte: startDate, $lte: endDate };
-  }
-}
-  }
-} else{
+}else{
   // Handle dimensions
   if (dimensions && Array.isArray(dimensions)) {
     dimensions.forEach(dimension => {
@@ -965,13 +991,18 @@ export const exportWidgetDataByFilterToExcel = async (
       const isDueDaysField = (key: string) => key === "Derived.dueDays";
       const statusFilter = dashboardFilters?.filters?.["Derived.Case Status"] ?? "Pending";
       const isCompleted = statusFilter === "Completed";
-        // ---------------------------
-// 1. Determine date grouping mode from groupBy
+ // ---------------------------
+// 1. Determine date grouping mode from groupBy using config file
 // ---------------------------
 let dateGroupingMode: string | null = null;
+
 if (groupBy) {
   const firstGroupBy = Array.isArray(groupBy) ? groupBy[0] : groupBy;
-  if (typeof firstGroupBy === "string" && ["monthly","weekly","yearly","daily"].includes(firstGroupBy.toLowerCase())) {
+
+  // dynamic valid plot types from config
+  const validModes = plotTypesConfig.map(pt => pt.type.toLowerCase());
+
+  if (typeof firstGroupBy === "string" && validModes.includes(firstGroupBy.toLowerCase())) {
     dateGroupingMode = firstGroupBy.toLowerCase();
   }
 }
@@ -981,42 +1012,64 @@ if (groupBy) {
 // ---------------------------
 if (dateGroupingMode && dimensions && dimensions.length > 0) {
   const firstDimension = dimensions[0];
-  // Only proceed if firstDimension is a non-empty object
+
   if (firstDimension && typeof firstDimension === "object" && Object.keys(firstDimension).length > 0) {
-  const [field, value] = Object.entries(firstDimension)[0];
-      if (value != null) { // Ensure value exists
 
-  const raw = String(value);
+    const [field, value] = Object.entries(firstDimension)[0];
+    if (value != null) {
+      const raw = String(value);
 
-  let startDate: Date | null = null;
-  let endDate: Date | null = null;
+      let startDate: Date | null = null;
+      let endDate: Date | null = null;
 
-  if (dateGroupingMode === "monthly") {
-    const [yr, mon] = raw.split("-");
-    startDate = new Date(Date.UTC(+yr, +mon - 1, 1));
-    endDate = new Date(Date.UTC(+yr, +mon, 0)); // last day of month
-  } 
-  else if (dateGroupingMode === "weekly") {
-    const [from, to] = raw.split("~");
-    startDate = new Date(from);
-    startDate = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()));
-    endDate = new Date(to);
-    endDate = new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate()));
-  } 
-  else if (dateGroupingMode === "yearly") {
-    startDate = new Date(Date.UTC(+raw, 0, 1));
-    endDate = new Date(Date.UTC(+raw, 11, 31));
-  } 
-  else if (dateGroupingMode === "daily") {
-    const d = new Date(raw);
-    startDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-    endDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  }
+      const config = getPlotTypeConfig(dateGroupingMode as any);
 
-  if (startDate && endDate) {
-    filters[field] = { $gte: startDate, $lte: endDate };
-  }
-}
+      // ----------------------------------
+      // MONTHLY / WEEKLY / YEARLY / DAILY
+      // ----------------------------------
+      if (dateGroupingMode === "monthly") {
+        const [yr, mon] = raw.split("-");
+        startDate = new Date(Date.UTC(+yr, +mon - 1, 1));
+        endDate = new Date(Date.UTC(+yr, +mon, 0));
+      }
+      else if (dateGroupingMode === "weekly") {
+        const [from, to] = raw.split("~");
+        startDate = new Date(Date.UTC(new Date(from).getUTCFullYear(), new Date(from).getUTCMonth(), new Date(from).getUTCDate()));
+        endDate = new Date(Date.UTC(new Date(to).getUTCFullYear(),   new Date(to).getUTCMonth(),   new Date(to).getUTCDate()));
+      }
+      else if (dateGroupingMode === "yearly") {
+        startDate = new Date(Date.UTC(+raw, 0, 1));
+        endDate = new Date(Date.UTC(+raw, 11, 31));
+      }
+      else if (dateGroupingMode === "daily") {
+        const d = new Date(raw);
+        startDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+        endDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+      }
+
+      // ----------------------------------
+      // QUARTERS — Now using monthRange from config
+      // ----------------------------------
+      // QUARTERLY
+      else if (dateGroupingMode === "quarterly" && config?.monthRange) {
+        const [yearStr, quarterStr] = raw.split("-");
+        const year = +yearStr;
+        const quarterKey = quarterStr.toLowerCase() as keyof typeof config.monthRange;
+
+        const range = config.monthRange[quarterKey];
+
+        if (range) {
+          const [startMonth, endMonth] = range;
+          startDate = new Date(Date.UTC(year, startMonth, 1));
+          endDate = new Date(Date.UTC(year, endMonth + 1, 0));
+        }
+      }
+
+
+      if (startDate && endDate) {
+        filters[field] = { $gte: startDate, $lte: endDate };
+      }
+    }
   }
 }else{
       //  Dimensions & groupBy logic kept intact

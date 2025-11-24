@@ -14,6 +14,7 @@ import {
 import { getDerivedField } from './derivedField.services';
 import { processFieldConditions } from '../../../utils/conditionProcessor';
 import { escapeRegExp, getLabelByMappedAttributeName, transformRowDataWithLabels } from '../../../utils/common.utils';
+import { getPlotTypeConfig, PlotType, plotTypesConfig } from '../../../config/plotType.config';
 
 export const updateDataSourceVersionValue = async (
   schemaName: string,
@@ -2413,77 +2414,172 @@ else if (cond.operator === 'not_match_case_insensitive_array') {
 
 // Handle custom dimension "dueDays"
 if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
-  // Normal fields
   for (const fieldRaw of [...(dimension || []), ...(groupBy || [])]) {
     let field = fieldRaw;
 
     if (fieldRaw === dimension?.[0]) {
-
       const key = dimension?.[0];
       const attr = attributesMap[key] || refAttributesMap[key];
 
-      // groupBy may be array or string — normalize
       const groupByValue = Array.isArray(groupBy) ? groupBy[0] : groupBy;
 
       const isDateType =
-        attr?.type === "date" ||
-        attr?.type === "date-range";
+        attr?.type === "date" || attr?.type === "date-range";
 
-      const isValidPeriod =
-        ["yearly", "monthly", "weekly", "daily"].includes(groupByValue);
+      // ⬇️ Build valid modes dynamically from config
+      const validModes = plotTypesConfig.map((pt) => pt.type);
+      const isValidPeriod = validModes.includes(groupByValue as PlotType);
 
-      // DATE GROUPING (not trend)
       if (isDateType && dashBoardType !== "trend" && isValidPeriod) {
+        const dateFieldPath = getFieldPath(await getReferenceField(field));
+        const mode = groupByValue as PlotType;
 
-        const dateFieldPath = getFieldPath(await getReferenceField(field)); 
-        const g = groupByValue;
+        // Get config object for mode
+        const modeConfig = getPlotTypeConfig(mode);
 
-        if (g === "yearly") {
+        // SAFETY CHECK
+        if (!modeConfig) {
+          console.warn("Unknown plot mode:", mode);
+          continue;
+        }
+
+        // =====================================================
+        // YEARLY
+        // =====================================================
+        if (mode === "yearly") {
           groupFields["name"] = {
             $dateToString: { format: "%Y", date: { $toDate: dateFieldPath } }
           };
         }
-        else if (g === "monthly") {
+
+        // =====================================================
+        // MONTHLY
+        // =====================================================
+        else if (mode === "monthly") {
           groupFields["name"] = {
             $dateToString: { format: "%Y-%m", date: { $toDate: dateFieldPath } }
           };
         }
-        else if (g === "weekly") {
+
+        // =====================================================
+        // WEEKLY
+        // =====================================================
+        else if (mode === "weekly") {
+  groupFields["name"] = {
+    $let: {
+      vars: {
+        date: { $toDate: dateFieldPath },
+        dayOfWeek: { $isoDayOfWeek: { $toDate: dateFieldPath } } // 1 = Monday, 7 = Sunday
+      },
+      in: {
+        $concat: [
+          // --------------------------------
+          // WEEK START (Monday)
+          // --------------------------------
+          {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: {
+                $dateSubtract: {
+                  startDate: "$$date",
+                  unit: "day",
+                  amount: { $subtract: ["$$dayOfWeek", 1] }
+                }
+              }
+            }
+          },
+
+          "~",
+
+          // --------------------------------
+          // WEEK END (Sunday)
+          // --------------------------------
+          {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: {
+                $dateAdd: {
+                  startDate: {
+                    $dateSubtract: {
+                      startDate: "$$date",
+                      unit: "day",
+                      amount: { $subtract: ["$$dayOfWeek", 1] }
+                    }
+                  },
+                  unit: "day",
+                  amount: 6
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  };
+}        // =====================================================
+        // QUARTERLY (single config entry)
+        // =====================================================
+        else if (mode === "quarterly") {
+          const qConfig = modeConfig.monthRange; // q1,q2,q3,q4
+
           groupFields["name"] = {
             $concat: [
+              // Year
+              { $dateToString: { format: "%Y", date: { $toDate: dateFieldPath } } },
+              "-Q",
               {
-                $dateToString: {
-                  format: "%Y-%m-%d",
-                  date: {
-                    $dateSubtract: {
-                      startDate: { $toDate: dateFieldPath },
-                      unit: "day",
-                      amount: 6
+                $switch: {
+                  branches: [
+                    {
+                      case: {
+                        $lte: [
+                          { $month: { $toDate: dateFieldPath } },
+                          qConfig?.q1[1]! + 1 // <= March
+                        ]
+                      },
+                      then: "1"
+                    },
+                    {
+                      case: {
+                        $lte: [
+                          { $month: { $toDate: dateFieldPath } },
+                          qConfig?.q2[1]! + 1 // <= June
+                        ]
+                      },
+                      then: "2"
+                    },
+                    {
+                      case: {
+                        $lte: [
+                          { $month: { $toDate: dateFieldPath } },
+                          qConfig?.q3[1]! + 1 // <= Sept
+                        ]
+                      },
+                      then: "3"
                     }
-                  }
-                }
-              },
-              "~",
-              {
-                $dateToString: {
-                  format: "%Y-%m-%d",
-                  date: { $toDate: dateFieldPath }
+                  ],
+                  default: "4"
                 }
               }
             ]
           };
         }
-        else {
-          // daily default
+
+        // =====================================================
+        // DAILY
+        // =====================================================
+        else if (mode === "daily") {
           groupFields["name"] = {
             $dateToString: { format: "%Y-%m-%d", date: { $toDate: dateFieldPath } }
           };
         }
 
-        continue; 
+        continue;
       }
 
-      // Default path (non-date or trend)
+      // =====================================================
+      // NON-DATE FIELDS
+      // =====================================================
       if (dashBoardType === "trend") {
         groupFields["name"] = getFieldPath(`${field}`);
       } else {
@@ -2730,9 +2826,9 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
       );
 
       if (dashBoardType === 'trend') {
-        aggregationPipeline.push({ $sort: { name: 1 } });
+        aggregationPipeline.push({ $sort: { "widgetData.name": 1 } });
       } else {
-        aggregationPipeline.push({ $sort: { data: 1 } });
+        aggregationPipeline.push({ $sort: { "widgetData.data": 1 } });
       }
     }
   }
@@ -2742,7 +2838,7 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
     // Step 5: Execute aggregation
     const versionValueData = await DataSourceVersionValue.aggregate(aggregationPipeline).exec();
 
-    // console.log('versionValueData',JSON.stringify(versionValueData));
+    //  console.log('versionValueData',JSON.stringify(versionValueData));
 
     // -------------------------
     // Helper: Resolve reference/mapping attributes (reuse your original logic)

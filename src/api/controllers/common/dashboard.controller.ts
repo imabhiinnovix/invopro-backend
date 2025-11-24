@@ -19,6 +19,7 @@ import { DateTime } from 'luxon';
 import { getDataSourceVersionValueV2 } from '../../../database/services/common/defaultDataSourceVersionValue.services';
 import { getDataSourceById } from './dataSource.controller';
 import { getUserDataPermissionRecord } from '../../../database/services/common/userDataPermission.service';
+import { plotTypesConfig } from "../../../config/plotType.config";
 
 export const createDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -682,6 +683,22 @@ export const getNewChartData = async ({
     });
     let dataResults = result?.widgetData ?? [];
 
+    // ---------------------------
+// 1. Determine date grouping mode from groupBy using config file
+// ---------------------------
+let dateGroupingMode: string | null = null;
+
+if (groupBy) {
+  const firstGroupBy = Array.isArray(groupBy) ? groupBy[0] : groupBy;
+
+  // dynamic valid plot types from config
+  const validModes = plotTypesConfig.map(pt => pt.type.toLowerCase());
+
+  if (typeof firstGroupBy === "string" && validModes.includes(firstGroupBy.toLowerCase())) {
+    dateGroupingMode = firstGroupBy.toLowerCase();
+  }
+}
+
     if (isIncremental) {
       if (groupBy && groupBy.length >= 0) {
         dataResults = calculateMoMDifference(dataResults, groupBy);
@@ -706,9 +723,42 @@ export const getNewChartData = async ({
         });
       }
     }
-
     if (dashBoardType === 'trend') {
       dataResults = dataResults.sort((x, y) => x.name.localeCompare(y.name));
+    }else if (dateGroupingMode) {
+      const getSortableValue = (name: string, mode: string): number => {
+        if (!name) return 0;
+
+        switch (mode) {
+          case 'yearly':
+            return parseInt(name) || 0; // ensure number
+
+          case 'monthly': {
+            const [year, month] = name.split('-').map(Number);
+            return (year || 0) * 12 + (month || 0);
+          }
+
+          case 'quarterly': {
+            const [yearStr, quarterStr] = name.split('-Q');
+            return (parseInt(yearStr) || 0) * 10 + (parseInt(quarterStr) || 0);
+          }
+
+          case 'weekly': {
+            const [start] = name.split('~');
+            return new Date(start).getTime();
+          }
+
+          case 'daily':
+            return new Date(name).getTime();
+
+          default:
+            return 0; // fallback numeric value
+        }
+      };
+
+      dataResults = dataResults.sort(
+        (a, b) => getSortableValue(a.name, dateGroupingMode!) - getSortableValue(b.name, dateGroupingMode!)
+      );
     }
     return {
       label: dashBoardType === 'trend' ? `${startVersionValue}:${endVersionValue}` : labelVersionValue,
@@ -926,6 +976,22 @@ export const selectDashboardTheme = async (req: Request, res: Response, next: Ne
     res.status(200).json({
       success: true,
       message: 'Widget theme selected successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getPlotTypes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: "Plot Types Fetched Successfully",
+      data: plotTypesConfig,
     });
   } catch (err) {
     next(err);

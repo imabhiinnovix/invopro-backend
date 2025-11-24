@@ -33,5 +33,6 @@ router.get(
   // permissionMiddleware(),
   getDataSourceWithFieldOptionDetails
 );
+router.get('/widget/plot-type-list', authenticateToken, permissionMiddleware(), listDataSource);
 
 export default router;

@@ -13,6 +13,7 @@ import {
   updateDashboard,
   updateWidget,
   selectDashboardTheme,
+  getPlotTypes,
 } from '../../controllers/common/dashboard.controller';
 import { permissionMiddleware } from '../../../middlewares/permission.middleware';
 
@@ -32,5 +33,7 @@ router.post('/widget/create', authenticateToken, permissionMiddleware(), createW
 router.post('/widget/save', authenticateToken, permissionMiddleware(), saveDashboardWidgets);
 router.post('/widget/update/:dashboardWidgetId', authenticateToken, permissionMiddleware(), updateWidget);
 router.post('/widget/delete/:dashboardWidgetId', authenticateToken, permissionMiddleware(), deleteWidget);
+router.get('/widget/getPlotTypes', authenticateToken, permissionMiddleware(), getPlotTypes);
+
 
 export default router;
