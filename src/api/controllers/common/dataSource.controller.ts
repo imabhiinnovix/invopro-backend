@@ -663,7 +663,7 @@ if (plotType) {
           dueDaysFilterValue = value as string;
         } else if (dashBoardType === "trend") {
           query[`${field}`] = value;
-        } else if(isDateField(field)){
+        } else if(isDateField(field) && dateGroupingMode){
           getDateGroupingModeCondition(field, value);
         }else{
           filters[`${field}`] = value;
@@ -680,7 +680,7 @@ if (plotType) {
         const [field, value] = Object.entries(group)[0];
         if (isDueDaysField(field)) {
           dueDaysFilterValue = value as string;
-        } else if(isDateField(field)){
+        } else if(isDateField(field) && dateGroupingMode){
           getDateGroupingModeCondition(field, value);
         } else {
           filters[`${field}`] = value;
@@ -1079,7 +1079,7 @@ if (plotType) {
               dueDaysFilterValue = value as string;
             } else if (dashBoardType === "trend") {
               query[`${field}`] = value;
-            }else if(isDateField(field)){
+            }else if(isDateField(field) && dateGroupingMode){
               getDateGroupingModeCondition(field, value);
             }else {
               filters[`${field}`] = value;
@@ -1095,7 +1095,7 @@ if (plotType) {
             const [field, value] = Object.entries(group)[0];
             if (isDueDaysField(field)) {
               dueDaysFilterValue = value as string;
-            }else if(isDateField(field)){
+            }else if(isDateField(field) && dateGroupingMode){
               getDateGroupingModeCondition(field, value);
             } else {
               filters[`${field}`] = value;
