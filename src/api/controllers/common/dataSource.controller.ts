@@ -428,7 +428,7 @@ export const getDataSourceWithFieldOptionDetails = async (req: Request, res: Res
 
 export const getWidgetDataByFilter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    let { dataSourceId, conditions, entityId, dimensions, groupBy, dashBoardType, dashboardFilters } = req.body;
+    let { dataSourceId, conditions, entityId, dimensions, groupBy, dashBoardType, dashboardFilters, plotType } = req.body;
 
     let startVersionValue = dashboardFilters?.startVersionValue;
     let endVersionValue = dashboardFilters?.endVersionValue;
@@ -583,26 +583,21 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
 // ---------------------------
 let dateGroupingMode: string | null = null;
 
-if (groupBy) {
-  const firstGroupBy = Array.isArray(groupBy) ? groupBy[0] : groupBy;
+if (plotType) {
+  const secondGroupBy = Array.isArray(plotType) ? plotType[0] : plotType;
 
   // dynamic valid plot types from config
   const validModes = plotTypesConfig.map(pt => pt.type.toLowerCase());
 
-  if (typeof firstGroupBy === "string" && validModes.includes(firstGroupBy.toLowerCase())) {
-    dateGroupingMode = firstGroupBy.toLowerCase();
+  if (typeof secondGroupBy === "string" && validModes.includes(secondGroupBy.toLowerCase())) {
+    dateGroupingMode = secondGroupBy.toLowerCase();
   }
 }
 
 // ---------------------------
 // 2. If date grouping mode exists, handle it separately
 // ---------------------------
-if (dateGroupingMode && dimensions && dimensions.length > 0) {
-  const firstDimension = dimensions[0];
-
-  if (firstDimension && typeof firstDimension === "object" && Object.keys(firstDimension).length > 0) {
-
-    const [field, value] = Object.entries(firstDimension)[0];
+  const getDateGroupingModeCondition = async(field, value) => {
     if (value != null) {
       const raw = String(value);
 
@@ -656,7 +651,9 @@ if (dateGroupingMode && dimensions && dimensions.length > 0) {
       }
     }
   }
-}else{
+  const isDateField = (field: string) => dataSource.fieldSettings.some(
+          (f) => f.mappedAttributeName === field && (f.type === "date" || f.type === "date-range")
+        );
   // Handle dimensions
   if (dimensions && Array.isArray(dimensions)) {
     dimensions.forEach(dimension => {
@@ -666,12 +663,15 @@ if (dateGroupingMode && dimensions && dimensions.length > 0) {
           dueDaysFilterValue = value as string;
         } else if (dashBoardType === "trend") {
           query[`${field}`] = value;
-        } else {
+        } else if(isDateField(field)){
+          getDateGroupingModeCondition(field, value);
+        }else{
           filters[`${field}`] = value;
         }
       }
     });
   }
+
 
   // Handle groupBy
   if (groupBy && Array.isArray(groupBy)) {
@@ -680,13 +680,15 @@ if (dateGroupingMode && dimensions && dimensions.length > 0) {
         const [field, value] = Object.entries(group)[0];
         if (isDueDaysField(field)) {
           dueDaysFilterValue = value as string;
+        } else if(isDateField(field)){
+          getDateGroupingModeCondition(field, value);
         } else {
           filters[`${field}`] = value;
         }
       }
     });
   }
-}
+
   // Handle dueDays filter using DueDate/DateTaken
   if (dueDaysFilterValue && dueDaysFilterValue !== "Total Dues") {
     const now = new Date();
@@ -878,6 +880,7 @@ export const exportWidgetDataByFilterToExcel = async (
       groupBy,
       dashBoardType,
       dashboardFilters,
+      plotType,
       selectedFields, // Optional
     } = req.body;
 
@@ -996,26 +999,21 @@ export const exportWidgetDataByFilterToExcel = async (
 // ---------------------------
 let dateGroupingMode: string | null = null;
 
-if (groupBy) {
-  const firstGroupBy = Array.isArray(groupBy) ? groupBy[0] : groupBy;
+if (plotType) {
+  const secondGroupBy = Array.isArray(plotType) ? plotType[0] : plotType;
 
   // dynamic valid plot types from config
   const validModes = plotTypesConfig.map(pt => pt.type.toLowerCase());
 
-  if (typeof firstGroupBy === "string" && validModes.includes(firstGroupBy.toLowerCase())) {
-    dateGroupingMode = firstGroupBy.toLowerCase();
+  if (typeof secondGroupBy === "string" && validModes.includes(secondGroupBy.toLowerCase())) {
+    dateGroupingMode = secondGroupBy.toLowerCase();
   }
 }
 
 // ---------------------------
 // 2. If date grouping mode exists, handle it separately
 // ---------------------------
-if (dateGroupingMode && dimensions && dimensions.length > 0) {
-  const firstDimension = dimensions[0];
-
-  if (firstDimension && typeof firstDimension === "object" && Object.keys(firstDimension).length > 0) {
-
-    const [field, value] = Object.entries(firstDimension)[0];
+  const getDateGroupingModeCondition = async(field, value) => {
     if (value != null) {
       const raw = String(value);
 
@@ -1050,7 +1048,6 @@ if (dateGroupingMode && dimensions && dimensions.length > 0) {
       // ----------------------------------
       // QUARTERS — Now using monthRange from config
       // ----------------------------------
-      // QUARTERLY
       else if (dateGroupingMode === "quarterly" && config?.monthRange) {
         const [yearStr, quarterStr] = raw.split("-");
         const year = +yearStr;
@@ -1065,13 +1062,14 @@ if (dateGroupingMode && dimensions && dimensions.length > 0) {
         }
       }
 
-
       if (startDate && endDate) {
         filters[field] = { $gte: startDate, $lte: endDate };
       }
     }
   }
-}else{
+  const isDateField = (field: string) => dataSource.fieldSettings.some(
+          (f) => f.mappedAttributeName === field && (f.type === "date" || f.type === "date-range")
+        );
       //  Dimensions & groupBy logic kept intact
       if (dimensions && Array.isArray(dimensions)) {
         dimensions.forEach((dimension) => {
@@ -1081,12 +1079,15 @@ if (dateGroupingMode && dimensions && dimensions.length > 0) {
               dueDaysFilterValue = value as string;
             } else if (dashBoardType === "trend") {
               query[`${field}`] = value;
-            } else {
+            }else if(isDateField(field)){
+              getDateGroupingModeCondition(field, value);
+            }else {
               filters[`${field}`] = value;
             }
           }
         });
       }
+    
 
       if (groupBy && Array.isArray(groupBy)) {
         groupBy.forEach((group) => {
@@ -1094,13 +1095,15 @@ if (dateGroupingMode && dimensions && dimensions.length > 0) {
             const [field, value] = Object.entries(group)[0];
             if (isDueDaysField(field)) {
               dueDaysFilterValue = value as string;
+            }else if(isDateField(field)){
+              getDateGroupingModeCondition(field, value);
             } else {
               filters[`${field}`] = value;
             }
           }
         });
       }
-    }
+    
 
       //  DueDays logic untouched
       if (dueDaysFilterValue && dueDaysFilterValue !== "Total Dues") {

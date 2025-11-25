@@ -1717,7 +1717,8 @@ export const getDataSourceVersionValueV2 = async ({
   conditions,
   widgetType,
   dashBoardType,
-  dataSourceDetails
+  dataSourceDetails,
+  plotType
 }: {
   schemaName: string;
   query: any;
@@ -1731,6 +1732,7 @@ export const getDataSourceVersionValueV2 = async ({
   widgetType?: string;
   dashBoardType?: string;
   dataSourceDetails?: Record<string, any>;
+  plotType?: string | string[];
   
 }) => {
   try {
@@ -2411,28 +2413,37 @@ else if (cond.operator === 'not_match_case_insensitive_array') {
 
 
   const groupFields: Record<string, any> = {};
+ // ---------------------------
+// 1. Determine date grouping mode from groupBy using config file
+// ---------------------------
+let dateGroupingMode: string | null = null;
+let dateField: string = '';  
 
+if (plotType) {
+  const secondGroupBy = Array.isArray(plotType) ? plotType[0] : plotType;
+
+  // dynamic valid plot types from config
+  const validModes = plotTypesConfig.map(pt => pt.type.toLowerCase());
+
+  if (typeof secondGroupBy === "string" && validModes.includes(secondGroupBy.toLowerCase())) {
+    dateGroupingMode = secondGroupBy.toLowerCase();
+  }
+}
 // Handle custom dimension "dueDays"
 if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
   for (const fieldRaw of [...(dimension || []), ...(groupBy || [])]) {
     let field = fieldRaw;
+    let fieldPath: any = getFieldPath(await getReferenceField(field));
+      const attr = attributesMap[field] || refAttributesMap[field];
 
-    if (fieldRaw === dimension?.[0]) {
-      const key = dimension?.[0];
-      const attr = attributesMap[key] || refAttributesMap[key];
-
-      const groupByValue = Array.isArray(groupBy) ? groupBy[0] : groupBy;
+      
 
       const isDateType =
         attr?.type === "date" || attr?.type === "date-range";
 
-      // ⬇️ Build valid modes dynamically from config
-      const validModes = plotTypesConfig.map((pt) => pt.type);
-      const isValidPeriod = validModes.includes(groupByValue as PlotType);
-
-      if (isDateType && dashBoardType !== "trend" && isValidPeriod) {
-        const dateFieldPath = getFieldPath(await getReferenceField(field));
-        const mode = groupByValue as PlotType;
+      if (isDateType && dashBoardType !== "trend" && dateGroupingMode) {
+        
+        const mode = dateGroupingMode as PlotType;
 
         // Get config object for mode
         const modeConfig = getPlotTypeConfig(mode);
@@ -2447,8 +2458,8 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
         // YEARLY
         // =====================================================
         if (mode === "yearly") {
-          groupFields["name"] = {
-            $dateToString: { format: "%Y", date: { $toDate: dateFieldPath } }
+          fieldPath = {
+            $dateToString: { format: "%Y", date: { $toDate: fieldPath } }
           };
         }
 
@@ -2456,8 +2467,8 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
         // MONTHLY
         // =====================================================
         else if (mode === "monthly") {
-          groupFields["name"] = {
-            $dateToString: { format: "%Y-%m", date: { $toDate: dateFieldPath } }
+          fieldPath = {
+            $dateToString: { format: "%Y-%m", date: { $toDate: fieldPath } }
           };
         }
 
@@ -2465,11 +2476,11 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
         // WEEKLY
         // =====================================================
         else if (mode === "weekly") {
-  groupFields["name"] = {
+  fieldPath = {
     $let: {
       vars: {
-        date: { $toDate: dateFieldPath },
-        dayOfWeek: { $isoDayOfWeek: { $toDate: dateFieldPath } } // 1 = Monday, 7 = Sunday
+        date: { $toDate: fieldPath },
+        dayOfWeek: { $isoDayOfWeek: { $toDate: fieldPath } } // 1 = Monday, 7 = Sunday
       },
       in: {
         $concat: [
@@ -2522,10 +2533,10 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
         else if (mode === "quarterly") {
           const qConfig = modeConfig.monthRange; // q1,q2,q3,q4
 
-          groupFields["name"] = {
+          fieldPath = {
             $concat: [
               // Year
-              { $dateToString: { format: "%Y", date: { $toDate: dateFieldPath } } },
+              { $dateToString: { format: "%Y", date: { $toDate: fieldPath } } },
               "-Q",
               {
                 $switch: {
@@ -2533,7 +2544,7 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
                     {
                       case: {
                         $lte: [
-                          { $month: { $toDate: dateFieldPath } },
+                          { $month: { $toDate: fieldPath } },
                           qConfig?.q1[1]! + 1 // <= March
                         ]
                       },
@@ -2542,7 +2553,7 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
                     {
                       case: {
                         $lte: [
-                          { $month: { $toDate: dateFieldPath } },
+                          { $month: { $toDate: fieldPath } },
                           qConfig?.q2[1]! + 1 // <= June
                         ]
                       },
@@ -2551,7 +2562,7 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
                     {
                       case: {
                         $lte: [
-                          { $month: { $toDate: dateFieldPath } },
+                          { $month: { $toDate: fieldPath } },
                           qConfig?.q3[1]! + 1 // <= Sept
                         ]
                       },
@@ -2569,27 +2580,31 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
         // DAILY
         // =====================================================
         else if (mode === "daily") {
-          groupFields["name"] = {
-            $dateToString: { format: "%Y-%m-%d", date: { $toDate: dateFieldPath } }
+          fieldPath = {
+            $dateToString: { format: "%Y-%m-%d", date: { $toDate: fieldPath } }
           };
         }
 
-        continue;
       }
-
+    
+    if (fieldRaw === dimension?.[0]) {      
       // =====================================================
       // NON-DATE FIELDS
       // =====================================================
       if (dashBoardType === "trend") {
         groupFields["name"] = getFieldPath(`${field}`);
       } else {
-        groupFields["name"] = getFieldPath(await getReferenceField(field));
+        groupFields["name"] = fieldPath;
+        if(isDateType)
+          dateField = 'name';
       }
 
     } else {
       const labelArr = await getLabelByMappedAttributeName(dataSourceDetails);
       const label = labelArr[field] ?? field;
-      groupFields[label] = getFieldPath(await getReferenceField(field));
+      groupFields[label] = fieldPath;
+      if(isDateType)
+        dateField = label;
     }
   }
 }
@@ -2953,7 +2968,7 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
 
     // Step 6: Transform
     // Step 6: Transform widgetData
-const rawData = versionValueData[0] || { widgetData: [], totalCount: 0 };
+let rawData = versionValueData[0] || { widgetData: [], totalCount: 0 };
 
 // const transformedData = await Promise.all(
 //   rawData.widgetData.map(async (doc: any) => {
@@ -3007,7 +3022,42 @@ const rawData = versionValueData[0] || { widgetData: [], totalCount: 0 };
 //   widgetData: transformedData,
 //   totalCount: rawData.totalCount
 // };
+if(dateField && dateGroupingMode) {
+      const getSortableValue = (name: string, mode: string): number => {
+        if (!name) return 0;
 
+        switch (mode) {
+          case 'yearly':
+            return parseInt(name) || 0; // ensure number
+
+          case 'monthly': {
+            const [year, month] = name.split('-').map(Number);
+            return (year || 0) * 12 + (month || 0);
+          }
+
+          case 'quarterly': {
+            const [yearStr, quarterStr] = name.split('-Q');
+            return (parseInt(yearStr) || 0) * 10 + (parseInt(quarterStr) || 0);
+          }
+
+          case 'weekly': {
+            const [start] = name.split('~');
+            return new Date(start).getTime();
+          }
+
+          case 'daily':
+            return new Date(name).getTime();
+
+          default:
+            return 0; // fallback numeric value
+        }
+      };
+
+      rawData.widgetData = rawData.widgetData.sort(
+                (a, b) => getSortableValue(a[dateField], dateGroupingMode!) - getSortableValue(b[dateField], dateGroupingMode!)
+              );
+
+    }
 return rawData;
 
    

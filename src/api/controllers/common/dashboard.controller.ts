@@ -538,7 +538,8 @@ export const getNewChartData = async ({
           dashboardFilters,
           isIncremental,
           orgCode,
-          dataSourceDetails
+          dataSourceDetails,
+          plotType
         }) => {
   try {
     // const { dataSourceId, filters, versionValue, dimensions, groupBy, aggregation, conditions, widgetType } = req.body;
@@ -679,25 +680,10 @@ export const getNewChartData = async ({
       conditions,
       widgetType,
       dashBoardType,
-      dataSourceDetails
+      dataSourceDetails,
+      plotType
     });
     let dataResults = result?.widgetData ?? [];
-
-    // ---------------------------
-// 1. Determine date grouping mode from groupBy using config file
-// ---------------------------
-let dateGroupingMode: string | null = null;
-
-if (groupBy) {
-  const firstGroupBy = Array.isArray(groupBy) ? groupBy[0] : groupBy;
-
-  // dynamic valid plot types from config
-  const validModes = plotTypesConfig.map(pt => pt.type.toLowerCase());
-
-  if (typeof firstGroupBy === "string" && validModes.includes(firstGroupBy.toLowerCase())) {
-    dateGroupingMode = firstGroupBy.toLowerCase();
-  }
-}
 
     if (isIncremental) {
       if (groupBy && groupBy.length >= 0) {
@@ -725,40 +711,6 @@ if (groupBy) {
     }
     if (dashBoardType === 'trend') {
       dataResults = dataResults.sort((x, y) => x.name.localeCompare(y.name));
-    }else if (dateGroupingMode) {
-      const getSortableValue = (name: string, mode: string): number => {
-        if (!name) return 0;
-
-        switch (mode) {
-          case 'yearly':
-            return parseInt(name) || 0; // ensure number
-
-          case 'monthly': {
-            const [year, month] = name.split('-').map(Number);
-            return (year || 0) * 12 + (month || 0);
-          }
-
-          case 'quarterly': {
-            const [yearStr, quarterStr] = name.split('-Q');
-            return (parseInt(yearStr) || 0) * 10 + (parseInt(quarterStr) || 0);
-          }
-
-          case 'weekly': {
-            const [start] = name.split('~');
-            return new Date(start).getTime();
-          }
-
-          case 'daily':
-            return new Date(name).getTime();
-
-          default:
-            return 0; // fallback numeric value
-        }
-      };
-
-      dataResults = dataResults.sort(
-        (a, b) => getSortableValue(a.name, dateGroupingMode!) - getSortableValue(b.name, dateGroupingMode!)
-      );
     }
     return {
       label: dashBoardType === 'trend' ? `${startVersionValue}:${endVersionValue}` : labelVersionValue,
@@ -783,6 +735,7 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       dashBoardType,
       dashboardFilters,
       isIncremental,
+      plotType
     } = req.body;
     const { orgCode, userId, organizationId } = req.user;
 
@@ -842,7 +795,8 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
           dashboardFilters,
           isIncremental,
           orgCode,
-          dataSourceDetails
+          dataSourceDetails,
+          plotType
         });
     }else{
         result = await getWidgetChartData({
