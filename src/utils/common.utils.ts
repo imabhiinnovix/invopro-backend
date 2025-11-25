@@ -332,7 +332,7 @@ export const formatDateTime = (value: any) => {
   const d = dayjs(value);
   if (!d.isValid()) return "";
 
-  return d.format("DD MMM YYYY hh:mm:ss"); // → 21-Aug-2025
+  return d.format("DD MMM YYYY HH:mm:ss [UTC]"); // → 21-Aug-2025
 };
 
 
