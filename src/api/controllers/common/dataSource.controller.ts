@@ -651,9 +651,13 @@ if (plotType) {
       }
     }
   }
-  const isDateField = (field: string) => dataSource.fieldSettings.some(
-          (f) => f.mappedAttributeName === field && (f.type === "date" || f.type === "date-range")
-        );
+  const isDateField = (field: string) =>
+  dataSource.fieldSettings.some((f) => {
+    const matchField =
+      f.mappedAttributeName === field || f.label === field;
+
+    return matchField && (f.type === "date" || f.type === "date-range");
+  });
   // Handle dimensions
   if (dimensions && Array.isArray(dimensions)) {
     dimensions.forEach(dimension => {
@@ -1067,9 +1071,14 @@ if (plotType) {
       }
     }
   }
-  const isDateField = (field: string) => dataSource.fieldSettings.some(
-          (f) => f.mappedAttributeName === field && (f.type === "date" || f.type === "date-range")
-        );
+  const isDateField = (field: string) =>
+  dataSource.fieldSettings.some((f) => {
+    const matchField =
+      f.mappedAttributeName === field || f.label === field;
+
+    return matchField && (f.type === "date" || f.type === "date-range");
+  });
+        
       //  Dimensions & groupBy logic kept intact
       if (dimensions && Array.isArray(dimensions)) {
         dimensions.forEach((dimension) => {

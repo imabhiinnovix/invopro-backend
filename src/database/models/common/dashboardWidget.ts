@@ -21,6 +21,7 @@ interface IDashboardWidget extends Document {
   dataSourceId: Types.ObjectId;
   dimensions: string[];
   groupBy: string[];
+  plotType: string[];
   aggregation: {
     type: string;
     attributeName: string;
@@ -54,6 +55,7 @@ const dashboardWidgetSchema = new Schema<IDashboardWidget>(
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source', required: true },
     dimensions: { type: [String], default: [] },
     groupBy: { type: [String], default: [] },
+    plotType: { type: [String], default: [] },
     aggregation: {
       type: {
         type: String,
