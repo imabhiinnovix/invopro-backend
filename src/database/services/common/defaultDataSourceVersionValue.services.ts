@@ -2453,6 +2453,20 @@ if (plotType) {
     dateGroupingMode = secondGroupBy.toLowerCase();
   }
 }
+
+function safeToDate(expr: any) {
+  return {
+    $cond: [
+      { $or: [
+          { $eq: [expr, null] },
+          { $eq: [expr, ""] }
+      ]},
+      null,
+      { $toDate: expr }
+    ]
+  };
+}
+
 // Handle custom dimension "dueDays"
 if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
   for (const fieldRaw of [...(dimension || []), ...(groupBy || [])]) {
@@ -2483,7 +2497,7 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
         // =====================================================
         if (mode === "yearly") {
           fieldPath = {
-            $dateToString: { format: "%Y", date: { $toDate: fieldPath } }
+            $dateToString: { format: "%Y", date: safeToDate(fieldPath) }
           };
         }
 
@@ -2492,7 +2506,7 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
         // =====================================================
         else if (mode === "monthly") {
           fieldPath = {
-            $dateToString: { format: "%Y-%m", date: { $toDate: fieldPath } }
+            $dateToString: { format: "%Y-%m", date: safeToDate(fieldPath) }
           };
         }
 
@@ -2503,8 +2517,8 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
   fieldPath = {
     $let: {
       vars: {
-        date: { $toDate: fieldPath },
-        dayOfWeek: { $isoDayOfWeek: { $toDate: fieldPath } } // 1 = Monday, 7 = Sunday
+        date: safeToDate(fieldPath),
+        dayOfWeek: { $isoDayOfWeek: safeToDate(fieldPath) } // 1 = Monday, 7 = Sunday
       },
       in: {
         $concat: [
@@ -2560,7 +2574,7 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
           fieldPath = {
             $concat: [
               // Year
-              { $dateToString: { format: "%Y", date: { $toDate: fieldPath } } },
+              { $dateToString: { format: "%Y", date: safeToDate(fieldPath) } },
               "-Q",
               {
                 $switch: {
@@ -2568,7 +2582,7 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
                     {
                       case: {
                         $lte: [
-                          { $month: { $toDate: fieldPath } },
+                          { $month: safeToDate(fieldPath) },
                           qConfig?.q1[1]! + 1 // <= March
                         ]
                       },
@@ -2577,7 +2591,7 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
                     {
                       case: {
                         $lte: [
-                          { $month: { $toDate: fieldPath } },
+                          { $month: safeToDate(fieldPath) },
                           qConfig?.q2[1]! + 1 // <= June
                         ]
                       },
@@ -2586,7 +2600,7 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
                     {
                       case: {
                         $lte: [
-                          { $month: { $toDate: fieldPath } },
+                          { $month: safeToDate(fieldPath) },
                           qConfig?.q3[1]! + 1 // <= Sept
                         ]
                       },
@@ -2605,7 +2619,7 @@ if (![...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
         // =====================================================
         else if (mode === "daily") {
           fieldPath = {
-            $dateToString: { format: "%Y-%m-%d", date: { $toDate: fieldPath } }
+            $dateToString: { format: "%Y-%m-%d", date: safeToDate(fieldPath) }
           };
         }
 
