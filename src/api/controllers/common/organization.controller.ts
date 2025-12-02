@@ -167,7 +167,7 @@ export const getOrganizationList = async (req: Request, res: Response, next: Nex
     }
 
     const page = parseInt(req.query.page as string, 10) || 1;
-    const limit = parseInt(req.query.limit as string, 10) || 10;
+    const limit = parseInt(req.query.limit as string, 10) || Number.MAX_SAFE_INTEGER;
 
     if (search) query.name = { $regex: search, $options: 'i' };
 
