@@ -109,7 +109,7 @@ export const deleteNotificationType = async (req: Request, res: Response, next: 
 export const listNotificationType = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { organizationId } = req.user;
-    const { search, dataSourceId, page = 1, limit = 10, sort } = req.query;
+    const { search, dataSourceId, page = 1, limit = 10, sort, name, status } = req.query;
 
     const parsedPage = parseInt(page as string, 10) || 1;
     const parsedLimit = parseInt(limit as string, 10) || 10;
@@ -118,6 +118,14 @@ export const listNotificationType = async (req: Request, res: Response, next: Ne
 
     if (search) {
       query.name = { $regex: search, $options: 'i' };
+    }
+
+    if (name) {
+      query.name = { $regex: name, $options: 'i' };
+    }
+
+    if (status) {
+      query.status = status;
     }
 
     if (dataSourceId) {
