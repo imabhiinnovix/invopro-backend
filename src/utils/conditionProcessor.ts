@@ -35,6 +35,28 @@ const safeDate = (value: any) => {
   return !isNaN(d.getTime()) ? d : value;
 };
 
+function safeDateString(fieldPath) {
+  return {
+    $cond: {
+      if: {
+        $or: [
+          { $eq: [fieldPath, null] },
+          { $eq: [fieldPath, ""] }
+        ]
+      },
+      then: null,
+      else: {
+        $dateFromString: { 
+          dateString: fieldPath,
+          format: "%Y-%m-%dT%H:%M:%S.%LZ"
+         },
+        
+      }
+    }
+  };
+}
+
+
 
 
   // Process each field's conditions
@@ -68,21 +90,11 @@ const safeDate = (value: any) => {
             $cond: {
               if: { $eq: [{ $type: fieldPath }, 'date'] },
               then: fieldPath,
-              else: {
-                $dateFromString: {
-                  dateString: fieldPath,
-                  format: '%Y-%m-%dT%H:%M:%S.%LZ', // ISO format
-                },
-              },
+              else: safeDateString(fieldPath)
             },
           };
         } else {
-          dateConversions[convertedField] = {
-            $dateFromString: {
-              dateString: fieldPath,
-              format: '%Y-%m-%dT%H:%M:%S.%LZ', // ISO format
-            },
-          };
+          dateConversions[convertedField] = safeDateString(fieldPath);
         }
 
         matchConditions[convertedField] = {
@@ -96,12 +108,7 @@ const safeDate = (value: any) => {
           $cond: {
             if: { $eq: [{ $type: fieldPath }, 'date'] },
             then: fieldPath,
-            else: {
-              $dateFromString: {
-                dateString: fieldPath,
-                format: '%Y-%m-%dT%H:%M:%S.%LZ', // ISO format
-              },
-            },
+            else: safeDateString(fieldPath)
           },
         };
 
