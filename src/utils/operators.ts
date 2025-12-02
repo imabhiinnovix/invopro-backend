@@ -189,6 +189,72 @@ export const validatorOperatorData: FieldTypeOperators[] = [
     ],
   },
   {
+    fieldType: 'date-range',
+    operatorType: 'field',
+    operators: [
+      {
+        operatorKey: 'before',
+        operatorName: 'Before',
+        valueRequired: true,
+        order: 1,
+      },
+      {
+        operatorKey: 'after',
+        operatorName: 'After',
+        valueRequired: true,
+        order: 2,
+      },
+      {
+        operatorKey: 'on',
+        operatorName: 'On',
+        valueRequired: true,
+        order: 3,
+      },
+      {
+        operatorKey: 'noton',
+        operatorName: 'Not On',
+        valueRequired: true,
+        order: 4,
+      },
+      {
+        operatorKey: 'blank',
+        operatorName: 'Is Blank',
+        valueRequired: false,
+        order: 5,
+      },
+      {
+        operatorKey: 'notblank',
+        operatorName: 'Is Not Blank',
+        valueRequired: false,
+        order: 6,
+      },
+      {
+        operatorKey: 'onOrAfterToday',
+        operatorName: 'Due On or After Today',
+        valueRequired: false,
+        order: 7,
+      },
+      {
+        operatorKey: 'onOrBeforeToday',
+        operatorName: 'Due On or Before Today',
+        valueRequired: false,
+        order: 8,
+      },
+      {
+        operatorKey: 'afterToday',
+        operatorName: 'Due After Today',
+        valueRequired: false,
+        order: 9,
+      },
+      {
+        operatorKey: 'beforeToday',
+        operatorName: 'Due Before Today',
+        valueRequired: false,
+        order: 10,
+      },
+    ],
+  },
+  {
     fieldType: 'boolean',
     operatorType: 'field',
     operators: [
