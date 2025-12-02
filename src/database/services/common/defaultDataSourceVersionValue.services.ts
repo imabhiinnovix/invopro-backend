@@ -670,6 +670,11 @@ async function buildNestedLookupsForSearch({
 
 
 
+function safeDate(val: any) {
+  if (!val) return null;               // '', null, undefined  → skip
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : d;
+}
 
 
 
@@ -678,23 +683,31 @@ async function buildNestedLookupsForSearch({
     // Step 2: Filters (unchanged)
 
     function buildDateFilter(key: string, val: any, attr: any) {
-      if (attr?.type === "date-range" && val?.startDate && val?.endDate) {
-        return {
-          [`${key}`]: {
-            $gte: new Date(val.startDate),
-            $lte: new Date(val.endDate),
-          },
-        };
-      }
 
-      if (attr?.type === "date" && typeof val === "string") {
-        return {
-          [`${key}`]: { $eq: new Date(val) },
-        };
-      }
+  // date-range filter
+  if (attr?.type === "date-range" && val?.startDate && val?.endDate) {
+    const start = safeDate(val.startDate);
+    const end = safeDate(val.endDate);
+    if (!start || !end) return null;   // avoid empty-string crash
 
-      return null; // not a date filter
+    return {
+      [key]: { $gte: start, $lte: end }
+    };
   }
+
+  // single date
+  if (attr?.type === "date" && typeof val === "string") {
+    const d = safeDate(val);
+    if (!d) return null;               // avoid empty-string crash
+
+    return {
+      [key]: { $eq: d }
+    };
+  }
+
+  return null;
+}
+
 
     const filterConditions: any[] = [];
     const visited = new Set<string>();
@@ -2188,29 +2201,42 @@ async function buildAggregationPathAndReturnExpr({
 
 
 
+    function safeDate(val: any) {
+  if (!val) return null;               // '', null, undefined  → skip
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : d;
+}
 
 
 
 
     // Step 2: Filters (unchanged)
     function buildDateFilter(key: string, val: any, attr: any) {
-      if (attr?.type === "date-range" && val?.startDate && val?.endDate) {
-        return {
-          [`${key}`]: {
-            $gte: new Date(val.startDate),
-            $lte: new Date(val.endDate),
-          },
-        };
-      }
 
-      if (attr?.type === "date" && typeof val === "string") {
-        return {
-          [`${key}`]: { $eq: new Date(val) },
-        };
-      }
+  // date-range filter
+  if (attr?.type === "date-range" && val?.startDate && val?.endDate) {
+    const start = safeDate(val.startDate);
+    const end = safeDate(val.endDate);
+    if (!start || !end) return null;   // avoid empty-string crash
 
-      return null; // not a date filter
+    return {
+      [key]: { $gte: start, $lte: end }
+    };
   }
+
+  // single date
+  if (attr?.type === "date" && typeof val === "string") {
+    const d = safeDate(val);
+    if (!d) return null;               // avoid empty-string crash
+
+    return {
+      [key]: { $eq: d }
+    };
+  }
+
+  return null;
+}
+
     const filterConditions: any[] = [];
     const visited = new Set<string>();
     const filters = dashboardFilters?.filters ?? {};
@@ -3554,28 +3580,40 @@ async function buildAggregationPathAndReturnExpr({
 
 
 
-
+function safeDate(val: any) {
+  if (!val) return null;               // '', null, undefined  → skip
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : d;
+}
 
 
     // Step 2: Filters (unchanged)
     function buildDateFilter(key: string, val: any, attr: any) {
-      if (attr?.type === "date-range" && val?.startDate && val?.endDate) {
-        return {
-          [`${key}`]: {
-            $gte: new Date(val.startDate),
-            $lte: new Date(val.endDate),
-          },
-        };
-      }
 
-      if (attr?.type === "date" && typeof val === "string") {
-        return {
-          [`${key}`]: { $eq: new Date(val) },
-        };
-      }
+  // date-range filter
+  if (attr?.type === "date-range" && val?.startDate && val?.endDate) {
+    const start = safeDate(val.startDate);
+    const end = safeDate(val.endDate);
+    if (!start || !end) return null;   // avoid empty-string crash
 
-      return null; // not a date filter
+    return {
+      [key]: { $gte: start, $lte: end }
+    };
   }
+
+  // single date
+  if (attr?.type === "date" && typeof val === "string") {
+    const d = safeDate(val);
+    if (!d) return null;               // avoid empty-string crash
+
+    return {
+      [key]: { $eq: d }
+    };
+  }
+
+  return null;
+}
+
     const filterConditions: any[] = [];
     const visited = new Set<string>();
     const filters = dashboardFilters?.filters ?? {};
