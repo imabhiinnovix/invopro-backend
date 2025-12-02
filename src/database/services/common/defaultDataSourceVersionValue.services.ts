@@ -670,11 +670,10 @@ async function buildNestedLookupsForSearch({
 
 
 
-function safeDate(val: any) {
-  if (!val) return null;               // '', null, undefined  → skip
-  const d = new Date(val);
-  return isNaN(d.getTime()) ? null : d;
-}
+const safeDate = (value: any) => {
+  const d = new Date(value);
+  return !isNaN(d.getTime()) ? d : value;
+};
 
 
 
@@ -2201,11 +2200,10 @@ async function buildAggregationPathAndReturnExpr({
 
 
 
-    function safeDate(val: any) {
-  if (!val) return null;               // '', null, undefined  → skip
-  const d = new Date(val);
-  return isNaN(d.getTime()) ? null : d;
-}
+    const safeDate = (value: any) => {
+  const d = new Date(value);
+  return !isNaN(d.getTime()) ? d : value;
+};
 
 
 
@@ -3580,11 +3578,10 @@ async function buildAggregationPathAndReturnExpr({
 
 
 
-function safeDate(val: any) {
-  if (!val) return null;               // '', null, undefined  → skip
-  const d = new Date(val);
-  return isNaN(d.getTime()) ? null : d;
-}
+const safeDate = (value: any) => {
+  const d = new Date(value);
+  return !isNaN(d.getTime()) ? d : value;
+};
 
 
     // Step 2: Filters (unchanged)
