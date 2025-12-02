@@ -25,6 +25,18 @@ export const processFieldConditions = (
     return `$${fieldName}`;
   };
 
+  // Converts to ISO only when valid; else returns original
+const safeConvertToISOString = (value: any) => {
+  const d = new Date(value);
+  return !isNaN(d.getTime()) ? d.toISOString() : value;
+};
+const safeDate = (value: any) => {
+  const d = new Date(value);
+  return !isNaN(d.getTime()) ? d : value;
+};
+
+
+
   // Process each field's conditions
   Object.entries(conditionsByField).forEach(([field, conditions]) => {
     const fieldType = getFieldType(field);
@@ -51,7 +63,7 @@ export const processFieldConditions = (
         const convertedField = `converted_${condition.field}`;
 
         // Handle date conversion based on field type
-        if (fieldType === 'date') {
+        if (fieldType === 'date' || fieldType === 'date-range') {
           dateConversions[convertedField] = {
             $cond: {
               if: { $eq: [{ $type: fieldPath }, 'date'] },
@@ -77,7 +89,7 @@ export const processFieldConditions = (
           $gt: new Date(condition.value.startDate),
           $lt: new Date(condition.value.endDate),
         };
-      } else if (fieldType === 'date' && ['on', 'noton', 'before', 'after'].includes(condition.operator)) {
+      } else if ((fieldType === 'date' || fieldType === 'date-range') && ['on', 'noton', 'before', 'after'].includes(condition.operator)) {
         // Add date conversion for date fields with date-specific operators
         const convertedField = `converted_${condition.field}`;
         dateConversions[convertedField] = {
@@ -94,7 +106,8 @@ export const processFieldConditions = (
         };
 
         // Convert value to Date
-        const convertedValue = new Date(condition.value);
+        // const convertedValue = new Date(condition.value);
+          const convertedValue = safeDate(condition.value);
 
         // Handle date operators with the converted field
         switch (condition.operator) {
@@ -122,8 +135,8 @@ export const processFieldConditions = (
         let convertedValue = condition.value;
         if (fieldType === 'number') {
           convertedValue = Number(condition.value);
-        } else if (fieldType === 'date') {
-          convertedValue = new Date(condition.value);
+        } else if (fieldType === 'date' || fieldType === 'date-range') {
+          convertedValue = safeDate(condition.value);
         } else if (fieldType === 'boolean') {
           convertedValue = condition.value === 'true';
         }
@@ -186,7 +199,7 @@ export const processFieldConditions = (
               const convertedValue =
                 fieldType === 'number'
                   ? Number(condition.value)
-                  : fieldType === 'date'
+                  : fieldType === 'date' || fieldType === 'date-range'
                     ? new Date(condition.value)
                     : fieldType === 'boolean'
                       ? condition.value === 'true'
@@ -259,8 +272,8 @@ export const processFieldConditions = (
             const convertedValue =
               fieldType === 'number'
                 ? Number(condition.value)
-                : fieldType === 'date'
-                  ? new Date(condition.value).toISOString()
+                : fieldType === 'date' || fieldType === 'date-range'
+                  ? safeConvertToISOString(condition.value)
                   : fieldType === 'boolean'
                     ? condition.value === 'true'
                     : condition.value;
