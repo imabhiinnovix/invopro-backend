@@ -5,8 +5,13 @@ const isValidObjectId = (id?: string) => !!(id && Types.ObjectId.isValid(id));
 
 export const createNotificationMedium = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { productId, mediumSettings } = req.body;
-    const { organizationId, userId } = req.user;
+    const { productId, mediumSettings, organizationId: paramOrgId } = req.body;
+ // Allow query override of organizationId for super users:
+    let { organizationId, isSuperUser, userId } = req.user as any;
+
+    if (isSuperUser && paramOrgId) {
+      organizationId = paramOrgId;
+    }
 
     if (!Array.isArray(mediumSettings) || mediumSettings.length === 0) {
       return res.status(400).json({
@@ -111,6 +116,7 @@ export const listNotificationMediums = async (req: Request, res: Response, next:
       ...req.query,
       organizationId,
     };
+
 
     // Ensure we don't keep the original organizationId from query if overwritten by req.user
     // (this will still set organizationId to the correct value above)
