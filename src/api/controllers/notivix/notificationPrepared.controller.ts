@@ -14,6 +14,7 @@ import {
   parseTemplate,
 } from '../../../utils/notification.utils';
 import { Queue } from "bullmq";
+import mongoose from 'mongoose';
 
 export const triggerPrepareTodayNotifications = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -41,12 +42,19 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
       sortBy = 'sentAt',
       sortOrder = 'desc',
       status,
-      organizationId,
+      organizationId: paramOrgId,
       fromDate,
       toDate,
       search,
       searchFields,
     }: any = req.query;
+
+    // Allow query override of organizationId for super users:
+    let { organizationId, isSuperUser, userId } = req.user as any;
+
+    if (isSuperUser && paramOrgId) {
+      organizationId = paramOrgId;
+    }
 
     let searchCondition: any = [];
     if (search) {
@@ -92,10 +100,9 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
         });
       }
     }
-
     const query: any = {};
     if (status) query.status = status;
-    if (organizationId) query.organizationId = organizationId;
+    if (organizationId) query.organizationId = new mongoose.Types.ObjectId(organizationId);
     if (fromDate || toDate) {
       query.scheduledAt = {};
       if (fromDate) query.scheduledAt.$gte = new Date(fromDate as string);
@@ -106,7 +113,6 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
     const sort: Record<string, 1 | -1> = {
       [sortBy as string]: sortOrder === 'asc' ? 1 : -1,
     };
-
     const [notifications, total] = await Promise.all([
       listPreparedNotificationsAgg({
         query,
