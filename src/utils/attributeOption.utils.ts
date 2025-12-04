@@ -55,7 +55,7 @@ export async function autoPopulateAttributeOption({
       const attributeOptionId = attribute.optionAttributeId;
 
       // Reference entity case → reuse optionAttributeId
-      if (attribute.referenceEntitySetting?.refEntityId && attribute.referenceEntitySetting?.refEntityField) {
+      if (attribute.referenceEntitySetting?.refEntityId && attribute.referenceEntitySetting?.refEntityField && !['mapping_many_to_one', 'mapping_one_to_one'].includes(attribute.referenceEntitySetting?.relationType)) {
         const refEntityId = attribute.referenceEntitySetting.refEntityId;
         const refFieldId = attribute.referenceEntitySetting.refEntityField;
 
@@ -72,11 +72,9 @@ export async function autoPopulateAttributeOption({
 
         continue; // skip Excel-driven logic for reference fields
       }
-
       // Normal case: extract from Excel
       const uniqueValues = columnHeader ? columnToUniqueValues[columnHeader] || [] : [];
       if (!uniqueValues || uniqueValues.length === 0) continue;
-
       if (attributeOptionId) {
         const existing = await attributeOptionService.findAttributeOptionById(attributeOptionId);
         const existingValues: string[] = existing?.attributeValue || [];
@@ -86,7 +84,6 @@ export async function autoPopulateAttributeOption({
           ...existingValues,
           ...uniqueValues.filter((val) => !existingSet.has(val.toLowerCase())),
         ];
-
         await attributeOptionService.updateAttribute(attributeOptionId, {
           attributeValue: mergedValues,
           updatedBy: userId,
@@ -94,7 +91,6 @@ export async function autoPopulateAttributeOption({
       } else {
         // 🔑 Fix: check if attribute already exists before creating
         const existing: any = await attributeOptionService.findAttributeByNameAndOrganization(attributeName, organizationId);
-
         if (existing) {
           const existingValues: string[] = existing?.attributeValue || [];
           const existingSet = new Set(existingValues.map((v) => v.toLowerCase()));
@@ -102,7 +98,6 @@ export async function autoPopulateAttributeOption({
             ...existingValues,
             ...uniqueValues.filter((val) => !existingSet.has(val.toLowerCase())),
           ];
-
           await attributeOptionService.updateAttribute(existing._id, {
             attributeValue: mergedValues,
             updatedBy: userId,
