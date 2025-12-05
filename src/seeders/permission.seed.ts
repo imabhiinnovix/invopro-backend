@@ -191,7 +191,7 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Product',
     resourceCode: 'product__list',
-    isSuperUser: true,
+    isSuperUser: false,
     isChangeable: true,
   },
   {
@@ -231,7 +231,7 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Organization',
     resourceCode: 'organization__list',
-    isSuperUser: true,
+    isSuperUser: false,
     isChangeable: true,
   },
   {
@@ -241,7 +241,7 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Organization',
     resourceCode: 'organization__get',
-    isSuperUser: true,
+    isSuperUser: false,
     isChangeable: true,
   },
   {
@@ -261,7 +261,7 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Product Subscription',
     resourceCode: 'productSubscription__list',
-    isSuperUser: true,
+    isSuperUser: false,
     isChangeable: true,
   },
   {

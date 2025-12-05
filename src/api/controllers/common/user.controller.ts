@@ -195,7 +195,7 @@ export const getUserList = async (req: Request, res: Response, next: NextFunctio
 
 export const getUserById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId, organizationId } = req.user;
+    const { userId, organizationId, isSuperUser } = req.user;
 
     let user = await userService.findUserById(userId, [
       { path: 'organizationId', select: 'id name code status' },
@@ -227,6 +227,9 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
       isChangeable: true,
       $or: [{ organizationId: { $exists: false } }, { organizationId: new Types.ObjectId(organizationId) }],
     };
+    if(!isSuperUser){
+      query.isSuperUser = false;
+    }
     let allPermissionResult = await permissionService.getPermissionList({
       query,
       page: 1,
