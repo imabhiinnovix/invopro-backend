@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import * as attributeOptionService from '../../../database/services/common/attributeOption.services';
 import { getUniqueColumnValuesFromXLSXFile } from '../../../utils/excel.utils';
 import { unlink } from 'fs/promises';
+import mongoose from 'mongoose';
 export const createAttribute = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { attributeName, attributeValue } = req.body;
@@ -65,7 +66,14 @@ export const listAttribute = async (req: Request, res: Response, next: NextFunct
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
+    // Allow query override of organizationId for super users:
+    let { organizationId, isSuperUser } = req.user as any;
+
+
     const matchQuery: Record<string, any> = {};
+    if(!isSuperUser){
+      matchQuery.organizationId = new mongoose.Types.ObjectId(organizationId);
+    }
     if (search) {
       matchQuery.attributeName = { $regex: search, $options: 'i' };
     }

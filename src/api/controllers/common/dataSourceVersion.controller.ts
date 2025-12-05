@@ -1089,7 +1089,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
         const dFiles = files;
         const dcustomReportData = customReportData;
         const reportRequestId = requestedReport._id;
-
+        // console.log('dcustomReportData',dcustomReportData);
         try {
           for (let i = 0; i < dcustomReportData?.dataSourceIds?.length!; i++) {
             const dataSourceInfo = dcustomReportData?.dataSourceIds[i];
@@ -1101,6 +1101,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
             let dataSourceDetails: any = '';
             let validationErrors: any[] = [];
             let validatedFinalData: any[] = [];
+            // console.log('fileDetails',fileDetails);
             if (fileDetails) {
               for (let j = 0; j < fileDetails.length; j++) {
                 try {
@@ -1117,7 +1118,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                       fileDetailName.replace(/\s+/g, '').toLowerCase()
                     );
                   });
-
+                  // console.log('file',file);
                   if (file) {
                     const totalFiles = fileDetails.length;
                     const currentFileIndex = j + 1;
@@ -1190,8 +1191,15 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                         fileRowNumber: `${fileName}:${index + 2}`, // +1 to make it 1-based instead of 0-based
                       }));
 
-                      const attributes = entityDetails?.attributes || [];
-
+                      let attributes = entityDetails?.attributes || [];
+                      attributes = await autoPopulateAttributeOption({
+                        fileData: fileData,
+                        entityId: dataSourceDetails?.entityId || '',
+                        attributesDetails: attributes,
+                        attributMapping: jsonMapping,
+                        userId,
+                        organizationId,
+                      });
                       const validatedData = await validateFileData({
                         fileData: fileDataWithRowNumber,
                         attributes,
@@ -1224,7 +1232,8 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                 }
               }
             }
-
+            // console.log('validationErrors',validationErrors);
+            // console.log('dataSourceVersion',dataSourceVersion);
             if (dataSourceVersion) {
               if (validationErrors.length > 0) {
                 await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
