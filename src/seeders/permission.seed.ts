@@ -211,7 +211,7 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Organization',
     resourceCode: 'organization__update',
-    isSuperUser: true,
+    isSuperUser: false,
     isChangeable: true,
   },
   {

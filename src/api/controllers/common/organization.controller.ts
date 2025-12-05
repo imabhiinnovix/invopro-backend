@@ -83,7 +83,12 @@ export const getOrganizationById = async (req: Request, res: Response, next: Nex
 export const updateOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, description, domain, productSubscriptions, owner, status } = req.body;
-    const organizationId = req.params.organizationId;
+    const { organizationId: paramOrgId } = req.params;
+    let { organizationId, isSuperUser } = req.user as any;
+
+    if (isSuperUser && paramOrgId) {
+      organizationId = paramOrgId;
+    }
 
     // 1. Update organization
     await organizationService.updateOrganization(organizationId, {
@@ -94,7 +99,7 @@ export const updateOrganization = async (req: Request, res: Response, next: Next
       ...(status && { status }),
     });
 
-    if (Array.isArray(productSubscriptions)) {
+    if (Array.isArray(productSubscriptions) && isSuperUser) {
       // 1. Fetch existing subscriptions
       const { data: existingSubs }: any = await organizationProductSubscription.getOrganizationProductsSubscription({
         query: { organizationId },

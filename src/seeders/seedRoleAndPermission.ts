@@ -272,6 +272,8 @@ const defaultPermissionsAdmin = [
     isChangeable: true,
   },
   { permission: 'GET:/common/organization/list', isChangeable: true },
+  { permission: 'PUT:/common/organization/update/:organizationId', isChangeable: true },
+  { permission: 'GET:/common/organization/:organizationId', isChangeable: true },
   { permission: 'POST:/common/entities/create', isChangeable: true },
   {
     permission: 'PUT:/common/entities/update/:entityId',
@@ -508,9 +510,7 @@ const defaultPermissionsAdmin = [
 const defaultPermissionsPrimarySuperAdmin = [
   ...defaultPermissionsAdmin,
   { permission: 'POST:/common/organization/create', isChangeable: true },
-  { permission: 'PUT:/common/organization/update/:organizationId', isChangeable: true },
   { permission: 'DELETE:/common/organization/delete/:organizationId', isChangeable: true },
-  { permission: 'GET:/common/organization/:organizationId', isChangeable: true },
   { permission: 'POST:/common/widgetType/create', isChangeable: true },
   { permission: 'POST:/common/widgetType/update/:widgetTypeId', isChangeable: true },
   { permission: 'POST:/common/widgetType/delete/:widgetTypeId', isChangeable: true },
