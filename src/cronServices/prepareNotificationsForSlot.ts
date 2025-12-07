@@ -21,6 +21,7 @@ import { findDataSourceById } from "../database/services/common/dataSource.servi
 import { getSchemaNameBasedOnVersionCodeAndOrgCode, uniqueCode } from "../utils/common.utils";
 import { getCurrentDataSourceVersion } from "../database/services/common/dataSourceVersion.services";
 import { scheduleEmail } from "../utils/notification.utils";
+import { getOrganizationList } from "../database/services/common/organization.service";
 
 
 // --------------------
@@ -944,7 +945,7 @@ async function buildExtendedAttributeMap(entity: any): Promise<Record<string, an
 
 
 // Main function to prepare today's notifications
-export async function prepareTodayNotifications(isForce = false) {
+export async function prepareTodayNotifications(isForce = false, organizationId = '') {
   // Connect to MongoDB
     const conn = await mongoose.connect(config.MONGO_URI!);
     console.info(`MongoDB Connected: ${conn.connection.host}`);  
@@ -953,8 +954,32 @@ export async function prepareTodayNotifications(isForce = false) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   console.log("📅 Today's date:", today.toDateString());
+  const orgQuery: any = { status: "active" };
+
+if (organizationId) {
+  orgQuery._id = new mongoose.Types.ObjectId(organizationId);
+}
+
+// ✅ Get all organizations using your service
+const { data: organizations } = await getOrganizationList({
+  query: orgQuery,
+  page: 1,
+  limit: Number.MAX_SAFE_INTEGER,
+  select: "",
+  populate: [],
+});
+
+console.log(`🏢 Total active organizations: ${organizations.length}`);
+let totalPrepared = 0;
+// ---------------------------------------------------------
+//  LOOP THROUGH EACH ORGANIZATION
+// ---------------------------------------------------------
+for (const org of organizations) {
+  console.log(`\n Processing organization: ${org.name} (${org.code})`);
+
   const query = {
     isActive: 'active',
+    organizationId: org._id,
     schedulerStartDate: { $lte: new Date(today.getTime() + 86399999) },
     $or: [{ schedulerEndDate: null }, { schedulerEndDate: { $gte: today } }],
   };
@@ -963,7 +988,7 @@ export async function prepareTodayNotifications(isForce = false) {
 
   console.log(`⚙️ Found ${settings.length} active frequency settings`);
 
-  let totalPrepared = 0;
+  
 
   for (const setting of settings) {
     try {
@@ -999,7 +1024,7 @@ export async function prepareTodayNotifications(isForce = false) {
       console.log("🚀 Fetching matching cases in batches...");
 
        const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
-                  orgCode : 'reportivix',
+                  orgCode : org.code,
                   versionCode: dataSourceDetails.code,
                 });
       const dataSourceVersion: any = await getCurrentDataSourceVersion(dataSourceDetails._id);
@@ -1128,6 +1153,7 @@ export async function prepareTodayNotifications(isForce = false) {
       console.error(`❌ Error preparing notifications for setting ${setting._id}:`, error);
     }
   }
+}
 
   console.log(`🏁 Finished. Total notifications prepared: ${totalPrepared}`);
 }

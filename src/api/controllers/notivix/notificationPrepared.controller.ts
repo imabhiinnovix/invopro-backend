@@ -22,7 +22,9 @@ export const triggerPrepareTodayNotifications = async (req: Request, res: Respon
 
     const { isForce = false } = req.body;
 
-    await prepareTodayNotifications(isForce);
+    const { organizationId } = req.user;
+
+    await prepareTodayNotifications(isForce, organizationId);
 
     res.status(200).json({
       success: true,
