@@ -26,6 +26,7 @@ import departmentRoutes from './common/department.routes';
 import designationRoutes from './common/designation.routes';
 import userDataPermissionRoutes from './common/userDataPermission.routes';
 import downloadRequests from './common/downloadRequest.routes';
+import organizationVisibilitySettingRoutes from './common/organizationVisibilitySettingRoutes';
 
 const router = Router();
 
@@ -56,5 +57,6 @@ router.use('/department', departmentRoutes);
 router.use('/designation', designationRoutes);
 router.use('/user-data-permission', userDataPermissionRoutes);
 router.use('/download-request', downloadRequests);
+router.use('/organization-visibility-setting', organizationVisibilitySettingRoutes);
 
 export default router;

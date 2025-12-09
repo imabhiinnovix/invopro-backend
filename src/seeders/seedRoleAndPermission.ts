@@ -505,6 +505,10 @@ const defaultPermissionsAdmin = [
     permission: 'GET:/common/user-data-permission/:id',
     isChangeable: true,
   },
+  { permission: 'GET:/common/organization-visibility-setting/list', isChangeable: true },
+  { permission: 'POST:/common/organization-visibility-setting/create', isChangeable: true },
+  { permission: 'PUT:/common/organization-visibility-setting/update/:settingId', isChangeable: true },
+  { permission: 'DELETE:/common/organization-visibility-setting/delete/:settingId', isChangeable: true },
 ];
 
 const defaultPermissionsPrimarySuperAdmin = [

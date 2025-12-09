@@ -1537,7 +1537,47 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'downloadRequest__download',
     isSuperUser: false,
     isChangeable: true,
-  }
+  },
+   {
+    name: 'List Organization Visibility Settings',
+    method: 'GET',
+    resourceId: '/common/organization-visibility-setting/list',
+    extraOptions: {},
+    resourceType: 'OrganizationVisibilitySetting',
+    resourceCode: 'org_visibility__list',
+    isSuperUser: false,
+    isChangeable: true,
+  },
+  {
+    name: 'Create Organization Visibility Setting',
+    method: 'POST',
+    resourceId: '/common/organization-visibility-setting/create',
+    extraOptions: {},
+    resourceType: 'OrganizationVisibilitySetting',
+    resourceCode: 'org_visibility__create',
+    isSuperUser: false,
+    isChangeable: true,
+  },
+  {
+    name: 'Update Organization Visibility Setting',
+    method: 'PUT',
+    resourceId: '/common/organization-visibility-setting/update/:settingId',
+    extraOptions: {},
+    resourceType: 'OrganizationVisibilitySetting',
+    resourceCode: 'org_visibility__update',
+    isSuperUser: false,
+    isChangeable: true,
+  },
+  {
+    name: 'Delete Organization Visibility Setting',
+    method: 'DELETE',
+    resourceId: '/common/organization-visibility-setting/delete/:settingId',
+    extraOptions: {},
+    resourceType: 'OrganizationVisibilitySetting',
+    resourceCode: 'org_visibility__delete',
+    isSuperUser: false,
+    isChangeable: true,
+  },
 ];
 
 export async function seedPermissions(permissionList: any[]) {
