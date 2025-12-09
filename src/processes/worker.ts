@@ -152,7 +152,8 @@ async function connectDB() {
                   dataSourceDetails,
                   isPaginate,
                   page,
-                  limit
+                  limit,
+                  sort
                 });
           const dataResults = result?.data ?? [];
           let headers: string[] = dataSourceDetails?.fieldSettings

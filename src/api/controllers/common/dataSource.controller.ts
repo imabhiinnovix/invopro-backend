@@ -428,7 +428,7 @@ export const getDataSourceWithFieldOptionDetails = async (req: Request, res: Res
 
 export const getWidgetDataByFilter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    let { dataSourceId, conditions, entityId, dimensions, groupBy, dashBoardType, dashboardFilters, plotType } = req.body;
+    let { dataSourceId, conditions, entityId, dimensions, groupBy, dashBoardType, dashboardFilters, plotType, sort } = req.body;
 
     let startVersionValue = dashboardFilters?.startVersionValue;
     let endVersionValue = dashboardFilters?.endVersionValue;
@@ -693,6 +693,36 @@ if (plotType) {
     });
   }
 
+// -----------------------------
+// NEW SORTING PRIORITY LOGIC
+// -----------------------------
+let effectiveSortBy = sort;
+
+// If empty or not provided
+if (!effectiveSortBy || Object.keys(effectiveSortBy).length === 0) {
+
+  // 1️ Priority → GROUP BY (use ONLY first value)
+  if (Array.isArray(groupBy) && groupBy.length > 0) {
+    const firstGroupField = groupBy[0];   // string
+    effectiveSortBy = { [firstGroupField]: 1 };
+  }
+
+  // 2️ Priority → DIMENSIONS (use ONLY first value)
+  else if (Array.isArray(dimensions) && dimensions.length > 0) {
+    const firstDimField = dimensions[0];  // string
+    effectiveSortBy = { [firstDimField]: 1 };
+  }
+
+  // 3️⃣ No sort
+  else {
+    effectiveSortBy = {};
+  }
+}
+
+
+
+
+
   // Handle dueDays filter using DueDate/DateTaken
   if (dueDaysFilterValue && dueDaysFilterValue !== "Total Dues") {
     const now = new Date();
@@ -745,6 +775,7 @@ if (plotType) {
     isPaginate: true,
     page,
     limit,
+    sort: effectiveSortBy,   // <<---- NEW
   });
 
   console.log("results", JSON.stringify(result));
@@ -886,6 +917,7 @@ export const exportWidgetDataByFilterToExcel = async (
       dashboardFilters,
       plotType,
       selectedFields, // Optional
+      sort
     } = req.body;
 
     let startVersionValue = dashboardFilters?.startVersionValue;
@@ -1112,6 +1144,32 @@ if (plotType) {
           }
         });
       }
+
+      // -----------------------------
+// NEW SORTING PRIORITY LOGIC
+// -----------------------------
+let effectiveSortBy = sort;
+
+// If empty or not provided
+if (!effectiveSortBy || Object.keys(effectiveSortBy).length === 0) {
+
+  // 1️ Priority → GROUP BY (use ONLY first value)
+  if (Array.isArray(groupBy) && groupBy.length > 0) {
+    const firstGroupField = groupBy[0];   // string
+    effectiveSortBy = { [firstGroupField]: 1 };
+  }
+
+  // 2️ Priority → DIMENSIONS (use ONLY first value)
+  else if (Array.isArray(dimensions) && dimensions.length > 0) {
+    const firstDimField = dimensions[0];  // string
+    effectiveSortBy = { [firstDimField]: 1 };
+  }
+
+  // 3️ No sort
+  else {
+    effectiveSortBy = {};
+  }
+}
     
 
       //  DueDays logic untouched
@@ -1184,6 +1242,7 @@ if (plotType) {
           isPaginate: true,
           page,
           limit,
+          sort: effectiveSortBy
       };
 
       // --------------------------------------------------------------------

@@ -167,6 +167,14 @@ export const listAttribute = async (req: Request, res: Response, next: NextFunct
         },
       },
 
+       {
+        $addFields: {
+          attributeValue: {
+            $sortArray: { input: "$attributeValue", sortBy: 1 } // 1 = ascending
+          }
+        }
+      },
+
       {
         $project: {
           attributeMeta: 0,
@@ -199,6 +207,11 @@ export const listAttribute = async (req: Request, res: Response, next: NextFunct
 export const getAttributeOptionById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const attributeData = await attributeOptionService.findAttributeOptionById(req.params.attributeId);
+
+    if (attributeData && Array.isArray(attributeData.attributeValue)) {
+      attributeData.attributeValue.sort((a, b) => a.localeCompare(b)); // Alphabetical ascending
+    }
+
     res.status(200).json({
       success: true,
       message: 'Attribute Option Fetched Successfully',

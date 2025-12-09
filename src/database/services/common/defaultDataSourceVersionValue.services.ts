@@ -3060,42 +3060,113 @@ let rawData = versionValueData[0] || { widgetData: [], totalCount: 0 };
 //   widgetData: transformedData,
 //   totalCount: rawData.totalCount
 // };
-if(dateField && dateGroupingMode) {
-      const getSortableValue = (name: string, mode: string): number => {
-        if (!name) return 0;
+// if(dateField && dateGroupingMode) {
+//       const getSortableValue = (name: string, mode: string): number => {
+//         if (!name) return 0;
 
-        switch (mode) {
-          case 'yearly':
-            return parseInt(name) || 0; // ensure number
+//         switch (mode) {
+//           case 'yearly':
+//             return parseInt(name) || 0; // ensure number
 
-          case 'monthly': {
-            const [year, month] = name.split('-').map(Number);
-            return (year || 0) * 12 + (month || 0);
-          }
+//           case 'monthly': {
+//             const [year, month] = name.split('-').map(Number);
+//             return (year || 0) * 12 + (month || 0);
+//           }
 
-          case 'quarterly': {
-            const [yearStr, quarterStr] = name.split('-Q');
-            return (parseInt(yearStr) || 0) * 10 + (parseInt(quarterStr) || 0);
-          }
+//           case 'quarterly': {
+//             const [yearStr, quarterStr] = name.split('-Q');
+//             return (parseInt(yearStr) || 0) * 10 + (parseInt(quarterStr) || 0);
+//           }
 
-          case 'weekly': {
-            const [start] = name.split('~');
-            return new Date(start).getTime();
-          }
+//           case 'weekly': {
+//             const [start] = name.split('~');
+//             return new Date(start).getTime();
+//           }
 
-          case 'daily':
-            return new Date(name).getTime();
+//           case 'daily':
+//             return new Date(name).getTime();
 
-          default:
-            return 0; // fallback numeric value
-        }
-      };
+//           default:
+//             return 0; // fallback numeric value
+//         }
+//       };
 
-      rawData.widgetData = rawData.widgetData.sort(
-                (a, b) => getSortableValue(a[dateField], dateGroupingMode!) - getSortableValue(b[dateField], dateGroupingMode!)
-              );
+//       rawData.widgetData = rawData.widgetData.sort(
+//                 (a, b) => getSortableValue(a[dateField], dateGroupingMode!) - getSortableValue(b[dateField], dateGroupingMode!)
+//               );
 
+//     }
+const safeStr = (val: any) => {
+  if (!val) return "";
+  if (Array.isArray(val)) return val[0] || "";
+  return String(val);
+};
+
+// Extract groupBy field (first element)
+const groupField = Array.isArray(groupBy) && groupBy.length > 0 ? groupBy[0] : "";
+
+// dateField **IS** the groupBy field in your new logic
+// Check date sort condition
+const hasValidDateSort =
+  groupField &&
+  dateField &&
+  dateField === groupField && // <-- IMPORTANT
+  dateGroupingMode &&
+  dateGroupingMode.trim() !== "";
+
+// Date sorting helper
+const getSortableValue = (name: string, mode: string | null): number => {
+  if (!name) return 0;
+
+  switch (mode) {
+    case "yearly":
+      return parseInt(name) || 0;
+
+    case "monthly": {
+      const [year, month] = name.split("-").map(Number);
+      return (year || 0) * 12 + (month || 0);
     }
+
+    case "quarterly": {
+      const [yearStr, quarterStr] = name.split("-Q");
+      return (parseInt(yearStr) || 0) * 10 + (parseInt(quarterStr) || 0);
+    }
+
+    case "weekly": {
+      const [start] = name.split("~");
+      return new Date(start).getTime();
+    }
+
+    case "daily":
+      return new Date(name).getTime();
+
+    default:
+      return 0;
+  }
+};
+
+// ----------------------------------------------------------
+// FINAL SORT LOGIC (correct for "dateField IS groupBy field")
+// ----------------------------------------------------------
+rawData.widgetData = rawData.widgetData.sort((a, b) => {
+
+  // 1) NO groupBy → sort by name
+  if (!groupField) {
+    return safeStr(a.name).localeCompare(safeStr(b.name));
+  }
+
+  // 2) groupBy exists → check if date sorting applies
+  if (hasValidDateSort) {
+    return (
+      getSortableValue(safeStr(a[groupField]), dateGroupingMode) -
+      getSortableValue(safeStr(b[groupField]), dateGroupingMode)
+    );
+  }
+
+  // 3) Otherwise normal groupBy string sort
+  return safeStr(a[groupField]).localeCompare(safeStr(b[groupField]));
+});
+
 return rawData;
 
    
@@ -3119,7 +3190,8 @@ export const getDataSourceVersionValueWidgetDataV2 = async ({
   dashBoardType,
   dataSourceDetails,
   page,
-  limit
+  limit,
+  sort
 }: {
   schemaName: string;
   query: any;
@@ -3135,7 +3207,8 @@ export const getDataSourceVersionValueWidgetDataV2 = async ({
   dataSourceDetails?: Record<string, any>;
   isPaginate?: boolean,
   page: number,
-  limit: number
+  limit: number,
+  sort: any
   
 }) => {
   try {
@@ -3869,7 +3942,54 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
       aggregationPipeline.push({ $match: matchConditions });
     }
 
-    
+    // ------------------ SORTING ------------------
+
+if (sort && Object.keys(sort).length > 0) {
+  const sortStage: any = {};
+  for (const [field, direction] of Object.entries(sort)) {
+    const sortDir = direction === "desc" || direction === -1 ? -1 : 1;
+
+    // CASE 1: Nested reference field => A.B.C
+    if (field.includes(".")) {
+      const pathSegments = field.split(".");
+      const visitedSort = new Set<string>();
+
+      const resolvedSortPath = await buildAggregationPathAndReturnExpr({
+        entityId,
+        pathSegments,
+        prefix: "rowData",
+        pipeline: aggregationPipeline,   // <-- ensures lookup is added
+        visited: visitedSort,
+      });
+
+      sortStage[resolvedSortPath] = sortDir;
+    }
+
+    // CASE 2: Top-level reference attribute
+    else if (
+      attributesMap[field]?.referenceEntitySetting?.refEntityId &&
+      !attributesMap[field].referenceEntitySetting.relationType?.startsWith("mapping_")
+    ) {
+      const refFieldAttr = await getEntityAttribute(
+        attributesMap[field].referenceEntitySetting.refEntityId,
+        attributesMap[field].referenceEntitySetting.refEntityField
+      );
+
+      const displayField =
+        refFieldAttr?.name || attributesMap[field].referenceEntitySetting.refEntityField;
+
+      sortStage[`rowData.${field}_resolved.rowData.${displayField}`] = sortDir;
+    }
+
+    // CASE 3: Normal attribute
+    else {
+      sortStage[`rowData.${field}`] = sortDir;
+    }
+  }
+
+  aggregationPipeline.push({ $sort: sortStage });
+}
+
 
   // ✅ Add pagination only if paginate object is valid
   if(limit == Number.MAX_SAFE_INTEGER){
