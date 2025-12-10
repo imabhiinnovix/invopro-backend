@@ -474,7 +474,7 @@ export const getDataSourceWithFieldOptionDetails = async (req: Request, res: Res
 
 export const getWidgetDataByFilter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    let { dataSourceId, conditions, entityId, dimensions, groupBy, dashBoardType, dashboardFilters, plotType, sort } = req.body;
+    let { dataSourceId, conditions, entityId, dimensions, groupBy, dashBoardType, dashboardFilters, plotType, sort, aggregation } = req.body;
 
     let startVersionValue = dashboardFilters?.startVersionValue;
     let endVersionValue = dashboardFilters?.endVersionValue;
@@ -814,7 +814,7 @@ if (!effectiveSortBy || Object.keys(effectiveSortBy).length === 0) {
     query,
     dashboardFilters,
     entityId: dataSource.entityId,
-    aggregation: { type: "count", attributeName: "_id" },
+    aggregation: { type: aggregation?.type || "count", attributeName: aggregation?.attributeName || "_id" },
     conditions,
     dashBoardType,
     dataSourceDetails: dataSource,
@@ -963,7 +963,8 @@ export const exportWidgetDataByFilterToExcel = async (
       dashboardFilters,
       plotType,
       selectedFields, // Optional
-      sort
+      sort,
+      aggregation
     } = req.body;
 
     let startVersionValue = dashboardFilters?.startVersionValue;
@@ -1281,14 +1282,14 @@ if (!effectiveSortBy || Object.keys(effectiveSortBy).length === 0) {
           query,
           dashboardFilters,
           entityId: dataSource.entityId,
-          aggregation: { type: "count", attributeName: "_id" },
+          aggregation: { type: aggregation?.type || "count", attributeName: aggregation.attributeName || "_id" },
           conditions,
           dashBoardType,
           dataSourceDetails: dataSource,
           isPaginate: true,
           page,
           limit,
-          sort: effectiveSortBy
+          sort: effectiveSortBy,
       };
 
       // --------------------------------------------------------------------
