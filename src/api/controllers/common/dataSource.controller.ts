@@ -227,7 +227,7 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
             const dsVisibility = 
   visibilitySettings?.dataSourceId?.toString() === ds._id.toString() ? visibilitySettings : null;
 
-if (dsVisibility?.visibility === 'hide') return null;
+// if (dsVisibility?.visibility === 'hide') return null;
 ds.visibility = dsVisibility?.visibility || 'primary';
 
 
@@ -354,7 +354,7 @@ ds.visibility = dsVisibility?.visibility || 'primary';
                       a.attributeId.toString() === field.attributeId.toString() &&
                       JSON.stringify(a.refAttributeId || []) === JSON.stringify(field.refAttributeId || [])
                   );
-                  if (fieldVisibility?.visibility === 'hide') return null;
+                  // if (fieldVisibility?.visibility === 'hide') return null;
                   field.visibility = fieldVisibility?.visibility || 'primary';
                   return field;
                 })
@@ -434,7 +434,7 @@ export const getDataSourceById = async (req: Request, res: Response, next: NextF
               a.attributeId.toString() === field.attributeId.toString() &&
               JSON.stringify(a.refAttributeId || []) === JSON.stringify(field.refAttributeId || [])
           );
-          if (attrVis?.visibility === 'hide') return null;
+          // if (attrVis?.visibility === 'hide') return null;
           field.visibility = attrVis?.visibility || 'primary';
           return field;
         })
