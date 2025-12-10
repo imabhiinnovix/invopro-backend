@@ -60,7 +60,7 @@ const dashboardWidgetSchema = new Schema<IDashboardWidget>(
       type: {
         type: String,
         required: true,
-        enum: ['Count', 'Sum', 'Average'],
+        enum: ['Count', 'Sum', 'Average', 'distinctCount'],
       },
       attributeName: { type: String, required: true },
     },
