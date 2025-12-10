@@ -172,6 +172,7 @@ export const createWidget = async (req: Request, res: Response, next: NextFuncti
       dataSourceId,
       position,
       isIncremental,
+      description
     } = req.body;
 
     const { organizationId, userId } = req.user;
@@ -200,6 +201,7 @@ export const createWidget = async (req: Request, res: Response, next: NextFuncti
       organizationId,
       createdBy: userId,
       name,
+      description,
       dimensions,
       groupBy: groupBy ? groupBy : [],
       plotType: plotType ? plotType : [],
@@ -239,11 +241,13 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
       isActive,
       isDeleted,
       isIncremental,
+      description,
     } = req.body;
     const { dashboardWidgetId } = req.params;
 
     await dashboardWidgetdService.updateDashboardWidget(dashboardWidgetId, {
       ...(name && { name }),
+      ...(description && { description }),
       ...(dataSourceId && { dataSourceId }),
       ...(aggregation && { aggregation }),
       ...(dimensions && { dimensions }),
