@@ -864,6 +864,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
 
     if (dataSourceDetails && dataSourceDetails.entityId) {
       const dataSourceVersion: any = await dataSourceVersionService.createDataSourceVersion({
+        organizationId,
         entityId: dataSourceDetails.entityId._id,
         dataSourceId,
         versionName,
@@ -1009,7 +1010,9 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
-    const query: any = {};
+    const { organizationId } = req.user;
+
+    const query: any = { organizationId };
     if (search) query.name = { $regex: search, $options: 'i' };
 
     let result: any = {};
@@ -1157,6 +1160,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                             updateFields: { isCurrent: false },
                           });
                           dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
+                            organizationId,
                             entityId: dataSourceDetails.entityId._id,
                             dataSourceId,
                             versionValue,
@@ -1322,6 +1326,7 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
         updateFields: { isCurrent: false },
       });
       const dataSourceVersion: any = await dataSourceVersionService.createDataSourceVersion({
+        organizationId,
         entityId: dataSourceDetails.entityId._id,
         dataSourceId,
         versionValue,
@@ -1329,7 +1334,6 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
         status: 'processing',
         isActive: true,
         isCurrent: false,
-        organizationId,
         customReportId,
         reportRequestId,
       });
