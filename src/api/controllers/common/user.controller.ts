@@ -225,19 +225,8 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
     const permissionDetails = await roleHasPermissionService.getPermissionsByRoleIds(roleIds);
 
 
-    // -----------------------------------------------
-// Fetch and populate user's product subscriptions
-// -----------------------------------------------
-
-const subscriptions = await organizationProductSubscriptionService.findOrganizationProductSubscription(
-  { organizationId },
-  [{ path: 'productId', select: 'name code status' }]
-);
-
-
-
     const query: any = {
-      isChangeable: true,
+      // isChangeable: true,
       $or: [{ organizationId: { $exists: false } }, { organizationId: new Types.ObjectId(organizationId) }],
     };
     if(!isSuperUser){
@@ -277,19 +266,17 @@ const subscriptions = await organizationProductSubscriptionService.findOrganizat
     // ------------------------------
     const userActiveModules = new Set<string>();
 
-    for (const subscription of subscriptions) {
-  const product: any = subscription.productId; // Allows populated product object
-  const productCode = product?.code;
-  if (!productCode) continue;
+    for (const subscription of user.organizationProductSubscriptionIds) {
+      const productCode = subscription.productId?.code;
+      if (!productCode) continue;
 
-  if (productCode.toLowerCase() === "reportivix") {
-    userActiveModules.add("Reports");
-  }
-  if (productCode.toLowerCase() === "notivix") {
-    userActiveModules.add("Notifications");
-  }
-}
-
+      if (productCode.toLowerCase() === "reportivix") {
+        userActiveModules.add("Reports");
+      }
+      if (productCode.toLowerCase() === "notivix") {
+        userActiveModules.add("Notifications");
+      }
+    }
 
     // Restrict only these modules
     const RESTRICTED_MODULES = new Set(["Reports", "Notifications"]);
