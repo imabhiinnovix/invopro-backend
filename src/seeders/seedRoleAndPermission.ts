@@ -541,7 +541,7 @@ const defaultRolesAndPermissions = [
   {
     roleName: 'Super Admin',
     isSuperUser: false,
-    permissionsList: defaultPermissionsAdmin,
+    permissionsList: defaultPermissionsSuperAdmin,
   },
   {
     roleName: 'Primary Super Admin',

@@ -19,7 +19,8 @@ export interface IPermission extends Document {
   resourceCode: string;
   methodName: 'create' | 'update' | 'delete' | 'list' | 'view';
   isChangeable: boolean;
-  module?: string;     //  added
+  module?: string;
+  subModule?: string;
 }
 
 const permissionSchema = new Schema<IPermission>(
@@ -72,6 +73,7 @@ const permissionSchema = new Schema<IPermission>(
 
     /* New fields */
     module: { type: String },
+    subModule: { type: String },
   },
   { timestamps: true }
 );
