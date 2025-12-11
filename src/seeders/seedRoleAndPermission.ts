@@ -511,6 +511,10 @@ const defaultPermissionsAdmin = [
   { permission: 'DELETE:/common/organization-visibility-setting/delete/:settingId', isChangeable: true },
 ];
 
+const defaultPermissionsSuperAdmin = [
+  ...defaultPermissionsAdmin,
+];
+
 const defaultPermissionsPrimarySuperAdmin = [
   ...defaultPermissionsAdmin,
   { permission: 'POST:/common/organization/create', isChangeable: true },
@@ -536,6 +540,11 @@ const defaultRolesAndPermissions = [
   },
   {
     roleName: 'Super Admin',
+    isSuperUser: false,
+    permissionsList: defaultPermissionsAdmin,
+  },
+  {
+    roleName: 'Primary Super Admin',
     isSuperUser: true,
     permissionsList: defaultPermissionsPrimarySuperAdmin,
   },

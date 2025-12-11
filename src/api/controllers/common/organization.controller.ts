@@ -7,57 +7,147 @@ import { populate } from 'dotenv';
 import { stat } from 'fs';
 import { Types } from 'mongoose';
 import { seedRolesAndPermissions } from '../../../seeders/seedRoleAndPermission';
+import { hashPassword } from '../../../utils/bcrypt.utils';
+import { createUser, findUserByEmail } from '../../../database/services/common/user.service';
+import { getUserRole } from '../../../database/services/common/userRole.service';
 
 export const createOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, description, domain, code, productSubscriptions } = req.body;
+    const {
+      name,
+      description,
+      domain,
+      code,
+      productSubscriptions,
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+      address1,
+      address2,
+      city,
+      state,
+      zip,
+      country,
+      gst,
+      pan,
+    } = req.body;
+
     const { userId } = req.user;
 
-    // 1. Create the organization
+    // Handle logo upload
+    let logoPath = '';
+    const files = req.files as Express.Multer.File[];
+    if (files?.length) {
+      // Assuming first uploaded file is the logo
+      logoPath = `${process.env.BASE_BACKEND_URL}/${files[0].path.replace(/\\/g, '/')}`;
+    }
+
+    // 1️⃣ Create the organization
     const organization: Record<string, any> = await organizationService.createOrganization({
       name,
       description,
       owner: userId,
       domain,
       code,
+      logo: logoPath,
     });
 
-    await seedRolesAndPermissions({ organizationId: [organization?._id] });
+    // 2️⃣ Add default fields (ignore existing)
+    const defaultOrgFields: Record<string, any> = {
+      name,
+      firstName: firstName || '',
+      lastName: lastName || '',
+      email: email || '',
+      phone: phone || '',
+      logo: logoPath,
+      address1: address1 || '',
+      address2: address2 || '',
+      city: city || '',
+      state: state || '',
+      zip: zip || '',
+      country: country || '',
+      gst: gst || '',
+      pan: pan || '',
+    };
+    await organizationService.updateOrganization(organization._id, defaultOrgFields);
 
-    if ((productSubscriptions && Array.isArray(productSubscriptions)) || productSubscriptions.length > 0) {
-      const productDetails: any = [];
-      for (const subscription of productSubscriptions) {
-        const { productId, totalLicenses, licenseExpiresAt } = subscription;
+    // 3️⃣ Seed roles and permissions
+    await seedRolesAndPermissions({ organizationId: [organization._id] });
 
-        productDetails.push({
-          organizationId: organization._id,
-          productId,
-          totalLicenses,
-          licenseExpiresAt,
-        });
-      }
-      await organizationProductSubscription.createManyOrganizationProductSubscription(productDetails);
+    // 4️⃣ Product subscriptions
+    let createdProductSubs: any[] = [];
+    if (Array.isArray(productSubscriptions) && productSubscriptions.length > 0) {
+      const productDetails = productSubscriptions.map((sub: any) => ({
+        organizationId: organization._id,
+        productId: sub.productId,
+        totalLicenses: sub.totalLicenses,
+        licenseExpiresAt: sub.licenseExpiresAt,
+      }));
+      createdProductSubs = await organizationProductSubscription.createManyOrganizationProductSubscription(productDetails);
     }
 
-    // 3. Apply default widget theme
+    // 5️⃣ Apply default widget theme
     let widgetTheme: any = await widgetThemeService.findWidgetTheme({ isDefault: true });
     widgetTheme = widgetTheme?.toJSON();
+    if (widgetTheme) {
+      await widgetThemeService.createWidgetTheme({
+        ...widgetTheme,
+        _id: undefined,
+        organizationId: organization._id,
+      });
+    }
 
-    await widgetThemeService.createWidgetTheme({
-      ...widgetTheme,
-      _id: undefined,
-      organizationId: organization._id,
-    });
+    // 6️⃣ Create SuperAdmin user
+    if (email && password) {
+      const existingUser = await findUserByEmail(email.toLowerCase());
+      if (!existingUser) {
+        const hashedPassword = await hashPassword(password);
+
+        // Get SuperAdmin role using userRoleService
+        const superAdminRole = await getUserRole({
+          organizationId: organization._id,
+          name: 'Super Admin',
+        });
+
+        if (!superAdminRole) {
+          throw new Error('Super Admin role not found for this organization.');
+        }
+
+        await createUser({
+          email: email.toLowerCase(),
+          password: hashedPassword,
+          firstName: firstName || 'Super',
+          lastName: lastName || 'Admin',
+          roleIds: [superAdminRole._id],
+          organizationId: organization._id,
+          status: 'active',
+          isVerified: true,
+          mobile: phone || '',
+          address: address1 || '',
+          country: country || '',
+          state: state || '',
+          city: city || '',
+          postalCode: zip || '',
+          logo: logoPath,
+          gst: gst || '',
+          pan: pan || '',
+          organizationProductSubscriptionIds: createdProductSubs.map((sub) => sub._id),
+        });
+      }
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Organization created successfully with product subscriptions',
+      message: 'Organization created successfully with product subscriptions and SuperAdmin user',
       data: organization,
     });
   } catch (err) {
     next(err);
   }
 };
+
 export const getOrganizationById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { organizationId: paramOrgId } = req.params;
@@ -80,57 +170,94 @@ export const getOrganizationById = async (req: Request, res: Response, next: Nex
     next(err);
   }
 };
+
 export const updateOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, description, domain, productSubscriptions, owner, status } = req.body;
+    const {
+      name,
+      description,
+      domain,
+      productSubscriptions,
+      owner,
+      status,
+      firstName,
+      lastName,
+      phone,
+      address1,
+      address2,
+      city,
+      state,
+      zip,
+      country,
+      gst,
+      pan,
+    } = req.body;
+
+    let { organizationId } = req.user as any;
     const { organizationId: paramOrgId } = req.params;
-    let { organizationId, isSuperUser } = req.user as any;
+    const { isSuperUser } = req.user as any;
 
     if (isSuperUser && paramOrgId) {
       organizationId = paramOrgId;
     }
 
-    // 1. Update organization
-    await organizationService.updateOrganization(organizationId, {
+    // Handle logo upload
+    let logoPath = '';
+    const files = req.files as Express.Multer.File[];
+    if (files && files.length > 0) {
+      logoPath = `${process.env.BASE_BACKEND_URL}/${files[0].path}`;
+    }
+
+    // 1️⃣ Update organization (email is excluded)
+    const updatePayload: any = {
       ...(name && { name }),
       ...(description && { description }),
       ...(domain && { domain }),
       ...(owner && { owner }),
       ...(status && { status }),
-    });
+      ...(firstName && { firstName }),
+      ...(lastName && { lastName }),
+      ...(phone && { phone }),
+      ...(address1 && { address1 }),
+      ...(address2 && { address2 }),
+      ...(city && { city }),
+      ...(state && { state }),
+      ...(zip && { zip }),
+      ...(country && { country }),
+      ...(gst && { gst }),
+      ...(pan && { pan }),
+      ...(logoPath && { logo: logoPath }),
+      // email intentionally excluded
+    };
 
+    await organizationService.updateOrganization(organizationId, updatePayload);
+
+    // 2️⃣ Handle product subscriptions if superuser
     if (Array.isArray(productSubscriptions) && isSuperUser) {
-      // 1. Fetch existing subscriptions
       const { data: existingSubs }: any = await organizationProductSubscription.getOrganizationProductsSubscription({
         query: { organizationId },
-        limit: 0, // fetch all
+        limit: 0,
       });
 
       const incomingIds = productSubscriptions
         .filter((sub) => sub.organizationProductSubscriptionId)
         .map((sub) => sub.organizationProductSubscriptionId.toString());
 
-      // 2. Delete subscriptions that are in DB but not in incoming
+      // Delete removed subscriptions
       const toDelete = existingSubs.filter((s) => !incomingIds.includes(s._id.toString()));
       if (toDelete.length > 0) {
         await organizationProductSubscription.deleteOrganizationProductSubscriptions(toDelete.map((s) => s._id));
       }
 
-      // 3. Update or create
+      // Update or create subscriptions
       for (const sub of productSubscriptions) {
         if (sub.organizationProductSubscriptionId) {
           await organizationProductSubscription.updateOrganizationProductSubscription(
             sub.organizationProductSubscriptionId,
-            {
-              ...sub,
-              organizationId,
-            }
+            { ...sub, organizationId }
           );
         } else {
-          await organizationProductSubscription.createOrganizationProductSubscription({
-            ...sub,
-            organizationId,
-          });
+          await organizationProductSubscription.createOrganizationProductSubscription({ ...sub, organizationId });
         }
       }
     }

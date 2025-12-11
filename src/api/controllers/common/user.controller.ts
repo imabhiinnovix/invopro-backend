@@ -223,6 +223,19 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
       user.imagePath = `${process.env.BASE_BACKEND_URL}/${user.imagePath}`;
     }
     const permissionDetails = await roleHasPermissionService.getPermissionsByRoleIds(roleIds);
+
+
+    // -----------------------------------------------
+// Fetch and populate user's product subscriptions
+// -----------------------------------------------
+
+const subscriptions = await organizationProductSubscriptionService.findOrganizationProductSubscription(
+  { organizationId },
+  [{ path: 'productId', select: 'name code status' }]
+);
+
+
+
     const query: any = {
       isChangeable: true,
       $or: [{ organizationId: { $exists: false } }, { organizationId: new Types.ObjectId(organizationId) }],
@@ -242,7 +255,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
       allowedMap[perm.permissionId.toString()] = perm;
     });
 
-    const allPermissionsWithAccess = allPermissionResult.data.map((perm: any) => {
+    let allPermissionsWithAccess = allPermissionResult.data.map((perm: any) => {
       const matched = allowedMap[perm._id.toString()];
 
       if (matched) {
@@ -258,6 +271,40 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
         };
       }
     });
+
+     // ------------------------------
+    // BUILD USER ACTIVE MODULE SET
+    // ------------------------------
+    const userActiveModules = new Set<string>();
+
+    for (const subscription of subscriptions) {
+  const product: any = subscription.productId; // Allows populated product object
+  const productCode = product?.code;
+  if (!productCode) continue;
+
+  if (productCode.toLowerCase() === "reportivix") {
+    userActiveModules.add("Reports");
+  }
+  if (productCode.toLowerCase() === "notivix") {
+    userActiveModules.add("Notifications");
+  }
+}
+
+
+    // Restrict only these modules
+    const RESTRICTED_MODULES = new Set(["Reports", "Notifications"]);
+
+     // ------------------------------
+    // APPLY MODULE ACCESS FILTER
+    // ------------------------------
+    allPermissionsWithAccess = allPermissionsWithAccess.filter((perm: any) => {
+      const moduleName = perm.module;
+
+      if (!RESTRICTED_MODULES.has(moduleName)) return true; // allow all non-restricted modules
+
+      return userActiveModules.has(moduleName); // restrict only these two modules
+  });
+
 
     user['permissionIds'] = allPermissionsWithAccess;
     res.status(200).json({

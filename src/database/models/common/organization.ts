@@ -15,6 +15,21 @@ interface IOrganization extends Document {
   updatedAt: Date;
   domain: string;
   code: string;
+
+  // New fields
+  logo?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  address1?: string;
+  address2?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+  gst?: string;
+  pan?: string;
 }
 
 // Define the Organization Schema
@@ -31,6 +46,21 @@ const organizationSchema = new Schema<IOrganization>(
       enum: ['active', 'inactive'],
       default: 'active',
     },
+
+    // New fields
+    logo: { type: String, default: '' },
+    firstName: { type: String, default: '' },
+    lastName: { type: String, default: '' },
+    email: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    address1: { type: String, default: '' },
+    address2: { type: String, default: '' },
+    city: { type: String, default: '' },
+    state: { type: String, default: '' },
+    zip: { type: String, default: '' },
+    country: { type: String, default: '' },
+    gst: { type: String, default: '' },
+    pan: { type: String, default: '' },
   },
   {
     timestamps: true,

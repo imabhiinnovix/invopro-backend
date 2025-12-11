@@ -848,24 +848,28 @@ export async function seedDatabase() {
         resourceType: 'Data Source',
         code: 'case_list',
         organizationId: payload.reportivixOrganizationId,
+        module: "Notification"
       },
       {
         name: 'Action Due',
         dataSourceId: entityDataSourceMapReportivix.action_due.dataSourceId,
         code: 'action_due',
         organizationId: payload.reportivixOrganizationId,
+        module: "Notification"
       },
       {
         name: 'IP Counsel',
         dataSourceId: entityDataSourceMapReportivix.ip_counsel.dataSourceId,
         code: 'ip_counsel',
         organizationId: payload.reportivixOrganizationId,
+        module: "Notification"
       },
       {
         name: 'Formality Officers',
         dataSourceId: entityDataSourceMapReportivix.formality_officers.dataSourceId,
         code: 'formality_officers',
         organizationId: payload.reportivixOrganizationId,
+        module: "Notification"
       },
       {
         name: 'Case List',
@@ -873,24 +877,28 @@ export async function seedDatabase() {
         resourceType: 'Data Source',
         code: 'case_list',
         organizationId: payload.sabicOrganizationId,
+        module: "Notification"
       },
       {
         name: 'Action Due',
         dataSourceId: entityDataSourceMapSabic.action_due.dataSourceId,
         code: 'action_due',
         organizationId: payload.sabicOrganizationId,
+        module: "Notification"
       },
       {
         name: 'IP Counsel',
         dataSourceId: entityDataSourceMapSabic.ip_counsel.dataSourceId,
         code: 'ip_counsel',
         organizationId: payload.sabicOrganizationId,
+        module: "Notification"
       },
       {
         name: 'Formality Officers',
         dataSourceId: entityDataSourceMapSabic.formality_officers.dataSourceId,
         code: 'formality_officers',
         organizationId: payload.sabicOrganizationId,
+        module: "Notification"
       },
     ]);
 
