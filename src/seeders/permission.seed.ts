@@ -934,7 +934,7 @@ let permissions: PermissionSeed[] = [
     method: 'GET',
     resourceId: '/common/widgetTheme/list',
     extraOptions: {},
-    resourceType: 'Widget Theme',
+    resourceType: 'get_data_by_version_idWidget Theme',
     resourceCode: 'widgetTheme__list',
     isSuperUser: false,
     isChangeable: false,
