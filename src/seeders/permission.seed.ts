@@ -180,7 +180,7 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Role',
     resourceCode: 'role__permission_list',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
     module: "Setting",
     subModule: "Role"
   },

@@ -15,30 +15,30 @@ const defaultPermissionsUser = [
   },
   {
     permission: 'PUT:/common/user/update-current-user',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'PUT:/common/user/change-password',
-    isChangeable: true,
+    isChangeable: false,
   },
   { permission: 'GET:/common/entities/list', isChangeable: true },
-  { permission: 'GET:/common/entities/:entityId', isChangeable: true },
+  { permission: 'GET:/common/entities/:entityId', isChangeable: false },
   {
     permission: 'GET:/common/dataSource/code/:code',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/common/dataSource/name/:name',
-    isChangeable: true,
+    isChangeable: false,
   },
   { permission: 'GET:/common/dataSource/list', isChangeable: true },
   {
     permission: 'GET:/common/dataSource/dataSourceId/:dataSourceId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'POST:/common/dataSource/getWidgetDataByFilter',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'POST:/common/dataSource/getWidgetDataByFilter/export',
@@ -46,11 +46,11 @@ const defaultPermissionsUser = [
   },
   {
     permission: 'GET:/common/attributeOptions/list',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/common/attributeOptions/get/:attributeId',
-    isChangeable: true,
+    isChangeable: false,
   },
   { permission: 'POST:/common/files/upload', isChangeable: true },
   {
@@ -60,7 +60,7 @@ const defaultPermissionsUser = [
   {
     permission:
       'GET:/common/dataSourceVersion/dataSourceId/:dataSourceId/versionValue/:versionValue/versionName/:versionName',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'POST:/common/dataSourceVersion/create',
@@ -88,20 +88,20 @@ const defaultPermissionsUser = [
   },
   {
     permission: 'GET:/common/dataSourceVersion/listVersionData/:customReportId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/common/dataSourceVersion/listAllAvailableDataSourceVersionValue',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/common/dataImportError/list',
-    isChangeable: true,
+    isChangeable: false,
   },
   { permission: 'GET:/common/dashboard/list', isChangeable: true },
   {
     permission: 'GET:/common/dashboard/get/:dashboardId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/common/dashboard/widget/getWidgets/:dashboardId',
@@ -109,42 +109,42 @@ const defaultPermissionsUser = [
   },
   {
     permission: 'POST:/common/dashboard/widget/getWidgetData',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/common/dashboard/widget/getPlotTypes',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/common/widgetType/get/:widgetTypeId',
-    isChangeable: true,
+    isChangeable: false,
   },
-  { permission: 'GET:/common/widgetType/list', isChangeable: true },
+  { permission: 'GET:/common/widgetType/list', isChangeable: false },
   {
     permission: 'GET:/common/operator/get/:operatorId',
-    isChangeable: true,
+    isChangeable: false,
   },
-  { permission: 'POST:/common/operator/list', isChangeable: true },
-  { permission: 'GET:/common/widgetTheme/list', isChangeable: true },
+  { permission: 'POST:/common/operator/list', isChangeable: false },
+  { permission: 'GET:/common/widgetTheme/list', isChangeable: false },
   {
     permission: 'GET:/common/widgetTheme/:widgetThemeId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/common/dashboardShare/list/:dashboardId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'POST:/common/dashboardShare/create',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'POST:/common/dashboardShare/:dashboardShareId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/reportivix/customReports/list',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/reportivix/customReports/listReportRequest',
@@ -152,7 +152,7 @@ const defaultPermissionsUser = [
   },
   {
     permission: 'GET:/reportivix/customReports/getVersionValue',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'POST:/reportivix/customReports/generate',
@@ -164,23 +164,23 @@ const defaultPermissionsUser = [
   },
   {
     permission: 'GET:/reportivix/customReports/downloadSupplementalIntermediate/:customReportId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/reportivix/customReports/reportDataOnDataSourceVersionId/:dataSourceVersionId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/reportivix/customReports/customReportDesignData/:customReportId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/reportivix/customReports/reportDetails/:reportRequestId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/reportivix/customReports/reportData/:dataSourceId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/reportivix/customReports/listSettings',
@@ -193,15 +193,15 @@ const defaultPermissionsUser = [
   },
   {
     permission: 'POST:/common/dataSourceVersion/chartData',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/common/user/image',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'DELETE:/common/user/image',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/common/designation/list',
@@ -213,18 +213,18 @@ const defaultPermissionsUser = [
   },
   {
     permission: 'POST:/common/derivedField/create',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'PUT:/common/derivedField/update/:id',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'DELETE:/common/derivedField/delete/:id',
-    isChangeable: true,
+    isChangeable: false,
   },
-  { permission: 'GET:/common/derivedField/list', isChangeable: true },
-  { permission: 'GET:/common/derivedField/:id', isChangeable: true },
+  { permission: 'GET:/common/derivedField/list', isChangeable: false },
+  { permission: 'GET:/common/derivedField/:id', isChangeable: false },
   {
     permission: "GET:/common/download-request/list",
     isChangeable: false,
@@ -232,14 +232,34 @@ const defaultPermissionsUser = [
   {
     permission: "GET:/common/download-request/download/:id",
     isChangeable: false,
-  }
+  },
+  {
+    permission: 'GET:/notivix/notification-setting/type/list',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/notivix/notification-setting/frequency/list',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/notivix/notification-setting/template/list',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/notivix/notification-setting/medium/list',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/notivix/notification-setting/prepared/notification/list',
+    isChangeable: true,
+  },
 ];
 
 const defaultPermissionsAdmin = [
   ...defaultPermissionsUser,
   { permission: 'POST:/common/user/create', isChangeable: true },
   { permission: 'GET:/common/user/list', isChangeable: true },
-  { permission: 'GET:/common/user/:userId', isChangeable: true },
+  { permission: 'GET:/common/user/:userId', isChangeable: false },
   { permission: 'PUT:/common/user/update/:userId', isChangeable: true },
   {
     permission: 'DELETE:/common/user/delete/:userId',
@@ -256,7 +276,7 @@ const defaultPermissionsAdmin = [
     isChangeable: true,
   },
   { permission: 'GET:/common/role/list', isChangeable: true },
-  { permission: 'GET:/common/role/:roleId', isChangeable: true },
+  { permission: 'GET:/common/role/:roleId', isChangeable: false },
   { permission: 'POST:/common/role/create', isChangeable: true },
   { permission: 'PUT:/common/role/update/:roleId', isChangeable: true },
   {
@@ -265,15 +285,15 @@ const defaultPermissionsAdmin = [
   },
   {
     permission: 'GET:/common/product-subscription/list',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/common/organization/get-current-organization',
-    isChangeable: true,
+    isChangeable: false,
   },
   { permission: 'GET:/common/organization/list', isChangeable: true },
   { permission: 'PUT:/common/organization/update/:organizationId', isChangeable: true },
-  { permission: 'GET:/common/organization/:organizationId', isChangeable: true },
+  { permission: 'GET:/common/organization/:organizationId', isChangeable: false },
   { permission: 'POST:/common/entities/create', isChangeable: true },
   {
     permission: 'PUT:/common/entities/update/:entityId',
@@ -286,11 +306,11 @@ const defaultPermissionsAdmin = [
   },
   {
     permission: 'POST:/common/attributeOptions/create',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'PUT:/common/attributeOptions/update/:attributeId',
-    isChangeable: true,
+    isChangeable: false,
   },
   { permission: 'POST:/common/dashboard/create', isChangeable: true },
   {
@@ -303,7 +323,7 @@ const defaultPermissionsAdmin = [
   },
   {
     permission: 'POST:/common/dashboard/selectTheme/:dashboardId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'POST:/common/dashboard/widget/create',
@@ -321,25 +341,21 @@ const defaultPermissionsAdmin = [
     permission: 'POST:/common/dashboard/widget/delete/:dashboardWidgetId',
     isChangeable: true,
   },
-  { permission: 'POST:/common/widgetTheme/create', isChangeable: true },
+  { permission: 'POST:/common/widgetTheme/create', isChangeable: false },
   {
     permission: 'POST:/common/widgetTheme/duplicate/:widgetThemeId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'POST:/common/widgetTheme/update/:widgetThemeId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'POST:/common/widgetTheme/delete/:widgetThemeId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'POST:/reportivix/customReports/updateSettings/:customReportId',
-    isChangeable: true,
-  },
-  {
-    permission: 'GET:/notivix/notification-setting/type/list',
     isChangeable: true,
   },
   {
@@ -356,15 +372,11 @@ const defaultPermissionsAdmin = [
   },
   {
     permission: 'POST:/notivix/notification-setting/type/summary',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/notivix/notification-setting/type/:id',
-    isChangeable: true,
-  },
-  {
-    permission: 'GET:/notivix/notification-setting/frequency/list',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'POST:/notivix/notification-setting/frequency/create',
@@ -380,11 +392,7 @@ const defaultPermissionsAdmin = [
   },
   {
     permission: 'GET:/notivix/notification-setting/frequency/:id',
-    isChangeable: true,
-  },
-  {
-    permission: 'GET:/notivix/notification-setting/template/list',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'POST:/notivix/notification-setting/template/create',
@@ -400,11 +408,7 @@ const defaultPermissionsAdmin = [
   },
   {
     permission: 'GET:/notivix/notification-setting/template/:id',
-    isChangeable: true,
-  },
-  {
-    permission: 'GET:/notivix/notification-setting/medium/list',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'POST:/notivix/notification-setting/medium/create',
@@ -420,45 +424,41 @@ const defaultPermissionsAdmin = [
   },
   {
     permission: 'GET:/notivix/notification-setting/medium/:id',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'POST:/notivix/notification-setting/prepared/trigger',
     isChangeable: true,
   },
   {
-    permission: 'GET:/notivix/notification-setting/prepared/notification/list',
-    isChangeable: true,
-  },
-  {
     permission: 'POST:/notivix/notification-setting/prepared/notification/resend',
     isChangeable: true,
   },
-  { permission: 'GET:/common/dashboardFont/list', isChangeable: true },
+  { permission: 'GET:/common/dashboardFont/list', isChangeable: false },
   {
     permission: 'GET:/common/dashboardFont/download/:fontId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'DELETE:/common/dashboardFont/delete/:fontId',
-    isChangeable: true,
+    isChangeable: false,
   },
-  { permission: 'GET:/common/dashboardTheme/list', isChangeable: true },
+  { permission: 'GET:/common/dashboardTheme/list', isChangeable: false },
   {
     permission: 'POST:/common/dashboardTheme/create',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'PUT:/common/dashboardTheme/update/:themeId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'DELETE:/common/dashboardTheme/delete/:themeId',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'GET:/notivix/notification-setting/medium/:id',
-    isChangeable: true,
+    isChangeable: false,
   },
   {
     permission: 'POST:/common/designation/create',
@@ -484,7 +484,7 @@ const defaultPermissionsAdmin = [
     permission: 'DELETE:/common/department/delete/:departmentId',
     isChangeable: true,
   },
-  { permission: 'GET:/common/product/list', isChangeable: true },
+  { permission: 'GET:/common/product/list', isChangeable: false },
   {
     permission: 'POST:/common/user-data-permission/create',
     isChangeable: true,
@@ -503,7 +503,7 @@ const defaultPermissionsAdmin = [
   },
   {
     permission: 'GET:/common/user-data-permission/:id',
-    isChangeable: true,
+    isChangeable: false,
   },
   { permission: 'GET:/common/organization-visibility-setting/list', isChangeable: true },
   { permission: 'POST:/common/organization-visibility-setting/create', isChangeable: true },
@@ -519,11 +519,11 @@ const defaultPermissionsPrimarySuperAdmin = [
   ...defaultPermissionsAdmin,
   { permission: 'POST:/common/organization/create', isChangeable: true },
   { permission: 'DELETE:/common/organization/delete/:organizationId', isChangeable: true },
-  { permission: 'POST:/common/widgetType/create', isChangeable: true },
-  { permission: 'POST:/common/widgetType/update/:widgetTypeId', isChangeable: true },
-  { permission: 'POST:/common/widgetType/delete/:widgetTypeId', isChangeable: true },
-  { permission: 'POST:/common/operator/update/:operatorId', isChangeable: true },
-  { permission: 'POST:/common/operator/create', isChangeable: true },
+  { permission: 'POST:/common/widgetType/create', isChangeable: false },
+  { permission: 'POST:/common/widgetType/update/:widgetTypeId', isChangeable: false },
+  { permission: 'POST:/common/widgetType/delete/:widgetTypeId', isChangeable: false },
+  { permission: 'POST:/common/operator/update/:operatorId', isChangeable: false },
+  { permission: 'POST:/common/operator/create', isChangeable: false },
 ];
 
 // ------------------ Default Roles ------------------ //
@@ -583,23 +583,52 @@ export async function seedRolesAndPermissions(payload: SeedPayload) {
         name: roleName,
       });
 
+      // --------------------------
+      //  CREATE or UPDATE Role
+      // --------------------------
+      const rolePayload: any = {
+        organizationId: orgId,
+        name: roleName,
+        isSuperUser,
+        status: 'active',
+      };
+
       if (!role) {
-        role = new UserRole({
-          organizationId: orgId,
-          name: roleName,
-          isSuperUser,
-          status: 'active',
-        });
+        role = new UserRole(rolePayload);
         await role.save();
         console.log(`✅ Role "${roleName}" created for org "${organization.name}"`);
       } else {
-        console.log(`ℹ️ Role "${roleName}" already exists for org "${organization.name}"`);
+        // Update only changed fields
+        const updateRolePayload: any = {};
+        for (const key of Object.keys(rolePayload)) {
+          const oldVal = role[key];
+          const newVal = rolePayload[key];
+
+          const isMissing = oldVal === undefined || oldVal === null;
+          const isDifferent = JSON.stringify(oldVal) !== JSON.stringify(newVal);
+
+          if (isMissing || isDifferent) updateRolePayload[key] = newVal;
+        }
+
+        if (Object.keys(updateRolePayload).length > 0) {
+          await UserRole.updateOne(
+            { _id: role._id },
+            { $set: updateRolePayload }
+          );
+          console.log(`🔄 Role "${roleName}" updated:`, updateRolePayload);
+        } else {
+          console.log(`ℹ️ Role "${roleName}" already up-to-date.`);
+        }
       }
 
+      // --------------------------
+      //  PERMISSIONS LOOP
+      // --------------------------
       for (const permItem of permissionsList) {
-        // backward compatibility: allow plain string
         const { permission, isChangeable } =
-          typeof permItem === 'string' ? { permission: permItem, isChangeable: true } : permItem;
+          typeof permItem === 'string'
+            ? { permission: permItem, isChangeable: true }
+            : permItem;
 
         const [method, ...rest] = permission.split(':');
         const resourceId = rest.join(':');
@@ -615,19 +644,55 @@ export async function seedRolesAndPermissions(payload: SeedPayload) {
           permissionId: permissionDoc._id,
         });
 
-        if (!existing) {
-          await new RoleHasPermission({
-            roleId: role._id,
-            permissionId: permissionDoc._id,
-            isChangeable, // ✅ store new flag
-            status: 'active',
-          }).save();
+        // --------------------------
+        //  CREATE RoleHasPermission
+        // --------------------------
+        const basePayload = {
+          roleId: role._id,
+          permissionId: permissionDoc._id,
+          isChangeable,
+          status: 'active',
+        };
 
-          console.log(`✅ Permission assigned to ${roleName}: ${method}:${resourceId}`);
+        if (!existing) {
+          await new RoleHasPermission(basePayload).save();
+          console.log(
+            `✅ Permission assigned to ${roleName}: ${method}:${resourceId}`
+          );
         } else {
-          console.log(`ℹ️ Permission already assigned to ${roleName}: ${method}:${resourceId}`);
+          // --------------------------
+          //  UPDATE existing RoleHasPermission
+          // --------------------------
+          const updatePayload: any = {};
+
+          for (const key of Object.keys(basePayload)) {
+            const oldVal = existing[key];
+            const newVal = basePayload[key];
+
+            const isMissing = oldVal === undefined || oldVal === null;
+            const isDifferent = JSON.stringify(oldVal) !== JSON.stringify(newVal);
+
+            if (isMissing || isDifferent) updatePayload[key] = newVal;
+          }
+
+          if (Object.keys(updatePayload).length > 0) {
+            await RoleHasPermission.updateOne(
+              { _id: existing._id },
+              { $set: updatePayload }
+            );
+
+            console.log(
+              `🔄 Updated permission for ${roleName}: ${method}:${resourceId}`,
+              updatePayload
+            );
+          } else {
+            console.log(
+              `ℹ️ Permission already up-to-date for ${roleName}: ${method}:${resourceId}`
+            );
+          }
         }
       }
     }
   }
 }
+

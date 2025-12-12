@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as userRoleService from '../../../database/services/common/userRole.service';
 import { Types } from 'mongoose';
+import { getPermissionsByRoleIds } from '../../../database/services/common/roleHasPermission.services';
 export const getUserRoleList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     let { organizationId, isSuperUser } = req.user;
@@ -71,22 +72,61 @@ export const getRolePermissionList = async (req: Request, res: Response, next: N
 
 export const createUserRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId, isSuperUser } = req.user;
+    const { userId, isSuperUser, roleType: roleName = 'User' } = req.user;
+
     let organizationId = req.user.organizationId;
-    const { name, permissionIds, organizationId: bodyOrgId } = req.body;
+    const { name, permissionIds = [], organizationId: bodyOrgId } = req.body;
+
     if (isSuperUser && bodyOrgId) {
       organizationId = bodyOrgId;
     }
-    await userRoleService.createUserRole({ organizationId, name, permissionIds, userId });
+
+    // 1️⃣ Get the base role (by name)
+    const baseRole: any = await userRoleService.getUserRole({
+      organizationId,
+      name: roleName,
+    });
+
+    if (!baseRole) {
+      return res.status(400).json({
+        success: false,
+        message: `Base role '${roleName}' not found.`,
+      });
+    }
+
+    // 2️⃣ Fetch default permissions from RoleHasPermission using roleId
+    const basePermissions = await getPermissionsByRoleIds([baseRole._id]);
+
+    // Extract only permissionId list
+    const basePermissionIds = basePermissions.map(p => String(p.permissionId));
+
+    // 3️⃣ Merge + dedupe (base permissions + new permissions)
+    const finalPermissionIds = [
+      ...new Set([
+        ...basePermissionIds,
+        ...permissionIds.map(String),
+      ])
+    ];
+
+    // 4️⃣ Call service — it creates role + inserts roleHasPermissions
+    const newRole = await userRoleService.createUserRole({
+      organizationId,
+      name,
+      permissionIds: finalPermissionIds,
+      userId,
+    });
 
     res.status(200).json({
       success: true,
-      message: 'User role created successfully.',
+      message: "User role created successfully.",
+      role: newRole,
     });
+
   } catch (err) {
     next(err);
   }
 };
+
 
 export const updateUserRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
