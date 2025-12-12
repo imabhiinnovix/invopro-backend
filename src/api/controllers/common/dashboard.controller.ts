@@ -273,15 +273,35 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
 
 export const deleteDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await dashboardService.updateDashboard(req.params.dashboardId, {
+    const dashboardId = req.params.dashboardId;
+
+    // Fetch dashboard to get old name
+    const dashboard = await dashboardService.getDashboardById(dashboardId);
+
+    if (!dashboard) {
+      return res.status(404).json({
+        success: false,
+        message: "Dashboard not found",
+      });
+    }
+
+    // Rename deleted dashboard to prevent unique name conflict
+    const newName = `${dashboard.name}__deleted__${Date.now()}`;
+
+    await dashboardService.updateDashboard(dashboardId, {
       isDeleted: true,
+      name: newName,
     });
 
-    res.status(200).json({ success: true, message: 'Dashboard deleted successfully' });
+    res.status(200).json({
+      success: true,
+      message: "Dashboard deleted successfully",
+    });
   } catch (err) {
     next(err);
   }
 };
+
 
 export const getDashboardWidgetList = async (req: Request, res: Response, next: NextFunction) => {
   try {
