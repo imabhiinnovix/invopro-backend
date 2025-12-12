@@ -571,10 +571,32 @@ export async function seedRolesAndPermissions(payload: SeedPayload) {
     }
 
     for (const roleItem of defaultRolesAndPermissions) {
-      const { roleName, isSuperUser, permissionsList } = roleItem;
+      const { roleName } = roleItem;
+      let { permissionsList, isSuperUser } = roleItem;
 
-      if (isSuperUser && !organization.isMaster) {
-        console.info(`⏭️ Skipping Super Admin role for non-master organization: ${organization.name}`);
+       // -------------------------------------------------------
+      // MASTER ORG LOGIC
+      // -------------------------------------------------------
+      if (organization.isMaster) {
+        // Skip Primary Super Admin entirely
+        if (roleName === 'Primary Super Admin') {
+          console.info(`⏭️ Skipping Primary Super Admin for master org`);
+          continue;
+        }
+
+        // Super Admin becomes Primary Super Admin
+        if (roleName === 'Super Admin') {
+          console.info(`⭐ Master org: Super Admin uses Primary Super Admin permissions`);
+          permissionsList = defaultPermissionsPrimarySuperAdmin;
+          isSuperUser = true;
+        }
+      }
+
+      // -------------------------------------------------------
+      // NON-MASTER ORG LOGIC
+      // -------------------------------------------------------
+      if (!organization.isMaster && roleName === 'Primary Super Admin') {
+        console.info(`⏭️ Skipping Primary Super Admin for non-master org`);
         continue;
       }
 
