@@ -115,6 +115,7 @@ export const getDynamicPermission = async (
     dataSourceId: string;
     code: string;
     organizationId: string;
+    module?: string;
   }[]
 ) => {
   const routes = [
@@ -152,7 +153,7 @@ export const getDynamicPermission = async (
     DELETE: 'delete',
     GET: 'list',
   };
-  entities.forEach(({ name, dataSourceId, code, organizationId }) => {
+  entities.forEach(({ name, dataSourceId, code, organizationId, module }) => {
     routes.forEach(({ action, method, resourceId, codeSuffix }) => {
       permissions.push({
         name: `${name} ${action}`,
@@ -165,7 +166,8 @@ export const getDynamicPermission = async (
         isSuperUser: false,
         isChangeable: true,
         organizationId,
-        methodName: methodNameArr[method?.toUpperCase()] || 'UNKNOWN'
+        methodName: methodNameArr[method?.toUpperCase()] || 'UNKNOWN',
+        module: module || 'Setting'
       });
     });
   });

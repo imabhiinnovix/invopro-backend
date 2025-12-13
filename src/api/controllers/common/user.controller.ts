@@ -40,6 +40,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     if (!validationResult.valid) {
       return res.status(400).json({ success: false, message: validationResult.message });
     }
+
     const { isSuperUser } = req.user;
     let createUserOrganizationId = req.user.organizationId;
     if (isSuperUser && organizationId) {
@@ -52,73 +53,87 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       return res.status(400).json({ success: false, message: 'User already exists' });
     }
 
-    const subscriptionIds = organizationProductSubscriptionIds.map((id) => new Types.ObjectId(id));
-    if (subscriptionIds.length === 0) {
+    if (!organizationProductSubscriptionIds?.length) {
       return res.status(400).json({
         success: false,
         message: 'User must be assigned to at least one product subscription.',
       });
-    } else {
-      // Step 2.1: Fetch active users with these subscriptions
-      const activeUsers = await userService.findUser({
-        createUserOrganizationId,
-        status: 'active',
-        organizationProductSubscriptionIds: { $in: organizationProductSubscriptionIds },
-      });
+    }
 
-      // Step 2.2: Build a usage count map
-      const usageMap: Record<string, number> = {};
-      for (const id of organizationProductSubscriptionIds) {
-        usageMap[id] = activeUsers.filter((user) =>
-          user?.organizationProductSubscriptionIds?.map(String).includes(String(id))
-        ).length;
+    // ---------------- FIX START ----------------
+
+    // Normalize subscription IDs to string
+    const requestedSubIds = organizationProductSubscriptionIds.map(String);
+
+    // Step 2.1: Fetch active users with these subscriptions
+    const activeUsers = await userService.findUser({
+      organizationId: createUserOrganizationId,
+      status: 'active',
+      organizationProductSubscriptionIds: { $in: organizationProductSubscriptionIds },
+    });
+
+    // Step 2.2: Build usage count map (FIXED)
+    const usageMap: Record<string, number> = {};
+    for (const user of activeUsers) {
+      for (const subId of user.organizationProductSubscriptionIds || []) {
+        const id = String(subId);
+        usageMap[id] = (usageMap[id] || 0) + 1;
       }
+    }
 
-      // Step 2.3: Fetch subscriptions and validate
-      const subscriptions: any = await organizationProductSubscriptionService.findOrganizationProductSubscription(
+    // Step 2.3: Fetch subscriptions
+    const subscriptions: any[] =
+      await organizationProductSubscriptionService.findOrganizationProductSubscription(
         {
           _id: { $in: organizationProductSubscriptionIds },
-          createUserOrganizationId,
+          organizationId: createUserOrganizationId,
         },
         ['productId']
       );
 
-      const now = new Date();
-      const overLimitProducts: string[] = [];
-      const expiredProducts: string[] = [];
-      const inactiveProducts: string[] = [];
+    const now = new Date();
+    const overLimitProducts: string[] = [];
+    const expiredProducts: string[] = [];
+    const inactiveProducts: string[] = [];
 
-      for (const sub of subscriptions) {
-        const subId = sub._id.toString();
-        const productName = sub.productId?.name || 'Unknown Product';
-        const currentCount = usageMap[subId] || 0;
+    for (const sub of subscriptions) {
+      const subId = String(sub._id);
+      const productName = sub.productId?.name || 'Unknown Product';
+      const currentCount = usageMap[subId] || 0;
 
-        if (sub.status !== 'active') {
-          inactiveProducts.push(productName);
-        }
+      // FIX: Safe Date comparison
+      const expiryDate = sub.licenseExpiresAt
+        ? new Date(sub.licenseExpiresAt)
+        : null;
 
-        if (sub.licenseExpiresAt < now) {
-          expiredProducts.push(productName);
-        }
-
-        if (currentCount + 1 > sub.totalLicenses) {
-          overLimitProducts.push(productName);
-        }
+      if (sub.status !== 'active') {
+        inactiveProducts.push(productName);
       }
 
-      if (inactiveProducts.length || expiredProducts.length || overLimitProducts.length) {
-        const messageParts: string[] = [];
+      if (expiryDate && expiryDate.getTime() < now.getTime()) {
+        expiredProducts.push(productName);
+      }
 
-        if (inactiveProducts.length) messageParts.push(`Inactive products: ${inactiveProducts.join(', ')}`);
-        if (expiredProducts.length) messageParts.push(`Expired licenses: ${expiredProducts.join(', ')}`);
-        if (overLimitProducts.length) messageParts.push(`License limit exceeded for: ${overLimitProducts.join(', ')}`);
-
-        return res.status(400).json({
-          success: false,
-          message: `User creation failed: ${messageParts.join(' | ')}`,
-        });
+      if (currentCount + 1 > sub.totalLicenses) {
+        overLimitProducts.push(productName);
       }
     }
+
+    if (inactiveProducts.length || expiredProducts.length || overLimitProducts.length) {
+      const messageParts: string[] = [];
+
+      if (inactiveProducts.length) messageParts.push(`Inactive products: ${inactiveProducts.join(', ')}`);
+      if (expiredProducts.length) messageParts.push(`Expired licenses: ${expiredProducts.join(', ')}`);
+      if (overLimitProducts.length)
+        messageParts.push(`License limit exceeded for: ${overLimitProducts.join(', ')}`);
+
+      return res.status(400).json({
+        success: false,
+        message: `User creation failed: ${messageParts.join(' | ')}`,
+      });
+    }
+
+    // ---------------- FIX END ----------------
 
     // Step 3: Create user
     const hashedPassword = await hashPassword(password);
@@ -148,6 +163,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     next(err);
   }
 };
+
 export const getUserList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, firstName, lastName, organizationId }: any = req.query;
@@ -223,8 +239,10 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
       user.imagePath = `${process.env.BASE_BACKEND_URL}/${user.imagePath}`;
     }
     const permissionDetails = await roleHasPermissionService.getPermissionsByRoleIds(roleIds);
+
+
     const query: any = {
-      isChangeable: true,
+      // isChangeable: true,
       $or: [{ organizationId: { $exists: false } }, { organizationId: new Types.ObjectId(organizationId) }],
     };
     if(!isSuperUser){
@@ -242,7 +260,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
       allowedMap[perm.permissionId.toString()] = perm;
     });
 
-    const allPermissionsWithAccess = allPermissionResult.data.map((perm: any) => {
+    let allPermissionsWithAccess = allPermissionResult.data.map((perm: any) => {
       const matched = allowedMap[perm._id.toString()];
 
       if (matched) {
@@ -258,6 +276,38 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
         };
       }
     });
+
+     // ------------------------------
+    // BUILD USER ACTIVE MODULE SET
+    // ------------------------------
+    const userActiveModules = new Set<string>();
+
+    for (const subscription of user.organizationProductSubscriptionIds) {
+      const productCode = subscription.productId?.code;
+      if (!productCode) continue;
+
+      if (productCode.toLowerCase() === "reportivix") {
+        userActiveModules.add("Reports");
+      }
+      if (productCode.toLowerCase() === "notivix") {
+        userActiveModules.add("Notifications");
+      }
+    }
+
+    // Restrict only these modules
+    const RESTRICTED_MODULES = new Set(["Reports", "Notifications"]);
+
+     // ------------------------------
+    // APPLY MODULE ACCESS FILTER
+    // ------------------------------
+    allPermissionsWithAccess = allPermissionsWithAccess.filter((perm: any) => {
+      const moduleName = perm.module;
+
+      if (!RESTRICTED_MODULES.has(moduleName)) return true; // allow all non-restricted modules
+
+      return userActiveModules.has(moduleName); // restrict only these two modules
+  });
+
 
     user['permissionIds'] = allPermissionsWithAccess;
     res.status(200).json({
@@ -361,31 +411,49 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
         message: `Invalid User Status.`,
       });
     }
+
     const { isSuperUser } = req.user;
     let organizationId = req.user.organizationId;
 
-    // If super user and orgId is passed in body
     if (isSuperUser && bodyOrgId) {
       organizationId = bodyOrgId;
     }
 
-    const userQuery = { _id: new Types.ObjectId(userId), organizationId: new Types.ObjectId(organizationId) };
-    // Step 1: Fetch existing user
+    const userQuery = {
+      _id: new Types.ObjectId(userId),
+      organizationId: new Types.ObjectId(organizationId),
+    };
+
     const existingUser = await userService.findOne(userQuery);
 
     if (!existingUser) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
+    // ✅ Minimal additions
     const oldStatus = existingUser.status;
     const newStatus = status || oldStatus;
-    const newSubscriptionIds: string[] =
-      organizationProductSubscriptionIds ?? existingUser.organizationProductSubscriptionIds?.map(String) ?? [];
 
-    if (newStatus === 'active') {
+    const statusChangedToActive =
+      oldStatus !== 'active' && newStatus === 'active';
+
+    const subscriptionsChanged =
+      Array.isArray(organizationProductSubscriptionIds) &&
+      JSON.stringify(
+        existingUser.organizationProductSubscriptionIds?.map(String).sort()
+      ) !== JSON.stringify(
+        organizationProductSubscriptionIds.map(String).sort()
+      );
+
+    const newSubscriptionIds: string[] =
+      organizationProductSubscriptionIds ??
+      existingUser.organizationProductSubscriptionIds?.map(String) ??
+      [];
+
+    // ✅ Condition updated
+    if (statusChangedToActive || subscriptionsChanged) {
       const subscriptionIds = newSubscriptionIds.map((id) => new Types.ObjectId(id));
 
-      // Find active users excluding current
       const activeUsers = await userService.findUser({
         _id: { $ne: userId },
         organizationId,
@@ -393,7 +461,6 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
         organizationProductSubscriptionIds: { $in: subscriptionIds },
       });
 
-      // Build usage map
       const usageMap: Record<string, number> = {};
       for (const id of newSubscriptionIds) {
         usageMap[id] = activeUsers.filter((user) =>
@@ -401,11 +468,11 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
         ).length;
       }
 
-      // Fetch and validate subscriptions
-      const subscriptions: any[] = await organizationProductSubscriptionService.findOrganizationProductSubscription(
-        { _id: { $in: subscriptionIds }, organizationId },
-        ['productId']
-      );
+      const subscriptions: any[] =
+        await organizationProductSubscriptionService.findOrganizationProductSubscription(
+          { _id: { $in: subscriptionIds }, organizationId },
+          ['productId']
+        );
 
       const now = new Date();
       const overLimitProducts: string[] = [];
@@ -427,7 +494,8 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
 
         if (inactiveProducts.length) messageParts.push(`Inactive products: ${inactiveProducts.join(', ')}`);
         if (expiredProducts.length) messageParts.push(`Expired licenses: ${expiredProducts.join(', ')}`);
-        if (overLimitProducts.length) messageParts.push(`License limit exceeded for: ${overLimitProducts.join(', ')}`);
+        if (overLimitProducts.length)
+          messageParts.push(`License limit exceeded for: ${overLimitProducts.join(', ')}`);
 
         return res.status(400).json({
           success: false,
@@ -436,7 +504,7 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
       }
     }
 
-    // Step 2: Build update object
+    // Build update object (unchanged)
     const updateData: any = {};
 
     if (firstName) updateData.firstName = firstName;
@@ -447,28 +515,14 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
     if (password) updateData.password = await hashPassword(password);
     if (organizationProductSubscriptionIds)
       updateData.organizationProductSubscriptionIds = organizationProductSubscriptionIds;
-    if (departmentId) {
-      updateData.departmentId = departmentId;
-    }
-    if (designationId) {
-      updateData.designationId = designationId;
-    }
-    if (address) {
-      updateData.address = address;
-    }
-    if (country) {
-      updateData.country = country;
-    }
-    if (state) {
-      updateData.state = state;
-    }
-    if (city) {
-      updateData.city = city;
-    }
-    if (postalCode) {
-      updateData.postalCode = postalCode;
-    }
-    // Step 3: Update user
+    if (departmentId) updateData.departmentId = departmentId;
+    if (designationId) updateData.designationId = designationId;
+    if (address) updateData.address = address;
+    if (country) updateData.country = country;
+    if (state) updateData.state = state;
+    if (city) updateData.city = city;
+    if (postalCode) updateData.postalCode = postalCode;
+
     await userService.updateUser(userId, updateData);
 
     return res.status(200).json({ success: true, message: 'User updated successfully' });

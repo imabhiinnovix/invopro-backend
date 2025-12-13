@@ -19,6 +19,7 @@ import ExcelJS from "exceljs";
 import { createDownloadRequest } from '../../../database/services/common/downloadRequest.service';
 import { Queue } from 'bullmq';
 import { getPlotTypeConfig, plotTypesConfig } from "../../../config/plotType.config";
+import { getVisibilitySettingService, listVisibilitySettingService } from '../../../database/services/common/organizationVisibilitySettingService';
 
 export const createDataSourcce = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -214,9 +215,24 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
       paginate,
     });
 
+
+      // Fetch visibility settings using service
+    const visibilitySettings = await getVisibilitySettingService(organizationId);
+
     const data = Array.isArray(result.data)
       ? await Promise.all(
           result.data.map(async (ds: any) => {
+
+             // Apply DataSource-level visibility
+           // Apply DataSource-level visibility
+const dsVisibility = visibilitySettings?.find(
+  (v: any) => v.dataSourceId?.toString() === ds._id.toString() && !v.attributeId
+);
+
+ds.visibility = dsVisibility?.visibility || 'primary';
+
+
+
             const attributeMap = new Map<string, any>();
             if (ds.entityId?.attributes?.length) {
               for (const attr of ds.entityId.attributes) {
@@ -331,7 +347,23 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
                   field.optionAttributeId = null;
                 }
               }
+               // Apply field-level visibility
+            // Apply field-level visibility
+            if (Array.isArray(ds.fieldSettings)) {
+              ds.fieldSettings = ds.fieldSettings
+                .map((field: any) => {
+                  const fieldVisibility = visibilitySettings?.find(
+                    (v: any) =>
+                      v.dataSourceId?.toString() === ds._id.toString() &&
+                      v.attributeId?.toString() === field.attributeId.toString() &&
+                      JSON.stringify(v.refAttributeId || []) === JSON.stringify(field.refAttributeId || [])
+                  );
+                  field.visibility = fieldVisibility?.visibility || 'primary';
+                  return field;
+                })
+                .filter(Boolean);
             }
+          }
 
             ds.uniqueAttributeRules = Array.isArray(ds.uniqueAttributeRules)
               ? ds.uniqueAttributeRules.map((ruleGroup: any[]) =>
@@ -384,27 +416,52 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+
 export const getDataSourceById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // existing call to service
-    const dataSourceDetails: any = await dataSourceService.findDataSourceById(req.params.dataSourceId);
+    let { organizationId, isSuperUser } = req.user as any;
+    const { organizationId: paramOrgId } = req.query;
+    if (isSuperUser && paramOrgId) organizationId = paramOrgId;
 
-    if (!dataSourceDetails) {
-      return res.status(404).json({
-        success: false,
-        message: 'Data Source not found',
-      });
+    const ds: any = await dataSourceService.findDataSourceById(req.params.dataSourceId);
+    if (!ds) return res.status(404).json({ success: false, message: 'Data Source not found' });
+
+    // Fetch all visibility settings for the organization
+    const visibilitySettings: any[] = await getVisibilitySettingService(organizationId); // returns array
+
+    // Apply DataSource-level visibility
+    const dsVisibility = visibilitySettings.find(
+      (v) => v.dataSourceId?.toString() === ds._id.toString() && !v.attributeId
+    );
+    ds.visibility = dsVisibility?.visibility || 'primary';
+
+    // Apply field-level visibility
+    if (Array.isArray(ds.fieldSettings)) {
+      ds.fieldSettings = ds.fieldSettings
+        .map((field: any) => {
+          const fieldVisibility = visibilitySettings.find(
+            (v) =>
+              v.dataSourceId?.toString() === ds._id.toString() &&
+              v.attributeId?.toString() === field.attributeId.toString() &&
+              JSON.stringify(v.refAttributeId || []) === JSON.stringify(field.refAttributeId || [])
+          );
+          // if (fieldVisibility?.visibility === 'hide') return null; // uncomment to hide fields completely
+          field.visibility = fieldVisibility?.visibility || 'primary';
+          return field;
+        })
+        .filter(Boolean);
     }
 
     res.status(200).json({
       success: true,
       message: 'Data Source Details Fetched Successfully',
-      data: dataSourceDetails
+      data: ds,
     });
   } catch (err) {
     next(err);
   }
 };
+
 
 
 export const getDataSourceWithFieldOptionDetails = async (req: Request, res: Response, next: NextFunction) => {
@@ -428,7 +485,7 @@ export const getDataSourceWithFieldOptionDetails = async (req: Request, res: Res
 
 export const getWidgetDataByFilter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    let { dataSourceId, conditions, entityId, dimensions, groupBy, dashBoardType, dashboardFilters, plotType, sort } = req.body;
+    let { dataSourceId, conditions, entityId, dimensions, groupBy, dashBoardType, dashboardFilters, plotType, sort, aggregation } = req.body;
 
     let startVersionValue = dashboardFilters?.startVersionValue;
     let endVersionValue = dashboardFilters?.endVersionValue;
@@ -768,7 +825,7 @@ if (!effectiveSortBy || Object.keys(effectiveSortBy).length === 0) {
     query,
     dashboardFilters,
     entityId: dataSource.entityId,
-    aggregation: { type: "count", attributeName: "_id" },
+    aggregation: { type: aggregation?.type || "count", attributeName: aggregation?.attributeName || "_id" },
     conditions,
     dashBoardType,
     dataSourceDetails: dataSource,
@@ -917,7 +974,8 @@ export const exportWidgetDataByFilterToExcel = async (
       dashboardFilters,
       plotType,
       selectedFields, // Optional
-      sort
+      sort,
+      aggregation
     } = req.body;
 
     let startVersionValue = dashboardFilters?.startVersionValue;
@@ -1235,14 +1293,14 @@ if (!effectiveSortBy || Object.keys(effectiveSortBy).length === 0) {
           query,
           dashboardFilters,
           entityId: dataSource.entityId,
-          aggregation: { type: "count", attributeName: "_id" },
+          aggregation: { type: aggregation?.type || "count", attributeName: aggregation.attributeName || "_id" },
           conditions,
           dashBoardType,
           dataSourceDetails: dataSource,
           isPaginate: true,
           page,
           limit,
-          sort: effectiveSortBy
+          sort: effectiveSortBy,
       };
 
       // --------------------------------------------------------------------

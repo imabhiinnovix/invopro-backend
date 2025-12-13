@@ -10,14 +10,15 @@ import {
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
 
 import { permissionMiddleware } from '../../../middlewares/permission.middleware';
+import { uploadMultipleFile } from '../../../middlewares/upload.middleware';
 
 const router = Router();
 
 router.get('/list', authenticateToken, permissionMiddleware(), getOrganizationList);
 
-router.post('/create', authenticateToken, permissionMiddleware(), createOrganization);
+router.post('/create', authenticateToken, permissionMiddleware(),uploadMultipleFile,  createOrganization);
 
-router.put('/update/:organizationId', authenticateToken, permissionMiddleware(), updateOrganization);
+router.put('/update/:organizationId', authenticateToken, permissionMiddleware(),uploadMultipleFile, updateOrganization);
 
 router.delete('/delete/:organizationId', authenticateToken, permissionMiddleware(), deleteOrganization);
 

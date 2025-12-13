@@ -13,6 +13,8 @@ interface PermissionSeed {
   isChangeable: boolean;
   isSuperUser?: boolean;
   organizationId?: string; // 👈 added optional field
+  module?: string;
+  subModule?: string;
 }
 
 let permissions: PermissionSeed[] = [
@@ -24,6 +26,8 @@ let permissions: PermissionSeed[] = [
     resourceType: 'User',
     resourceCode: 'user__list',
     isChangeable: true,
+    module: "Setting",
+    subModule: "User"
   },
   {
     name: 'Get Current User',
@@ -34,6 +38,8 @@ let permissions: PermissionSeed[] = [
     isSuperUser: false,
     isChangeable: false,
     resourceCode: 'user__get_current_user',
+    module: "Setting",
+    subModule: "User"
   },
   {
     name: 'Get User',
@@ -41,8 +47,10 @@ let permissions: PermissionSeed[] = [
     resourceId: '/common/user/:userId',
     resourceType: 'User',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
     resourceCode: 'user__get_user',
+    module: "Setting",
+    subModule: "User"
   },
   {
     name: 'Create User',
@@ -53,6 +61,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'user__create',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "User"
   },
   {
     name: 'Update Current User',
@@ -62,7 +72,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'User',
     resourceCode: 'user__update_current_user',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "User Profile"
   },
   {
     name: 'Update Current User Password',
@@ -72,7 +84,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'User',
     resourceCode: 'user__change_password',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "User"
   },
   {
     name: 'Update User',
@@ -83,6 +97,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'user__update',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "User"
   },
   {
     name: 'Delete User',
@@ -93,6 +109,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'user__delete',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "User"
   },
   {
     name: 'List Permission',
@@ -101,8 +119,10 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Permission',
     resourceCode: 'permission__list',
-    isSuperUser: false,
+    isSuperUser: true,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Permission"
   },
   {
     name: 'Create Permission',
@@ -111,8 +131,10 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Permission',
     resourceCode: 'permission__create',
-    isSuperUser: false,
+    isSuperUser: true,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Permission"
   },
   {
     name: 'Update Permission',
@@ -121,8 +143,10 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Permission',
     resourceCode: 'permission__update',
-    isSuperUser: false,
+    isSuperUser: true,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Permission"
   },
   {
     name: 'Delete Permission',
@@ -131,8 +155,10 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Permission',
     resourceCode: 'permission__delete',
-    isSuperUser: false,
+    isSuperUser: true,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Permission"
   },
   {
     name: 'List Role',
@@ -143,6 +169,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'role__list',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Role"
   },
   {
     name: 'List Role Permission',
@@ -152,7 +180,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Role',
     resourceCode: 'role__permission_list',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Role"
   },
   {
     name: 'Create Role',
@@ -163,6 +193,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'role__create',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Role"
   },
   {
     name: 'Update Role',
@@ -173,6 +205,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'role__update',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Role"
   },
   {
     name: 'Delete Role',
@@ -183,6 +217,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'role__delete',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Role"
   },
   {
     name: 'Product List',
@@ -191,8 +227,10 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Product',
     resourceCode: 'product__list',
-    isSuperUser: false,
-    isChangeable: true,
+    isSuperUser: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Organization",
   },
   {
     name: 'Create Organization',
@@ -203,6 +241,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'organization__create',
     isSuperUser: true,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Organization",
   },
   {
     name: 'Update Organization',
@@ -213,6 +253,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'organization__update',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Organization",
   },
   {
     name: 'Delete Organization',
@@ -223,6 +265,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'organization__delete',
     isSuperUser: true,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Organization",
   },
   {
     name: 'Organization List',
@@ -233,6 +277,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'organization__list',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Organization",
   },
   {
     name: 'Get Organization',
@@ -242,7 +288,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Organization',
     resourceCode: 'organization__get',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Organization",
   },
   {
     name: 'Get Current Organization',
@@ -252,7 +300,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Organization',
     resourceCode: 'organization__get_current',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Organization",
   },
   {
     name: 'Organization Product Subscription List',
@@ -262,10 +312,12 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Product Subscription',
     resourceCode: 'productSubscription__list',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Organization",
   },
   {
-    name: 'Get Entities List',
+    name: 'Entities List',
     method: 'GET',
     resourceId: '/common/entities/list',
     extraOptions: {},
@@ -273,6 +325,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'entities__list',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Entities",
   },
   {
     name: 'Get Entity Details',
@@ -282,7 +336,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Entities',
     resourceCode: 'entities__get',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Entities",
   },
   {
     name: 'Update Entity Details',
@@ -293,6 +349,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'entities__update',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Entities",
   },
   {
     name: 'Create Entity',
@@ -303,6 +361,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'entities__create',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Entities",
   },
   {
     name: 'Check Data Source Code Availability',
@@ -312,7 +372,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Data Source',
     resourceCode: 'dataSource__check_code',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Data Source",
   },
   {
     name: 'Check Data Source Name Availability',
@@ -322,7 +384,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Data Source',
     resourceCode: 'dataSource__check_name',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Data Source",
   },
   {
     name: 'Create Data Source',
@@ -333,6 +397,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dataSource__create',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Data Source",
   },
   {
     name: 'Update Data Source',
@@ -343,6 +409,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dataSource__update',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Data Source",
   },
   {
     name: 'List Data Sources',
@@ -353,6 +421,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dataSource__list',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Data Source",
   },
   {
     name: 'Get Data Source By ID',
@@ -362,7 +432,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Data Source',
     resourceCode: 'dataSource__get',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Data Source",
   },
   {
     name: 'Get Widget Data By Filter',
@@ -372,7 +444,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Data Source',
     resourceCode: 'dataSource__get_widget_data',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Custom Dashboard",
   },
   {
     name: 'Export Widget Data By Filter',
@@ -383,6 +457,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dataSource__export_widget_data',
     isSuperUser: false,
     isChangeable: true,
+    module: "Dashboard",
+    subModule: "Custom Dashboard",
   },
   {
     name: 'Create Attribute Option',
@@ -392,7 +468,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Attribute Option',
     resourceCode: 'attributeOption__create',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Attribute Option",
   },
   {
     name: 'Update Attribute Option',
@@ -402,7 +480,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Attribute Option',
     resourceCode: 'attributeOption__update',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Attribute Option",
   },
   {
     name: 'List Attribute Options',
@@ -412,7 +492,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Attribute Option',
     resourceCode: 'attributeOption__list',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Attribute Option",
   },
   {
     name: 'Get Attribute Option By ID',
@@ -422,7 +504,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Attribute Option',
     resourceCode: 'attributeOption__get',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Attribute Option",
   },
   {
     name: 'File Upload',
@@ -433,6 +517,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'fileUpload__upload',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Data Source Version"
   },
   {
     name: 'List Data Source Versions',
@@ -443,6 +529,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dataSourceVersion__list',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Data Source Version"
   },
   {
     name: 'Check Data Source Version Name Availability',
@@ -453,7 +541,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion__check_name',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Data Source Version"
   },
   {
     name: 'Create or Update Data Source Version Value',
@@ -463,10 +553,12 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion__create_update',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Data Source Version"
   },
   {
-    name: 'Get Data Source Version Data by Data Source and Version Value',
+    name: 'List Data Source Version Data by Data Source and Version Value',
     method: 'GET',
     resourceId: '/common/dataSourceVersion/versionData',
     extraOptions: {},
@@ -474,6 +566,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dataSourceVersion__get_data',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Data Source Version"
   },
   {
     name: 'Export Data Source Version Data by Data Source and Version Value',
@@ -484,6 +578,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dataSourceVersion__export_data',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Data Source Version"
   },
   {
     name: 'Create Data Source Version Value',
@@ -494,6 +590,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dataSourceVersion_create_data',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Data Source Version"
   },
   {
     name: 'Update Data Source Version Value',
@@ -504,6 +602,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dataSourceVersion_update_data',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Data Source Version"
   },
   {
     name: 'Delete Data Source Version Value',
@@ -514,6 +614,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dataSourceVersion_delete_data',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Data Source Version"
   },
   {
     name: 'Get Latest Data Source Version Detail by Custom Report ID',
@@ -523,7 +625,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion__get_latest_detail',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Data Source Version"
   },
   {
     name: 'List All Available Data Source Version Values',
@@ -533,7 +637,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion__list_all_available',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Data Source Version"
   },
   {
     name: 'Get Chart Data',
@@ -543,7 +649,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion__get_chart_data',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Data Source Version"
   },
   {
     name: 'List Data Import Errors',
@@ -553,7 +661,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Data Source Version',
     resourceCode: 'dataSourceVersion__list_import_errors',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Data Source Version"
   },
   {
     name: 'List Dashboards',
@@ -564,6 +674,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dashboard__list',
     isSuperUser: false,
     isChangeable: true,
+    module: "Dashboard",
+    subModule: 'Custom Dashboard',
   },
   {
     name: 'Get Dashboard By ID',
@@ -573,7 +685,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__get',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: 'Custom Dashboard',
   },
   {
     name: 'Create Dashboard',
@@ -584,6 +698,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dashboard__create',
     isSuperUser: false,
     isChangeable: true,
+    module: "Dashboard",
+    subModule: 'Custom Dashboard',
   },
   {
     name: 'Update Dashboard',
@@ -594,6 +710,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dashboard__update',
     isSuperUser: false,
     isChangeable: true,
+    module: "Dashboard",
+    subModule: 'Custom Dashboard',
   },
   {
     name: 'Delete Dashboard',
@@ -604,6 +722,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dashboard__delete',
     isSuperUser: false,
     isChangeable: true,
+    module: "Dashboard",
+    subModule: 'Custom Dashboard',
   },
   {
     name: 'Select Dashboard Theme',
@@ -613,10 +733,12 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__select_theme',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: 'Theme',
   },
   {
-    name: 'Get Dashboard Widgets',
+    name: 'List Dashboard Widgets',
     method: 'GET',
     resourceId: '/common/dashboard/widget/getWidgets/:dashboardId',
     extraOptions: {},
@@ -624,6 +746,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dashboard__get_widgets',
     isSuperUser: false,
     isChangeable: true,
+    module: "Dashboard",
+    subModule: 'Widget',
   },
   {
     name: 'Get Widget Data',
@@ -633,7 +757,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__get_widget_data',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: 'Widget',
   },
   {
     name: 'Get Widget Plot Types',
@@ -643,7 +769,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Dashboard',
     resourceCode: 'dashboard__get_widget_plot_types',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: 'Widget',
   },
   {
     name: 'Create Widget',
@@ -654,6 +782,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dashboard__create_widget',
     isSuperUser: false,
     isChangeable: true,
+    module: "Dashboard",
+    subModule: 'Widget',
   },
   {
     name: 'Save Dashboard Widgets',
@@ -664,6 +794,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dashboard__save_widgets',
     isSuperUser: false,
     isChangeable: true,
+    module: "Dashboard",
+    subModule: 'Widget',
   },
   {
     name: 'Update Widget',
@@ -674,6 +806,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dashboard__update_widget',
     isSuperUser: false,
     isChangeable: true,
+    module: "Dashboard",
+    subModule: 'Widget',
   },
   {
     name: 'Delete Widget',
@@ -684,6 +818,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'dashboard__delete_widget',
     isSuperUser: false,
     isChangeable: true,
+    module: "Dashboard",
+    subModule: 'Widget',
   },
   {
     name: 'Create Widget Type',
@@ -693,7 +829,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Widget Type',
     resourceCode: 'widgetType__create',
     isSuperUser: true,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: 'Widget Type',
   },
   {
     name: 'Update Widget Type',
@@ -703,7 +841,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Widget Type',
     resourceCode: 'widgetType__update',
     isSuperUser: true,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: 'Widget Type',
   },
   {
     name: 'Delete Widget Type',
@@ -713,7 +853,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Widget Type',
     resourceCode: 'widgetType__delete',
     isSuperUser: true,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: 'Widget Type',
   },
   {
     name: 'Get Widget Type By ID',
@@ -722,8 +864,10 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Widget Type',
     resourceCode: 'widgetType__get',
-    isSuperUser: false,
-    isChangeable: true,
+    isSuperUser: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: 'Widget Type',
   },
   {
     name: 'List Widget Types',
@@ -732,8 +876,10 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Widget Type',
     resourceCode: 'widgetType__list',
-    isSuperUser: false,
-    isChangeable: true,
+    isSuperUser: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: 'Widget Type',
   },
   {
     name: 'Get Operator By ID',
@@ -742,8 +888,10 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Operator',
     resourceCode: 'operator__get',
-    isSuperUser: false,
-    isChangeable: true,
+    isSuperUser: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: 'Operator',
   },
   {
     name: 'List Operators',
@@ -752,8 +900,10 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Operator',
     resourceCode: 'operator__list',
-    isSuperUser: false,
-    isChangeable: true,
+    isSuperUser: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: 'Operator',
   },
   {
     name: 'Update Operator',
@@ -763,7 +913,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Operator',
     resourceCode: 'operator__update',
     isSuperUser: true,
-    isChangeable: true
+    isChangeable: false,
+    module: "Setting",
+    subModule: 'Operator',
   },
   {
     name: 'Create Operator',
@@ -773,7 +925,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Operator',
     resourceCode: 'operator__create',
     isSuperUser: true,
-    isChangeable: true
+    isChangeable: false,
+    module: "Setting",
+    subModule: 'Operator',
   },
   {
     name: 'List Widget Themes',
@@ -783,7 +937,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'get_data_by_version_idWidget Theme',
     resourceCode: 'widgetTheme__list',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Widget Theme"
   },
   {
     name: 'Get Widget Theme By ID',
@@ -793,7 +949,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Widget Theme',
     resourceCode: 'widgetTheme__get',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Widget Theme"
   },
   {
     name: 'Create Widget Theme',
@@ -803,7 +961,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Widget Theme',
     resourceCode: 'widgetTheme__create',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Widget Theme"
   },
   {
     name: 'Duplicate Widget Theme',
@@ -813,7 +973,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Widget Theme',
     resourceCode: 'widgetTheme__duplicate',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Widget Theme"
   },
   {
     name: 'Update Widget Theme',
@@ -823,7 +985,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Widget Theme',
     resourceCode: 'widgetTheme__update',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Widget Theme"
   },
   {
     name: 'Delete Widget Theme',
@@ -833,7 +997,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Widget Theme',
     resourceCode: 'widgetTheme__delete',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Widget Theme"
   },
   {
     name: 'List Dashboard Shares',
@@ -843,7 +1009,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Dashboard Share',
     resourceCode: 'dashboardShare__list',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Dashboard Share"
   },
   {
     name: 'Create Dashboard Share',
@@ -853,7 +1021,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Dashboard Share',
     resourceCode: 'dashboardShare__create',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Dashboard Share"
   },
   {
     name: 'Delete Dashboard Share',
@@ -863,7 +1033,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Dashboard Share',
     resourceCode: 'dashboardShare__delete',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Dashboard Share"
   },
   {
     name: 'List Custom Reports',
@@ -873,7 +1045,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__list',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Reports",
+    subModule: "Custom Report"
   },
   {
     name: 'List Report Requests',
@@ -884,6 +1058,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'customReport__list_requests',
     isSuperUser: false,
     isChangeable: true,
+    module: "Reports",
+    subModule: "Custom Report"
   },
   {
     name: 'Get Report Version Values',
@@ -893,7 +1069,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__get_version_values',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Reports",
+    subModule: "Custom Report"
   },
   {
     name: 'Generate Custom Report',
@@ -904,6 +1082,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'customReport__generate',
     isSuperUser: false,
     isChangeable: true,
+    module: "Reports",
+    subModule: "Custom Report"
   },
   {
     name: 'Download Report',
@@ -913,10 +1093,12 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__download_supplemental_intermediate',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Reports",
+    subModule: "Custom Report"
   },
   {
-    name: 'Download Supplemental Report',
+    name: 'Download Report',
     method: 'GET',
     resourceId: '/reportivix/customReports/download/:reportRequestId',
     extraOptions: {},
@@ -924,6 +1106,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'customReport__download',
     isSuperUser: false,
     isChangeable: true,
+    module: "Reports",
+    subModule: "Custom Report"
   },
   {
     name: 'Get Report Data by Data Source Version ID',
@@ -933,7 +1117,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__get_data_by_version_id',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Reports",
+    subModule: "Custom Report"
   },
   {
     name: 'Get Custom Report Design Details',
@@ -943,7 +1129,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__get_design_details',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Reports",
+    subModule: "Custom Report"
   },
   {
     name: 'Get Report Request Details',
@@ -953,7 +1141,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__get_request_details',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Reports",
+    subModule: "Custom Report"
   },
   {
     name: 'Get Custom Report Data by Data Source & Version Range',
@@ -963,7 +1153,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Custom Report',
     resourceCode: 'customReport__get_data_by_range',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Reports",
+    subModule: "Custom Report"
   },
   {
     name: 'List Custom Report Settings',
@@ -974,6 +1166,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'customReport__list_settings',
     isSuperUser: false,
     isChangeable: true,
+    module: "Reports",
+    subModule: "Custom Report Setting"
   },
   {
     name: 'Update Custom Report Settings',
@@ -984,6 +1178,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'customReport__update_settings',
     isSuperUser: false,
     isChangeable: true,
+    module: "Reports",
+    subModule: "Custom Report Setting"
   },
   {
     name: 'Run Natural Language Query',
@@ -994,6 +1190,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'nlQuery__get_data',
     isSuperUser: false,
     isChangeable: true,
+    module: "VixAI",
+    subModule: 'VixAI Query'
   },
   {
     name: 'Run Natural Language Insights',
@@ -1004,6 +1202,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'nlQuery__insights',
     isSuperUser: false,
     isChangeable: true,
+    module: "VixAI",
+    subModule: 'VixAI Query'
   },
   {
     name: 'Create Derived Field',
@@ -1013,7 +1213,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Derived Field',
     resourceCode: 'derived_field__create',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: 'Derived Field'
   },
   {
     name: 'Update Derived Field',
@@ -1023,7 +1225,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Derived Field',
     resourceCode: 'derived_field__update',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: 'Derived Field'
   },
   {
     name: 'Delete Derived Field',
@@ -1033,7 +1237,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Derived Field',
     resourceCode: 'derived_field__delete',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: 'Derived Field'
   },
   {
     name: 'List Derived Fields',
@@ -1043,7 +1249,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Derived Field',
     resourceCode: 'derived_field__list',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: 'Derived Field'
   },
   {
     name: 'Get Derived Field',
@@ -1053,7 +1261,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Derived Field',
     resourceCode: 'derived_field__get',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: 'Derived Field'
   },
   {
     name: 'List Notification Types',
@@ -1064,6 +1274,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_type__list',
     isSuperUser: false,
     isChangeable: true,
+    module: "Notifications",
+    subModule: "Alert Setting"
   },
   {
     name: 'Create Notification Type',
@@ -1074,6 +1286,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_type__create',
     isSuperUser: false,
     isChangeable: true,
+    module: "Notifications",
+    subModule: "Alert Setting"
   },
   {
     name: 'Update Notification Type',
@@ -1084,6 +1298,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_type__update',
     isSuperUser: false,
     isChangeable: true,
+    module: "Notifications",
+    subModule: "Alert Setting"
   },
   {
     name: 'Delete Notification Type',
@@ -1094,6 +1310,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_type__delete',
     isSuperUser: false,
     isChangeable: true,
+    module: "Notifications",
+    subModule: "Alert Setting"
   },
   {
     name: 'Summary Notification Type',
@@ -1103,7 +1321,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Notification Setting Type',
     resourceCode: 'notification_setting_type__summary_create',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Notifications",
+    subModule: "Alert Setting"
   },
   {
     name: 'Get Notification Type',
@@ -1113,7 +1333,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Notification Setting Type',
     resourceCode: 'notification_setting_type__get',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Notifications",
+    subModule: "Alert Setting"
   },
   {
     name: 'List Notification Frequencies',
@@ -1124,6 +1346,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_frequency__list',
     isSuperUser: false,
     isChangeable: true,
+    module: "Notifications",
+    subModule: "Scheduler"
   },
   {
     name: 'Create Notification Frequency',
@@ -1134,6 +1358,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_frequency__create',
     isSuperUser: false,
     isChangeable: true,
+    module: "Notifications",
+    subModule: "Scheduler"
   },
   {
     name: 'Update Notification Frequency',
@@ -1144,6 +1370,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_frequency__update',
     isSuperUser: false,
     isChangeable: true,
+    module: "Notifications",
+    subModule: "Scheduler"
   },
   {
     name: 'Delete Notification Frequency',
@@ -1154,6 +1382,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_frequency__delete',
     isSuperUser: false,
     isChangeable: true,
+    module: "Notifications",
+    subModule: "Scheduler"
   },
   {
     name: 'Get Notification Frequency',
@@ -1163,7 +1393,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Notification Setting Frequency',
     resourceCode: 'notification_setting_frequency__get',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Notifications",
+    subModule: "Scheduler"
   },
   {
     name: 'List Notification Templates',
@@ -1174,6 +1406,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_template__list',
     isSuperUser: false,
     isChangeable: true,
+    module: "Notifications",
+    subModule: "Template"
   },
   {
     name: 'Create Notification Template',
@@ -1184,6 +1418,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_template__create',
     isSuperUser: false,
     isChangeable: true,
+    module: "Notifications",
+    subModule: "Template"
   },
   {
     name: 'Update Notification Template',
@@ -1194,6 +1430,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_template__update',
     isSuperUser: false,
     isChangeable: true,
+    module: "Notifications",
+    subModule: "Template"
   },
   {
     name: 'Delete Notification Template',
@@ -1204,6 +1442,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_template__delete',
     isSuperUser: false,
     isChangeable: true,
+    module: "Notifications",
+    subModule: "Template"
   },
   {
     name: 'Get Notification Template',
@@ -1213,7 +1453,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Notification Setting Template',
     resourceCode: 'notification_setting_template__get',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Notifications",
+    subModule: "Template"
   },
   {
     name: 'List Notification Medium Settings',
@@ -1224,6 +1466,9 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_medium__list',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Notification Medium"
+    
   },
   {
     name: 'Create Notification Medium Setting',
@@ -1234,6 +1479,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_medium__create',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Notification Medium"
   },
   {
     name: 'Update Notification Medium Setting',
@@ -1244,6 +1491,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_medium__update',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Notification Medium"
   },
   {
     name: 'Delete Notification Medium Setting',
@@ -1254,6 +1503,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_setting_medium__delete',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Notification Medium"
   },
   {
     name: 'Get Notification Medium',
@@ -1263,7 +1514,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Notification Medium Setting',
     resourceCode: 'notification_setting_medium__get',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Notification Medium"
   },
   {
     name: 'Trigger Notification Prepared',
@@ -1274,6 +1527,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_prepared_trigger__create',
     isSuperUser: false,
     isChangeable: true,
+    module: "Notifications",
+    subModule: "Notification Logs"
   },
   {
     name: 'List Notification Prepared',
@@ -1284,6 +1539,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_prepared__list',
     isSuperUser: false,
     isChangeable: true,
+    module: "Notifications",
+    subModule: "Notification Logs"
   },
   {
     name: 'Resend Notification Prepared',
@@ -1294,6 +1551,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'notification_prepared_resend__create',
     isSuperUser: false,
     isChangeable: true,
+    module: "Notifications",
+    subModule: "Notification Logs"
   },
   {
     name: 'List Dashboard Font Themes',
@@ -1303,7 +1562,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Dashboard Font Theme',
     resourceCode: 'dashboard_font_theme__list',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Font Theme"
   },
   {
     name: 'Download Dashboard Font Theme',
@@ -1313,7 +1574,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Dashboard Font Theme',
     resourceCode: 'dashboard_font_theme__download',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Font Theme"
   },
   {
     name: 'Delete Dashboard Font Theme',
@@ -1323,7 +1586,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Dashboard Font Theme',
     resourceCode: 'dashboard_font_theme__delete',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Font Theme"
   },
   {
     name: 'List Dashboard Themes',
@@ -1333,7 +1598,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Dashboard Theme',
     resourceCode: 'dashboard_theme__list',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Theme"
   },
   {
     name: 'Create Dashboard Theme',
@@ -1343,7 +1610,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Dashboard Theme',
     resourceCode: 'dashboard_theme__create',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Theme"
   },
   {
     name: 'Update Dashboard Theme',
@@ -1353,7 +1622,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Dashboard Theme',
     resourceCode: 'dashboard_theme__update',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Theme"
   },
   {
     name: 'Delete Dashboard Theme',
@@ -1363,7 +1634,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'Dashboard Theme',
     resourceCode: 'dashboard_theme__delete',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Dashboard",
+    subModule: "Theme"
   },
   // GET current user profile image
   {
@@ -1374,7 +1647,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'User Profile Image',
     resourceCode: 'user_profile_image__get',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "User Profile"
   },
 
   // DELETE current user profile image
@@ -1386,7 +1661,10 @@ let permissions: PermissionSeed[] = [
     resourceType: 'User Profile Image',
     resourceCode: 'user_profile_image__delete',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "User Profile"
+    
   },
   {
     name: 'Create Department',
@@ -1397,6 +1675,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'department__create',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Department"
   },
   {
     name: 'Update Department',
@@ -1407,6 +1687,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'department__update',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Department"
   },
   {
     name: 'List Departments',
@@ -1417,6 +1699,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'department__list',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Department"
   },
   {
     name: 'Delete Department',
@@ -1427,6 +1711,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'department__delete',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Department"
   },
   {
     name: 'Create Designation',
@@ -1437,6 +1723,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'designation__create',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Designation"
   },
   {
     name: 'Update Designation',
@@ -1447,6 +1735,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'designation__update',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Designation"
   },
   {
     name: 'List Designations',
@@ -1457,6 +1747,8 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'designation__list',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Designation"
   },
   {
     name: 'Delete Designation',
@@ -1467,56 +1759,68 @@ let permissions: PermissionSeed[] = [
     resourceCode: 'designation__delete',
     isSuperUser: false,
     isChangeable: true,
+    module: "Setting",
+    subModule: "Designation"
   },
   {
   name: 'Create User Data Permission',
   method: 'POST',
   resourceId: '/common/user-data-permission/create',
   extraOptions: {},
-  resourceType: 'UserDataPermission',
+  resourceType: 'User Data Permission',
   resourceCode: 'userDataPermission__create',
   isSuperUser: false,
   isChangeable: true,
+  module: "Setting",
+  subModule: "User Data Permission"
 },
 {
   name: 'Update User Data Permission',
   method: 'PUT',
   resourceId: '/common/user-data-permission/update/:id',
   extraOptions: {},
-  resourceType: 'UserDataPermission',
+  resourceType: 'User Data Permission',
   resourceCode: 'userDataPermission__update',
   isSuperUser: false,
   isChangeable: true,
+  module: "Setting",
+  subModule: "User Data Permission"
 },
 {
   name: 'Delete User Data Permission',
   method: 'DELETE',
   resourceId: '/common/user-data-permission/delete/:id',
   extraOptions: {},
-  resourceType: 'UserDataPermission',
+  resourceType: 'User Data Permission',
   resourceCode: 'userDataPermission__delete',
   isSuperUser: false,
   isChangeable: true,
+  module: "Setting",
+  subModule: "User Data Permission"
 },
 {
   name: 'List User Data Permissions',
   method: 'GET',
   resourceId: '/common/user-data-permission/list',
   extraOptions: {},
-  resourceType: 'UserDataPermission',
+  resourceType: 'User Data Permission',
   resourceCode: 'userDataPermission__list',
   isSuperUser: false,
   isChangeable: true,
+  module: "Setting",
+  subModule: "User Data Permission"
 },
 {
   name: 'Get User Data Permission',
   method: 'GET',
   resourceId: '/common/user-data-permission/:id',
   extraOptions: {},
-  resourceType: 'UserDataPermission',
+  resourceType: 'User Data Permission',
   resourceCode: 'userDataPermission__get',
   isSuperUser: false,
-  isChangeable: true,
+  isChangeable: false,
+  module: "Setting",
+  subModule: "User Data Permission"
 },
 {
     name: 'List Download Requests',
@@ -1526,7 +1830,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'DownloadRequest',
     resourceCode: 'downloadRequest__list',
     isSuperUser: false,
-    isChangeable: true,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Data Export Job"
   },
   {
     name: 'Download File',
@@ -1536,16 +1842,64 @@ let permissions: PermissionSeed[] = [
     resourceType: 'DownloadRequest',
     resourceCode: 'downloadRequest__download',
     isSuperUser: false,
+    isChangeable: false,
+    module: "Setting",
+    subModule: "Data Export Job"
+  },
+   {
+    name: 'List Organization Visibility Settings',
+    method: 'GET',
+    resourceId: '/common/organization-visibility-setting/list',
+    extraOptions: {},
+    resourceType: 'Organization Visibility Setting',
+    resourceCode: 'org_visibility__list',
+    isSuperUser: false,
     isChangeable: true,
-  }
+    module: "Setting",
+    subModule: "Chart"
+  },
+  {
+    name: 'Create Organization Visibility Setting',
+    method: 'POST',
+    resourceId: '/common/organization-visibility-setting/create',
+    extraOptions: {},
+    resourceType: 'Organization Visibility Setting',
+    resourceCode: 'org_visibility__create',
+    isSuperUser: false,
+    isChangeable: true,
+    module: "Setting",
+    subModule: "Chart"
+  },
+  {
+    name: 'Update Organization Visibility Setting',
+    method: 'PUT',
+    resourceId: '/common/organization-visibility-setting/update/:settingId',
+    extraOptions: {},
+    resourceType: 'Organization Visibility Setting',
+    resourceCode: 'org_visibility__update',
+    isSuperUser: false,
+    isChangeable: true,
+    module: "Setting",
+    subModule: "Chart"
+  },
+  {
+    name: 'Delete Organization Visibility Setting',
+    method: 'DELETE',
+    resourceId: '/common/organization-visibility-setting/delete/:settingId',
+    extraOptions: {},
+    resourceType: 'Organization Visibility Setting',
+    resourceCode: 'org_visibility__delete',
+    isSuperUser: false,
+    isChangeable: true,
+    module: "Setting",
+    subModule: "Chart"
+  },
 ];
 
 export async function seedPermissions(permissionList: any[]) {
   const dynamicPermission = await getDynamicPermission(permissionList);
-  console.log(dynamicPermission);
   permissions = [...permissions, ...dynamicPermission];
 
-  // 🔹 Define method → methodName mapping
   const methodNameArr: Record<string, string> = {
     POST: 'create',
     PUT: 'update',
@@ -1556,18 +1910,18 @@ export async function seedPermissions(permissionList: any[]) {
   for (const perm of permissions) {
     const { resourceCode } = perm;
 
+    // build query
     const query: any = { resourceCode };
-
     if (perm.organizationId) {
       query.organizationId = perm.organizationId;
     }
 
     const existing = await Permission.findOne(query);
 
+    const methodName = methodNameArr[perm.method?.toUpperCase()] || 'UNKNOWN';
 
     if (!existing) {
-      const methodName = methodNameArr[perm.method?.toUpperCase()] || 'UNKNOWN';
-
+      // CREATE
       const newPermission = new Permission({
         ...perm,
         status: 'active',
@@ -1578,8 +1932,42 @@ export async function seedPermissions(permissionList: any[]) {
       await newPermission.save();
       console.info(`✅ Permission "${perm.name}" created.`);
     } else {
-      console.info(`ℹ️ Permission "${perm.name}" already exists.`);
+
+  const updateData: any = {
+    ...perm,
+    status: existing.status || "active",
+    methodName,
+    extraOptions: perm.extraOptions || {},
+  };
+
+  const updatePayload: any = {};
+
+  for (const key of Object.keys(updateData)) {
+    const oldVal = existing[key];
+    const newVal = updateData[key];
+
+    const isMissing = oldVal === undefined || oldVal === null;
+    const isDifferent =
+      JSON.stringify(oldVal) !== JSON.stringify(newVal);
+
+    if (isMissing || isDifferent) {
+      updatePayload[key] = newVal;
     }
   }
+  
+  if (Object.keys(updatePayload).length > 0) {
+    await Permission.updateOne(
+      { _id: existing._id },
+      { $set: updatePayload }
+    );
+
+    console.info(`🔄 Permission "${perm.name}" updated.`, updatePayload);
+  } else {
+    console.info(`ℹ️ Permission "${perm.name}" already up-to-date.`);
+  }
 }
+
+  }
+}
+
 

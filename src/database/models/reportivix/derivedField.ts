@@ -8,7 +8,7 @@ const ConditionSchema = new Schema(
   {
     fieldId: {
       type: Schema.Types.ObjectId,
-      required: false, // ← allow seeding when undefined
+      required: false,
       default: null,
     },
     refFieldId: {
@@ -43,7 +43,7 @@ const ValueRuleSchema = new Schema(
     conditionOperator: { type: String, enum: ['AND', 'OR'], default: 'AND' },
     conditions: {
       type: [ConditionSchema],
-      default: [], // safe default
+      default: [],
     },
   },
   { _id: true }
@@ -51,7 +51,7 @@ const ValueRuleSchema = new Schema(
 
 const DerivedFieldSchema = new Schema(
   {
-    name: { type: String, required: true, unique: true }, // e.g., "report_category"
+    name: { type: String, required: true }, // ← ❌ removed unique: true
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity', required: true },
     persist: { type: Boolean, default: false },
     type: {
@@ -61,10 +61,15 @@ const DerivedFieldSchema = new Schema(
     },
     valueRules: {
       type: [ValueRuleSchema],
-      default: [], // ✅ Ensures null or undefined is treated as empty array
+      default: [],
     },
   },
   { timestamps: true }
 );
+
+/**
+ * ✅ Add compound unique index: (name + entityId)
+ */
+DerivedFieldSchema.index({ name: 1, entityId: 1 }, { unique: true });
 
 export const DerivedField = model('DerivedField', DerivedFieldSchema);

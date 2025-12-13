@@ -2748,143 +2748,129 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
       aggregationPipeline.push({ $match: matchConditions });
     }
 
-    const aggPath = getFieldPath(await getReferenceField(aggregation?.attributeName));
-    
-    // if (aggregation?.attributeName.includes('.')) {
-    //   const visited = new Set<string>();
-    //   const pathSegments = aggregation.attributeName.split('.');
+   const aggPath = getFieldPath(await getReferenceField(aggregation?.attributeName));
+console.log(aggPath, 'aggPath');
 
-    //   aggPath = await buildAggregationPathAndReturnExpr({
-    //     entityId,
-    //     pathSegments,
-    //     pipeline: aggregationPipeline,
-    //     visited,
-    //   });
+// Step 1: Get distinct rows by the attributeName (e.g., DisclosureNumber)
+if (aggregation?.type === "distinctCount") {
+  aggregationPipeline.push(
+    { $group: { _id: aggPath, doc: { $first: "$$ROOT" } } }, // distinct rows
+    { $replaceRoot: { newRoot: "$doc" } } // flatten for further grouping
+  );
+}
 
-    //   console.log(aggPath, 'aggPath...');
-    //   // const [refField, ...subFields] = aggregation.attributeName.split('.');
-    //   // aggPath = `$rowData.${refField}_resolved.rowData.${subFields.join('.')}`;
-    // } else {
-    //   aggPath = `$rowData.${aggregation?.attributeName}`;
-    // }
-    console.log(aggPath, 'aggPath');
-    let aggregationExpr;
-    switch (aggregation?.type) {
-      case 'Count':
-        aggregationExpr = { count: { $sum: 1 } };
-        break;
-      case 'Sum':
-        aggregationExpr = { total: { $sum: aggPath } };
-        break;
-      case 'Average':
-        aggregationExpr = { average: { $avg: aggPath } };
-        break;
-      default:
-        aggregationExpr = { count: { $sum: 1 } };
-    }
+// Step 2: Apply grouping by chart dimension
+let aggregationExpr;
+switch (aggregation?.type) {
+  case 'Count':
+    aggregationExpr = { count: { $sum: 1 } };
+    break;
+  case 'Sum':
+    aggregationExpr = { total: { $sum: aggPath } };
+    break;
+  case 'Average':
+    aggregationExpr = { average: { $avg: aggPath } };
+    break;
+  default:
+    aggregationExpr = { count: { $sum: 1 } };
+}
 
-    if (widgetType === 'number') {
-      aggregationPipeline.push(
-        { $addFields: { name: 'Total' } },
-        {
-          $group: {
-            _id: { name: '$name' },
-            data: aggregationExpr[Object.keys(aggregationExpr)[0]],
-          },
-        },
-        {
-          $replaceRoot: {
-            newRoot: {
-              $mergeObjects: ['$_id', { name: '$name', data: '$data' }],
-            },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            data: { $push: '$$ROOT' },
-            total: { $sum: '$data' },
-          },
-        },
-        {
-          $project: {
-            _id: 0,
-            data: 1,
-            total: 1,
-          },
-        },
-        {
-          $replaceRoot: { newRoot: { widgetData: '$data', totalCount: '$total' } },
+const aggKey = Object.keys(aggregationExpr || {})[0];
+
+if (widgetType === "number") {
+  // --- DISTINCT COUNT ---
+  if (aggregation?.type === "distinctCount") {
+    aggregationPipeline.push(
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 }   // distinct rows already grouped earlier
         }
-      );
-    } else{
-     if([...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
-      await addDueDaysDimensionWithTotal({
-        aggregationPipeline,
-        dashboardFilters,
-        dimension,
-        groupBy,
-        dashBoardType,
-        getReferenceField,
-        getLabelByMappedAttributeName,
-        dataSourceDetails,
-      });
-
-      // For charting, name will be bucket labels ("0-3 days left", etc.)
-      groupFields["name"] = "$_id"; 
-    }else{
-      aggregationPipeline.push(
-        {
-          $group: {
-            _id: {
-              ...groupFields
-            },
-            ...aggregationExpr,
-          },
-        },
-        {
-          $replaceRoot: {
-            newRoot: {
-              $mergeObjects: [
-                '$_id',
-                {
-                  data: `$${Object.keys(aggregationExpr)[0]}`,
-                },
-              ],
-            },
-          },
-        },
-        {
-          $match: {
-            name: { $ne: null },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            data: { $push: '$$ROOT' },
-            total: { $sum: '$data' },
-          },
-        },
-        {
-          $project: {
-            _id: 0,
-            data: 1,
-            total: 1,
-          },
-        },
-        {
-          $replaceRoot: { newRoot: { widgetData: '$data', totalCount: '$total' } },
+      },
+      {
+        $project: {
+          _id: 0,
+          widgetData: [{ name: "Total", data: "$total" }],
+          totalCount: "$total"
         }
-      );
-
-      if (dashBoardType === 'trend') {
-        aggregationPipeline.push({ $sort: { "widgetData.name": 1 } });
-      } else {
-        aggregationPipeline.push({ $sort: { "widgetData.data": 1 } });
       }
+    );
+  }
+
+  // --- COUNT / SUM / AVERAGE ---
+  else {
+    aggregationPipeline.push(
+      {
+        $group: {
+          _id: null,
+          total: aggregationExpr[aggKey]   // {$sum:1}, {$sum:field}, {$avg:field}
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          widgetData: [{ name: "Total", data: "$total" }],
+          totalCount: "$total"
+        }
+      }
+    );
+  }
+}
+ else {
+  // Chart / non-number widget
+  if ([...(dimension || []), ...(groupBy || [])].includes("dueDays")) {
+    await addDueDaysDimensionWithTotal({
+      aggregationPipeline,
+      dashboardFilters,
+      dimension,
+      groupBy,
+      dashBoardType,
+      getReferenceField,
+      getLabelByMappedAttributeName,
+      dataSourceDetails,
+    });
+    groupFields["name"] = "$_id";
+  } else {
+    aggregationPipeline.push(
+      {
+        $group: {
+          _id: { ...groupFields },
+          data: aggregation?.type === "distinctCount" ? { $sum: 1 } : aggregationExpr[aggKey],
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: { $mergeObjects: ['$_id', { data: `$data` }] },
+        },
+      },
+      { $match: { name: { $ne: null } } },
+      {
+        $group: {
+          _id: null,
+          data: { $push: '$$ROOT' },
+          total: { $sum: '$data' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          data: 1,
+          total: 1,
+        },
+      },
+      {
+        $replaceRoot: { newRoot: { widgetData: '$data', totalCount: '$total' } },
+      }
+    );
+
+    if (dashBoardType === 'trend') {
+      aggregationPipeline.push({ $sort: { "widgetData.name": 1 } });
+    } else {
+      aggregationPipeline.push({ $sort: { "widgetData.data": -1 } });
     }
   }
+}
+
     
     
     console.log('aggregationPipeline',JSON.stringify(aggregationPipeline));
@@ -3944,6 +3930,126 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
 
     // ------------------ SORTING ------------------
 
+
+
+// Resolve aggregation field path
+// Resolve aggregation field path
+// Resolve aggregation field path
+// Resolve aggregation field path
+const aggPath = getFieldPath(await getReferenceField(aggregation?.attributeName));
+
+// === DISTINCT COUNT HANDLER ===
+if (aggregation?.type === "distinctCount") {
+  // 1️⃣ Group by the distinct field, preserve full rowData
+  aggregationPipeline.push({
+    $group: {
+      _id: aggPath,        // distinct field, e.g., DisclosureNumber
+      doc: { $first: "$$ROOT" } // preserves full rowData + all top-level fields
+    }
+  });
+
+  // 2️⃣ Flatten grouped docs
+  aggregationPipeline.push({ $replaceRoot: { newRoot: "$doc" } });
+
+  // 3️⃣ Apply sorting AFTER distinct grouping
+  if (sort && Object.keys(sort).length > 0) {
+    const sortStage: any = {};
+    for (const [field, direction] of Object.entries(sort)) {
+      const sortDir = direction === "desc" || direction === -1 ? -1 : 1;
+
+      // CASE 1: Nested reference field => A.B.C
+      if (field.includes(".")) {
+        const pathSegments = field.split(".");
+        const visitedSort = new Set<string>();
+        const resolvedSortPath = await buildAggregationPathAndReturnExpr({
+          entityId,
+          pathSegments,
+          prefix: "rowData",
+          pipeline: aggregationPipeline, // ensures lookup is added
+          visited: visitedSort,
+        });
+        sortStage[resolvedSortPath] = sortDir;
+      }
+      // CASE 2: Top-level reference attribute
+      else if (
+        attributesMap[field]?.referenceEntitySetting?.refEntityId &&
+        !attributesMap[field].referenceEntitySetting.relationType?.startsWith("mapping_")
+      ) {
+        const refFieldAttr = await getEntityAttribute(
+          attributesMap[field].referenceEntitySetting.refEntityId,
+          attributesMap[field].referenceEntitySetting.refEntityField
+        );
+
+        const displayField =
+          refFieldAttr?.name || attributesMap[field].referenceEntitySetting.refEntityField;
+
+        sortStage[`rowData.${field}_resolved.rowData.${displayField}`] = sortDir;
+      }
+      // CASE 3: Normal attribute
+      else {
+        sortStage[`rowData.${field}`] = sortDir;
+      }
+    }
+
+    aggregationPipeline.push({ $sort: sortStage });
+  }
+
+  // 4️⃣ Collect all distinct documents into an array
+  aggregationPipeline.push({
+    $group: {
+      _id: null,
+      distinctRows: { $push: "$$ROOT" }
+    }
+  });
+
+  // 5️⃣ Pagination using facet
+  if (limit === Number.MAX_SAFE_INTEGER) {
+    aggregationPipeline.push({
+      $project: {
+        _id: 0,
+        data: "$distinctRows",
+        totalCount: { $size: "$distinctRows" }
+      }
+    });
+  } else {
+    aggregationPipeline.push({
+      $facet: {
+        metadata: [
+          { $project: { totalRecords: { $size: "$distinctRows" } } }
+        ],
+        data: [
+          { $project: { rowData: "$distinctRows" } },
+          { $unwind: "$rowData" },
+          { $skip: (page - 1) * limit },
+          { $limit: limit },
+          { $replaceRoot: { newRoot: "$rowData" } }
+        ]
+      }
+    });
+
+    aggregationPipeline.push({
+      $project: {
+        data: "$data",
+        pagination: {
+          currentPage: page,
+          limit: limit,
+          totalRecords: { $arrayElemAt: ["$metadata.totalRecords", 0] },
+          totalPages: {
+            $ceil: {
+              $divide: [{ $arrayElemAt: ["$metadata.totalRecords", 0] }, limit]
+            }
+          }
+        },
+        totalCount: { $arrayElemAt: ["$metadata.totalRecords", 0] }
+      }
+    });
+  }
+}
+
+// === COUNT / SUM / AVERAGE HANDLER ===
+// === COUNT / SUM / AVERAGE HANDLER (fixed) ===
+else {
+
 if (sort && Object.keys(sort).length > 0) {
   const sortStage: any = {};
   for (const [field, direction] of Object.entries(sort)) {
@@ -3989,49 +4095,112 @@ if (sort && Object.keys(sort).length > 0) {
 
   aggregationPipeline.push({ $sort: sortStage });
 }
+  let aggregationExpr: any;
 
+  switch (aggregation?.type) {
+    case "Count":
+      aggregationExpr = { data: { $sum: 1 } };
+      break;
+    case "Sum":
+      aggregationExpr = { data: { $sum: aggPath } };
+      break;
+    case "Average":
+      aggregationExpr = { data: { $avg: aggPath } };
+      break;
+    default:
+      aggregationExpr = { data: { $sum: 1 } };
+  }
 
-  // ✅ Add pagination only if paginate object is valid
-  if(limit == Number.MAX_SAFE_INTEGER){
-     aggregationPipeline.push(
-    {
-      $project: {
-        _id: 1,
-        rowData: 1
+  // Group stage that computes the aggregation for the ENTIRE filtered dataset
+  const aggregationGroupStage = { $group: { _id: null, ...aggregationExpr } };
+
+  // If no pagination requested, just compute and return aggregation result
+  if (limit === Number.MAX_SAFE_INTEGER) {
+    aggregationPipeline.push(
+      // compute aggregation for whole set
+      aggregationGroupStage,
+      // format for frontend: keep `data` key and `totalCount` for number widgets
+      {
+        $project: {
+          _id: 0,
+          data: "$data",
+          totalCount: "$data" // for Count/Sum/Average, totalCount can be same as data
+        }
       }
-    }
-  );
-  }else{
-      aggregationPipeline.push(
-    {
+    );
+  } else {
+    // Use a facet: one pipeline for metadata, one for agg result, and one for paginated documents
+    aggregationPipeline.push({
       $facet: {
-        metadata: [{ $count: 'totalRecords' }],
+        // metadata: total documents count (for pagination)
+        metadata: [{ $count: "totalRecords" }],
+
+        // agg: compute aggregation over the full filtered dataset
+        agg: [
+          aggregationGroupStage,
+          // normalize so agg will be an array with single doc like [{ _id: null, data: <value> }]
+          { $project: { _id: 0, data: 1 } }
+        ],
+
+        // data: paginated raw documents (keeps original rowData shape)
         data: [
           { $skip: (page - 1) * limit },
           { $limit: limit },
-        ],
-      },
-    },
-    {
+          // ensure the element shape your frontend expects (if your pipeline earlier produced rowData field)
+          // If your docs are already full row objects, adjust to your structure; below we pass full doc:
+          { $project: { _id: 0, rowData: "$rowData" } }
+        ]
+      }
+    });
+
+    // Combine facet results into final shape
+    aggregationPipeline.push({
       $project: {
-        data: 1,
+        data: "$data",
+        // take the aggregation result from agg[0].data if present, otherwise null
+        aggregationResult: { $ifNull: [{ $arrayElemAt: ["$agg.data", 0] }, null] },
         pagination: {
-          // currentPage: { $literal: page },   // wrap in $literal
-          // limit: { $literal: limit },        // wrap in $literal
-          totalRecords: { $arrayElemAt: ['$metadata.totalRecords', 0] },
+          currentPage: { $literal: page },
+          limit: { $literal: limit },
+          totalRecords: { $arrayElemAt: ["$metadata.totalRecords", 0] },
           totalPages: {
             $ceil: {
               $divide: [
-                { $arrayElemAt: ['$metadata.totalRecords', 0] },
-                limit,
-              ],
-            },
+                { $arrayElemAt: ["$metadata.totalRecords", 0] },
+                limit
+              ]
+            }
           },
         },
-      },
-    }
-  );
+        totalCount: "$totalCount"
+      }
+    });
+
+    // Optional: if you want the aggregation value promoted to top-level fields
+    // (e.g., widgetData and totalCount like previously), map them now.
+    aggregationPipeline.push({
+      $addFields: {
+        // `widgetData` preserved for compatibility with number widgets expecting aggregated value
+        widgetData: "$aggregationResult",
+        totalCount: "$aggregationResult"
+      }
+    });
+
+    // Optional: tidy final shape — remove aggregationResult if not needed,
+    // and keep `data` as array of rowData objects (frontend uses data.map)
+    aggregationPipeline.push({
+      $project: {
+        aggregationResult: 0
+        // keep data and pagination and widgetData/totalCount if desired
+      }
+    });
+  }
 }
+
+
+
+
+
 
   
     
