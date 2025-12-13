@@ -74,7 +74,7 @@ let permissions: PermissionSeed[] = [
     isSuperUser: false,
     isChangeable: false,
     module: "Setting",
-    subModule: "User"
+    subModule: "User Profile"
   },
   {
     name: 'Update Current User Password',
