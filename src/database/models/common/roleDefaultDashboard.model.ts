@@ -9,6 +9,7 @@ export interface IRoleDefaultDashboard extends Document {
   dashboardId: Types.ObjectId;
   createdBy: Types.ObjectId;
   updatedBy: Types.ObjectId;
+  status: 'active' | 'inactive';
 }
 
 const roleDefaultDashboardSchema = new Schema<IRoleDefaultDashboard>(
@@ -27,6 +28,11 @@ const roleDefaultDashboardSchema = new Schema<IRoleDefaultDashboard>(
       type: Schema.Types.ObjectId,
       ref: 'dashboard',
       required: true,
+    },
+    status: {
+      type: String,
+      enum: ['active', 'inactive'],
+      default: 'active',
     },
     createdBy: {
       type: Schema.Types.ObjectId,

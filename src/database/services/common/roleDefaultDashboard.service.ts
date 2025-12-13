@@ -50,7 +50,7 @@ export const updateRoleDefaultDashboard = async ({ organizationId, roleId, dashb
  */
 export const deleteRoleDefaultDashboard = async (organizationId: Types.ObjectId, roleId: Types.ObjectId) => {
   const record = await RoleDefaultDashboard.findOneAndUpdate(
-    { organizationId, roleId, isDeleted: false },
+    { organizationId, roleId, status: 'inactive' },
     { isDeleted: true },
     { new: true }
   );
@@ -66,7 +66,7 @@ export const deleteRoleDefaultDashboard = async (organizationId: Types.ObjectId,
  * LIST all role default dashboards (organization-wise)
  */
 export const listRoleDefaultDashboards = async (organizationId: Types.ObjectId) => {
-  return RoleDefaultDashboard.find({ organizationId, isDeleted: false })
+  return RoleDefaultDashboard.find({ organizationId, status: 'active' })
     .populate('roleId', 'name')
     .populate('dashboardId', 'name isDefault')
     .sort({ createdAt: -1 });
