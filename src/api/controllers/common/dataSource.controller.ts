@@ -224,10 +224,11 @@ export const listDataSource = async (req: Request, res: Response, next: NextFunc
           result.data.map(async (ds: any) => {
 
              // Apply DataSource-level visibility
-            const dsVisibility = 
-  visibilitySettings?.dataSourceId?.toString() === ds._id.toString() ? visibilitySettings : null;
+           // Apply DataSource-level visibility
+const dsVisibility = visibilitySettings?.find(
+  (v: any) => v.dataSourceId?.toString() === ds._id.toString() && !v.attributeId
+);
 
-// if (dsVisibility?.visibility === 'hide') return null;
 ds.visibility = dsVisibility?.visibility || 'primary';
 
 
@@ -347,20 +348,22 @@ ds.visibility = dsVisibility?.visibility || 'primary';
                 }
               }
                // Apply field-level visibility
-            ds.fieldSettings = ds.fieldSettings
+            // Apply field-level visibility
+            if (Array.isArray(ds.fieldSettings)) {
+              ds.fieldSettings = ds.fieldSettings
                 .map((field: any) => {
-                  const fieldVisibility = visibilitySettings?.attributes?.find(
-                    (a) =>
-                      a.attributeId.toString() === field.attributeId.toString() &&
-                      JSON.stringify(a.refAttributeId || []) === JSON.stringify(field.refAttributeId || [])
+                  const fieldVisibility = visibilitySettings?.find(
+                    (v: any) =>
+                      v.dataSourceId?.toString() === ds._id.toString() &&
+                      v.attributeId?.toString() === field.attributeId.toString() &&
+                      JSON.stringify(v.refAttributeId || []) === JSON.stringify(field.refAttributeId || [])
                   );
-                  // if (fieldVisibility?.visibility === 'hide') return null;
                   field.visibility = fieldVisibility?.visibility || 'primary';
                   return field;
                 })
                 .filter(Boolean);
-
             }
+          }
 
             ds.uniqueAttributeRules = Array.isArray(ds.uniqueAttributeRules)
               ? ds.uniqueAttributeRules.map((ruleGroup: any[]) =>
@@ -413,6 +416,7 @@ ds.visibility = dsVisibility?.visibility || 'primary';
   }
 };
 
+
 export const getDataSourceById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     let { organizationId, isSuperUser } = req.user as any;
@@ -422,20 +426,27 @@ export const getDataSourceById = async (req: Request, res: Response, next: NextF
     const ds: any = await dataSourceService.findDataSourceById(req.params.dataSourceId);
     if (!ds) return res.status(404).json({ success: false, message: 'Data Source not found' });
 
-    // Fetch visibility settings once per organization
-    const visibilitySetting = await getVisibilitySettingService(organizationId);
+    // Fetch all visibility settings for the organization
+    const visibilitySettings: any[] = await getVisibilitySettingService(organizationId); // returns array
 
-    // Apply field-level visibility only
-    if (Array.isArray(ds.fieldSettings) && visibilitySetting?.attributes) {
+    // Apply DataSource-level visibility
+    const dsVisibility = visibilitySettings.find(
+      (v) => v.dataSourceId?.toString() === ds._id.toString() && !v.attributeId
+    );
+    ds.visibility = dsVisibility?.visibility || 'primary';
+
+    // Apply field-level visibility
+    if (Array.isArray(ds.fieldSettings)) {
       ds.fieldSettings = ds.fieldSettings
         .map((field: any) => {
-          const attrVis = visibilitySetting.attributes.find(
-            (a) =>
-              a.attributeId.toString() === field.attributeId.toString() &&
-              JSON.stringify(a.refAttributeId || []) === JSON.stringify(field.refAttributeId || [])
+          const fieldVisibility = visibilitySettings.find(
+            (v) =>
+              v.dataSourceId?.toString() === ds._id.toString() &&
+              v.attributeId?.toString() === field.attributeId.toString() &&
+              JSON.stringify(v.refAttributeId || []) === JSON.stringify(field.refAttributeId || [])
           );
-          // if (attrVis?.visibility === 'hide') return null;
-          field.visibility = attrVis?.visibility || 'primary';
+          // if (fieldVisibility?.visibility === 'hide') return null; // uncomment to hide fields completely
+          field.visibility = fieldVisibility?.visibility || 'primary';
           return field;
         })
         .filter(Boolean);

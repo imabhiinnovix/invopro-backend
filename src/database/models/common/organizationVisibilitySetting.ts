@@ -3,70 +3,72 @@
 
 import { Schema, model, Document, Types } from "mongoose";
 
-export interface IAttributeVisibility {
-  attributeId: Types.ObjectId;
-  visibility: "primary" | "secondary" | "hide";
-  refAttributeId?: Types.ObjectId[];
-}
-
 export interface IOrganizationVisibilitySetting extends Document {
   organizationId: Types.ObjectId;
-  dataSourceId: Types.ObjectId;
-  visibility: "primary" | "secondary" | "hide"; // Root-level visibility
-  attributes: IAttributeVisibility[];
+
+  dataSourceId?: Types.ObjectId | null;    // datasource-level visibility
+  attributeId?: Types.ObjectId | null;     // attribute-level visibility
+  refAttributeId?: Types.ObjectId[];       // reference/nested attributes
+
+  visibility: "primary" | "secondary" | "hide";
+
   createdBy?: Types.ObjectId;
   updatedBy?: Types.ObjectId;
 }
 
-const attributeVisibilitySchema = new Schema<IAttributeVisibility>(
-  {
-    attributeId: { type: Schema.Types.ObjectId, ref: "Attribute", required: true },
-    visibility: {
-      type: String,
-      enum: ["primary", "secondary", "hide"],
-      required: true,
+const organizationVisibilitySettingSchema =
+  new Schema<IOrganizationVisibilitySetting>(
+    {
+      organizationId: {
+        type: Schema.Types.ObjectId,
+        ref: "Organization",
+        required: true,
+        index: true,
+      },
+
+      dataSourceId: {
+        type: Schema.Types.ObjectId,
+        ref: "data_source",
+        default: null,
+        index: true,
+      },
+
+      attributeId: {
+        type: Schema.Types.ObjectId,
+        default: null,
+        index: true,
+      },
+
+      refAttributeId: {
+        type: [Schema.Types.ObjectId],
+        default: [],
+      },
+
+      visibility: {
+        type: String,
+        enum: ["primary", "secondary", "hide"],
+        required: true,
+      },
+
+      createdBy: {
+        type: Schema.Types.ObjectId,
+        ref: "user",
+      },
+
+      updatedBy: {
+        type: Schema.Types.ObjectId,
+        ref: "user",
+      },
     },
-    refAttributeId: { type: [Schema.Types.ObjectId], default: [] },
-  },
-  { _id: false }
-);
+    {
+      timestamps: true,
+    }
+  );
 
-const organizationVisibilitySettingSchema = new Schema<IOrganizationVisibilitySetting>(
-  {
-    organizationId: {
-      type: Schema.Types.ObjectId,
-      ref: "Organization",
-      required: true,
-      index: true,
-    },
-
-    dataSourceId: {
-      type: Schema.Types.ObjectId,
-      ref: "DataSource",
-      required: true,
-      index: true,
-    },
-
-    visibility: {  // Root-level visibility for the data source
-      type: String,
-      enum: ["primary", "secondary", "hide"],
-      required: true,
-    },
-
-    attributes: {
-      type: [attributeVisibilitySchema],
-      default: [],
-    },
-
-    createdBy: { type: Schema.Types.ObjectId, ref: "user" },
-    updatedBy: { type: Schema.Types.ObjectId, ref: "user" },
-  },
-  { timestamps: true }
-);
-
+// Optional: prevent duplicate overrides for same scope
 organizationVisibilitySettingSchema.index(
-  { organizationId: 1, dataSourceId: 1 },
-  { unique: true }
+  { organizationId: 1, dataSourceId: 1, attributeId: 1, refAttributeId: 1 },
+  { unique: false }
 );
 
 export const OrganizationVisibilitySetting = model<IOrganizationVisibilitySetting>(

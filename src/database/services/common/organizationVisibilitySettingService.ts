@@ -21,6 +21,10 @@ export const listVisibilitySettingService = async (organizationId: string) => {
   return OrganizationVisibilitySetting.find({ organizationId }).lean();
 };
 
-export const getVisibilitySettingService = async (organizationId: string) => {
-  return OrganizationVisibilitySetting.findOne({ organizationId }).lean();
+export const getVisibilitySettingService = async (organizationId: string, dataSourceId?: string) => {
+  const query: any = { organizationId };
+  if (dataSourceId) query.dataSourceId = dataSourceId;
+
+  // Returns all visibility settings for the org (flattened)
+  return OrganizationVisibilitySetting.find(query).lean();
 };

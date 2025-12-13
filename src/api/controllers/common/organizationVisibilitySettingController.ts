@@ -5,10 +5,17 @@ import {
   createVisibilitySettingService,
   deleteVisibilitySettingService,
   listVisibilitySettingService,
-  updateVisibilitySettingService
+  updateVisibilitySettingService,
 } from "../../../database/services/common/organizationVisibilitySettingService";
 
-export const createVisibilitySetting = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * CREATE
+ */
+export const createVisibilitySetting = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { organizationId: paramOrgId } = req.query;
     let { organizationId, isSuperUser, userId } = req.user as any;
@@ -19,8 +26,11 @@ export const createVisibilitySetting = async (req: Request, res: Response, next:
     }
 
     const payload = {
-      ...req.body,
       organizationId,
+      dataSourceId: req.body.dataSourceId ?? null,
+      attributeId: req.body.attributeId ?? null,
+      refAttributeId: req.body.refAttributeId || [],
+      visibility: req.body.visibility,
       createdBy: userId,
     };
 
@@ -36,14 +46,23 @@ export const createVisibilitySetting = async (req: Request, res: Response, next:
   }
 };
 
-export const updateVisibilitySetting = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * UPDATE
+ */
+export const updateVisibilitySetting = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { settingId } = req.params;
-    const { userId, organizationId } = req.user as any;
+    const { userId } = req.user as any;
 
     const payload = {
-      ...req.body,
-      organizationId,
+      dataSourceId: req.body.dataSourceId ?? null,
+      attributeId: req.body.attributeId ?? null,
+      refAttributeId: req.body.refAttributeId || [],
+      visibility: req.body.visibility,
       updatedBy: userId,
     };
 
@@ -59,8 +78,14 @@ export const updateVisibilitySetting = async (req: Request, res: Response, next:
   }
 };
 
-
-export const deleteVisibilitySetting = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * DELETE
+ */
+export const deleteVisibilitySetting = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { settingId } = req.params;
     const { organizationId: paramOrgId } = req.query;
@@ -82,7 +107,14 @@ export const deleteVisibilitySetting = async (req: Request, res: Response, next:
   }
 };
 
-export const listVisibilitySettings = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * LIST
+ */
+export const listVisibilitySettings = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { organizationId: paramOrgId } = req.query;
     let { organizationId, isSuperUser } = req.user as any;
