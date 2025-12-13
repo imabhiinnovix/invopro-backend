@@ -509,6 +509,23 @@ const defaultPermissionsAdmin = [
   { permission: 'POST:/common/organization-visibility-setting/create', isChangeable: true },
   { permission: 'PUT:/common/organization-visibility-setting/update/:settingId', isChangeable: true },
   { permission: 'DELETE:/common/organization-visibility-setting/delete/:settingId', isChangeable: true },
+
+   {
+    permission: 'POST:/common/role-default-dashboard/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/common/role-default-dashboard/update:roleId',
+    isChangeable: true,
+  },
+  {
+    permission: 'GET:/common/role-default-dashboard/list',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/common/role-default-dashboard/delete/:roleId',
+    isChangeable: true,
+  },
 ];
 
 const defaultPermissionsSuperAdmin = [
