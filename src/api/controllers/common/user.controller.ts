@@ -395,31 +395,49 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
         message: `Invalid User Status.`,
       });
     }
+
     const { isSuperUser } = req.user;
     let organizationId = req.user.organizationId;
 
-    // If super user and orgId is passed in body
     if (isSuperUser && bodyOrgId) {
       organizationId = bodyOrgId;
     }
 
-    const userQuery = { _id: new Types.ObjectId(userId), organizationId: new Types.ObjectId(organizationId) };
-    // Step 1: Fetch existing user
+    const userQuery = {
+      _id: new Types.ObjectId(userId),
+      organizationId: new Types.ObjectId(organizationId),
+    };
+
     const existingUser = await userService.findOne(userQuery);
 
     if (!existingUser) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
+    // ✅ Minimal additions
     const oldStatus = existingUser.status;
     const newStatus = status || oldStatus;
-    const newSubscriptionIds: string[] =
-      organizationProductSubscriptionIds ?? existingUser.organizationProductSubscriptionIds?.map(String) ?? [];
 
-    if (newStatus === 'active') {
+    const statusChangedToActive =
+      oldStatus !== 'active' && newStatus === 'active';
+
+    const subscriptionsChanged =
+      Array.isArray(organizationProductSubscriptionIds) &&
+      JSON.stringify(
+        existingUser.organizationProductSubscriptionIds?.map(String).sort()
+      ) !== JSON.stringify(
+        organizationProductSubscriptionIds.map(String).sort()
+      );
+
+    const newSubscriptionIds: string[] =
+      organizationProductSubscriptionIds ??
+      existingUser.organizationProductSubscriptionIds?.map(String) ??
+      [];
+
+    // ✅ Condition updated
+    if (statusChangedToActive || subscriptionsChanged) {
       const subscriptionIds = newSubscriptionIds.map((id) => new Types.ObjectId(id));
 
-      // Find active users excluding current
       const activeUsers = await userService.findUser({
         _id: { $ne: userId },
         organizationId,
@@ -427,7 +445,6 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
         organizationProductSubscriptionIds: { $in: subscriptionIds },
       });
 
-      // Build usage map
       const usageMap: Record<string, number> = {};
       for (const id of newSubscriptionIds) {
         usageMap[id] = activeUsers.filter((user) =>
@@ -435,11 +452,11 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
         ).length;
       }
 
-      // Fetch and validate subscriptions
-      const subscriptions: any[] = await organizationProductSubscriptionService.findOrganizationProductSubscription(
-        { _id: { $in: subscriptionIds }, organizationId },
-        ['productId']
-      );
+      const subscriptions: any[] =
+        await organizationProductSubscriptionService.findOrganizationProductSubscription(
+          { _id: { $in: subscriptionIds }, organizationId },
+          ['productId']
+        );
 
       const now = new Date();
       const overLimitProducts: string[] = [];
@@ -461,7 +478,8 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
 
         if (inactiveProducts.length) messageParts.push(`Inactive products: ${inactiveProducts.join(', ')}`);
         if (expiredProducts.length) messageParts.push(`Expired licenses: ${expiredProducts.join(', ')}`);
-        if (overLimitProducts.length) messageParts.push(`License limit exceeded for: ${overLimitProducts.join(', ')}`);
+        if (overLimitProducts.length)
+          messageParts.push(`License limit exceeded for: ${overLimitProducts.join(', ')}`);
 
         return res.status(400).json({
           success: false,
@@ -470,7 +488,7 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
       }
     }
 
-    // Step 2: Build update object
+    // Build update object (unchanged)
     const updateData: any = {};
 
     if (firstName) updateData.firstName = firstName;
@@ -481,28 +499,14 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
     if (password) updateData.password = await hashPassword(password);
     if (organizationProductSubscriptionIds)
       updateData.organizationProductSubscriptionIds = organizationProductSubscriptionIds;
-    if (departmentId) {
-      updateData.departmentId = departmentId;
-    }
-    if (designationId) {
-      updateData.designationId = designationId;
-    }
-    if (address) {
-      updateData.address = address;
-    }
-    if (country) {
-      updateData.country = country;
-    }
-    if (state) {
-      updateData.state = state;
-    }
-    if (city) {
-      updateData.city = city;
-    }
-    if (postalCode) {
-      updateData.postalCode = postalCode;
-    }
-    // Step 3: Update user
+    if (departmentId) updateData.departmentId = departmentId;
+    if (designationId) updateData.designationId = designationId;
+    if (address) updateData.address = address;
+    if (country) updateData.country = country;
+    if (state) updateData.state = state;
+    if (city) updateData.city = city;
+    if (postalCode) updateData.postalCode = postalCode;
+
     await userService.updateUser(userId, updateData);
 
     return res.status(200).json({ success: true, message: 'User updated successfully' });
