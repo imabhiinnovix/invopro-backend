@@ -40,6 +40,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     if (!validationResult.valid) {
       return res.status(400).json({ success: false, message: validationResult.message });
     }
+
     const { isSuperUser } = req.user;
     let createUserOrganizationId = req.user.organizationId;
     if (isSuperUser && organizationId) {
@@ -52,73 +53,87 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       return res.status(400).json({ success: false, message: 'User already exists' });
     }
 
-    const subscriptionIds = organizationProductSubscriptionIds.map((id) => new Types.ObjectId(id));
-    if (subscriptionIds.length === 0) {
+    if (!organizationProductSubscriptionIds?.length) {
       return res.status(400).json({
         success: false,
         message: 'User must be assigned to at least one product subscription.',
       });
-    } else {
-      // Step 2.1: Fetch active users with these subscriptions
-      const activeUsers = await userService.findUser({
-        createUserOrganizationId,
-        status: 'active',
-        organizationProductSubscriptionIds: { $in: organizationProductSubscriptionIds },
-      });
+    }
 
-      // Step 2.2: Build a usage count map
-      const usageMap: Record<string, number> = {};
-      for (const id of organizationProductSubscriptionIds) {
-        usageMap[id] = activeUsers.filter((user) =>
-          user?.organizationProductSubscriptionIds?.map(String).includes(String(id))
-        ).length;
+    // ---------------- FIX START ----------------
+
+    // Normalize subscription IDs to string
+    const requestedSubIds = organizationProductSubscriptionIds.map(String);
+
+    // Step 2.1: Fetch active users with these subscriptions
+    const activeUsers = await userService.findUser({
+      organizationId: createUserOrganizationId,
+      status: 'active',
+      organizationProductSubscriptionIds: { $in: organizationProductSubscriptionIds },
+    });
+
+    // Step 2.2: Build usage count map (FIXED)
+    const usageMap: Record<string, number> = {};
+    for (const user of activeUsers) {
+      for (const subId of user.organizationProductSubscriptionIds || []) {
+        const id = String(subId);
+        usageMap[id] = (usageMap[id] || 0) + 1;
       }
+    }
 
-      // Step 2.3: Fetch subscriptions and validate
-      const subscriptions: any = await organizationProductSubscriptionService.findOrganizationProductSubscription(
+    // Step 2.3: Fetch subscriptions
+    const subscriptions: any[] =
+      await organizationProductSubscriptionService.findOrganizationProductSubscription(
         {
           _id: { $in: organizationProductSubscriptionIds },
-          createUserOrganizationId,
+          organizationId: createUserOrganizationId,
         },
         ['productId']
       );
 
-      const now = new Date();
-      const overLimitProducts: string[] = [];
-      const expiredProducts: string[] = [];
-      const inactiveProducts: string[] = [];
+    const now = new Date();
+    const overLimitProducts: string[] = [];
+    const expiredProducts: string[] = [];
+    const inactiveProducts: string[] = [];
 
-      for (const sub of subscriptions) {
-        const subId = sub._id.toString();
-        const productName = sub.productId?.name || 'Unknown Product';
-        const currentCount = usageMap[subId] || 0;
+    for (const sub of subscriptions) {
+      const subId = String(sub._id);
+      const productName = sub.productId?.name || 'Unknown Product';
+      const currentCount = usageMap[subId] || 0;
 
-        if (sub.status !== 'active') {
-          inactiveProducts.push(productName);
-        }
+      // FIX: Safe Date comparison
+      const expiryDate = sub.licenseExpiresAt
+        ? new Date(sub.licenseExpiresAt)
+        : null;
 
-        if (sub.licenseExpiresAt < now) {
-          expiredProducts.push(productName);
-        }
-
-        if (currentCount + 1 > sub.totalLicenses) {
-          overLimitProducts.push(productName);
-        }
+      if (sub.status !== 'active') {
+        inactiveProducts.push(productName);
       }
 
-      if (inactiveProducts.length || expiredProducts.length || overLimitProducts.length) {
-        const messageParts: string[] = [];
+      if (expiryDate && expiryDate.getTime() < now.getTime()) {
+        expiredProducts.push(productName);
+      }
 
-        if (inactiveProducts.length) messageParts.push(`Inactive products: ${inactiveProducts.join(', ')}`);
-        if (expiredProducts.length) messageParts.push(`Expired licenses: ${expiredProducts.join(', ')}`);
-        if (overLimitProducts.length) messageParts.push(`License limit exceeded for: ${overLimitProducts.join(', ')}`);
-
-        return res.status(400).json({
-          success: false,
-          message: `User creation failed: ${messageParts.join(' | ')}`,
-        });
+      if (currentCount + 1 > sub.totalLicenses) {
+        overLimitProducts.push(productName);
       }
     }
+
+    if (inactiveProducts.length || expiredProducts.length || overLimitProducts.length) {
+      const messageParts: string[] = [];
+
+      if (inactiveProducts.length) messageParts.push(`Inactive products: ${inactiveProducts.join(', ')}`);
+      if (expiredProducts.length) messageParts.push(`Expired licenses: ${expiredProducts.join(', ')}`);
+      if (overLimitProducts.length)
+        messageParts.push(`License limit exceeded for: ${overLimitProducts.join(', ')}`);
+
+      return res.status(400).json({
+        success: false,
+        message: `User creation failed: ${messageParts.join(' | ')}`,
+      });
+    }
+
+    // ---------------- FIX END ----------------
 
     // Step 3: Create user
     const hashedPassword = await hashPassword(password);
@@ -148,6 +163,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     next(err);
   }
 };
+
 export const getUserList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, firstName, lastName, organizationId }: any = req.query;
