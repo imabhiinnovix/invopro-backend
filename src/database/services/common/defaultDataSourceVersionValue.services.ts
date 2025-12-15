@@ -4116,18 +4116,30 @@ if (sort && Object.keys(sort).length > 0) {
 
   // If no pagination requested, just compute and return aggregation result
   if (limit === Number.MAX_SAFE_INTEGER) {
-    aggregationPipeline.push(
-      // compute aggregation for whole set
+  aggregationPipeline.push({
+  $facet: {
+    data: [
+      { $project: { _id: 0, rowData: "$rowData" } }
+    ],
+    agg: [
       aggregationGroupStage,
-      // format for frontend: keep `data` key and `totalCount` for number widgets
-      {
-        $project: {
-          _id: 0,
-          data: "$data",
-          totalCount: "$data" // for Count/Sum/Average, totalCount can be same as data
-        }
-      }
-    );
+      { $project: { _id: 0, data: 1 } }
+    ]
+  }
+});
+
+//  UNWRAP FACET DATA — THIS WAS MISSING
+aggregationPipeline.push(
+  { $unwind: "$data" },
+  {
+    $project: {
+      rowData: "$data.rowData",
+      widgetData: { $arrayElemAt: ["$agg.data", 0] },
+      totalCount: { $arrayElemAt: ["$agg.data", 0] }
+    }
+  }
+);
+
   } else {
     // Use a facet: one pipeline for metadata, one for agg result, and one for paginated documents
     aggregationPipeline.push({
