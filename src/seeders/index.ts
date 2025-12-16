@@ -865,6 +865,13 @@ export async function seedDatabase() {
         module: "Notifications"
       },
       {
+        name: 'Attorney FO Mapping',
+        dataSourceId: entityDataSourceMapReportivix.attorney_fo_mapping.dataSourceId,
+        code: 'attorneyfomapping',
+        organizationId: payload.reportivixOrganizationId,
+        module: "Notifications"
+      },
+       {
         name: 'Formality Officers',
         dataSourceId: entityDataSourceMapReportivix.formality_officers.dataSourceId,
         code: 'formality_officers',
@@ -897,6 +904,13 @@ export async function seedDatabase() {
         name: 'Formality Officers',
         dataSourceId: entityDataSourceMapSabic.formality_officers.dataSourceId,
         code: 'formality_officers',
+        organizationId: payload.sabicOrganizationId,
+        module: "Notifications"
+      },
+      {
+        name: 'Attorney FO Mapping',
+        dataSourceId: entityDataSourceMapSabic.attorney_fo_mapping.dataSourceId,
+        code: 'attorneyfomapping',
         organizationId: payload.sabicOrganizationId,
         module: "Notifications"
       },
