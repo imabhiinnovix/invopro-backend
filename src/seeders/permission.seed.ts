@@ -119,7 +119,7 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Permission',
     resourceCode: 'permission__list',
-    isSuperUser: true,
+    isSuperUser: false,
     isChangeable: true,
     module: "Setting",
     subModule: "Permission"
@@ -131,7 +131,7 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Permission',
     resourceCode: 'permission__create',
-    isSuperUser: true,
+    isSuperUser: false,
     isChangeable: true,
     module: "Setting",
     subModule: "Permission"
@@ -143,7 +143,7 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Permission',
     resourceCode: 'permission__update',
-    isSuperUser: true,
+    isSuperUser: false,
     isChangeable: true,
     module: "Setting",
     subModule: "Permission"
@@ -155,7 +155,7 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Permission',
     resourceCode: 'permission__delete',
-    isSuperUser: true,
+    isSuperUser: false,
     isChangeable: true,
     module: "Setting",
     subModule: "Permission"
