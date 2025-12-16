@@ -198,7 +198,7 @@ export function resolveRecipientEmail(realEmail: string): string {
 }
 
 export function resolveCcEmails(realCc: string[]): string[] {
-  return ["tech@innovix-labs.com"];  
+  return ["tech@innovix-labs.com","mahua.dutta@sabic.com"];
   return process.env.NODE_ENV !== "production"
     ? [""]
     : realCc;
