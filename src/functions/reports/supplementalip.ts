@@ -18,6 +18,7 @@ import {
   getFormattedDataToProcessReportHeaders,
 } from '../../database/services/reportivix/monthlyipReport.services';
 import { ICustomReport } from '../../database/models/reportivix/customReport';
+import { matchesMultiOption } from '../../utils/common.utils';
 
 export const generateSupplementalIpReport = async ({
   reportRequestPayload,
@@ -485,7 +486,7 @@ export const generateSupplementalIpReport = async ({
 
       // Filter cases matching current SBU group
       const filteredCases = newPatentValueCoverageRawData.filter(
-        (entry) => entry && attributeValues.includes(entry.SBU)
+        (entry) => matchesMultiOption(entry?.SBU, attributeValues)
       );
 
       const totalFirstFilings = filteredCases.length;

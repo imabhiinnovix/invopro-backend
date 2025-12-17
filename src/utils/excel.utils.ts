@@ -4,6 +4,7 @@ import * as xlsx from 'xlsx';
 import { findEntityById } from '../database/services/common/entity.services';
 import * as fs from 'fs';
 import * as path from 'path';
+import { formatExcelCellValue } from './common.utils';
 
 interface KeywordPosition {
   page: number;
@@ -895,7 +896,7 @@ export async function generateExcelReport({
       //for table desing
       let processingTableIndex = 0;
       let processingTableHeaders = [];
-      let processingTableRows = [];
+      let processingTableRows: any = [];
       let headerRowIndex = 0;
       let lastRowIndex = 0;
       for (let i = 0; i < sections.length; i++) {
@@ -1064,6 +1065,9 @@ export async function generateExcelReport({
           const individualTable = tableData[processingTableIndex];
           processingTableHeaders = individualTable.headers;
           processingTableRows = individualTable.rows;
+          processingTableRows = processingTableRows.map((row) =>
+                              row.map((cell) => formatExcelCellValue(cell))
+                            );
           headerRowIndex = rowPointer;
           lastRowIndex = processingTableRows.length + headerRowIndex;
           const tableRef = startTableColumn ? `${startTableColumn}${rowPointer}` : `A${rowPointer}`;
