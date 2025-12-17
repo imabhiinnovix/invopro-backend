@@ -355,6 +355,11 @@ export const formatExcelCellValue = (value: any): string | number => {
     return value.join(', ');
   }
 
+  // Date
+  if (value instanceof Date) {
+    return value.toISOString().split('T')[0];
+  }
+
   // Object (safety fallback)
   if (typeof value === 'object') {
     return JSON.stringify(value);
