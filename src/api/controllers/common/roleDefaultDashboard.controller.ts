@@ -13,7 +13,7 @@ export const createDefaultDashboard = async (req: Request, res: Response, next: 
 const data = await roleDefaultDashboardService.createRoleDefaultDashboard({
   organizationId: new Types.ObjectId(organizationId),
   roleId: new Types.ObjectId(roleId),
-  dashboardId: new Types.ObjectId(dashboardId),
+  dashboardId: dashboardId.map((id) => new Types.ObjectId(id)),
   createdBy: new Types.ObjectId(userId),
 });
 
@@ -40,7 +40,7 @@ export const updateDefaultDashboard = async (req: Request, res: Response, next: 
     const data = await roleDefaultDashboardService.updateRoleDefaultDashboard({
   organizationId: new Types.ObjectId(organizationId),
   roleId: new Types.ObjectId(roleId),
-  dashboardId: new Types.ObjectId(dashboardId),
+  dashboardId: dashboardId.map((id) => new Types.ObjectId(id)),
   updatedBy: new Types.ObjectId(userId),
 });
 
@@ -77,11 +77,25 @@ export const deleteDefaultDashboard = async (req: Request, res: Response, next: 
 /**
  * LIST ROLE DEFAULT DASHBOARDS
  */
-export const listDefaultDashboards = async (req: Request, res: Response, next: NextFunction) => {
+export const listDefaultDashboards = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { organizationId } = req.user;
+    const { roleId } = req.query;
 
-    const data = await roleDefaultDashboardService.listRoleDefaultDashboards(organizationId);
+    const query: any = {
+      organizationId,
+      status: 'active',
+    };
+
+    if (roleId) {
+      query.roleId = new Types.ObjectId(roleId as string);
+    }
+
+    const data = await roleDefaultDashboardService.listRoleDefaultDashboards(query);
 
     res.status(200).json({
       success: true,

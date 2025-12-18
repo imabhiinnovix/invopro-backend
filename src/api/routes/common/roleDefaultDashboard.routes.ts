@@ -28,7 +28,7 @@ router.post(
  * Body: { roleId, dashboardId }
  */
 router.put(
-  '/update:roleId',
+  '/update/:roleId',
   authenticateToken,
   permissionMiddleware(),
   updateDefaultDashboard

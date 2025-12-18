@@ -117,13 +117,14 @@ export const getDashboardChartData = async (payload: any) => {
 export const getAllDashboardsAggregation = async ({
   organizationId,
   userId,
+  roleIds,
   page,
   limit,
   sort = { createdAt: -1 },
 }: any) => {
   try {
     const pipeline: any[] = [
-      // Match by org, active, not deleted
+      // 1️ Match org dashboards
       {
         $match: {
           organizationId,
@@ -132,6 +133,7 @@ export const getAllDashboardsAggregation = async ({
         },
       },
 
+      // 2️ Dashboard shares (user specific)
       {
         $lookup: {
           from: 'dashboard_shares',
@@ -153,26 +155,56 @@ export const getAllDashboardsAggregation = async ({
         },
       },
 
-      // Filter only those which are either:
-      // - Created by the user
-      // - Shareable
-      // - Transferred to the user
+      // 3️ Role default dashboards lookup
       {
-        $match: {
-          $or: [{ createdBy: userId }, { isShareble: true }, { transfers: { $ne: [] } }],
+        $lookup: {
+          from: 'role_default_dashboards',
+          let: { dashboardId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                organizationId,
+                status: 'active',
+                roleId: { $in: roleIds },
+              },
+            },
+            {
+              $match: {
+                $expr: {
+                  $in: ['$$dashboardId', '$dashboardId'],
+                },
+              },
+            },
+          ],
+          as: 'roleDefaults',
         },
       },
 
-      // Add isEdit field
+      // 4️ Allow dashboards if ANY condition matches
+      {
+        $match: {
+          $or: [
+            { createdBy: userId },            // user-created
+            { isShareble: true },              // shareable
+            { transfers: { $ne: [] } },        // shared
+            { roleDefaults: { $ne: [] } },     // role default ✅
+          ],
+        },
+      },
+
+      // 5️ Flags
       {
         $addFields: {
           isEdit: {
-            $cond: [{ $eq: ['$createdBy', userId] }, true, false],
+            $eq: ['$createdBy', userId],
+          },
+          isRoleDefault: {
+            $cond: [{ $gt: [{ $size: '$roleDefaults' }, 0] }, true, false],
           },
         },
       },
 
-      // Populate dataSourceId
+      // 6️ Populate dataSource
       {
         $lookup: {
           from: 'data_sources',
@@ -188,7 +220,7 @@ export const getAllDashboardsAggregation = async ({
         },
       },
 
-      // Populate dataSource.entityId
+      // 7️ Populate entity
       {
         $lookup: {
           from: 'entities',
@@ -203,7 +235,8 @@ export const getAllDashboardsAggregation = async ({
           preserveNullAndEmptyArrays: true,
         },
       },
-      // Populate createdBy
+
+      // 8️ Populate createdBy
       {
         $lookup: {
           from: 'users',
@@ -219,15 +252,17 @@ export const getAllDashboardsAggregation = async ({
         },
       },
 
+      // 9️ Pagination + count
       {
         $facet: {
           data: [
-            { $sort: sort || { createdAt: -1 } },
+            { $sort: sort },
             ...(page && limit ? [{ $skip: page * limit }, { $limit: limit }] : []),
           ],
           totalCount: [{ $count: 'count' }],
         },
       },
+
       {
         $addFields: {
           totalCount: {
@@ -236,17 +271,7 @@ export const getAllDashboardsAggregation = async ({
         },
       },
 
-      {
-        $project: {
-          createdBy: {
-            password: 0, // optional
-            // exclude password or any other PII
-          },
-
-          // Exclude transfer info from final output
-          transfers: 0,
-        },
-      },
+      // 10 Final projection
       {
         $project: {
           data: {
@@ -262,6 +287,7 @@ export const getAllDashboardsAggregation = async ({
                 isEdit: '$$dashboard.isEdit',
                 isDefaultNotivix: '$$dashboard.isDefaultNotivix',
                 isDefault: '$$dashboard.isDefault',
+                isRoleDefault: '$$dashboard.isRoleDefault',
                 organizationId: '$$dashboard.organizationId',
                 createdAt: '$$dashboard.createdAt',
                 updatedAt: '$$dashboard.updatedAt',
@@ -281,12 +307,8 @@ export const getAllDashboardsAggregation = async ({
       },
     ];
 
-    // Optional pagination
-    // if (page && limit) {
-    //   pipeline.push({ $skip: page * limit }, { $limit: limit });
-    // }
-
     const result = await Dashboard.aggregate(pipeline);
+
     return {
       data: result[0]?.data || [],
       totalCount: result[0]?.totalCount || 0,

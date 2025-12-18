@@ -1909,7 +1909,7 @@ let permissions: PermissionSeed[] = [
   {
     name: 'Update Default Dashboard',
     method: 'PUT',
-    resourceId: '/common/role-default-dashboard/update:roleId',
+    resourceId: '/common/role-default-dashboard/update/:roleId',
     extraOptions: {},
     resourceType: 'Default Dashboard',
     resourceCode: 'default_dashboard__update',

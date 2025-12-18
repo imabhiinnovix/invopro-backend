@@ -515,7 +515,7 @@ const defaultPermissionsAdmin = [
     isChangeable: true,
   },
   {
-    permission: 'PUT:/common/role-default-dashboard/update:roleId',
+    permission: 'PUT:/common/role-default-dashboard/update/:roleId',
     isChangeable: true,
   },
   {

@@ -6,7 +6,7 @@ import { Schema, model, Document, Types } from 'mongoose';
 export interface IRoleDefaultDashboard extends Document {
   organizationId: Types.ObjectId;
   roleId: Types.ObjectId;
-  dashboardId: Types.ObjectId;
+  dashboardId: Types.ObjectId[];
   createdBy: Types.ObjectId;
   updatedBy: Types.ObjectId;
   status: 'active' | 'inactive';
@@ -24,11 +24,13 @@ const roleDefaultDashboardSchema = new Schema<IRoleDefaultDashboard>(
       ref: 'user_role',
       required: true,
     },
-    dashboardId: {
-      type: Schema.Types.ObjectId,
-      ref: 'dashboard',
-      required: true,
-    },
+    dashboardId: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'dashboard',
+        required: true,
+      },
+    ],
     status: {
       type: String,
       enum: ['active', 'inactive'],
@@ -49,7 +51,10 @@ const roleDefaultDashboardSchema = new Schema<IRoleDefaultDashboard>(
 // One default dashboard per role per organization
 roleDefaultDashboardSchema.index(
   { organizationId: 1, roleId: 1 },
-  { unique: true }
+  { 
+    unique: true,
+    partialFilterExpression: { status: 'active' },
+  },
 );
 
 export default model<IRoleDefaultDashboard>(

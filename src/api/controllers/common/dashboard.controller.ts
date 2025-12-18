@@ -72,11 +72,12 @@ export const getDashboardById = async (req: Request, res: Response, next: NextFu
 
 export const getDashboards = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId, organizationId } = req.user;
+    const { userId, organizationId, roleIds } = req.user;
 
     const data = await dashboardService.getAllDashboardsAggregation({
       organizationId: new mongoose.Types.ObjectId(organizationId),
       userId: new mongoose.Types.ObjectId(userId),
+      roleIds: roleIds.map(id => new mongoose.Types.ObjectId(id)),
     });
 
     res.status(200).json({ success: true, message: 'Dashboard get successfully', ...data });

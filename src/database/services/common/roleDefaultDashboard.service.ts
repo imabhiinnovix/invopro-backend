@@ -4,7 +4,7 @@ import { Types } from 'mongoose';
 interface RoleDefaultDashboardPayload {
   organizationId: Types.ObjectId;
   roleId: Types.ObjectId;
-  dashboardId: Types.ObjectId;
+  dashboardId: Types.ObjectId[];
   createdBy?: Types.ObjectId;
   updatedBy?: Types.ObjectId;
 }
@@ -13,7 +13,7 @@ interface RoleDefaultDashboardPayload {
  * CREATE default dashboard for a role
  */
 export const createRoleDefaultDashboard = async ({ organizationId, roleId, dashboardId, createdBy }: RoleDefaultDashboardPayload) => {
-  const exists = await RoleDefaultDashboard.findOne({ organizationId, roleId, isDeleted: false });
+  const exists = await RoleDefaultDashboard.findOne({ organizationId, roleId, status: 'active' });
 
   if (exists) {
     throw new Error('Default dashboard already exists for this role');
@@ -33,7 +33,7 @@ export const createRoleDefaultDashboard = async ({ organizationId, roleId, dashb
  */
 export const updateRoleDefaultDashboard = async ({ organizationId, roleId, dashboardId, updatedBy }: RoleDefaultDashboardPayload) => {
   const record = await RoleDefaultDashboard.findOneAndUpdate(
-    { organizationId, roleId, isDeleted: false },
+    { organizationId, roleId, status: 'active' },
     { dashboardId, updatedBy },
     { new: true }
   );
@@ -50,8 +50,8 @@ export const updateRoleDefaultDashboard = async ({ organizationId, roleId, dashb
  */
 export const deleteRoleDefaultDashboard = async (organizationId: Types.ObjectId, roleId: Types.ObjectId) => {
   const record = await RoleDefaultDashboard.findOneAndUpdate(
-    { organizationId, roleId, status: 'inactive' },
-    { isDeleted: true },
+    { organizationId, roleId, status: 'active' },
+    { status: 'inactive' },
     { new: true }
   );
 
@@ -65,8 +65,8 @@ export const deleteRoleDefaultDashboard = async (organizationId: Types.ObjectId,
 /**
  * LIST all role default dashboards (organization-wise)
  */
-export const listRoleDefaultDashboards = async (organizationId: Types.ObjectId) => {
-  return RoleDefaultDashboard.find({ organizationId, status: 'active' })
+export const listRoleDefaultDashboards = async (query: any) => {
+  return RoleDefaultDashboard.find(query)
     .populate('roleId', 'name')
     .populate('dashboardId', 'name isDefault')
     .sort({ createdAt: -1 });
