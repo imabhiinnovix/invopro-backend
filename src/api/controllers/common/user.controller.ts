@@ -14,6 +14,10 @@ import * as permissionService from '../../../database/services/common/permission
 import path from 'path';
 import fsPromises from 'fs/promises';
 import UserRole from '../../../database/models/common/userRole';
+import { createUserDataPermissionMany } from '../../../database/services/common/userDataPermission.service';
+import { getDataSourceList } from '../../../database/services/common/dataSource.services';
+import { findOrganizationById } from '../../../database/services/common/organization.service';
+import { findBusinessUnit, getAllBusinessUnits } from '../../../database/services/common/businessUnit.services';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -33,7 +37,8 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       state,
       city,
       postalCode,
-    } = req.body;
+      businessUnit
+      } = req.body;
 
     const validationResult = validateUserInput({ email, password, firstName, isUpdate: false });
 
@@ -138,7 +143,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     // Step 3: Create user
     const hashedPassword = await hashPassword(password);
 
-    await authService.createUser({
+    const newUser = await authService.createUser({
       email: email.toLowerCase(),
       password: hashedPassword,
       firstName,
@@ -156,13 +161,88 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       state,
       city,
       postalCode,
+      businessUnit
     });
+
+    // Business Unit
+// 🔹 NEW: Apply BU-based data permissions
+await applyBusinessUnitPermissions({
+  userId: newUser._id.toString(),
+  organizationId: createUserOrganizationId.toString(),
+  businessUnitValues: req.body.businessUnit || [],
+  createdBy: req.user.userId,
+});
 
     return res.status(201).json({ success: true, message: 'User created successfully' });
   } catch (err) {
     next(err);
   }
 };
+
+export const applyBusinessUnitPermissions = async ({
+  userId,
+  organizationId,
+  businessUnitValues,
+  createdBy,
+}: {
+  userId: string;
+  organizationId: string;
+  businessUnitValues: string[];
+  createdBy: string;
+}) => {
+  if (!businessUnitValues?.length) return;
+
+  // 1️⃣ Get BU dimension name (ex: "SBU")
+  const org: any = await findOrganizationById(organizationId);
+  if (!org?.businessUnitCode) return;
+
+  const dimensionName = org.businessUnitCode;
+
+  // 2️⃣ Fetch all visible datasources for org
+  const dataSources: any = await getDataSourceList({
+    query: { organizationId, isVisible: true },
+    paginate: false,
+    populate: ['entityId']
+  });
+
+  console.log('dataSources',dataSources);
+
+  // 3️⃣ Filter datasources having BU dimension
+  const permissionDocs: any[] = [];
+
+  for (const ds of dataSources.data) {
+    const attrs = ds?.entityId?.attributes || [];
+    const hasBU = attrs.some((a: any) => a.name === dimensionName);
+    if (!hasBU) continue;
+
+    const businessUnits = await findBusinessUnit({
+      _id: { $in: businessUnitValues }
+    });
+
+    // extract only names
+    const businessUnitNames = businessUnits.map((bu: any) => bu.name);
+
+    // 4️⃣ Build conditions
+    const conditions = [{
+      field: dimensionName,
+      operator: 'contains',
+      value: businessUnitNames.join(","),
+    }];
+
+    permissionDocs.push({
+      userId,
+      organizationId,
+      dataSourceId: ds._id,
+      conditions,
+      status: 'active',
+      createdBy,
+    });
+  }
+
+  // 5️⃣ Bulk insert
+  await createUserDataPermissionMany(permissionDocs);
+};
+
 
 export const getUserList = async (req: Request, res: Response, next: NextFunction) => {
   try {

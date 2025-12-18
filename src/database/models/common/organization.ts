@@ -30,6 +30,7 @@ interface IOrganization extends Document {
   country?: string;
   gst?: string;
   pan?: string;
+  businessUnitCode?: string;
 }
 
 // Define the Organization Schema
@@ -61,6 +62,7 @@ const organizationSchema = new Schema<IOrganization>(
     country: { type: String, default: '' },
     gst: { type: String, default: '' },
     pan: { type: String, default: '' },
+    businessUnitCode: { type: String, default: '' },
   },
   {
     timestamps: true,

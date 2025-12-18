@@ -17,6 +17,7 @@ export interface IUser extends Document {
   organizationProductSubscriptionIds?: Types.ObjectId[];
   departmentId?: Types.ObjectId;
   designationId?: Types.ObjectId;
+  businessUnit?: Types.ObjectId[];
   address?: string;
   country?: string;
   state?: string;
@@ -90,6 +91,11 @@ const userSchema = new Schema<IUser>(
       required: false,
       ref: 'Designation',
     },
+    businessUnit:[{
+      type: Schema.Types.ObjectId,
+      required: false,
+      ref: 'BusinessUnit',
+    }],
     address: {
       type: String,
       required: false,
