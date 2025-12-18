@@ -211,18 +211,6 @@ const defaultPermissionsUser = [
     permission: 'GET:/common/department/list',
     isChangeable: true,
   },
-  {
-    permission: 'POST:/common/derivedField/create',
-    isChangeable: false,
-  },
-  {
-    permission: 'PUT:/common/derivedField/update/:id',
-    isChangeable: false,
-  },
-  {
-    permission: 'DELETE:/common/derivedField/delete/:id',
-    isChangeable: false,
-  },
   { permission: 'GET:/common/derivedField/list', isChangeable: false },
   { permission: 'GET:/common/derivedField/:id', isChangeable: false },
   {
@@ -251,6 +239,31 @@ const defaultPermissionsUser = [
   },
   {
     permission: 'GET:/notivix/notification-setting/prepared/notification/list',
+    isChangeable: true,
+  },
+  { permission: 'POST:/common/dashboard/create', isChangeable: true },
+  {
+    permission: 'POST:/common/dashboard/update/:dashboardId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dashboard/delete/:dashboardId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dashboard/widget/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dashboard/widget/save',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dashboard/widget/update/:dashboardWidgetId',
+    isChangeable: true,
+  },
+  {
+    permission: 'POST:/common/dashboard/widget/delete/:dashboardWidgetId',
     isChangeable: true,
   },
 ];
@@ -312,34 +325,9 @@ const defaultPermissionsAdmin = [
     permission: 'PUT:/common/attributeOptions/update/:attributeId',
     isChangeable: false,
   },
-  { permission: 'POST:/common/dashboard/create', isChangeable: true },
-  {
-    permission: 'POST:/common/dashboard/update/:dashboardId',
-    isChangeable: true,
-  },
-  {
-    permission: 'POST:/common/dashboard/delete/:dashboardId',
-    isChangeable: true,
-  },
   {
     permission: 'POST:/common/dashboard/selectTheme/:dashboardId',
     isChangeable: false,
-  },
-  {
-    permission: 'POST:/common/dashboard/widget/create',
-    isChangeable: true,
-  },
-  {
-    permission: 'POST:/common/dashboard/widget/save',
-    isChangeable: true,
-  },
-  {
-    permission: 'POST:/common/dashboard/widget/update/:dashboardWidgetId',
-    isChangeable: true,
-  },
-  {
-    permission: 'POST:/common/dashboard/widget/delete/:dashboardWidgetId',
-    isChangeable: true,
   },
   { permission: 'POST:/common/widgetTheme/create', isChangeable: false },
   {
@@ -509,6 +497,18 @@ const defaultPermissionsAdmin = [
   { permission: 'POST:/common/organization-visibility-setting/create', isChangeable: true },
   { permission: 'PUT:/common/organization-visibility-setting/update/:settingId', isChangeable: true },
   { permission: 'DELETE:/common/organization-visibility-setting/delete/:settingId', isChangeable: true },
+  {
+    permission: 'POST:/common/derivedField/create',
+    isChangeable: false,
+  },
+  {
+    permission: 'PUT:/common/derivedField/update/:id',
+    isChangeable: false,
+  },
+  {
+    permission: 'DELETE:/common/derivedField/delete/:id',
+    isChangeable: false,
+  },
 ];
 
 const defaultPermissionsSuperAdmin = [
