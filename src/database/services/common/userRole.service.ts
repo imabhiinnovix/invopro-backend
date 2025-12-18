@@ -76,12 +76,14 @@ export const createUserRole = async ({
   isSuperUser = false,
   permissionIds,
   userId,
+  roleType,
 }: {
   organizationId: string;
   name: string;
   isSuperUser?: boolean;
   permissionIds: string[];
   userId: string;
+  roleType: string;
 }) => {
   try {
     // 1. Create the role
@@ -91,6 +93,7 @@ export const createUserRole = async ({
         name,
         isSuperUser,
         createdBy: userId,
+        roleType
       },
     ]);
 
@@ -122,16 +125,19 @@ export const updateRole = async ({
   name,
   permissionIds,
   userId,
+  roleType
 }: {
   roleId: string;
   name?: string;
   permissionIds?: string[];
   userId: string;
+  roleType: string;
 }) => {
   try {
     // 1. Update role fields
     const updateData: any = { updatedBy: userId };
     if (name !== undefined) updateData.name = name;
+    if (roleType !== undefined) updateData.roleType = roleType;
 
     const updatedRole = await UserRole.findByIdAndUpdate(roleId, updateData, { new: true });
     if (!updatedRole) throw new Error('Role not found');

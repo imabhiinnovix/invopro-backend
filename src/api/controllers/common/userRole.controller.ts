@@ -72,68 +72,112 @@ export const getRolePermissionList = async (req: Request, res: Response, next: N
 
 export const createUserRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId, isSuperUser, roleType: roleName = 'User' } = req.user;
+    const { userId, isSuperUser } = req.user;
 
     let organizationId = req.user.organizationId;
-    const { name, permissionIds = [], organizationId: bodyOrgId } = req.body;
+    const {
+      name,
+      permissionIds = [],
+      organizationId: bodyOrgId,
+    } = req.body;
+
+    let { roleType } = req.body;
 
     if (isSuperUser && bodyOrgId) {
       organizationId = bodyOrgId;
     }
 
-    // 1️⃣ Get the base role (by name)
-    const baseRole: any = await userRoleService.getUserRole({
-      organizationId,
-      name: roleName,
-    });
+    let finalPermissionIds = permissionIds;
 
-    if (!baseRole) {
-      return res.status(400).json({
-        success: false,
-        message: `Base role '${roleName}' not found.`,
-      });
+    // 🔹 If permissionIds NOT provided → inherit
+    if (!permissionIds || permissionIds.length === 0) {
+      let baseRole;
+
+      if (roleType) {
+        // inherit from roleType ObjectId
+        baseRole = await userRoleService.getUserRole({ organizationId, _id: roleType });
+      } else {
+        // fallback to "User" role
+        baseRole = await userRoleService.getUserRole({
+          organizationId,
+          name: 'User',
+        });
+        roleType = baseRole._id;
+      }
+      if (!baseRole) {
+        return res.status(400).json({
+          success: false,
+          message: 'Base role not found for permission inheritance',
+        });
+      }
+
+      const basePermissions = await getPermissionsByRoleIds([baseRole._id]);
+      finalPermissionIds = basePermissions.map(p => String(p.permissionId));
     }
 
-    // 2️⃣ Fetch default permissions from RoleHasPermission using roleId
-    const basePermissions = await getPermissionsByRoleIds([baseRole._id]);
-
-    // Extract only permissionId list
-    const basePermissionIds = basePermissions.map(p => String(p.permissionId));
-
-    // 3️⃣ Merge + dedupe (base permissions + new permissions)
-    const finalPermissionIds = [
-      ...new Set([
-        ...basePermissionIds,
-        ...permissionIds.map(String),
-      ])
-    ];
-
-    // 4️⃣ Call service — it creates role + inserts roleHasPermissions
+    // 🔹 Create role (service unchanged)
     const newRole = await userRoleService.createUserRole({
       organizationId,
       name,
       permissionIds: finalPermissionIds,
       userId,
+      roleType: roleType || null,
     });
 
     res.status(200).json({
       success: true,
-      message: "User role created successfully.",
+      message: 'User role created successfully.',
       role: newRole,
     });
-
   } catch (err) {
     next(err);
   }
 };
 
 
+
 export const updateUserRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.user;
+    const { userId, organizationId } = req.user;
     const { roleId } = req.params;
     const { name, permissionIds } = req.body;
-    await userRoleService.updateRole({ roleId, name, permissionIds, userId });
+    let { roleType } = req.body;
+
+    let finalPermissionIds = permissionIds;
+
+    // 🔹 If permissionIds NOT provided → reset based on roleType / User
+    if (!permissionIds) {
+      let baseRole;
+
+      if (roleType) {
+        baseRole = await userRoleService.getUserRole({ organizationId, _id: roleType });
+      } else {
+        baseRole = await userRoleService.getUserRole({
+          organizationId,
+          name: 'User',
+        });
+        roleType = baseRole._id;
+      }
+
+      if (!baseRole) {
+        return res.status(400).json({
+          success: false,
+          message: 'Base role not found for permission reset',
+        });
+      }
+
+      const basePermissions = await getPermissionsByRoleIds([baseRole._id]);
+      finalPermissionIds = basePermissions.map(p => String(p.permissionId));
+    }
+
+    // 🔹 Single service call
+    await userRoleService.updateRole({
+      roleId,
+      name,
+      permissionIds: finalPermissionIds,
+      userId,
+      roleType: roleType || null,
+    });
 
     res.status(200).json({
       success: true,
@@ -143,6 +187,7 @@ export const updateUserRole = async (req: Request, res: Response, next: NextFunc
     next(err);
   }
 };
+
 
 export const deleteUserRole = async (req: Request, res: Response, next: NextFunction) => {
   try {

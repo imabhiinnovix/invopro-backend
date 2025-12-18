@@ -7,6 +7,7 @@ export interface IUserRole extends Document {
   organizationId: Types.ObjectId;
   name: string;
   isSuperUser: boolean;
+  roleType: Types.ObjectId | null;
   createdBy: Types.ObjectId;
   updatedBy: Types.ObjectId;
   createdAt: Date;
@@ -28,6 +29,11 @@ const userRoleSchema = new Schema<IUserRole>(
     isSuperUser: {
       type: Boolean,
       default: false,
+    },
+    roleType: {
+      type: Schema.Types.ObjectId,
+      ref: 'user_role',
+      default: null,
     },
     createdBy: {
       type: Schema.Types.ObjectId,
