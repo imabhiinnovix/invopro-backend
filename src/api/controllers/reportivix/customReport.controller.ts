@@ -12,7 +12,7 @@ import path from 'path';
 import * as dataSourceVersionService from '../../../database/services/common/dataSourceVersion.services';
 import { generateSupplementalIntermediateReport, generateSupplementalIpReport } from '../../../functions/reports/supplementalip';
 import { CustomReportModelAccess } from '../../../database/models/reportivix/customReportModels';
-import { getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
+import { formatExcelCellValue, getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
 import * as dataSourceVersionValueService from '../../../database/services/common/defaultDataSourceVersionValue.services';
 import mongoose from 'mongoose';
 import { generateCustomReportBasedOnReportRequestId, transformFunctionsMap } from '../../../utils/common.report';
@@ -61,7 +61,6 @@ export const generateCustomReportsFunction = async ({
     const missingRequiredIds = requiredDataSourceIds.filter(
       (id) => !foundRequiredDataSourceIds.includes(id.toString())
     );
-
     if (missingRequiredIds.length > 0) {
       let notFoundItems = customReportDetails.dataSourceIds.filter((ds) =>
         missingRequiredIds.includes(ds.dataSourceId.toString())
@@ -477,7 +476,9 @@ export const downloadSupplementalIntermediateReport = async (
 
       // Add all data rows
       data.forEach((item: any) => {
-        worksheet.addRow(Object.values(item));
+        worksheet.addRow(
+          Object.values(item).map((val) => formatExcelCellValue(val))
+        );
       });
 
       // Apply some basic styling

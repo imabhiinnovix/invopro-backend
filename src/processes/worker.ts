@@ -140,22 +140,36 @@ async function connectDB() {
               worksheet.addRow(dataRow);
             });
           }else{
-             const result =
-                await dataSourceVersionValueService.getDataSourceVersionValueWidgetDataV2({
-                  schemaName,
-                  query,
-                  dashboardFilters,
-                  conditions,
-                  entityId,
-                  aggregation,
-                  dashBoardType,
-                  dataSourceDetails,
-                  isPaginate,
-                  page,
-                  limit,
-                  sort
-                });
-          const dataResults = result?.data ?? [];
+             const safeLimit = 1000; // batch size
+          let page = 1;
+          let dataResults: any[] = [];
+
+          while (true) {
+            const result =
+              await dataSourceVersionValueService.getDataSourceVersionValueWidgetDataV2({
+                schemaName,
+                query,
+                dashboardFilters,
+                conditions,
+                entityId,
+                aggregation,
+                dashBoardType,
+                dataSourceDetails,
+                isPaginate: true, // always paginate
+                page,
+                limit: safeLimit,
+                sort
+              });
+
+            const batchData = result?.data ?? [];
+            dataResults.push(...batchData);
+
+            if (batchData.length < safeLimit) break; // last page
+            page++;
+          }
+
+          console.log('Total rows fetched for export:', dataResults.length);
+
           let headers: string[] = dataSourceDetails?.fieldSettings
             .filter((f: any) => !f.isDerived)  
             .map((f: any) => f.label);

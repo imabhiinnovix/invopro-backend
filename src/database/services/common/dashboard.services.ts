@@ -269,7 +269,8 @@ export const getAllDashboardsAggregation = async ({
                 settings: '$$dashboard.settings',
                 createdBy: {
                   _id: '$$dashboard.createdBy._id',
-                  name: '$$dashboard.createdBy.name',
+                  firstName: '$$dashboard.createdBy.firstName',
+                  lastName: '$$dashboard.createdBy.lastName',
                   email: '$$dashboard.createdBy.email',
                 },
               },

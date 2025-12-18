@@ -341,6 +341,33 @@ export const sanitizeCode = (str) => {
   return str.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 };
 
+export const matchesMultiOption = (value: string | string[], allowed: string[]) => {
+  if (!value) return false;
+  if (typeof value === 'string') return allowed.includes(value);
+  return value.some((v) => allowed.includes(v));
+};
+
+export const formatExcelCellValue = (value: any): string | number => {
+  if (value === null || value === undefined) return '';
+
+  // Multi-option attribute
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+
+  // Date
+  if (value instanceof Date) {
+    return value.toISOString().split('T')[0];
+  }
+
+  // Object (safety fallback)
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+
+  return value;
+};
+
 
 
 

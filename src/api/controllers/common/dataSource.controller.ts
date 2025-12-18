@@ -755,26 +755,35 @@ if (plotType) {
 // -----------------------------
 let effectiveSortBy = sort;
 
-// If empty or not provided
+// Apply default sort ONLY if sort is not provided
 if (!effectiveSortBy || Object.keys(effectiveSortBy).length === 0) {
 
-  // 1️ Priority → GROUP BY (use ONLY first value)
-  if (Array.isArray(groupBy) && groupBy.length > 0) {
-    const firstGroupField = groupBy[0];   // string
-    effectiveSortBy = { [firstGroupField]: 1 };
+  let sortField: string | null = null;
+
+  // 1️⃣ groupBy: [{ field: value }]
+  if (
+    Array.isArray(groupBy) &&
+    groupBy.length > 0 &&
+    typeof groupBy[0] === "object" &&
+    Object.keys(groupBy[0]).length > 0
+  ) {
+    sortField = Object.keys(groupBy[0])[0];
   }
 
-  // 2️ Priority → DIMENSIONS (use ONLY first value)
-  else if (Array.isArray(dimensions) && dimensions.length > 0) {
-    const firstDimField = dimensions[0];  // string
-    effectiveSortBy = { [firstDimField]: 1 };
+  // 2️⃣ dimensions: [{ field: value }]
+  else if (
+    Array.isArray(dimensions) &&
+    dimensions.length > 0 &&
+    typeof dimensions[0] === "object" &&
+    Object.keys(dimensions[0]).length > 0
+  ) {
+    sortField = Object.keys(dimensions[0])[0];
   }
 
-  // 3️⃣ No sort
-  else {
-    effectiveSortBy = {};
-  }
+  effectiveSortBy = sortField ? { [sortField]: 1 } : {};
 }
+
+
 
 
 
@@ -1208,26 +1217,35 @@ if (plotType) {
 // -----------------------------
 let effectiveSortBy = sort;
 
-// If empty or not provided
+// Apply default sort ONLY if sort is not provided
 if (!effectiveSortBy || Object.keys(effectiveSortBy).length === 0) {
 
-  // 1️ Priority → GROUP BY (use ONLY first value)
-  if (Array.isArray(groupBy) && groupBy.length > 0) {
-    const firstGroupField = groupBy[0];   // string
-    effectiveSortBy = { [firstGroupField]: 1 };
+  let sortField: string | null = null;
+
+  // 1️⃣ groupBy: [{ field: value }]
+  if (
+    Array.isArray(groupBy) &&
+    groupBy.length > 0 &&
+    typeof groupBy[0] === "object" &&
+    Object.keys(groupBy[0]).length > 0
+  ) {
+    sortField = Object.keys(groupBy[0])[0];
   }
 
-  // 2️ Priority → DIMENSIONS (use ONLY first value)
-  else if (Array.isArray(dimensions) && dimensions.length > 0) {
-    const firstDimField = dimensions[0];  // string
-    effectiveSortBy = { [firstDimField]: 1 };
+  // 2️⃣ dimensions: [{ field: value }]
+  else if (
+    Array.isArray(dimensions) &&
+    dimensions.length > 0 &&
+    typeof dimensions[0] === "object" &&
+    Object.keys(dimensions[0]).length > 0
+  ) {
+    sortField = Object.keys(dimensions[0])[0];
   }
 
-  // 3️ No sort
-  else {
-    effectiveSortBy = {};
-  }
+  effectiveSortBy = sortField ? { [sortField]: 1 } : {};
 }
+
+
     
 
       //  DueDays logic untouched

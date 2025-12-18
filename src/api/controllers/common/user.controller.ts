@@ -352,7 +352,7 @@ export const updateCurrentUser = async (req: Request, res: Response, next: NextF
   try {
     const { userId } = req.user;
 
-    const { firstName, lastName, mobile, address, country, state, city, postalCode } = req.body;
+    const { firstName, lastName, mobile, address, country, state, city, postalCode, departmentId, designationId } = req.body;
     const validationResult = validateUserInput({ firstName, isUpdate: true });
 
     if (!validationResult.valid) {
@@ -368,6 +368,8 @@ export const updateCurrentUser = async (req: Request, res: Response, next: NextF
       ...(state && { state }),
       ...(city && { city }),
       ...(postalCode && { postalCode }),
+      ...(departmentId && { departmentId }),
+      ...(designationId && { designationId }),
     };
 
     await userService.updateUser(userId, updateUser);
