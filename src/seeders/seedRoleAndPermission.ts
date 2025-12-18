@@ -15,11 +15,11 @@ const defaultPermissionsUser = [
   },
   {
     permission: 'PUT:/common/user/update-current-user',
-    isChangeable: false,
+    isChangeable: true,
   },
   {
     permission: 'PUT:/common/user/change-password',
-    isChangeable: false,
+    isChangeable: true,
   },
   { permission: 'GET:/common/entities/list', isChangeable: true },
   { permission: 'GET:/common/entities/:entityId', isChangeable: false },

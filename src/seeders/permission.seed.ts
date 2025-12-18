@@ -72,7 +72,7 @@ let permissions: PermissionSeed[] = [
     resourceType: 'User',
     resourceCode: 'user__update_current_user',
     isSuperUser: false,
-    isChangeable: false,
+    isChangeable: true,
     module: "Setting",
     subModule: "User Profile"
   },
@@ -84,9 +84,9 @@ let permissions: PermissionSeed[] = [
     resourceType: 'User',
     resourceCode: 'user__change_password',
     isSuperUser: false,
-    isChangeable: false,
+    isChangeable: true,
     module: "Setting",
-    subModule: "User"
+    subModule: "User Profile"
   },
   {
     name: 'Update User',
