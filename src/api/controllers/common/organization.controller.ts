@@ -32,6 +32,7 @@ export const createOrganization = async (req: Request, res: Response, next: Next
       country,
       gst,
       pan,
+      businessUnitCode
     } = req.body;
 
     const { userId } = req.user;
@@ -44,34 +45,38 @@ export const createOrganization = async (req: Request, res: Response, next: Next
       logoPath = `${process.env.BASE_BACKEND_URL}/${files[0].path.replace(/\\/g, '/')}`;
     }
 
+    // check email valid
+     if(email){
+      const existingUser = await findUserByEmail(email.toLowerCase());
+        if (existingUser) {
+          return res.status(400).json({ success: false, message: 'Super Admin Email Already Exists.' });
+        }
+    }
+
     // 1️⃣ Create the organization
     const organization: Record<string, any> = await organizationService.createOrganization({
-      name,
-      description,
-      owner: userId,
-      domain,
-      code,
-      logo: logoPath,
-    });
+                        name,
+                        description,
+                        owner: userId,
+                        domain,
+                        code,
+                        logo: logoPath,
 
-    // 2️⃣ Add default fields (ignore existing)
-    const defaultOrgFields: Record<string, any> = {
-      name,
-      firstName: firstName || '',
-      lastName: lastName || '',
-      email: email || '',
-      phone: phone || '',
-      logo: logoPath,
-      address1: address1 || '',
-      address2: address2 || '',
-      city: city || '',
-      state: state || '',
-      zip: zip || '',
-      country: country || '',
-      gst: gst || '',
-      pan: pan || '',
-    };
-    await organizationService.updateOrganization(organization._id, defaultOrgFields);
+                        // Profile fields
+                        firstName: firstName || '',
+                        lastName: lastName || '',
+                        email: email || '',
+                        phone: phone || '',
+                        address1: address1 || '',
+                        address2: address2 || '',
+                        city: city || '',
+                        state: state || '',
+                        zip: zip || '',
+                        country: country || '',
+                        gst: gst || '',
+                        pan: pan || '',
+                        businessUnitCode: businessUnitCode || '',
+                      });
 
     // 3️⃣ Seed roles and permissions
     await seedRolesAndPermissions({ organizationId: [organization._id] });
@@ -101,8 +106,6 @@ export const createOrganization = async (req: Request, res: Response, next: Next
 
     // 6️⃣ Create SuperAdmin user
     if (email && password) {
-      const existingUser = await findUserByEmail(email.toLowerCase());
-      if (!existingUser) {
         const hashedPassword = await hashPassword(password);
 
         // Get SuperAdmin role using userRoleService
@@ -135,7 +138,6 @@ export const createOrganization = async (req: Request, res: Response, next: Next
           pan: pan || '',
           organizationProductSubscriptionIds: createdProductSubs.map((sub) => sub._id),
         });
-      }
     }
 
     res.status(201).json({
@@ -191,6 +193,7 @@ export const updateOrganization = async (req: Request, res: Response, next: Next
       country,
       gst,
       pan,
+      businessUnitCode
     } = req.body;
 
     let { organizationId } = req.user as any;
@@ -227,6 +230,7 @@ export const updateOrganization = async (req: Request, res: Response, next: Next
       ...(gst && { gst }),
       ...(pan && { pan }),
       ...(logoPath && { logo: logoPath }),
+      ...(businessUnitCode && { businessUnitCode })
       // email intentionally excluded
     };
 
