@@ -14,10 +14,11 @@ import * as permissionService from '../../../database/services/common/permission
 import path from 'path';
 import fsPromises from 'fs/promises';
 import UserRole from '../../../database/models/common/userRole';
-import { createUserDataPermissionMany } from '../../../database/services/common/userDataPermission.service';
+import { createUserDataPermissionMany, deleteUserDataPermission } from '../../../database/services/common/userDataPermission.service';
 import { getDataSourceList } from '../../../database/services/common/dataSource.services';
 import { findOrganizationById } from '../../../database/services/common/organization.service';
 import { findBusinessUnit, getAllBusinessUnits } from '../../../database/services/common/businessUnit.services';
+import { isArrayChanged } from '../../../utils/common.utils';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -165,7 +166,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     });
 
     // Business Unit
-// 🔹 NEW: Apply BU-based data permissions
+// NEW: Apply BU-based data permissions
 await applyBusinessUnitPermissions({
   userId: newUser._id.toString(),
   organizationId: createUserOrganizationId.toString(),
@@ -479,6 +480,7 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
       state,
       city,
       postalCode,
+      businessUnit
     } = req.body;
 
     const validationResult = validateUserInput({ firstName, password, isUpdate: true });
@@ -511,6 +513,12 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
     if (!existingUser) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+
+    const oldBusinessUnit = existingUser.businessUnit || [];
+    const newBusinessUnit = businessUnit || oldBusinessUnit;
+
+    // Detect BU change
+    const businessUnitChanged = isArrayChanged(oldBusinessUnit, newBusinessUnit);
 
     // ✅ Minimal additions
     const oldStatus = existingUser.status;
@@ -604,8 +612,27 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
     if (state) updateData.state = state;
     if (city) updateData.city = city;
     if (postalCode) updateData.postalCode = postalCode;
+    if (businessUnit) updateData.businessUnit = businessUnit;
 
     await userService.updateUser(userId, updateData);
+
+    if (businessUnitChanged) {
+      //  Soft-delete old BU permissions
+      await deleteUserDataPermission({
+        userId,
+        organizationId,
+        status: 'active',
+      });
+
+      //  Re-apply new BU permissions
+      await applyBusinessUnitPermissions({
+        userId,
+        organizationId: organizationId.toString(),
+        businessUnitValues: newBusinessUnit,
+        createdBy: req.user.userId,
+      });
+    }
+
 
     return res.status(200).json({ success: true, message: 'User updated successfully' });
   } catch (err) {

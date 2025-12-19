@@ -368,6 +368,13 @@ export const formatExcelCellValue = (value: any): string | number => {
   return value;
 };
 
+export const normalizeArray = (arr: any[] = []) =>
+  arr.map(String).sort();
+
+export const isArrayChanged = (a: any[] = [], b: any[] = []) =>
+  JSON.stringify(normalizeArray(a)) !== JSON.stringify(normalizeArray(b));
+
+
 
 
 
