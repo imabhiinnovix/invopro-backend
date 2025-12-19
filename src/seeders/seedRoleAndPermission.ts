@@ -270,6 +270,10 @@ const defaultPermissionsUser = [
     permission: 'GET:/common/role-default-dashboard/list',
     isChangeable: true,
   },
+  {
+    permission: 'GET:/common/business-unit/list',
+    isChangeable: true,
+  },
 ];
 
 const defaultPermissionsAdmin = [
@@ -524,6 +528,18 @@ const defaultPermissionsAdmin = [
   {
     permission: 'DELETE:/common/derivedField/delete/:id',
     isChangeable: false,
+  },
+  {
+    permission: 'POST:/common/business-unit/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/common/business-unit/update/:businessUnitId',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/common/business-unit/delete/:businessUnitId',
+    isChangeable: true,
   },
 ];
 
