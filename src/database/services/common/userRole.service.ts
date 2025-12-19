@@ -19,7 +19,7 @@ export const getUserRoleList = async ({
   try {
     let queryBuilder = UserRole.find(query).sort(sort);
 
-    if(paginate){
+    if(paginate === true){
       queryBuilder = queryBuilder
         .skip((page - 1) * limit)
         .limit(limit);
