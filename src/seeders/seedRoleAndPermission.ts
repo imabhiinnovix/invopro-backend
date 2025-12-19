@@ -15,11 +15,11 @@ const defaultPermissionsUser = [
   },
   {
     permission: 'PUT:/common/user/update-current-user',
-    isChangeable: false,
+    isChangeable: true,
   },
   {
     permission: 'PUT:/common/user/change-password',
-    isChangeable: false,
+    isChangeable: true,
   },
   { permission: 'GET:/common/entities/list', isChangeable: true },
   { permission: 'GET:/common/entities/:entityId', isChangeable: false },
@@ -266,6 +266,10 @@ const defaultPermissionsUser = [
     permission: 'POST:/common/dashboard/widget/delete/:dashboardWidgetId',
     isChangeable: true,
   },
+  {
+    permission: 'GET:/common/role-default-dashboard/list',
+    isChangeable: true,
+  },
 ];
 
 const defaultPermissionsAdmin = [
@@ -497,6 +501,18 @@ const defaultPermissionsAdmin = [
   { permission: 'POST:/common/organization-visibility-setting/create', isChangeable: true },
   { permission: 'PUT:/common/organization-visibility-setting/update/:settingId', isChangeable: true },
   { permission: 'DELETE:/common/organization-visibility-setting/delete/:settingId', isChangeable: true },
+  {
+    permission: 'POST:/common/role-default-dashboard/create',
+    isChangeable: true,
+  },
+  {
+    permission: 'PUT:/common/role-default-dashboard/update/:roleId',
+    isChangeable: true,
+  },
+  {
+    permission: 'DELETE:/common/role-default-dashboard/delete/:roleId',
+    isChangeable: true,
+  },
   {
     permission: 'POST:/common/derivedField/create',
     isChangeable: false,
