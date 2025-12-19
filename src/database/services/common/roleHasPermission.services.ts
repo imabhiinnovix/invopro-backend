@@ -47,6 +47,7 @@ export const getPermissionsByRoleIds = async (roleIds: Types.ObjectId[]) => {
           resourceCode: '$permission.resourceCode',
           module: '$permission.module',
           subModule: '$permission.subModule',
+          isChangeable: '$permission.isChangeable',
         },
         permissionId: { $first: '$permission._id' }, // any representative ID
       },
@@ -75,6 +76,7 @@ export const getPermissionsByRoleIds = async (roleIds: Types.ObjectId[]) => {
         resourceCode: '$_id.resourceCode',
         module: '$_id.module',
         subModule: '$_id.subModule',
+        isChangeable: '$_id.isChangeable',
         dataSourceId: '$dataSource',
         permissionId: 1,
       },
