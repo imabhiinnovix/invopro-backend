@@ -6665,7 +6665,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'DateTaken',
           mappingName: 'DateTaken',
-          type: 'date',
+          type: 'date-range',
           required: false,
           validation: [],
           transformations: [],
