@@ -1068,7 +1068,7 @@ export async function seedDatabase() {
     await seedDashboardsForOrganization({
       organizationId: payload.reportivixOrganizationId,
       widgetThemeId: payload.widgetThemeId,
-      dashboardName: 'Notification Dashboard',
+      dashboardName: 'Notivix Dashboard',
       entityDataSourceMap: entityDataSourceMapReportivix,
       widgets: [
         {
@@ -1132,7 +1132,7 @@ export async function seedDatabase() {
     await seedDashboardsForOrganization({
       organizationId: payload.sabicOrganizationId,
       widgetThemeId: payload.widgetSabicThemeId,
-      dashboardName: 'Notification Dashboard',
+      dashboardName: 'Notivix Dashboard',
       entityDataSourceMap: entityDataSourceMapSabic,
       widgets: [
         {
@@ -1197,7 +1197,7 @@ export async function seedDatabase() {
     await seedDashboardsForOrganization({
       organizationId: payload.reportivixOrganizationId,
       widgetThemeId: payload.widgetThemeId,
-      dashboardName: 'Report Dashboard',
+      dashboardName: 'Reportivix Dashboard',
       entityDataSourceMap: entityDataSourceMapReportivix,
       widgets: [
         {
@@ -1253,7 +1253,7 @@ export async function seedDatabase() {
        await seedDashboardsForOrganization({
         organizationId: payload.sabicOrganizationId,
         widgetThemeId: payload.widgetSabicThemeId,
-        dashboardName: 'Report Dashboard',
+        dashboardName: 'Reportivix Dashboard',
         entityDataSourceMap: entityDataSourceMapSabic,
         widgets: [
           {

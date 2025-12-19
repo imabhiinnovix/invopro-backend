@@ -24,7 +24,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'SBU',
           mappingName: 'SBU',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
@@ -34,7 +34,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'BU',
           mappingName: 'BU',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
@@ -44,7 +44,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'BL',
           mappingName: 'BL',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
@@ -54,7 +54,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'DisclosureDate',
           mappingName: 'DisclosureDate',
-          type: 'date',
+          type: 'date-range',
           required: false,
           validation: [],
           transformations: [],
@@ -64,7 +64,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'DisclosureStatus',
           mappingName: 'DisclosureStatus',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
@@ -94,7 +94,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'Attorney',
           mappingName: 'Attorney',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
@@ -104,7 +104,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'ProcedureAgentName',
           mappingName: 'ProcedureAgentName',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
@@ -216,7 +216,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'Country',
           mappingName: 'Country',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
@@ -226,7 +226,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'Case Type',
           mappingName: 'Case Type',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
@@ -246,7 +246,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'SBU',
           mappingName: 'SBU',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
@@ -256,7 +256,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'BU',
           mappingName: 'BU',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
@@ -266,7 +266,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'BL',
           mappingName: 'BL',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
@@ -276,7 +276,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'Attorney',
           mappingName: 'Attorney',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
@@ -426,7 +426,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'Local Agent',
           mappingName: 'LocalAgentName',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
@@ -436,7 +436,7 @@ function getEntityToBeSeed({ entityDataSourceMap, attributeOptionMap, organizati
         {
           name: 'Procedure Agent',
           mappingName: 'ProcedureAgentName',
-          type: 'text',
+          type: 'multioption',
           required: false,
           validation: [],
           transformations: [],
