@@ -167,7 +167,8 @@ export const getDynamicPermission = async (
         isChangeable: true,
         organizationId,
         methodName: methodNameArr[method?.toUpperCase()] || 'UNKNOWN',
-        module: module || 'Setting'
+        module: module || 'Setting',
+        subModule: name || ''
       });
     });
   });
