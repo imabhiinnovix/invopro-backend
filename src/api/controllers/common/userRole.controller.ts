@@ -5,7 +5,7 @@ import { getPermissionsByRoleIds } from '../../../database/services/common/roleH
 export const getUserRoleList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     let { organizationId, isSuperUser } = req.user;
-    const { search, organizationId: paramOrgId }: any = req.query;
+    const { search, organizationId: paramOrgId, paginate = true }: any = req.query;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
@@ -23,6 +23,7 @@ export const getUserRoleList = async (req: Request, res: Response, next: NextFun
       query,
       page,
       limit,
+      paginate
     });
 
     res.status(200).json({

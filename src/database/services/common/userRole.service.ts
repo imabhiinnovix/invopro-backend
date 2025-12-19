@@ -14,12 +14,16 @@ export const getUserRoleList = async ({
   limit = 20,
   sort = { createdAt: -1 },
   populate = [],
+  paginate = true
 }: any) => {
   try {
-    let queryBuilder = UserRole.find(query)
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .sort(sort);
+    let queryBuilder = UserRole.find(query).sort(sort);
+
+    if(paginate){
+      queryBuilder = queryBuilder
+        .skip((page - 1) * limit)
+        .limit(limit);
+    }  
 
     if (populate.length) {
       populate.forEach((field) => {
