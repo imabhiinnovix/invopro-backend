@@ -280,7 +280,15 @@ async function buildNestedLookups({
 
   const asField = prefix.endsWith(`${field}_resolved`)? prefix : `${prefix}.${field}_resolved`;
   const fullPath = [...pathSegments].join('.');
-  const filterString = filtersForLookup[field] ? JSON.stringify(filtersForLookup[field]) : '';
+  // const filterString = filtersForLookup[field] ? JSON.stringify(filtersForLookup[field]) : '';
+  const effectiveFilter =
+  filtersForLookup?.[field] ??
+  Object.values(filtersForLookup || {})[0];
+
+  const filterString = effectiveFilter
+    ? JSON.stringify(effectiveFilter)
+    : '';
+
   const lookupKey = `${entityId}:${fullPath}:${filterString}`;
   console.log('lookupKey',lookupKey);
   if (visited.has(lookupKey)) return;
@@ -1861,7 +1869,15 @@ async function buildNestedLookups({
   const localField = `${prefix}.${field}`;
   const asField = prefix.endsWith(`${field}_resolved`)? prefix : `${prefix}.${field}_resolved`;
   const fullPath = [...pathSegments].join('.');
-  const filterString = filtersForLookup[field] ? JSON.stringify(filtersForLookup[field]) : '';
+  // const filterString = filtersForLookup[field] ? JSON.stringify(filtersForLookup[field]) : '';
+  const effectiveFilter =
+  filtersForLookup?.[field] ??
+  Object.values(filtersForLookup || {})[0];
+
+const filterString = effectiveFilter
+  ? JSON.stringify(effectiveFilter)
+  : '';
+
   const lookupKey = `${entityId}:${fullPath}:${filterString}`;
 
   if (visited.has(lookupKey)) return;
@@ -3311,7 +3327,15 @@ async function buildNestedLookups({
   const localField = `${prefix}.${field}`;
   const asField = prefix.endsWith(`${field}_resolved`)? prefix : `${prefix}.${field}_resolved`;
   const fullPath = [...pathSegments].join('.');
-  const filterString = filtersForLookup[field] ? JSON.stringify(filtersForLookup[field]) : '';
+  // const filterString = filtersForLookup[field] ? JSON.stringify(filtersForLookup[field]) : '';
+  const effectiveFilter =
+  filtersForLookup?.[field] ??
+  Object.values(filtersForLookup || {})[0];
+
+const filterString = effectiveFilter
+  ? JSON.stringify(effectiveFilter)
+  : '';
+
   const lookupKey = `${entityId}:${fullPath}:${filterString}`;
 
   if (visited.has(lookupKey)) return;
