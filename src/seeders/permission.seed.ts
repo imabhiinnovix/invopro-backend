@@ -227,7 +227,7 @@ let permissions: PermissionSeed[] = [
     extraOptions: {},
     resourceType: 'Product',
     resourceCode: 'product__list',
-    isSuperUser: true,
+    isSuperUser: false,
     isChangeable: false,
     module: "Setting",
     subModule: "Organization",
