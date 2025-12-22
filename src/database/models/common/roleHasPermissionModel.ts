@@ -11,6 +11,8 @@ export interface IRoleHasPermission extends Document {
   updatedAt: Date;
   statusName?: string;
   isChangeable: boolean;
+  createdBy: Types.ObjectId;
+  updatedBy: Types.ObjectId;
 }
 
 // Define schema
@@ -34,6 +36,14 @@ const roleHasPermissionSchema = new Schema<IRoleHasPermission>(
     isChangeable: {
       type: Boolean,
       default: true,
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'user',
+    },
+    updatedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'user',
     },
   },
   {

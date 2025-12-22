@@ -111,10 +111,19 @@ export const createUserRole = async ({
     }
 
     // 3. Insert into role_permission table
-    const rolePermissionDocs = permissionIds.map((permId) => ({
-      roleId: newRole._id,
-      permissionId: permId,
-    }));
+    // const rolePermissionDocs = permissionIds.map((permId) => ({
+    //   roleId: newRole._id,
+    //   permissionId: permId,
+    // }));
+
+      // 🔹 Create new mappings (isChangeable: true)
+      const rolePermissionDocs = validPermissions.map((perm) => ({
+        roleId: newRole._id,
+        permissionId: perm._id,
+        isChangeable: perm.isChangeable,
+        createdBy: userId
+      }));
+
 
     await RoleHasPermission.insertMany(rolePermissionDocs);
 
