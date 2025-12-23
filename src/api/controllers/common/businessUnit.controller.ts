@@ -16,7 +16,7 @@ export const getBusinessUnitList = async (
   next: NextFunction
 ) => {
   try {
-    const { search, queryOrganizationId, status }: any = req.query;
+    const { search, queryOrganizationId, status, paginate = true }: any = req.query;
     const { isSuperUser, organizationId } = req.user;
 
     const page = parseInt(req.query.page as string, 10) || 1;
@@ -43,6 +43,7 @@ export const getBusinessUnitList = async (
         query,
         page,
         limit,
+        paginate
       });
 
     res.status(200).json({

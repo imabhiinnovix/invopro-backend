@@ -7,18 +7,25 @@ import { PopulateOptions } from 'mongoose';
 export const getAllBusinessUnits = async ({
   query,
   select = '',
-  page,
-  limit,
+  page = 1,
+  limit = 10,
   sort = { createdAt: -1 },
   populate,
+  paginate = true, // 👈 NEW FLAG
 }: any) => {
   try {
     let deptQuery = BusinessUnit.find(query)
       .select(select)
-      .skip((page - 1) * limit)
-      .limit(limit)
       .sort(sort);
 
+    // ✅ Apply pagination only if paginate === true
+    if (paginate) {
+      deptQuery = deptQuery
+        .skip((page - 1) * limit)
+        .limit(limit);
+    }
+
+    // ✅ Populate fields if provided
     if (populate && Array.isArray(populate)) {
       populate.forEach((field) => {
         deptQuery = deptQuery.populate(field);
@@ -26,9 +33,16 @@ export const getAllBusinessUnits = async ({
     }
 
     const businessUnits = await deptQuery.exec();
-    const totalCount = await BusinessUnit.countDocuments(query);
 
-    return { data: businessUnits, totalCount };
+    // ✅ totalCount only meaningful when pagination is enabled
+    const totalCount = paginate
+      ? await BusinessUnit.countDocuments(query)
+      : businessUnits.length;
+
+    return {
+      data: businessUnits,
+      totalCount,
+    };
   } catch (err) {
     throw err;
   }
