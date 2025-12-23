@@ -303,11 +303,15 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
       },
       {
         path: 'departmentId',
-        select: 'name', // 👈 nested population
+        select: 'name', // nested population
       },
       {
         path: 'designationId',
-        select: 'name', // 👈 nested population
+        select: 'name', // nested population
+      },
+      {
+        path: 'businessUnit',   // array field
+        select: 'name',
       },
     ]);
 
