@@ -117,6 +117,21 @@ export const createUserRole = async (req: Request, res: Response, next: NextFunc
       finalPermissionIds = basePermissions.map(p => String(p.permissionId));
     }
 
+    // Check if ACTIVE role with same name already exists
+    const existingActiveRole = await userRoleService.getUserRole({
+      organizationId,
+      name,
+      status: 'active',
+    });
+
+    if (existingActiveRole) {
+      return res.status(400).json({
+        success: false,
+        message: `Role "${name}" already exists. Use Different Name.`,
+      });
+    }
+
+
     // 🔹 Create role (service unchanged)
     const newRole = await userRoleService.createUserRole({
       organizationId,

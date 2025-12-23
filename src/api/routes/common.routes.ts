@@ -28,6 +28,8 @@ import userDataPermissionRoutes from './common/userDataPermission.routes';
 import downloadRequests from './common/downloadRequest.routes';
 import organizationVisibilitySettingRoutes from './common/organizationVisibilitySettingRoutes';
 import roleDefaultDashboardRoutes from './common/roleDefaultDashboard.routes';
+import businessUnitRoutes from './common/businessUnit.routes';
+
 
 const router = Router();
 
@@ -60,5 +62,6 @@ router.use('/user-data-permission', userDataPermissionRoutes);
 router.use('/download-request', downloadRequests);
 router.use('/organization-visibility-setting', organizationVisibilitySettingRoutes);
 router.use('/role-default-dashboard', roleDefaultDashboardRoutes);
+router.use('/business-unit', businessUnitRoutes);
 
 export default router;

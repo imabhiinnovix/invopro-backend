@@ -109,3 +109,19 @@ export const deleteUserDataPermission = async (query: Record<string, any>) => {
     throw err;
   }
 };
+
+// services/common/userDataPermission.service.ts
+
+export const createUserDataPermissionMany = async (values: any[]) => {
+  try {
+    if (!Array.isArray(values) || !values.length) return [];
+
+    const resp = await UserDataPermissionModel.insertMany(values, {
+      ordered: false, // continue even if some fail (duplicate key, etc.)
+    });
+
+    return resp;
+  } catch (err) {
+    throw err;
+  }
+};
