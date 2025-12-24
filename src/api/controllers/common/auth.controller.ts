@@ -351,3 +351,159 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
     next(err);
   }
 };
+
+// =========================
+// Assume / Revert Session
+// =========================
+export const assumeOrRevertSession = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { userId: currentUserId, isImpersonation, impersonatorUserId } = req.user;
+    const { accessUserId } = req.body;
+
+    if (!accessUserId) {
+      return res.status(400).json({
+        success: false,
+        message: 'accessUserId is required',
+      });
+    }
+
+    // =========================
+    // 1️⃣ Revert to original admin
+    // =========================
+    if (isImpersonation && accessUserId === impersonatorUserId) {
+      const adminUser: any = await authService.findUserById(accessUserId, [
+        { path: 'organizationId', select: 'id name code status' },
+        'roleIds',
+        {
+          path: 'organizationProductSubscriptionIds',
+          populate: { path: 'productId', select: 'name code status' },
+        },
+      ]);
+
+      if (!adminUser || adminUser.status === 'inactive') {
+        return res.status(400).json({
+          success: false,
+          message: 'Original admin account is inactive',
+        });
+      }
+
+      const roleIds = (adminUser.roleIds || []).map((r: any) => String(r._id));
+      const productLicenses: Record<string, string | null> = {};
+      (adminUser.organizationProductSubscriptionIds || []).forEach((sub: any) => {
+        if (sub.productId?.code) {
+          productLicenses[sub.productId.code] = sub.licenseExpiresAt
+            ? new Date(sub.licenseExpiresAt).toISOString()
+            : null;
+        }
+      });
+
+      const token = generateToken({
+        userId: String(adminUser._id),
+        organizationId: String(adminUser.organizationId?._id),
+        orgCode: adminUser.organizationId?.code,
+        roleIds,
+        ...productLicenses,
+        // ✅ no need to set isImpersonation: false or impersonatorUserId: null
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Reverted to admin session successfully',
+        data: { token },
+      });
+    }
+
+    // =========================
+    // 2️⃣ Assume user session
+    // =========================
+    if (String(currentUserId) === String(accessUserId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot assume your own session',
+      });
+    }
+
+    const adminUser: any = await authService.findUserById(currentUserId, [
+      { path: 'roleIds', match: { status: 'active' } },
+    ]);
+
+    if (!adminUser) {
+      return res.status(401).json({ success: false, message: 'Invalid admin session' });
+    }
+
+    const ADMIN_ROLE_NAMES = [
+      Role.Labels[Role.Id.SUPER_ADMIN],
+      Role.Labels[Role.Id.ADMIN],
+    ];
+
+    const isAdmin = (adminUser.roleIds || []).some(
+      (role: any) =>
+        role.status === 'active' &&
+        ADMIN_ROLE_NAMES.includes(role.name.toLowerCase())
+    );
+
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to assume another user session',
+      });
+    }
+
+    const targetUser: any = await authService.findUserById(accessUserId, [
+      { path: 'organizationId', select: 'id name code status' },
+      { path: 'roleIds', match: { status: 'active' } },
+      {
+        path: 'organizationProductSubscriptionIds',
+        populate: { path: 'productId', select: 'name code status' },
+      },
+    ]);
+
+    if (!targetUser || targetUser.status === 'inactive') {
+      return res.status(400).json({
+        success: false,
+        message: 'Target user not found or inactive',
+      });
+    }
+
+    if (targetUser.organizationId?.status === 'inactive') {
+      return res.status(400).json({
+        success: false,
+        message: 'Target user organization is inactive',
+      });
+    }
+
+    const targetRoleIds = (targetUser.roleIds || []).map((r: any) => String(r._id));
+    const productLicenses: Record<string, string | null> = {};
+    (targetUser.organizationProductSubscriptionIds || []).forEach((sub: any) => {
+      if (sub.productId?.code) {
+        productLicenses[sub.productId.code] = sub.licenseExpiresAt
+          ? new Date(sub.licenseExpiresAt).toISOString()
+          : null;
+      }
+    });
+
+    const token = generateToken({
+      userId: String(targetUser._id),
+      organizationId: String(targetUser.organizationId?._id),
+      orgCode: targetUser.organizationId?.code,
+      roleIds: targetRoleIds,
+      ...productLicenses,
+      isImpersonation: true,
+      impersonatorUserId: String(currentUserId),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'User session assumed successfully',
+      data: { token },
+    });
+
+  } catch (err) {
+    next(err);
+  }
+};
+
