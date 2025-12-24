@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import * as userRoleService from '../../../database/services/common/userRole.service';
 import { Types } from 'mongoose';
 import { getPermissionsByRoleIds } from '../../../database/services/common/roleHasPermission.services';
+import cacheService from '../../../database/services/reportivix/cacheService';
 export const getUserRoleList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     let { organizationId, isSuperUser } = req.user;
@@ -195,6 +196,9 @@ export const updateUserRole = async (req: Request, res: Response, next: NextFunc
       userId,
       roleType: roleType || null,
     });
+
+    const permissionsKey = `permissionsByRole:${organizationId}:${roleId}`;
+    await cacheService.delete(permissionsKey);
 
     res.status(200).json({
       success: true,
