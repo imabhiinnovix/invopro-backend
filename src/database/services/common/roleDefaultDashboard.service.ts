@@ -71,3 +71,25 @@ export const listRoleDefaultDashboards = async (query: any) => {
     .populate('dashboardId', 'name isDefault')
     .sort({ createdAt: -1 });
 };
+
+/**
+ * Remove dashboardId from role default dashboards
+ */
+export const removeDashboardFromRoleDefaults = async (
+  dashboardId: Types.ObjectId,
+  updatedBy?: Types.ObjectId
+) => {
+  // Pull dashboardId from all active role default dashboards
+  const result = await RoleDefaultDashboard.updateMany(
+    {
+      status: 'active',
+      dashboardId: dashboardId,
+    },
+    {
+      $pull: { dashboardId: dashboardId },
+      ...(updatedBy && { updatedBy }),
+    }
+  );
+
+  return result;
+};

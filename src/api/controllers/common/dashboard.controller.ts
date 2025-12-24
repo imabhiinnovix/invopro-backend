@@ -20,6 +20,7 @@ import { getDataSourceVersionValueV2 } from '../../../database/services/common/d
 import { getDataSourceById } from './dataSource.controller';
 import { getUserDataPermissionRecord } from '../../../database/services/common/userDataPermission.service';
 import { plotTypesConfig } from "../../../config/plotType.config";
+import { removeDashboardFromRoleDefaults } from '../../../database/services/common/roleDefaultDashboard.service';
 
 export const createDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -276,6 +277,8 @@ export const deleteDashboard = async (req: Request, res: Response, next: NextFun
   try {
     const dashboardId = req.params.dashboardId;
 
+    const { userId } = req.user;
+
     // Fetch dashboard to get old name
     const dashboard = await dashboardService.getDashboardById(dashboardId);
 
@@ -293,6 +296,12 @@ export const deleteDashboard = async (req: Request, res: Response, next: NextFun
       isDeleted: true,
       name: newName,
     });
+
+    // REMOVE FROM ROLE DEFAULT DASHBOARD
+    await removeDashboardFromRoleDefaults(
+      new Types.ObjectId(dashboardId),
+      userId
+    );
 
     res.status(200).json({
       success: true,
