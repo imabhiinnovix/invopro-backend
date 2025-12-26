@@ -31,6 +31,7 @@ interface IOrganization extends Document {
   gst?: string;
   pan?: string;
   businessUnitCode?: string;
+  allowedDomains?: string[];
 }
 
 // Define the Organization Schema
@@ -63,6 +64,7 @@ const organizationSchema = new Schema<IOrganization>(
     gst: { type: String, default: '' },
     pan: { type: String, default: '' },
     businessUnitCode: { type: String, default: '' },
+    allowedDomains: { type: [String], default: []}
   },
   {
     timestamps: true,

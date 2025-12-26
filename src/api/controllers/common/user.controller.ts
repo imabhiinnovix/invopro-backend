@@ -16,7 +16,7 @@ import fsPromises from 'fs/promises';
 import UserRole from '../../../database/models/common/userRole';
 import { createUserDataPermissionMany, deleteUserDataPermission } from '../../../database/services/common/userDataPermission.service';
 import { getDataSourceList } from '../../../database/services/common/dataSource.services';
-import { findOrganizationById } from '../../../database/services/common/organization.service';
+import { findOrganizationById, getOrganizationById } from '../../../database/services/common/organization.service';
 import { findBusinessUnit, getAllBusinessUnits } from '../../../database/services/common/businessUnit.services';
 import { isArrayChanged } from '../../../utils/common.utils';
 import config from '../../../config';
@@ -53,6 +53,27 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     if (isSuperUser && organizationId) {
       createUserOrganizationId = organizationId;
     }
+
+    // ✅ Email domain validation using service
+    const organization = await getOrganizationById(
+      createUserOrganizationId.toString()
+    );
+
+    if (organization.allowedDomains && organization.allowedDomains.length > 0) {
+      const emailDomain = email.split('@')[1]?.toLowerCase();
+
+      const isAllowed = organization.allowedDomains.some(
+        (domain: string) => domain.toLowerCase() === emailDomain
+      );
+
+      if (!isAllowed) {
+        return res.status(400).json({
+          success: false,
+          message: `Email domain '${emailDomain}' is not allowed for this organization.`,
+        });
+      }
+    }
+
 
     // Step 1: Check for existing user
     const existingUser = await authService.findUserByEmail(email.toLowerCase());
@@ -507,6 +528,30 @@ export const adminUpdateUser = async (req: Request, res: Response, next: NextFun
     if (isSuperUser && bodyOrgId) {
       organizationId = bodyOrgId;
     }
+
+
+    // ✅ Email domain validation (only if email is being updated)
+    if (req.body.email) {
+      const organization = await getOrganizationById(
+        organizationId.toString()
+      );
+
+      if (organization.allowedDomains && organization.allowedDomains.length > 0) {
+        const emailDomain = req.body.email.split('@')[1]?.toLowerCase();
+
+        const isAllowed = organization.allowedDomains.some(
+          (domain: string) => domain.toLowerCase() === emailDomain
+        );
+
+        if (!isAllowed) {
+          return res.status(400).json({
+            success: false,
+            message: `Email domain '${emailDomain}' is not allowed for this organization.`,
+          });
+        }
+      }
+    }
+
 
     const userQuery = {
       _id: new Types.ObjectId(userId),
