@@ -298,7 +298,17 @@ export const getUserList = async (req: Request, res: Response, next: NextFunctio
       query,
       page,
       limit,
-      populate: ['roleIds', 'organizationProductSubscriptionIds'],
+      populate: [
+        {
+          path: 'roleIds',
+          populate: {
+            path: 'roleType',
+            model: 'user_role',
+            select: '_id name', // ONLY id & name
+          },
+        }, 
+        'organizationProductSubscriptionIds'
+      ],
     });
 
     res.status(200).json({
