@@ -385,10 +385,8 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
       return res.status(400).json({ success: false, message: 'OTP already verified' });
     }
 
-    otpEntry.isVerified = true;
-    await otpEntry.save();
 
-    // Check last N passwords
+     // Check last N passwords
     for (const oldHash of user.passwordHistory || []) {
       const isReuse = await comparePassword(newPassword, oldHash);
       if (isReuse) {
@@ -400,6 +398,9 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
     if (isSameAsCurrent) {
       return res.status(400).json({ success: false, message: 'New password cannot be the same as your current password.' });
     }
+
+    otpEntry.isVerified = true;
+    await otpEntry.save();
 
     const hashedPassword = await hashPassword(newPassword);
 
