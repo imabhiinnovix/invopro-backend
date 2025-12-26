@@ -19,6 +19,7 @@ import { getDataSourceList } from '../../../database/services/common/dataSource.
 import { findOrganizationById } from '../../../database/services/common/organization.service';
 import { findBusinessUnit, getAllBusinessUnits } from '../../../database/services/common/businessUnit.services';
 import { isArrayChanged } from '../../../utils/common.utils';
+import config from '../../../config';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -674,33 +675,60 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
   try {
     const { oldPassword, newPassword } = req.body;
     if (!oldPassword || !newPassword) {
-      return res.status(404).json({ success: false, message: 'Password is required.' });
+      return res.status(400).json({ success: false, message: 'Old and new passwords are required.' });
     }
+
     const validationResult = validateUserInput({ password: newPassword, isUpdate: true });
 
     if (!validationResult.valid) {
       return res.status(400).json({ success: false, message: validationResult.message });
     }
-    const userId = req.user.userId;
 
+    const userId = req.user.userId;
     const user: any = await userService.findUserById(userId, [], true);
 
-    const isPasswordMatch = await comparePassword(oldPassword, user?.password);
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'User not found.' });
+    }
 
-    if (!isPasswordMatch)
-      return res.status(400).json({
-        success: false,
-        message: 'Current password is invalid',
-      });
+    const isPasswordMatch = await comparePassword(oldPassword, user.password);
+    if (!isPasswordMatch) {
+      return res.status(400).json({ success: false, message: 'Current password is invalid.' });
+    }
+
+    // Check last N passwords
+    for (const oldHash of user.passwordHistory || []) {
+      const isReuse = await comparePassword(newPassword, oldHash);
+      if (isReuse) {
+        return res.status(400).json({ success: false, message: `You cannot reuse your last ${config.PASSWORD_HISTORY_LIMIT} passwords.` });
+      }
+    }
+
+    const isSameAsCurrent = await comparePassword(newPassword, user.password);
+    if (isSameAsCurrent) {
+      return res.status(400).json({ success: false, message: 'New password cannot be the same as your current password.' });
+    }
 
     const hashedNewPassword = await hashPassword(newPassword);
 
+    // Save current password to history
+    user.passwordHistory = user.passwordHistory || [];
+    user.passwordHistory.unshift(user.password);
+    if (user.passwordHistory.length > config.PASSWORD_HISTORY_LIMIT) {
+      user.passwordHistory = user.passwordHistory.slice(0, config.PASSWORD_HISTORY_LIMIT);
+    }
+
+    // Set new password
     user.password = hashedNewPassword;
+
+    // Reset lock and attempts
+    user.isLocked = false;
+    user.loginAttempts = 0;
+
     await user.save();
 
-    return res.status(200).json({ success: true, message: 'Password changed successfully' });
+    return res.status(200).json({ success: true, message: 'Password changed successfully.' });
   } catch (error) {
-    console.error('Error changing password:', error);
     next(error);
   }
 };

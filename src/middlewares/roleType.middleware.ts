@@ -16,8 +16,8 @@ export const roleTypeAuthorization = (allowedRoleIds: RoleId[]) => {
           message: 'Unauthorized',
         });
       }
-
-      const user: any = await authService.findUserById(req.user.userId, [
+      const actualUserId = req.user.isImpersonation ? req.user.impersonatorUserId : req.user.userId;
+      const user: any = await authService.findUserById(actualUserId, [
         {
           path: 'roleIds',
           match: { status: 'active' },
