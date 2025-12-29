@@ -435,7 +435,8 @@ export const assumeOrRevertSession = async (
   next: NextFunction
 ) => {
   try {
-    const { userId: currentUserId, isImpersonation, impersonatorUserId } = req.user;
+    const { userId: currentUserId } = req.user;
+    let { isImpersonation, impersonatorUserId } = req.user;
     const { accessUserId } = req.body;
 
     if (!accessUserId) {
@@ -501,7 +502,11 @@ export const assumeOrRevertSession = async (
       });
     }
 
-    const adminUser: any = await authService.findUserById(currentUserId, [
+    if(!impersonatorUserId){
+      impersonatorUserId = currentUserId;
+    }
+
+    const adminUser: any = await authService.findUserById(impersonatorUserId, [
       { path: 'roleIds', match: { status: 'active' } },
     ]);
 
@@ -567,7 +572,7 @@ export const assumeOrRevertSession = async (
       roleIds: targetRoleIds,
       ...productLicenses,
       isImpersonation: true,
-      impersonatorUserId: String(currentUserId),
+      impersonatorUserId,
     });
 
     return res.status(200).json({
