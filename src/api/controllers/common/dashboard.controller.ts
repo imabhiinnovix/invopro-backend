@@ -294,6 +294,7 @@ export const deleteDashboard = async (req: Request, res: Response, next: NextFun
 
     await dashboardService.updateDashboard(dashboardId, {
       isDeleted: true,
+      isActive: false,
       name: newName,
     });
 
@@ -936,6 +937,7 @@ export const deleteWidget = async (req: Request, res: Response, next: NextFuncti
 
     await dashboardWidgetdService.updateDashboardWidget(dashboardWidgetId, {
       isDeleted: true,
+      isActive: false
     });
 
     res.status(200).json({ success: true, message: 'Widget deleted successfully' });
