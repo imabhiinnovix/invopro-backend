@@ -10,7 +10,7 @@ import { PopulateOptions } from 'mongoose';
 export const getAllUsers = async ({ query, select = '', page, limit, sort = { createdAt: -1 }, populate }: any) => {
   try {
     let usersQuery = User.find(query)
-      .select(select + ' -password')
+      .select(select + ' -password -passwordHistory')
       .skip((page - 1) * limit)
       .limit(limit)
       .sort(sort);
@@ -71,7 +71,7 @@ export const findUserByEmail = async (email: string, populateFields: (string | P
 
 export const findOne = async (userQuery, populateFields: (string | PopulateOptions)[] = []) => {
   try {
-    let query = User.findOne(userQuery).select('-password');
+    let query = User.findOne(userQuery).select('-password -passwordHistory');
     // Normalize and apply population
     populateFields.forEach((field) => {
       const pop: PopulateOptions = typeof field === 'string' ? { path: field } : field;
@@ -93,7 +93,7 @@ export const findUserById = async (
   try {
     let query: any = User.findById(id);
     if (!passwordRequired) {
-      query = query.select('-password');
+      query = query.select('-password -passwordHistory');
     }
     // Normalize and apply population
     populateFields.forEach((field) => {

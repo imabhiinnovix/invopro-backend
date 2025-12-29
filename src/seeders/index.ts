@@ -941,7 +941,7 @@ export async function seedDatabase() {
         users: [
           {
             email: 'superadmin@reportivix.com',
-            password: 'superadmin@1234',
+            password: 'Superadmin@1234',
             firstName: 'Super',
             lastName: 'Admin',
             type: 'superadmin',
@@ -949,7 +949,7 @@ export async function seedDatabase() {
           },
           {
             email: 'admin@reportivix.com',
-            password: 'admin@1234',
+            password: 'Admin@1234',
             firstName: 'Admin',
             lastName: 'User',
             type: 'admin',
@@ -957,7 +957,7 @@ export async function seedDatabase() {
           },
           {
             email: 'test@reportivix.com',
-            password: 'test@1234',
+            password: 'Test@1234',
             firstName: 'Test',
             lastName: 'User',
             type: 'user',

@@ -63,6 +63,8 @@ const ENV = {
     'date-range',
   ],
   BASE_API_ROUTE: process.env.BASE_API_ROUTE || '',
+  PASSWORD_EXPIRY_DAYS: parseInt(process.env.PASSWORD_EXPIRY_DAYS as string, 10) || 90,
+  PASSWORD_HISTORY_LIMIT: parseInt(process.env.PASSWORD_HISTORY_LIMIT as string, 10) || 5,
 };
 
 export default ENV;

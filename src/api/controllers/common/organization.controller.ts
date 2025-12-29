@@ -32,7 +32,9 @@ export const createOrganization = async (req: Request, res: Response, next: Next
       country,
       gst,
       pan,
-      businessUnitCode
+      businessUnitCode,
+      allowedDomains,
+      activatePasswordOTP
     } = req.body;
 
     const { userId } = req.user;
@@ -76,6 +78,8 @@ export const createOrganization = async (req: Request, res: Response, next: Next
                         gst: gst || '',
                         pan: pan || '',
                         businessUnitCode: businessUnitCode || '',
+                        allowedDomains: allowedDomains || [],
+                        activatePasswordOTP: activatePasswordOTP || false
                       });
 
     // 3️⃣ Seed roles and permissions
@@ -193,7 +197,9 @@ export const updateOrganization = async (req: Request, res: Response, next: Next
       country,
       gst,
       pan,
-      businessUnitCode
+      businessUnitCode,
+      allowedDomains,
+      activatePasswordOTP
     } = req.body;
 
     let { organizationId } = req.user as any;
@@ -230,7 +236,9 @@ export const updateOrganization = async (req: Request, res: Response, next: Next
       ...(gst && { gst }),
       ...(pan && { pan }),
       ...(logoPath && { logo: logoPath }),
-      ...(businessUnitCode && { businessUnitCode })
+      ...(businessUnitCode && { businessUnitCode }),
+      ...(allowedDomains && { allowedDomains }),
+      ...(typeof activatePasswordOTP === 'boolean' && { activatePasswordOTP })
       // email intentionally excluded
     };
 
