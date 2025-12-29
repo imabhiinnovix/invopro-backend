@@ -32,6 +32,7 @@ interface IOrganization extends Document {
   pan?: string;
   businessUnitCode?: string;
   allowedDomains?: string[];
+  activatePasswordOTP?: boolean;
 }
 
 // Define the Organization Schema
@@ -64,7 +65,8 @@ const organizationSchema = new Schema<IOrganization>(
     gst: { type: String, default: '' },
     pan: { type: String, default: '' },
     businessUnitCode: { type: String, default: '' },
-    allowedDomains: { type: [String], default: []}
+    allowedDomains: { type: [String], default: []},
+    activatePasswordOTP: { type: Boolean, default: false }
   },
   {
     timestamps: true,

@@ -11,6 +11,7 @@ import { comparePassword, hashPassword } from '../../../utils/bcrypt.utils';
 import { Role } from '../../../enums/role.enum';
 import { sendEmail } from '../../../utils/mail.util';
 import * as authService from '../../../database/services/common/user.service';
+import { sendEmailOtp } from '../../../utils/otp.utils';
 
 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
@@ -27,7 +28,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
     // 2️ Find user
     const user: any = await authService.findUserByEmail(email.toLowerCase(), [
-      { path: 'organizationId', select: 'id name code status' },
+      { path: 'organizationId', select: 'id name code status activatePasswordOTP' },
       'roleIds',
       {
         path: 'organizationProductSubscriptionIds',
@@ -136,22 +137,35 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       (role: any) => role.isSuperUser === true
     );
 
-    // 1️1️ Generate JWT
-    const token = generateToken({
-      userId: String(user._id),
-      organizationId: String(user.organizationId?._id),
-      orgCode: user.organizationId?.code,
-      roleIds,
-      ...productLicenses,
-      isSuperUser,
-    });
+    if(organization?.activatePasswordOTP === true && !isSuperUser){
+      // ✅ Send OTP after successful password validation
+      await sendEmailOtp(user); // helper function
 
-    // 1️2️ Success response
-    return res.status(200).json({
-      success: true,
-      message: 'Login successful',
-      data: { token },
-    });
+      return res.status(200).json({
+        success: true,
+        message: 'OTP sent successfully. Please verify to complete login.',
+        code: 'OTP_REQUIRED',
+      });
+    }else{
+      // 1️1️ Generate JWT
+      const token = generateToken({
+        userId: String(user._id),
+        organizationId: String(user.organizationId?._id),
+        orgCode: user.organizationId?.code,
+        roleIds,
+        ...productLicenses,
+        isSuperUser,
+      });
+
+      // 1️2️ Success response
+      return res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        code: 'OTP_NOT_REQUIRED',
+        data: { token },
+      });
+    }
+
   } catch (err) {
     next(err);
   }
