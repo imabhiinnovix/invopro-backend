@@ -20,6 +20,19 @@ export const createNotificationTemplate = async (req: Request, res: Response, ne
     } = req.body;
     const { organizationId, userId } = req.user as any;
 
+    // Duplicate name check (CREATE)
+    const existingTemplate = await notificationTemplateService.findNotificationTemplate({
+      organizationId,
+      name: { $regex: `^${name}$`, $options: 'i' },
+    });
+
+    if (existingTemplate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Notification Template with this name already exists',
+      });
+    }
+
     // parse attachmentSettings if client sent JSON string
     let attachmentSettings: any[] = [];
     if (attachmentSettingsRaw) {
@@ -166,6 +179,23 @@ export const updateNotificationTemplate = async (req: Request, res: Response, ne
 
     const { organizationId, userId } = req.user as any;
     const files = (req.files as Express.Multer.File[]) || [];
+
+    // Duplicate name check (UPDATE)
+    if (name) {
+      const existingTemplate = await notificationTemplateService.findNotificationTemplate({
+        organizationId,
+        name: { $regex: `^${name}$`, $options: 'i' },
+        _id: { $ne: req.params.id },
+      });
+
+      if (existingTemplate) {
+        return res.status(400).json({
+          success: false,
+          message: 'Notification Template with this name already exists',
+        });
+      }
+    }
+
 
     let attachmentSettings: any[] = [];
     if (attachmentSettingsRaw) {

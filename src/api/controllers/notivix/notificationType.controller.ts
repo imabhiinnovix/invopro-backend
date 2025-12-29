@@ -7,6 +7,18 @@ export const createNotificationType = async (req: Request, res: Response, next: 
     const { name, dataSourceId, triggerFieldId, conditionGroups, conditionSummaryGroups } = req.body;
     const { organizationId, userId } = req.user;
 
+    // 0️ Validate duplicate name
+    const existing = await NotificationTypeService.findNotificationType({
+      organizationId,
+      name: { $regex: `^${name}$`, $options: 'i' },
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: 'Notification type with this name already exists',
+      });
+    }
     // 1 Create record first — without waiting for AI
     const data = await NotificationTypeService.createNotificationType({
       organizationId,
@@ -48,6 +60,20 @@ export const updateNotificationType = async (req: Request, res: Response, next: 
   try {
     const { name, dataSourceId, triggerFieldId, conditionGroups, conditionSummaryGroups } = req.body;
     const { organizationId, userId } = req.user;
+
+    // 0️ Validate duplicate name
+    const existing = await NotificationTypeService.findNotificationType({
+      organizationId,
+      name: { $regex: `^${name}$`, $options: 'i' },
+      _id: { $ne: req.params.id }
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: 'Notification type with this name already exists',
+      });
+    }
 
     // 1️ Update main record immediately
     const data = await NotificationTypeService.updateNotificationType(

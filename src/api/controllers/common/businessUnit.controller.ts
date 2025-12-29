@@ -69,11 +69,27 @@ export const createBusinessUnit = async (
 ) => {
   try {
     const { queryOrganizationId }: any = req.query;
-    const { userId } = req.params;
+    const { userId } = req.user;
     let { organizationId, isSuperUser } = req.user;
 
     if (queryOrganizationId && isSuperUser) {
       organizationId = new Types.ObjectId(queryOrganizationId);
+    }
+    
+    const { name } = req.body;
+
+     // DUPLICATE CHECK (organization + name + active)
+    const existingBU = await businessUnitService.findBusinessUnit({
+      organizationId,
+      name,
+      status: 'active',
+    });
+
+    if (existingBU.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Business Unit with this name already exists',
+      });
     }
 
     const businessUnit = await businessUnitService.createBusinessUnit({
@@ -104,7 +120,7 @@ export const updateBusinessUnit = async (
   next: NextFunction
 ) => {
   try {
-    const { userId } = req.params;
+    const { userId, organizationId } = req.user;
 
     // Pick only provided fields
     const updateData: any = {};
@@ -115,6 +131,23 @@ export const updateBusinessUnit = async (
     });
 
     updateData.updatedBy = userId;
+
+    // DUPLICATE CHECK (only if name changes)
+    if (updateData.name) {
+      const existingBU = await businessUnitService.findBusinessUnit({
+        _id: { $ne: req.params.businessUnitId },
+        organizationId,
+        name: updateData.name,
+        status: 'active',
+      });
+
+      if (existingBU.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'Business Unit with this name already exists',
+        });
+      }
+    }
 
     const businessUnit = await businessUnitService.updateBusinessUnit(
       req.params.businessUnitId,

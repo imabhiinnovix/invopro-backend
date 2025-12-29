@@ -69,3 +69,7 @@ export const getNotificationType = async (query: Record<string, any>) => {
   if (!doc) throw new Error('Notification type not found or unauthorized');
   return doc;
 };
+
+export const findNotificationType = async (query: Record<string, any>) => {
+  return await NotificationType.findOne(query).lean();
+};
