@@ -244,8 +244,29 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
       isDeleted,
       isIncremental,
       description,
+      dashboardId
     } = req.body;
     const { dashboardWidgetId } = req.params;
+
+    // 0️ Duplicate name check (only if name is being changed)
+    if (name) {
+      const existingWidget = await dashboardWidgetdService.getDashboardWidget(
+        {
+          dashboardId,
+          name,
+          isActive: true,
+          _id: { $ne: dashboardWidgetId },
+        },
+        []
+      );
+
+      if (existingWidget) {
+        return res.status(400).json({
+          success: false,
+          message: 'A widget with this name already exists in this dashboard. Please use a different name.',
+        });
+      }
+    }
 
     await dashboardWidgetdService.updateDashboardWidget(dashboardWidgetId, {
       ...(name && { name }),
@@ -294,6 +315,7 @@ export const deleteDashboard = async (req: Request, res: Response, next: NextFun
 
     await dashboardService.updateDashboard(dashboardId, {
       isDeleted: true,
+      isActive: false,
       name: newName,
     });
 
@@ -936,6 +958,7 @@ export const deleteWidget = async (req: Request, res: Response, next: NextFuncti
 
     await dashboardWidgetdService.updateDashboardWidget(dashboardWidgetId, {
       isDeleted: true,
+      isActive: false
     });
 
     res.status(200).json({ success: true, message: 'Widget deleted successfully' });

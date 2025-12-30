@@ -70,3 +70,7 @@ export const deleteNotificationTemplate = async (id: string, status: any) => {
 
   return result;
 };
+
+export const findNotificationTemplate = async (query: any) => {
+  return await NotificationTemplate.findOne(query);
+};

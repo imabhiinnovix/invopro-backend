@@ -17,6 +17,7 @@ export const getUserRoleList = async (req: Request, res: Response, next: NextFun
     const query: any = { organizationId };
     if (!isSuperUser) {
       query['isSuperUser'] = false;
+      query['name'] = { $ne: 'Super Admin' };
     }
 
     if (search) query.name = { $regex: search, $options: 'i' };

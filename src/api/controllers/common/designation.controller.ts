@@ -56,11 +56,26 @@ export const getDesignationList = async (req: Request, res: Response, next: Next
 export const createDesignation = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { queryOrganizationId }: any = req.query;
-    const { userId } = req.params;
+    const { userId } = req.user;
     let { organizationId, isSuperUser } = req.user;
 
     if (queryOrganizationId && isSuperUser) {
       organizationId = new Types.ObjectId(queryOrganizationId);
+    }
+
+    // DUPLICATE CHECK (same department + active)
+    const existingDesig = await designationService.findDesignation({
+      organizationId,
+      departmentId: req.body.departmentId,
+      name: req.body.name,
+      status: 'active',
+    });
+
+    if (existingDesig.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Designation with this name already exists in this department',
+      });
     }
 
     const desig = await designationService.createDesignation({
@@ -83,7 +98,7 @@ export const createDesignation = async (req: Request, res: Response, next: NextF
 // Update Designation
 export const updateDesignation = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
+    const { userId, organizationId } = req.user;
 
     // pick only provided fields
     const updateData: any = {};
@@ -95,6 +110,24 @@ export const updateDesignation = async (req: Request, res: Response, next: NextF
 
     // always set updatedBy
     updateData.updatedBy = userId;
+
+    // DUPLICATE CHECK (only if name or department changes)
+    if (updateData.name || updateData.departmentId) {
+      const existingDesig = await designationService.findDesignation({
+        _id: { $ne: req.params.designationId },
+        organizationId,
+        departmentId: updateData.departmentId,
+        name: updateData.name,
+        status: 'active',
+      });
+
+      if (existingDesig.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Designation with this name already exists in this department',
+        });
+      }
+    }
 
     const desig = await designationService.updateDesignation(req.params.designationId, updateData);
 

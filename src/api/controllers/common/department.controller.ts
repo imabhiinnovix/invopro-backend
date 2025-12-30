@@ -46,12 +46,27 @@ export const getDepartmentList = async (req: Request, res: Response, next: NextF
 export const createDepartment = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { queryOrganizationId }: any = req.query;
-    const { userId } = req.params;
+    const { userId } = req.user;
     let { organizationId, isSuperUser } = req.user;
 
     if (queryOrganizationId && isSuperUser) {
       organizationId = new Types.ObjectId(queryOrganizationId);
     }
+
+    // DUPLICATE CHECK (only ACTIVE departments)
+    const existingDept = await departmentService.findDepartment({
+      organizationId,
+      name: req.body.name,
+      status: 'active',
+    });
+
+    if (existingDept.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Department with this name already exists',
+      });
+    }
+
     const dept = await departmentService.createDepartment({
       ...req.body,
       organizationId: organizationId,
@@ -72,7 +87,7 @@ export const createDepartment = async (req: Request, res: Response, next: NextFu
 // Update Department
 export const updateDepartment = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
+    const { userId } = req.user;
 
     // pick only provided fields
     const updateData: any = {};
@@ -84,6 +99,24 @@ export const updateDepartment = async (req: Request, res: Response, next: NextFu
 
     // always set updatedBy
     updateData.updatedBy = userId;
+
+    // DUPLICATE CHECK ONLY IF NAME IS BEING UPDATED
+    if (updateData.name) {
+      const existingDept = await departmentService.findDepartment({
+        _id: { $ne: req.params.departmentId },
+        organizationId: req.user.organizationId,
+        name: updateData.name,
+        status: 'active',
+      });
+
+      if (existingDept.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Department with this name already exists',
+        });
+      }
+    }
+
 
     const dept = await departmentService.updateDepartment(req.params.departmentId, updateData);
 
