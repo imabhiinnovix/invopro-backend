@@ -227,7 +227,7 @@ export const createWidget = async (req: Request, res: Response, next: NextFuncti
       });
 
       // Add job to queue — worker will handle the actual sending
-      await aiDataQueue.add("generateWidgetSummary", { widgetId: dashboardWidget });
+      await aiDataQueue.add("generateWidgetSummary", { widgetId: dashboardWidget._id });
     }
     res.status(200).json({
       success: true,
@@ -951,7 +951,7 @@ export const saveDashboardWidgets = async (req: Request, res: Response, next: Ne
     const lastWidget = await dashboardWidgetdService.getLastWidgetIndex(dashboardId);
     let nextIndex = (lastWidget?.position?.index || 0) + 1;
 
-    await Promise.all(
+    const createdWidgets = await Promise.all(
       widgets.map(async (widget) => {
         const widgetWithIndex = {
           ...widget,
@@ -966,6 +966,29 @@ export const saveDashboardWidgets = async (req: Request, res: Response, next: Ne
         return await dashboardWidgetdService.createDashboardWidget(widgetWithIndex);
       })
     );
+
+    // ---------------------------
+    // AI SUMMARY QUEUE (FIXED)
+    // ---------------------------
+    const widgetsNeedingSummary = createdWidgets.filter(
+      (w: any) => !w.description
+    );
+
+    if (widgetsNeedingSummary.length > 0) {
+      const aiDataQueue = new Queue("aiDataQueue", {
+        connection: {
+          host: "redis",
+        },
+      });
+
+      await Promise.all(
+        widgetsNeedingSummary.map((widget: any) =>
+          aiDataQueue.add("generateWidgetSummary", {
+            widgetId: widget._id,
+          })
+        )
+      );
+    }
 
     res.status(200).json({
       success: true,
