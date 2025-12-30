@@ -270,7 +270,7 @@ export const applyBusinessUnitPermissions = async ({
 export const getUserList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, firstName, lastName, organizationId }: any = req.query;
-    const { userId, isSuperUser } = req.user;
+    const { userId, isSuperUser, roleIds } = req.user;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || Number.MAX_SAFE_INTEGER;
 
@@ -292,6 +292,22 @@ export const getUserList = async (req: Request, res: Response, next: NextFunctio
       query.organizationId = new Types.ObjectId(organizationId);
     } else {
       query.organizationId = new Types.ObjectId(req.user.organizationId);
+    }
+
+    // ADMIN should NOT see Super Admin users
+    if (!isSuperUser) {
+      const superAdminRoles = await UserRole.find({
+        organizationId: query.organizationId,
+        isSuperUser: false,
+        name: 'Super Admin',
+        status: 'active',
+        _id: { $nin: roleIds }
+      }).select('_id');
+
+      const superAdminRoleIds = superAdminRoles.map(r => r._id);
+      if(superAdminRoleIds.length > 0){
+        query.roleIds = { $nin: superAdminRoleIds };
+      }
     }
 
     const { data, totalCount } = await userService.getAllUsers({
