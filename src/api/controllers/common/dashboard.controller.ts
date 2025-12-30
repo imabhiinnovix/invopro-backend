@@ -227,7 +227,7 @@ export const createWidget = async (req: Request, res: Response, next: NextFuncti
       });
 
       // Add job to queue — worker will handle the actual sending
-      await aiDataQueue.add("generateWidgetSummary", { dashboardWidget });
+      await aiDataQueue.add("generateWidgetSummary", { widgetId: dashboardWidget });
     }
     res.status(200).json({
       success: true,
@@ -306,7 +306,7 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
       });
 
       // Add job to queue — worker will handle the actual sending
-      await aiDataQueue.add("generateWidgetSummary", { dashboardWidgetId });
+      await aiDataQueue.add("generateWidgetSummary", { widgetId: dashboardWidgetId });
     }
 
     res.status(200).json({

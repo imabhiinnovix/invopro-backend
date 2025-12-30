@@ -7,6 +7,10 @@ import * as dataSourceVersionValueService from '../database/services/common/defa
 import ExcelJS from 'exceljs';
 import path from "path";
 import "../database/models/common/organization";
+import "../database/models/common/widgetType";
+import "../database/models/common/dashboard";
+import "../database/models/common/dataSource";
+import "../database/models/common/user";
 import fs from "fs";
 import { formatDateValue } from "../utils/common.utils";
 import { getDashboardWidget, updateDashboardWidget } from "../database/services/common/dashboardWidget.services";
@@ -331,18 +335,15 @@ async function connectDB() {
         // ------------------------------------------------------
         // 2️ Fetch ALL widget data (pagination-safe)
         // ------------------------------------------------------
-        const safeLimit = 1000;
-        let page = 1;
+        const safeLimit = 5000;
         let dataResults: any[] = [];
         const widgetRequestPayload = await buildWidgetRequestPayload(widget);
-
+        let page = 1;
         while (true) {
           const result =
-            await dataSourceVersionValueService.getDataSourceVersionValueWidgetDataV2(widgetRequestPayload);
-
+            await dataSourceVersionValueService.getDataSourceVersionValueWidgetDataV2({...widgetRequestPayload, page, limit: safeLimit});
           const batchData = result?.data ?? [];
           dataResults.push(...batchData);
-
           if (batchData.length < safeLimit) break;
           page++;
         }
@@ -369,13 +370,13 @@ async function connectDB() {
           },
         };
 
-        console.log('ai payload', aiPayload);
+        console.log('ai payload', JSON.stringify(aiPayload));
 
         // ------------------------------------------------------
         // 4️ Call AI Analyze API (LONG RUNNING)
         // ------------------------------------------------------
         const response = await axios.post(
-          `${process.env.BASE_AI_SERVICE_URL}/analyzechart`,
+          `${process.env.BASE_AI_SERVICE_URL}/analyzeChart`,
           aiPayload,
           {
             headers: { "Content-Type": "application/json" },
