@@ -9,6 +9,9 @@ import path from "path";
 import "../database/models/common/organization";
 import fs from "fs";
 import { formatDateValue } from "../utils/common.utils";
+import { getDashboardWidget, updateDashboardWidget } from "../database/services/common/dashboardWidget.services";
+import axios from "axios";
+import { buildWidgetRequestPayload } from "../utils/buildWidgetRequest.utils";
 
 
 // ✅ Connect to MongoDB
@@ -299,4 +302,118 @@ async function connectDB() {
   );
 
   console.log("worker started");
+
+
+// ------------------------------------------------------
+// Start AI Worker
+// ------------------------------------------------------
+  new Worker(
+    "aiDataQueue",
+    async (job) => {
+      try {
+        if (job.name !== "generateWidgetSummary") return;
+
+        const { widgetId } = job.data;
+        console.log("AI summary job started for widget:", widgetId);
+
+        // ------------------------------------------------------
+        // 1️ Fetch widget USING SERVICE (with populate)
+        // ------------------------------------------------------
+        const widget: any = await getDashboardWidget(
+          { _id: widgetId },
+          ["widgetTypeId", "dataSourceId", "dashboardId", "organizationId", "createdBy"]
+        );
+
+        if (!widget) {
+          throw new Error("Dashboard widget not found");
+        }
+
+        // ------------------------------------------------------
+        // 2️ Fetch ALL widget data (pagination-safe)
+        // ------------------------------------------------------
+        const safeLimit = 1000;
+        let page = 1;
+        let dataResults: any[] = [];
+        const widgetRequestPayload = await buildWidgetRequestPayload(widget);
+
+        while (true) {
+          const result =
+            await dataSourceVersionValueService.getDataSourceVersionValueWidgetDataV2(widgetRequestPayload);
+
+          const batchData = result?.data ?? [];
+          dataResults.push(...batchData);
+
+          if (batchData.length < safeLimit) break;
+          page++;
+        }
+
+        console.log("Total rows fetched:", dataResults.length);
+
+        // ------------------------------------------------------
+        // 3️ Build AI Payload (AS REQUESTED)
+        // ------------------------------------------------------
+        const aiPayload = {
+          widget: {
+            name: widget.name,
+            widgetType: widget.widgetTypeId?.name || "Unknown",
+            plotType: widget.plotType,
+            dimensions: widget.dimensions,
+            groupBy: widget.groupBy,
+            aggregation: widget.aggregation,
+            conditions: widget.conditions,
+            isIncremental: widget.isIncremental,
+          },
+          data: {
+            rows: dataResults.slice(0,10),               // FULL DATA
+            totalRows: dataResults.length,
+          },
+        };
+
+        console.log('ai payload', aiPayload);
+
+        // ------------------------------------------------------
+        // 4️ Call AI Analyze API (LONG RUNNING)
+        // ------------------------------------------------------
+        const response = await axios.post(
+          `${process.env.BASE_AI_SERVICE_URL}/analyzechart`,
+          aiPayload,
+          {
+            headers: { "Content-Type": "application/json" },
+            timeout: 10 * 60 * 1000, // ✅ 10 minutes
+          }
+        );
+
+        const summary = response.data?.data || "";
+
+        if (!summary) {
+          console.warn("⚠️ Empty AI summary for widget:", widgetId);
+          return;
+        }
+
+        // ------------------------------------------------------
+        // 5️ Update widget USING SERVICE
+        // ------------------------------------------------------
+        await updateDashboardWidget(widgetId, {
+          description: summary,
+        });
+
+        console.log("Widget description updated:", widgetId);
+
+      } catch (error: any) {
+        console.error("AI Worker failed:", error.message);
+        throw error;
+      }
+    },
+    {
+      connection: { host: "redis" },
+
+      // REQUIRED for long AI calls
+      lockDuration: 10 * 60 * 1000,
+
+      concurrency: 1,
+    }
+  );
+
+  console.log("AI Worker started");
+
 })();

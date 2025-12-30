@@ -21,6 +21,7 @@ import { getDataSourceById } from './dataSource.controller';
 import { getUserDataPermissionRecord } from '../../../database/services/common/userDataPermission.service';
 import { plotTypesConfig } from "../../../config/plotType.config";
 import { removeDashboardFromRoleDefaults } from '../../../database/services/common/roleDefaultDashboard.service';
+import { Queue } from "bullmq";
 
 export const createDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -217,6 +218,17 @@ export const createWidget = async (req: Request, res: Response, next: NextFuncti
       },
     });
 
+    if(!description){
+      // Create BullMQ connection (same name as worker uses)
+      const aiDataQueue = new Queue("aiDataQueue", {
+        connection: {
+          host: "redis", // or your Redis host
+        },
+      });
+
+      // Add job to queue — worker will handle the actual sending
+      await aiDataQueue.add("generateWidgetSummary", { dashboardWidget });
+    }
     res.status(200).json({
       success: true,
       message: 'Widget created successfully',
@@ -284,6 +296,18 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
       ...(typeof isDeleted !== 'undefined' && { isDeleted }),
       ...(typeof isIncremental !== 'undefined' && { isIncremental }),
     });
+
+    if(!description){
+      // Create BullMQ connection (same name as worker uses)
+      const aiDataQueue = new Queue("aiDataQueue", {
+        connection: {
+          host: "redis", // or your Redis host
+        },
+      });
+
+      // Add job to queue — worker will handle the actual sending
+      await aiDataQueue.add("generateWidgetSummary", { dashboardWidgetId });
+    }
 
     res.status(200).json({
       success: true,
