@@ -460,6 +460,14 @@ export const assumeOrRevertSession = async (
       });
     }
 
+    // Utility to get isSuperUser from roles
+    const getIsSuperUser = (user: any) => {
+      if (user.roleIds?.length) {
+        return user.roleIds.some((role: any) => role.isSuperUser === true);
+      }
+      return false;
+    };
+
     // =========================
     // 1️⃣ Revert to original admin
     // =========================
@@ -496,6 +504,7 @@ export const assumeOrRevertSession = async (
         orgCode: adminUser.organizationId?.code,
         roleIds,
         ...productLicenses,
+        isSuperUser: getIsSuperUser(adminUser),
         // ✅ no need to set isImpersonation: false or impersonatorUserId: null
       });
 
@@ -587,6 +596,7 @@ export const assumeOrRevertSession = async (
       ...productLicenses,
       isImpersonation: true,
       impersonatorUserId,
+      isSuperUser: getIsSuperUser(targetUser),
     });
 
     return res.status(200).json({
