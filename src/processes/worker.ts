@@ -365,12 +365,12 @@ async function connectDB() {
             isIncremental: widget.isIncremental,
           },
           data: {
-            rows: dataResults.slice(0,10),               // FULL DATA
+            rows: dataResults,               // FULL DATA
             totalRows: dataResults.length,
           },
         };
 
-        console.log('ai payload', JSON.stringify(aiPayload));
+        // console.log('ai payload', JSON.stringify(aiPayload));
 
       // ------------------------------------------------------
       // 4️ Call AI Analyze API
@@ -411,9 +411,9 @@ async function connectDB() {
         throw error;
       }
 
-      console.log("AI response received", response);
+      console.log("AI response received", response?.data);
 
-      const summary = response.data?.data || "";
+      const summary = response.data?.message || "";
 
       if (!summary) {
         console.warn("Empty AI summary for widget:", widgetId);
