@@ -269,7 +269,7 @@ export const applyBusinessUnitPermissions = async ({
 
 export const getUserList = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, firstName, lastName, organizationId }: any = req.query;
+    const { email, firstName, lastName, organizationId, paginate = true }: any = req.query;
     const { userId, isSuperUser, roleIds } = req.user;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
@@ -325,6 +325,7 @@ export const getUserList = async (req: Request, res: Response, next: NextFunctio
         }, 
         'organizationProductSubscriptionIds'
       ],
+      paginate
     });
 
     res.status(200).json({
