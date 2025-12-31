@@ -411,7 +411,7 @@ async function connectDB() {
         throw error;
       }
 
-      console.log("AI response received");
+      console.log("AI response received", response);
 
       const summary = response.data?.data || "";
 
