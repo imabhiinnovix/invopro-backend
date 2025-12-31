@@ -14,7 +14,7 @@ export const getAllUsers = async ({ query, select = '', page, limit, sort = { cr
       .sort(sort);
 
     // Apply pagination ONLY if paginate = true
-    if (paginate) {
+    if (paginate == true) {
       usersQuery = usersQuery
         .skip((page - 1) * limit)
         .limit(limit);
