@@ -372,24 +372,53 @@ async function connectDB() {
 
         console.log('ai payload', JSON.stringify(aiPayload));
 
-        // ------------------------------------------------------
-        // 4️ Call AI Analyze API (LONG RUNNING)
-        // ------------------------------------------------------
-        const response = await axios.post(
+      // ------------------------------------------------------
+      // 4️ Call AI Analyze API
+      // ------------------------------------------------------
+      let response: any;
+      try {
+        response = await axios.post(
           `${process.env.BASE_AI_SERVICE_URL}/analyzeChart`,
-          JSON.stringify(aiPayload),
+          aiPayload, // DO NOT stringify
           {
-            headers: { "Content-Type": "application/json" },
-            timeout: 10 * 60 * 1000, // ✅ 10 minutes
+            headers: {
+              "Content-Type": "application/json",
+            },
+            timeout: 10 * 60 * 1000,
           }
         );
-        console.log('ai response', response);
-        const summary = response.data?.data || "";
+      } catch (error: any) {
+        console.error("AI Axios call failed");
 
-        if (!summary) {
-          console.warn("⚠️ Empty AI summary for widget:", widgetId);
-          return;
+        if (error.response) {
+          console.error("Status:", error.response.status);
+          console.error("Response Data:", error.response.data);
+          console.error("Headers:", error.response.headers);
+        } else if (error.request) {
+          console.error("No response received");
+          console.error(error.request);
+        } else {
+          console.error("Axios error message:", error.message);
         }
+
+        console.error("Axios Config:", {
+          url: error.config?.url,
+          method: error.config?.method,
+          timeout: error.config?.timeout,
+          data: error.config?.data,
+        });
+
+        throw error;
+      }
+
+      console.log("AI response received");
+
+      const summary = response.data?.data || "";
+
+      if (!summary) {
+        console.warn("Empty AI summary for widget:", widgetId);
+        return;
+      }
 
         // ------------------------------------------------------
         // 5️ Update widget USING SERVICE
