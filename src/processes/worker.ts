@@ -377,13 +377,13 @@ async function connectDB() {
         // ------------------------------------------------------
         const response = await axios.post(
           `${process.env.BASE_AI_SERVICE_URL}/analyzeChart`,
-          aiPayload,
+          JSON.stringify(aiPayload),
           {
             headers: { "Content-Type": "application/json" },
             timeout: 10 * 60 * 1000, // ✅ 10 minutes
           }
         );
-
+        console.log('ai response', response);
         const summary = response.data?.data || "";
 
         if (!summary) {
