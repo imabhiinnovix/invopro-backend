@@ -7,13 +7,18 @@ import User from '../../models/common/user';
 import * as organizationService from './organization.service';
 import { PopulateOptions } from 'mongoose';
 
-export const getAllUsers = async ({ query, select = '', page, limit, sort = { createdAt: -1 }, populate }: any) => {
+export const getAllUsers = async ({ query, select = '', page, limit, sort = { createdAt: -1 }, populate, paginate = true }: any) => {
   try {
     let usersQuery = User.find(query)
       .select(select + ' -password -passwordHistory')
-      .skip((page - 1) * limit)
-      .limit(limit)
       .sort(sort);
+
+    // Apply pagination ONLY if paginate = true
+    if (paginate) {
+      usersQuery = usersQuery
+        .skip((page - 1) * limit)
+        .limit(limit);
+    }
 
     if (populate && Array.isArray(populate)) {
       populate.forEach((field) => {
