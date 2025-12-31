@@ -22,6 +22,7 @@ interface IOrganization extends Document {
   lastName?: string;
   email?: string;
   phone?: string;
+  mobile?: number;
   address1?: string;
   address2?: string;
   city?: string;
@@ -56,6 +57,7 @@ const organizationSchema = new Schema<IOrganization>(
     lastName: { type: String, default: '' },
     email: { type: String, default: '' },
     phone: { type: String, default: '' },
+    mobile: { type: Number },
     address1: { type: String, default: '' },
     address2: { type: String, default: '' },
     city: { type: String, default: '' },
