@@ -7,8 +7,15 @@ import * as dataSourceVersionValueService from '../database/services/common/defa
 import ExcelJS from 'exceljs';
 import path from "path";
 import "../database/models/common/organization";
+import "../database/models/common/widgetType";
+import "../database/models/common/dashboard";
+import "../database/models/common/dataSource";
+import "../database/models/common/user";
 import fs from "fs";
 import { formatDateValue } from "../utils/common.utils";
+import { getDashboardWidget, updateDashboardWidget } from "../database/services/common/dashboardWidget.services";
+import axios from "axios";
+import { buildWidgetRequestPayload } from "../utils/buildWidgetRequest.utils";
 
 
 // ✅ Connect to MongoDB
@@ -299,4 +306,144 @@ async function connectDB() {
   );
 
   console.log("worker started");
+
+
+// ------------------------------------------------------
+// Start AI Worker
+// ------------------------------------------------------
+  new Worker(
+    "aiDataQueue",
+    async (job) => {
+      try {
+        if (job.name !== "generateWidgetSummary") return;
+
+        const { widgetId } = job.data;
+        console.log("AI summary job started for widget:", widgetId);
+
+        // ------------------------------------------------------
+        // 1️ Fetch widget USING SERVICE (with populate)
+        // ------------------------------------------------------
+        const widget: any = await getDashboardWidget(
+          { _id: widgetId },
+          ["widgetTypeId", "dataSourceId", "dashboardId", "organizationId", "createdBy"]
+        );
+
+        if (!widget) {
+          throw new Error("Dashboard widget not found");
+        }
+
+        // ------------------------------------------------------
+        // 2️ Fetch ALL widget data (pagination-safe)
+        // ------------------------------------------------------
+        const safeLimit = 5000;
+        let dataResults: any[] = [];
+        const widgetRequestPayload = await buildWidgetRequestPayload(widget);
+        let page = 1;
+        while (true) {
+          const result =
+            await dataSourceVersionValueService.getDataSourceVersionValueWidgetDataV2({...widgetRequestPayload, page, limit: safeLimit});
+          const batchData = result?.data ?? [];
+          dataResults.push(...batchData);
+          if (batchData.length < safeLimit) break;
+          page++;
+        }
+
+        console.log("Total rows fetched:", dataResults.length);
+
+        // ------------------------------------------------------
+        // 3️ Build AI Payload (AS REQUESTED)
+        // ------------------------------------------------------
+        const aiPayload = {
+          widget: {
+            name: widget.name,
+            widgetType: widget.widgetTypeId?.name || "Unknown",
+            plotType: widget.plotType,
+            dimensions: widget.dimensions,
+            groupBy: widget.groupBy,
+            aggregation: widget.aggregation,
+            conditions: widget.conditions,
+            isIncremental: widget.isIncremental,
+          },
+          data: {
+            rows: dataResults,               // FULL DATA
+            totalRows: dataResults.length,
+          },
+        };
+
+        // console.log('ai payload', JSON.stringify(aiPayload));
+
+      // ------------------------------------------------------
+      // 4️ Call AI Analyze API
+      // ------------------------------------------------------
+      let response: any;
+      try {
+        response = await axios.post(
+          `${process.env.BASE_AI_SERVICE_URL}/analyzeChart`,
+          aiPayload, // DO NOT stringify
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            timeout: 10 * 60 * 1000,
+          }
+        );
+      } catch (error: any) {
+        console.error("AI Axios call failed");
+
+        if (error.response) {
+          console.error("Status:", error.response.status);
+          console.error("Response Data:", error.response.data);
+          console.error("Headers:", error.response.headers);
+        } else if (error.request) {
+          console.error("No response received");
+          console.error(error.request);
+        } else {
+          console.error("Axios error message:", error.message);
+        }
+
+        console.error("Axios Config:", {
+          url: error.config?.url,
+          method: error.config?.method,
+          timeout: error.config?.timeout,
+          data: error.config?.data,
+        });
+
+        throw error;
+      }
+
+      console.log("AI response received", response?.data);
+
+      const summary = response.data?.message || "";
+
+      if (!summary) {
+        console.warn("Empty AI summary for widget:", widgetId);
+        return;
+      }
+
+        // ------------------------------------------------------
+        // 5️ Update widget USING SERVICE
+        // ------------------------------------------------------
+        await updateDashboardWidget(widgetId, {
+          description: summary,
+        });
+
+        console.log("Widget description updated:", widgetId);
+
+      } catch (error: any) {
+        console.error("AI Worker failed:", error.message);
+        throw error;
+      }
+    },
+    {
+      connection: { host: "redis" },
+
+      // REQUIRED for long AI calls
+      lockDuration: 10 * 60 * 1000,
+
+      concurrency: 1,
+    }
+  );
+
+  console.log("AI Worker started");
+
 })();

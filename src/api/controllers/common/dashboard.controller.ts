@@ -21,6 +21,7 @@ import { getDataSourceById } from './dataSource.controller';
 import { getUserDataPermissionRecord } from '../../../database/services/common/userDataPermission.service';
 import { plotTypesConfig } from "../../../config/plotType.config";
 import { removeDashboardFromRoleDefaults } from '../../../database/services/common/roleDefaultDashboard.service';
+import { Queue } from "bullmq";
 
 export const createDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -217,6 +218,17 @@ export const createWidget = async (req: Request, res: Response, next: NextFuncti
       },
     });
 
+    if(!description){
+      // Create BullMQ connection (same name as worker uses)
+      const aiDataQueue = new Queue("aiDataQueue", {
+        connection: {
+          host: "redis", // or your Redis host
+        },
+      });
+
+      // Add job to queue — worker will handle the actual sending
+      await aiDataQueue.add("generateWidgetSummary", { widgetId: dashboardWidget._id });
+    }
     res.status(200).json({
       success: true,
       message: 'Widget created successfully',
@@ -284,6 +296,18 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
       ...(typeof isDeleted !== 'undefined' && { isDeleted }),
       ...(typeof isIncremental !== 'undefined' && { isIncremental }),
     });
+
+    if(!description){
+      // Create BullMQ connection (same name as worker uses)
+      const aiDataQueue = new Queue("aiDataQueue", {
+        connection: {
+          host: "redis", // or your Redis host
+        },
+      });
+
+      // Add job to queue — worker will handle the actual sending
+      await aiDataQueue.add("generateWidgetSummary", { widgetId: dashboardWidgetId });
+    }
 
     res.status(200).json({
       success: true,
@@ -927,7 +951,7 @@ export const saveDashboardWidgets = async (req: Request, res: Response, next: Ne
     const lastWidget = await dashboardWidgetdService.getLastWidgetIndex(dashboardId);
     let nextIndex = (lastWidget?.position?.index || 0) + 1;
 
-    await Promise.all(
+    const createdWidgets = await Promise.all(
       widgets.map(async (widget) => {
         const widgetWithIndex = {
           ...widget,
@@ -942,6 +966,29 @@ export const saveDashboardWidgets = async (req: Request, res: Response, next: Ne
         return await dashboardWidgetdService.createDashboardWidget(widgetWithIndex);
       })
     );
+
+    // ---------------------------
+    // AI SUMMARY QUEUE (FIXED)
+    // ---------------------------
+    const widgetsNeedingSummary = createdWidgets.filter(
+      (w: any) => !w.description
+    );
+
+    if (widgetsNeedingSummary.length > 0) {
+      const aiDataQueue = new Queue("aiDataQueue", {
+        connection: {
+          host: "redis",
+        },
+      });
+
+      await Promise.all(
+        widgetsNeedingSummary.map((widget: any) =>
+          aiDataQueue.add("generateWidgetSummary", {
+            widgetId: widget._id,
+          })
+        )
+      );
+    }
 
     res.status(200).json({
       success: true,
