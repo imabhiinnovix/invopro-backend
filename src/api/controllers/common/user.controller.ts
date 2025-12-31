@@ -272,7 +272,7 @@ export const getUserList = async (req: Request, res: Response, next: NextFunctio
     const { email, firstName, lastName, organizationId }: any = req.query;
     const { userId, isSuperUser, roleIds } = req.user;
     const page = parseInt(req.query.page as string, 10) || 1;
-    const limit = parseInt(req.query.limit as string, 10) || Number.MAX_SAFE_INTEGER;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
 
     const query: any = {};
 
