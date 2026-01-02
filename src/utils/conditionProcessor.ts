@@ -161,6 +161,7 @@ function safeDateString(fieldPath) {
             handleStringOperators(condition, convertedValue, fieldPath, matchConditions);
             break;
           case 'date':
+          case 'date-range':
             handleDateOperators(condition, convertedValue, fieldPath, matchConditions);
             break;
           case 'boolean':

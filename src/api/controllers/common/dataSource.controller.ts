@@ -5,7 +5,7 @@ import { Types } from 'mongoose';
 import * as dataSourceService from '../../../database/services/common/dataSource.services';
 import * as defaultDataSourceVersionValue from '../../../database/services/common/defaultDataSourceVersionValue.services';
 import * as entityService from '../../../database/services/common/entity.services';
-import { checkReferenceFieldExist, formatDateTime, getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
+import { checkReferenceFieldExist, formatDateTime, getSchemaNameBasedOnVersionCodeAndOrgCode, getSortFieldFromArray } from '../../../utils/common.utils';
 import createDefaultDataSourceVersionModel from '../../../database/models/common/defaultDataSourceVersionModel';
 import * as dataSourceVersionService from '../../../database/services/common/dataSourceVersion.services';
 import { DataSourceVersion } from '../../../types/widget.types';
@@ -757,31 +757,20 @@ let effectiveSortBy = sort;
 
 // Apply default sort ONLY if sort is not provided
 if (!effectiveSortBy || Object.keys(effectiveSortBy).length === 0) {
-
   let sortField: string | null = null;
 
-  // 1️⃣ groupBy: [{ field: value }]
-  if (
-    Array.isArray(groupBy) &&
-    groupBy.length > 0 &&
-    typeof groupBy[0] === "object" &&
-    Object.keys(groupBy[0]).length > 0
-  ) {
-    sortField = Object.keys(groupBy[0])[0];
+  // 1️ Try groupBy first
+  if (Array.isArray(groupBy) && groupBy.length > 0) {
+    sortField = getSortFieldFromArray(groupBy);
   }
-
-  // 2️⃣ dimensions: [{ field: value }]
-  else if (
-    Array.isArray(dimensions) &&
-    dimensions.length > 0 &&
-    typeof dimensions[0] === "object" &&
-    Object.keys(dimensions[0]).length > 0
-  ) {
-    sortField = Object.keys(dimensions[0])[0];
+  // 2️ Then try dimensions
+  else if (Array.isArray(dimensions) && dimensions.length > 0) {
+    sortField = getSortFieldFromArray(dimensions);
   }
 
   effectiveSortBy = sortField ? { [sortField]: 1 } : {};
 }
+
 
 
 
@@ -1219,27 +1208,15 @@ let effectiveSortBy = sort;
 
 // Apply default sort ONLY if sort is not provided
 if (!effectiveSortBy || Object.keys(effectiveSortBy).length === 0) {
-
   let sortField: string | null = null;
 
-  // 1️⃣ groupBy: [{ field: value }]
-  if (
-    Array.isArray(groupBy) &&
-    groupBy.length > 0 &&
-    typeof groupBy[0] === "object" &&
-    Object.keys(groupBy[0]).length > 0
-  ) {
-    sortField = Object.keys(groupBy[0])[0];
+  // 1️ Try groupBy first
+  if (Array.isArray(groupBy) && groupBy.length > 0) {
+    sortField = getSortFieldFromArray(groupBy);
   }
-
-  // 2️⃣ dimensions: [{ field: value }]
-  else if (
-    Array.isArray(dimensions) &&
-    dimensions.length > 0 &&
-    typeof dimensions[0] === "object" &&
-    Object.keys(dimensions[0]).length > 0
-  ) {
-    sortField = Object.keys(dimensions[0])[0];
+  // 2️ Then try dimensions
+  else if (Array.isArray(dimensions) && dimensions.length > 0) {
+    sortField = getSortFieldFromArray(dimensions);
   }
 
   effectiveSortBy = sortField ? { [sortField]: 1 } : {};

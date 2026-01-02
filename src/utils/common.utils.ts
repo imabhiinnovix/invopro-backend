@@ -374,6 +374,20 @@ export const normalizeArray = (arr: any[] = []) =>
 export const isArrayChanged = (a: any[] = [], b: any[] = []) =>
   JSON.stringify(normalizeArray(a)) !== JSON.stringify(normalizeArray(b));
 
+ // Helper function to extract field from array element
+export const getSortFieldFromArray = (arr: any[]) => {
+    if (arr.length === 0) return null;
+    const first = arr[0];
+
+    if (typeof first === "string") {
+      return first; // element is a string
+    } else if (typeof first === "object" && Object.keys(first).length > 0) {
+      return Object.keys(first)[0]; // element is an object
+    }
+
+    return null;
+  };
+
 
 
 
