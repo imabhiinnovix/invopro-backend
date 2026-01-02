@@ -2668,6 +2668,21 @@ console.log(groupFields, 'groupFields');
 
 
 
+const normalizedGroupFields: any = {};
+
+for (const [key, value] of Object.entries(groupFields)) {
+  normalizedGroupFields[key] = {
+    $cond: {
+      if: { $isArray: value },
+      then: {
+        $ifNull: [{ $arrayElemAt: [value, 0] }, "Unknown"]
+      },
+      else: {
+        $ifNull: [value, "Unknown"]
+      }
+    }
+  };
+}
 
 
 
@@ -2850,7 +2865,7 @@ if (widgetType === "number") {
     aggregationPipeline.push(
       {
         $group: {
-          _id: { ...groupFields },
+          _id: normalizedGroupFields,
           data: aggregation?.type === "distinctCount" ? { $sum: 1 } : aggregationExpr[aggKey],
         },
       },
@@ -2859,7 +2874,7 @@ if (widgetType === "number") {
           newRoot: { $mergeObjects: ['$_id', { data: `$data` }] },
         },
       },
-      { $match: { name: { $ne: null } } },
+      // { $match: { name: { $ne: null } } },
       {
         $group: {
           _id: null,
@@ -3962,6 +3977,82 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
 // Resolve aggregation field path
 const aggPath = getFieldPath(await getReferenceField(aggregation?.attributeName));
 
+
+// === Generalized sort helper (works for strings, arrays, nulls, case-insensitive) ===
+function getSortSafeExpr(fieldPath: string) {
+  return {
+    $toLower: {
+      $ifNull: [
+        {
+          $cond: [
+            { $isArray: `$${fieldPath}` },
+            { $arrayElemAt: [`$${fieldPath}`, 0] }, // pick first element if array
+            `$${fieldPath}` // use as-is if string
+          ]
+        },
+        "Unknown" // fallback for null/empty
+      ]
+    }
+  };
+}
+
+// === Apply sorting to any field safely ===
+async function applySafeSort(sort: Record<string, any>, aggregationPipeline: any[], entityId: string, attributesMap: any) {
+  if (!sort || Object.keys(sort).length === 0) return;
+
+  const sortStage: any = {};
+
+  for (const [field, direction] of Object.entries(sort)) {
+    const sortDir = direction === "desc" || direction === -1 ? -1 : 1;
+
+    // CASE 1: Nested reference field => A.B.C
+    if (field.includes(".")) {
+      const pathSegments = field.split(".");
+      const visitedSort = new Set<string>();
+      const resolvedSortPath = await buildAggregationPathAndReturnExpr({
+        entityId,
+        pathSegments,
+        prefix: "rowData",
+        pipeline: aggregationPipeline,
+        visited: visitedSort
+      });
+      sortStage[resolvedSortPath] = sortDir;
+    }
+    // CASE 2: Top-level reference attribute
+    else if (
+      attributesMap[field]?.referenceEntitySetting?.refEntityId &&
+      !attributesMap[field].referenceEntitySetting.relationType?.startsWith("mapping_")
+    ) {
+      const refFieldAttr = await getEntityAttribute(
+        attributesMap[field].referenceEntitySetting.refEntityId,
+        attributesMap[field].referenceEntitySetting.refEntityField
+      );
+
+      const displayField =
+        refFieldAttr?.name || attributesMap[field].referenceEntitySetting.refEntityField;
+
+      sortStage[`rowData.${field}_resolved.rowData.${displayField}`] = sortDir;
+    }
+    // CASE 3: Normal field — use safe sorting
+    else {
+      const tempSortField = `_sort_${field}`;
+      aggregationPipeline.push({
+        $addFields: { [tempSortField]: getSortSafeExpr(`rowData.${field}`) }
+      });
+      sortStage[tempSortField] = sortDir;
+    }
+  }
+
+  aggregationPipeline.push({ $sort: sortStage });
+
+  // Remove temporary sort fields after sorting
+  for (const field of Object.keys(sort)) {
+    if (!field.includes(".") && !attributesMap[field]?.referenceEntitySetting) {
+      aggregationPipeline.push({ $project: { [`_sort_${field}`]: 0 } });
+    }
+  }
+}
+
 // === DISTINCT COUNT HANDLER ===
 if (aggregation?.type === "distinctCount") {
   // 1️⃣ Group by the distinct field, preserve full rowData
@@ -3976,47 +4067,48 @@ if (aggregation?.type === "distinctCount") {
   aggregationPipeline.push({ $replaceRoot: { newRoot: "$doc" } });
 
   // 3️⃣ Apply sorting AFTER distinct grouping
-  if (sort && Object.keys(sort).length > 0) {
-    const sortStage: any = {};
-    for (const [field, direction] of Object.entries(sort)) {
-      const sortDir = direction === "desc" || direction === -1 ? -1 : 1;
+  // if (sort && Object.keys(sort).length > 0) {
+  //   const sortStage: any = {};
+  //   for (const [field, direction] of Object.entries(sort)) {
+  //     const sortDir = direction === "desc" || direction === -1 ? -1 : 1;
 
-      // CASE 1: Nested reference field => A.B.C
-      if (field.includes(".")) {
-        const pathSegments = field.split(".");
-        const visitedSort = new Set<string>();
-        const resolvedSortPath = await buildAggregationPathAndReturnExpr({
-          entityId,
-          pathSegments,
-          prefix: "rowData",
-          pipeline: aggregationPipeline, // ensures lookup is added
-          visited: visitedSort,
-        });
-        sortStage[resolvedSortPath] = sortDir;
-      }
-      // CASE 2: Top-level reference attribute
-      else if (
-        attributesMap[field]?.referenceEntitySetting?.refEntityId &&
-        !attributesMap[field].referenceEntitySetting.relationType?.startsWith("mapping_")
-      ) {
-        const refFieldAttr = await getEntityAttribute(
-          attributesMap[field].referenceEntitySetting.refEntityId,
-          attributesMap[field].referenceEntitySetting.refEntityField
-        );
+  //     // CASE 1: Nested reference field => A.B.C
+  //     if (field.includes(".")) {
+  //       const pathSegments = field.split(".");
+  //       const visitedSort = new Set<string>();
+  //       const resolvedSortPath = await buildAggregationPathAndReturnExpr({
+  //         entityId,
+  //         pathSegments,
+  //         prefix: "rowData",
+  //         pipeline: aggregationPipeline, // ensures lookup is added
+  //         visited: visitedSort,
+  //       });
+  //       sortStage[resolvedSortPath] = sortDir;
+  //     }
+  //     // CASE 2: Top-level reference attribute
+  //     else if (
+  //       attributesMap[field]?.referenceEntitySetting?.refEntityId &&
+  //       !attributesMap[field].referenceEntitySetting.relationType?.startsWith("mapping_")
+  //     ) {
+  //       const refFieldAttr = await getEntityAttribute(
+  //         attributesMap[field].referenceEntitySetting.refEntityId,
+  //         attributesMap[field].referenceEntitySetting.refEntityField
+  //       );
 
-        const displayField =
-          refFieldAttr?.name || attributesMap[field].referenceEntitySetting.refEntityField;
+  //       const displayField =
+  //         refFieldAttr?.name || attributesMap[field].referenceEntitySetting.refEntityField;
 
-        sortStage[`rowData.${field}_resolved.rowData.${displayField}`] = sortDir;
-      }
-      // CASE 3: Normal attribute
-      else {
-        sortStage[`rowData.${field}`] = sortDir;
-      }
-    }
+  //       sortStage[`rowData.${field}_resolved.rowData.${displayField}`] = sortDir;
+  //     }
+  //     // CASE 3: Normal attribute
+  //     else {
+  //       sortStage[`rowData.${field}`] = sortDir;
+  //     }
+  //   }
 
-    aggregationPipeline.push({ $sort: sortStage });
-  }
+  //   aggregationPipeline.push({ $sort: sortStage });
+  // }
+  await applySafeSort(sort, aggregationPipeline, entityId, attributesMap);
 
   // 4️⃣ Collect all distinct documents into an array
   aggregationPipeline.push({
@@ -4074,51 +4166,52 @@ if (aggregation?.type === "distinctCount") {
 // === COUNT / SUM / AVERAGE HANDLER (fixed) ===
 else {
 
-if (sort && Object.keys(sort).length > 0) {
-  const sortStage: any = {};
-  for (const [field, direction] of Object.entries(sort)) {
-    const sortDir = direction === "desc" || direction === -1 ? -1 : 1;
+// if (sort && Object.keys(sort).length > 0) {
+//   const sortStage: any = {};
+//   for (const [field, direction] of Object.entries(sort)) {
+//     const sortDir = direction === "desc" || direction === -1 ? -1 : 1;
 
-    // CASE 1: Nested reference field => A.B.C
-    if (field.includes(".")) {
-      const pathSegments = field.split(".");
-      const visitedSort = new Set<string>();
+//     // CASE 1: Nested reference field => A.B.C
+//     if (field.includes(".")) {
+//       const pathSegments = field.split(".");
+//       const visitedSort = new Set<string>();
 
-      const resolvedSortPath = await buildAggregationPathAndReturnExpr({
-        entityId,
-        pathSegments,
-        prefix: "rowData",
-        pipeline: aggregationPipeline,   // <-- ensures lookup is added
-        visited: visitedSort,
-      });
+//       const resolvedSortPath = await buildAggregationPathAndReturnExpr({
+//         entityId,
+//         pathSegments,
+//         prefix: "rowData",
+//         pipeline: aggregationPipeline,   // <-- ensures lookup is added
+//         visited: visitedSort,
+//       });
 
-      sortStage[resolvedSortPath] = sortDir;
-    }
+//       sortStage[resolvedSortPath] = sortDir;
+//     }
 
-    // CASE 2: Top-level reference attribute
-    else if (
-      attributesMap[field]?.referenceEntitySetting?.refEntityId &&
-      !attributesMap[field].referenceEntitySetting.relationType?.startsWith("mapping_")
-    ) {
-      const refFieldAttr = await getEntityAttribute(
-        attributesMap[field].referenceEntitySetting.refEntityId,
-        attributesMap[field].referenceEntitySetting.refEntityField
-      );
+//     // CASE 2: Top-level reference attribute
+//     else if (
+//       attributesMap[field]?.referenceEntitySetting?.refEntityId &&
+//       !attributesMap[field].referenceEntitySetting.relationType?.startsWith("mapping_")
+//     ) {
+//       const refFieldAttr = await getEntityAttribute(
+//         attributesMap[field].referenceEntitySetting.refEntityId,
+//         attributesMap[field].referenceEntitySetting.refEntityField
+//       );
 
-      const displayField =
-        refFieldAttr?.name || attributesMap[field].referenceEntitySetting.refEntityField;
+//       const displayField =
+//         refFieldAttr?.name || attributesMap[field].referenceEntitySetting.refEntityField;
 
-      sortStage[`rowData.${field}_resolved.rowData.${displayField}`] = sortDir;
-    }
+//       sortStage[`rowData.${field}_resolved.rowData.${displayField}`] = sortDir;
+//     }
 
-    // CASE 3: Normal attribute
-    else {
-      sortStage[`rowData.${field}`] = sortDir;
-    }
-  }
+//     // CASE 3: Normal attribute
+//     else {
+//       sortStage[`rowData.${field}`] = sortDir;
+//     }
+//   }
 
-  aggregationPipeline.push({ $sort: sortStage });
-}
+//   aggregationPipeline.push({ $sort: sortStage });
+// }
+  await applySafeSort(sort, aggregationPipeline, entityId, attributesMap);
   let aggregationExpr: any;
 
   switch (aggregation?.type) {
