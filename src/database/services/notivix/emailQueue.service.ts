@@ -20,6 +20,7 @@ const mg = mailgun({ apiKey: API_KEY, domain: DOMAIN });
 export interface EmailQueuePayload {
   to: string[];
   cc?: string[];
+  bcc?: string[];
   subject: string;
   body: string;
   attachments?: { fileName: string; filePath?: string, isDeleted?: boolean }[];
@@ -37,6 +38,10 @@ export async function sendToQueue(payload: EmailQueuePayload) {
 
     if (payload.cc && payload.cc.length > 0) {
       data.cc = payload.cc.join(",");
+    }
+
+    if (payload.bcc && payload.bcc.length > 0) {
+      data.bcc = payload.bcc.join(",");
     }
 
     // Attachments

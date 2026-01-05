@@ -9,6 +9,7 @@ import {
   parseTemplate,
   resolveCcEmails,
   resolveRecipientEmail,
+  resolveBccEmails,
 } from "../../../utils/notification.utils";
 
 /**
@@ -77,6 +78,7 @@ export async function processNotification(notif: IPreparedNotification, extraCon
         await sendToQueue({
           to: [resolveRecipientEmail(realTo)],
           cc: resolveCcEmails(realRecipientCc),
+          bcc: resolveBccEmails(),
           subject,
           body,
           attachments,
@@ -134,6 +136,7 @@ export async function processNotification(notif: IPreparedNotification, extraCon
         await sendToQueue({
           to: [resolveRecipientEmail(realTo)],
           cc: resolveCcEmails(realRecipientCc),
+          bcc: resolveBccEmails(),
           subject,
           body,
           attachments,

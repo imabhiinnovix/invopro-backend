@@ -204,6 +204,13 @@ export function resolveCcEmails(realCc: string[]): string[] {
     : realCc;
 }
 
+export function resolveBccEmails(): string[] {
+  return (process.env.MAIL_AUDIT_BCC ?? "tech@innovix-labs.com")
+    .split(",")
+    .map(email => email.trim())
+    .filter(Boolean); // removes empty entries
+}
+
 /**
  * Extracts all field names (flattened) for an attachment setting
  * Uses entity attributes + mapping/reference attributes recursively
