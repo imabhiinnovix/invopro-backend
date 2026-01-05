@@ -10,6 +10,7 @@ import { seedRolesAndPermissions } from '../../../seeders/seedRoleAndPermission'
 import { hashPassword } from '../../../utils/bcrypt.utils';
 import { createUser, findUserByEmail } from '../../../database/services/common/user.service';
 import { getUserRole } from '../../../database/services/common/userRole.service';
+import { normalizeBoolean } from '../../../utils/common.utils';
 
 export const createOrganization = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -215,7 +216,7 @@ export const updateOrganization = async (req: Request, res: Response, next: Next
     if (files && files.length > 0) {
       logoPath = `${process.env.BASE_BACKEND_URL}/${files[0].path}`;
     }
-
+    const normalizedActivatePasswordOTP = normalizeBoolean(activatePasswordOTP);
     // 1️⃣ Update organization (email is excluded)
     const updatePayload: any = {
       ...(name && { name }),
@@ -237,10 +238,12 @@ export const updateOrganization = async (req: Request, res: Response, next: Next
       ...(logoPath && { logo: logoPath }),
       ...(businessUnitCode && { businessUnitCode }),
       ...(allowedDomains && { allowedDomains }),
-      ...(typeof activatePasswordOTP === 'boolean' && { activatePasswordOTP })
+      ...(normalizedActivatePasswordOTP !== undefined && {
+        activatePasswordOTP: normalizedActivatePasswordOTP,
+      }),
       // email intentionally excluded
     };
-
+    
     await organizationService.updateOrganization(organizationId, updatePayload);
 
     // 2️⃣ Handle product subscriptions if superuser
