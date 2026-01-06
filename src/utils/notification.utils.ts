@@ -32,18 +32,36 @@ export async function generateNotificationAttachments(
       const fieldNames = await getAttachmentFieldNames(attachmentSetting, dataSource?.entityId);
 
       sheet.columns = fieldNames.map(f => ({ header: f.name, key: f.name }));
-
+      if(template.type == 'single'){
+        const rows = [notif.payload];
+        for (const r of rows as Array<{ rowData: Record<string, any> }>) {
+          const row: Record<string, any> = {};
+          for (const f of fieldNames) {
+            let value = r.rowData[f.name];
+            if (Array.isArray(value)) {
+              value = value.join(", ");
+            }
+            if (f.type === "date" && value) value = formatDate(new Date(value));
+            row[f.name] = value;
+          }
+          sheet.addRow(row);
+        }
+      }else{
       for (const [_, rows] of Object.entries(notif.payload || {})) {
         for (const r of rows as Array<{ rowData: Record<string, any> }>) {
           const row: Record<string, any> = {};
           for (const f of fieldNames) {
             let value = r.rowData[f.name];
+            if (Array.isArray(value)) {
+              value = value.join(", ");
+            }
             if (f.type === "date" && value) value = formatDate(new Date(value));
             row[f.name] = value;
           }
           sheet.addRow(row);
         }
       }
+    }
 
       const fileName = `${sanitizedSubject}_${notif._id}.xlsx`;
       const filePath = path.join(process.cwd(), "tmp", fileName);
