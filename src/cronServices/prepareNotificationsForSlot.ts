@@ -1089,9 +1089,20 @@ for (const org of organizations) {
           });
         }
 
-        await PreparedNotification.insertMany(preparedDocs);
-        totalPrepared += preparedDocs.length;
-        console.log(`✅ Inserted ${preparedDocs.length} single notifications`);
+        // await PreparedNotification.insertMany(preparedDocs);
+        // totalPrepared += preparedDocs.length;
+        // console.log(`✅ Inserted ${preparedDocs.length} single notifications`);
+        if (preparedDocs.length > 0) {
+          const inserted = await PreparedNotification.insertMany(preparedDocs);
+          totalPrepared += inserted.length;
+
+          // ✅ Schedule each prepared notification in BullMQ
+          for (const notif of inserted) {
+            await scheduleEmail(notif);
+          }
+
+          console.log(`✅ Inserted & scheduled ${inserted.length} single notifications`);
+        }
 
       } else if (template.type === "overall") {
         console.log("📬 Preparing grouped/overall notifications");
@@ -1146,7 +1157,7 @@ for (const org of organizations) {
             await scheduleEmail(notif);
           }
 
-          console.log(`✅ Inserted & scheduled ${inserted.length} notifications`);
+          console.log(`✅ Inserted & scheduled ${inserted.length} overall notifications`);
         }
       }
     } catch (error) {
