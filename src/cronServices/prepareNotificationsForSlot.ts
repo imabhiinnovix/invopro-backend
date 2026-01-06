@@ -326,6 +326,7 @@ async function buildLeafFilter(cond: any, attributeMap: Map<string, any>): Promi
     case "onOrAfterPast": {
       const numVal = Number(cond.value);
       const now = new Date();
+      now.setHours(0, 0, 0, 0);
       const multiplier = cond.timeUnit === "d" ? 86400000 : cond.timeUnit === "h" ? 3600000 : 1000;
       let targetDate: Date;
 
@@ -381,7 +382,6 @@ async function buildLeafFilter(cond: any, attributeMap: Map<string, any>): Promi
     default:
       mongoCond = { [fieldPath]: cond.value };
   }
-
   return mongoCond;
 }
 
