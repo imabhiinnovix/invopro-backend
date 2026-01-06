@@ -154,8 +154,9 @@ export const listNotifications = async (req: Request, res: Response, next: NextF
 
         /* -------- SINGLE template -------- */
         if (template?.type === 'single') {
-          const rowKey = Object.keys(notif.payload || {})[0];
-          const rowData = notif.payload?.[rowKey]?.[0]?.rowData || {};
+          // const rowKey = Object.keys(notif.payload || {})[0];
+          // const rowData = notif.payload?.[rowKey]?.[0]?.rowData || {};
+          const rowData = notif.payload?.rowData || {};
           const recipientTo = notif.recipients?.recipient_to?.[0];
 
           const context: Record<string, any> = {

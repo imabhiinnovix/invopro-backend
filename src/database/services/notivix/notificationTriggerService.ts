@@ -51,8 +51,9 @@ export async function processNotification(notif: IPreparedNotification, extraCon
 
     // SINGLE template
     if (template.type === "single") {
-      const rowKey = Object.keys(notif.payload || {})[0];
-      const rowData = notif.payload[rowKey]?.[0]?.rowData || {};
+      // const rowKey = Object.keys(notif.payload || {})[0];
+      // const rowData = notif.payload[rowKey]?.[0]?.rowData || {};
+      const rowData = notif.payload?.rowData || {};
       const baseContext: Record<string, any> = { ...rowData, todayDate, lastUploadedDate, acknowledgeIdentifierKey: acknowledge?.identifierKey, acknowledgeId: acknowledge?._id, baseFrontendUrl: process.env.BASE_FRONTEND_URL, DaysRemaining: null, DaysPassed: null };
       // merge extraContext if provided
       if (extraContext) Object.assign(baseContext, extraContext);
