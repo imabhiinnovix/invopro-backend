@@ -19,7 +19,6 @@ export async function generateNotificationAttachments(
 
   const todayDate = formatDate(new Date());
   let emailSubject = (template.subject || "Notification").replace("{{todayDate}}", todayDate);
-  const sanitizedSubject = emailSubject.replace(/[<>:"/\\|?*]/g, "").trim();
 
   for (const attachmentSetting of template.attachmentSettings) {
     if (!attachmentSetting?.type) continue;
@@ -33,6 +32,7 @@ export async function generateNotificationAttachments(
 
       sheet.columns = fieldNames.map(f => ({ header: f.name, key: f.name }));
       if(template.type == 'single'){
+        emailSubject = (template.subject || "Notification").replace("{{OtherReferenceNumber}}", notif.payload?.rowData?.OtherReferenceNumber);
         const rows = [notif.payload];
         for (const r of rows as Array<{ rowData: Record<string, any> }>) {
           const row: Record<string, any> = {};
@@ -62,7 +62,11 @@ export async function generateNotificationAttachments(
         }
       }
     }
-
+      // const sanitizedSubject = emailSubject.replace(/[<>:"/\\|?*]/g, "").trim();
+      const sanitizedSubject = emailSubject
+                            .replace(/{{[^}]+}}/g, "")          // remove {{any text}}
+                            .replace(/[<>:"/\\|?*]/g, "")       // remove invalid characters
+                            .trim();
       const fileName = `${sanitizedSubject}_${notif._id}.xlsx`;
       const filePath = path.join(process.cwd(), "tmp", fileName);
 
