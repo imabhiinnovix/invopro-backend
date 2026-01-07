@@ -1083,6 +1083,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
         createdBy: userId,
       };
       const requestedReport = await reportRequestService.createReportRequest(reportRequestPayload);
+      const reportRequestId = requestedReport._id;
       debounceManager.debounce(customReportId as string, async () => {
         const dAllJsonMapping = allJsonMapping;
         const dAllJsonSeparator = allJsonSeparator;
@@ -1091,7 +1092,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
         const dOrgCode = orgCode;
         const dFiles = files;
         const dcustomReportData = customReportData;
-        const reportRequestId = requestedReport._id;
+        let isAnyDataSourceFailed = false;
         // console.log('dcustomReportData',dcustomReportData);
         try {
           for (let i = 0; i < dcustomReportData?.dataSourceIds?.length!; i++) {
@@ -1219,6 +1220,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                         validationErrors = [...validationErrors, ...validatedData.errors];
                       }
                       validatedFinalData = [...validatedFinalData, ...validatedData.newRowData];
+
                     } else {
                       console.error('Invalid file type. Please upload a file in XLSX or XLS format.');
                     }
@@ -1243,8 +1245,16 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                 await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
                   status: 'failed',
                 });
-
+                isAnyDataSourceFailed = true;
                 await dataImportErrorServices.createManyDataImportError(validationErrors);
+                const schemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+                                          orgCode,
+                                          versionCode: dataSourceDetails.code,
+                                        });
+                await importLogDataSourceVersionValueService.createImportLogDataSourceVersionValue(
+                  schemaName,
+                  validatedFinalData
+                );
               } else {
                 const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
                   orgCode: dOrgCode,
@@ -1272,16 +1282,19 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
               }
             }
           }
-          console.log('Sleeping for 3 seconds before generating custom report...');
-          await sleep(3000);
-          await generateCustomReportsFunction({
-            versionValue,
-            userId: dUserId,
-            organizationId: dOrganizationId,
-            orgCode: dOrgCode,
-            customReportId,
-            reportRequestId,
-          });
+
+          if (!isAnyDataSourceFailed) {
+            console.log('Sleeping for 3 seconds before generating custom report...');
+            await sleep(3000);
+            await generateCustomReportsFunction({
+              versionValue,
+              userId: dUserId,
+              organizationId: dOrganizationId,
+              orgCode: dOrgCode,
+              customReportId,
+              reportRequestId,
+            });
+          }
         } catch (e) {
           console.error('An error occurred while processing data source versions.', e);
         }
