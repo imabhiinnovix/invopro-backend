@@ -1411,7 +1411,11 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
               if (!dataSourceVersion) {
                 dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
                 if (!dataSourceDetails?.entityId) {
-                  throw new Error('Data source entity not found.');
+                  console.warn(
+                    `Skipping datasource ${dataSourceId} - entity not found`
+                  );
+                  dataSourceVersion = null;   // ensure no side effects
+                  break; // stop processing files of THIS datasource
                 }
 
                 await dataSourceVersionService.updateDataSourceVersions({
