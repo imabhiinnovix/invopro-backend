@@ -1319,7 +1319,6 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
       throw 'Custom report details not found.';
     }
 
-    /* ---------------- CREATE REPORT REQUEST ---------------- */
     const currentDateTime = DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss');
     const generateReportFileName =
       `${customReportData.reportName}_${versionValue}_${currentDateTime}.xlsx`;
@@ -1488,20 +1487,22 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
             }
           }
 
-          /* ---------- INSERT IMPORT LOG ---------- */
-          const importLogSchema = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
-            orgCode,
-            versionCode: dataSourceDetails.code,
-          });
+          /* ---------- ONLY REQUIRED GUARD ---------- */
+          if (dataSourceVersion && dataSourceDetails?.code) {
+            const importLogSchema = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+              orgCode,
+              versionCode: dataSourceDetails.code,
+            });
 
-          for (let i = 0; i < validatedFinalData.length; i += BATCH_SIZE) {
-            await importLogDataSourceVersionValueService.createImportLogDataSourceVersionValue(
-              importLogSchema,
-              validatedFinalData.slice(i, i + BATCH_SIZE)
-            );
+            for (let i = 0; i < validatedFinalData.length; i += BATCH_SIZE) {
+              await importLogDataSourceVersionValueService.createImportLogDataSourceVersionValue(
+                importLogSchema,
+                validatedFinalData.slice(i, i + BATCH_SIZE)
+              );
+            }
           }
 
-          if (validationErrors.length) {
+          if (dataSourceVersion && validationErrors.length) {
             isAnyDataSourceFailed = true;
 
             await dataSourceVersionService.updateDataSourceVersion(
@@ -1514,12 +1515,11 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                 validationErrors.slice(i, i + BATCH_SIZE)
               );
             }
-          } else {
+          } else if (dataSourceVersion) {
             completedVersionIds.push(dataSourceVersion._id);
           }
         }
 
-        /* ---------- FINAL DECISION ---------- */
         if (isAnyDataSourceFailed) {
           await reportRequestService.updateReportRequest(reportRequestId, { status: 'error' });
         } else {
