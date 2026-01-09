@@ -2422,6 +2422,7 @@ export const getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValu
         'dataSourceVersion.dataSourceId': 1,
         'dataSourceVersion.dataSourceVersionId': 1,
         'dataSourceVersion.allowPdfDownload': 1,
+        'dataSourceVersion.isIntermediate': 1,
         createdAt: 1,
       },
     });
