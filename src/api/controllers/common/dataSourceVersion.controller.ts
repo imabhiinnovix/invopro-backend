@@ -1093,6 +1093,61 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
         const dcustomReportData = customReportData;
         const reportRequestId = requestedReport._id;
         // console.log('dcustomReportData',dcustomReportData);
+
+
+         // NEW: existing custom report path
+        const existingCustomReportPath = path.join(
+          'uploads',
+          dOrganizationId,
+          'customReports'
+        );
+
+        // NEW: resolver helper (ONLY addition)
+        const resolveFile = async (fileDetailName: string) => {
+          const isSpecialFile = ['KSA Contracts', 'Required Mapping-Contracts'].includes(fileDetailName);
+
+          const uploadedFile = dFiles.find(file =>
+            file.originalname.split('.')[0].replace(/\s+/g, '').toLowerCase() ===
+            fileDetailName.replace(/\s+/g, '').toLowerCase()
+          );
+
+          // 1️ If uploaded → copy to customReports (replace if exists)
+          if (uploadedFile && isSpecialFile) {
+            await fsPromises.mkdir(existingCustomReportPath, { recursive: true });
+
+            const targetPath = path.join(existingCustomReportPath, uploadedFile.originalname);
+
+            await fsPromises.copyFile(uploadedFile.path, targetPath);
+
+            return {
+              ...uploadedFile,
+              path: targetPath, // use copied file
+            };
+          }
+
+          // 2️ If uploaded but NOT special → use as-is
+          if (uploadedFile) return uploadedFile;
+
+          // 3️ If NOT uploaded & NOT special → skip
+          if (!isSpecialFile) return null;
+
+          // 4️ Try existing customReports file
+          const existingFiles = await fsPromises.readdir(existingCustomReportPath).catch(() => []);
+          const matchedFile = existingFiles.find(f =>
+            f.replace(/\s+/g, '').toLowerCase().startsWith(
+              fileDetailName.replace(/\s+/g, '').toLowerCase()
+            )
+          );
+
+          if (!matchedFile) return null;
+
+          return {
+            originalname: matchedFile,
+            path: path.join(existingCustomReportPath, matchedFile),
+          } as any;
+        };
+
+
         try {
           for (let i = 0; i < dcustomReportData?.dataSourceIds?.length!; i++) {
             const dataSourceInfo = dcustomReportData?.dataSourceIds[i];
@@ -1115,13 +1170,14 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                   if (sheetName && sheetName.length > 0) {
                     mappingName = `${mappingName}__${sheetName}`;
                   }
-                  const file = dFiles.find((file) => {
-                    return (
-                      file.originalname.split('.')[0].replace(/\s+/g, '').toLowerCase() ===
-                      fileDetailName.replace(/\s+/g, '').toLowerCase()
-                    );
-                  });
+                  // const file = dFiles.find((file) => {
+                  //   return (
+                  //     file.originalname.split('.')[0].replace(/\s+/g, '').toLowerCase() ===
+                  //     fileDetailName.replace(/\s+/g, '').toLowerCase()
+                  //   );
+                  // });
                   // console.log('file',file);
+                  const file = await resolveFile(fileDetailName);
                   if (file) {
                     const totalFiles = fileDetails.length;
                     const currentFileIndex = j + 1;
