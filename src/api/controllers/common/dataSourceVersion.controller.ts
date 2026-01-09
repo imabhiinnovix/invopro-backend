@@ -1062,7 +1062,6 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
     console.log('Inside createMultipleDataSourceVersionBasedOnCustomReportId function.');
     const { mappings, separator, customReportId, versionValue } = req.body;
     const allJsonMapping = JSON.parse(mappings);
-
     const allJsonSeparator = separator ? JSON.parse(separator) : {};
 
     const { userId, organizationId, orgCode } = req?.user;
@@ -1118,7 +1117,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
             const targetPath = path.join(existingCustomReportPath, uploadedFile.originalname);
 
             await fsPromises.copyFile(uploadedFile.path, targetPath);
-
+            console.log('use uploaded file');
             return {
               ...uploadedFile,
               path: targetPath, // use copied file
@@ -1140,7 +1139,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
           );
 
           if (!matchedFile) return null;
-
+          console.log('use existing file');
           return {
             originalname: matchedFile,
             path: path.join(existingCustomReportPath, matchedFile),
@@ -1178,6 +1177,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                   // });
                   // console.log('file',file);
                   const file = await resolveFile(fileDetailName);
+                  console.log('file',file);
                   if (file) {
                     const totalFiles = fileDetails.length;
                     const currentFileIndex = j + 1;
@@ -1204,10 +1204,35 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                     } catch (e) {
                       console.error('File not found.', e);
                     }
-
                     if (fileExtension && ['xlsx', 'xls'].includes(fileExtension)) {
-                      const jsonMapping = dAllJsonMapping[mappingName] || {};
+                      let jsonMapping = dAllJsonMapping[mappingName] || {};
                       const jsonSeparator = dAllJsonSeparator[fileDetailName] || {};
+
+                      const isSpecialFile = ['KSA Contracts', 'Required Mapping-Contracts'].includes(fileDetailName);
+
+                      // NEW: auto-generate mapping only if NOT provided
+                      if (
+                        isSpecialFile &&
+                        (!jsonMapping || Object.keys(jsonMapping).length === 0)
+                      ) {
+                        console.log('jsonMapping not provided, generating from entity attributes');
+
+                        const entityId = dataSourceInfo?.entityId;
+
+                        if (entityId) {
+                          const entity = await findEntityById(entityId);
+
+                          if (entity?.attributes?.length) {
+                            jsonMapping = {};
+                            for (const attr of entity.attributes) {
+                              if (attr?.name && attr?.mappingName) {
+                                jsonMapping[attr.name] = attr.mappingName;
+                              }
+                            }
+                          }
+                        }
+                      }
+
                       if (!dataSourceVersion) {
                         dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
                         if (dataSourceDetails && dataSourceDetails.entityId) {
@@ -1244,6 +1269,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                         readSheetName.push(currentYear);
                         readSheetName.push(prevYear);
                       }
+
 
                       const fileData = await readExcelFile(newFilePath, readSheetName);
                       const fileDataWithRowNumber = fileData.map((row, index) => ({
