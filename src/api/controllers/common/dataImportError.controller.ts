@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as dataImportErrorServices from '../../../database/services/common/dataImportError.services';
 import {
+  formatDateTime,
   getImportLogSchemaNameBasedOnVersionCodeAndOrgCode,
   getSchemaNameBasedOnVersionCodeAndOrgCode,
 } from '../../../utils/common.utils';
@@ -13,6 +14,8 @@ import { updateCustomDataSourceVersionIsCurrentFunction, validateRowData, handle
 import { getAttributeByName } from '../../../utils/entity.utils';
 import { getDataSourceVersion } from '../../../database/services/common/dataSourceVersion.services';
 import { autoPopulateAttributeOptionFromRow } from '../../../utils/attributeOption.utils';
+import { createDownloadRequest } from '../../../database/services/common/downloadRequest.service';
+import { Queue } from 'bullmq';
 const ObjectId = mongoose.Types.ObjectId;
 
 export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
@@ -30,7 +33,16 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
       search,
       searchFields = [],
       filters = {},
+      type = "list", // list | export
+      selectedFields
     }: any = req.query;
+
+    // ----------------------------------------------------
+    // EXPORT SHORT-CIRCUIT
+    // ----------------------------------------------------
+    if (type === "export") {
+      return exportDataSourceVersionErrorToExcel(req, res, next);
+    }
 
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
@@ -157,6 +169,108 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
   } catch (err) {
     console.error(`[${new Date().toISOString()}] Error fetching data import errors:`, err);
     next(err);
+  }
+};
+
+export const exportDataSourceVersionErrorToExcel = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      dataSourceVersionId,
+      filters,
+      search,
+      selectedFields,
+    } = req.query as {
+      dataSourceVersionId: string;
+      filters?: string;
+      search?: string;
+      selectedFields?: string[];
+    };
+
+    const { userId, organizationId } = req.user;
+
+    // --------------------------------------------------------------------
+    // BUILD QUERY COMPLETELY HERE
+    // --------------------------------------------------------------------
+    const parsedFilters = filters ? JSON.parse(filters) : {};
+    const query: any = { dataSourceVersionId };
+
+    const filterableFields = [
+      "errorCode",
+      "status",
+      "fileName",
+      "attributeName",
+      "fileAttributeValue",
+    ];
+
+    for (const field of filterableFields) {
+      const value = parsedFilters[field];
+      if (value !== undefined && value !== null && value !== "") {
+        query[field] = Array.isArray(value) ? { $in: value } : value;
+      }
+    }
+
+    if (search) {
+      const regex = new RegExp(search, "i");
+      query.$or = [
+        { errorCode: regex },
+        { fileName: regex },
+        { errorMessage: regex },
+        { fileAttributeValue: regex },
+      ];
+    }
+
+    // --------------------------------------------------------------------
+    // PAYLOAD (MINIMAL & GENERIC)
+    // --------------------------------------------------------------------
+    const requestPayload = {
+      query,
+      page: 1,
+      limit: Number.MAX_SAFE_INTEGER,
+      sort: {},
+      selectedFields: selectedFields && selectedFields?.length > 0 ? selectedFields : ['fileName', 'fileRowNumber', 'errorMessage', 'fileAttributeName', 'fileAttributeValue', 'errorType', 'status'],
+      queryConfig: {
+        service: "dataImportError.services",
+        method: "getDataSourceVersionErrrorList",
+      },
+    };
+
+    // --------------------------------------------------------------------
+    // SAVE DOWNLOAD REQUEST
+    // --------------------------------------------------------------------
+    const fileName = `Import_Errors_${formatDateTime(Date.now())}.xlsx`;
+
+    const downloadRequest = await createDownloadRequest({
+      organizationId,
+      userId,
+      status: "pending",
+      fileName,
+      requestPayload,
+      type: "exportCustomData",
+    });
+
+    // --------------------------------------------------------------------
+    // PUSH JOB INTO QUEUE
+    // --------------------------------------------------------------------
+    const downloadQueue = new Queue("downloadQueue", {
+      connection: { host: "redis" },
+    });
+
+    await downloadQueue.add("exportCustomData", {
+      downloadRequestId: downloadRequest._id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Export job queued successfully.",
+      requestId: downloadRequest._id,
+    });
+  } catch (e) {
+    console.error("exportDataSourceVersionErrorToExcel:", e);
+    next(e);
   }
 };
 
