@@ -1053,252 +1053,6 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
   }
 };
 
-export async function createMultipleDataSourceVersionBasedOnCustomReportId(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  try {
-    console.log('Inside createMultipleDataSourceVersionBasedOnCustomReportId function.');
-    const { mappings, separator, customReportId, versionValue } = req.body;
-    const allJsonMapping = JSON.parse(mappings);
-
-    const allJsonSeparator = separator ? JSON.parse(separator) : {};
-
-    const { userId, organizationId, orgCode } = req?.user;
-
-    const files = Array.isArray(req.files) ? req.files : Object.values(req.files!).flat();
-    const customReportData = await customReportServices.findCustomReportById(customReportId);
-    if (customReportData && customReportData.dataSourceIds) {
-      const currentDateTime = DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss');
-      const generateReportFileName = `${customReportData.reportName}_${versionValue}_${currentDateTime}.xlsx`;
-      const reportRequestPayload = {
-        organizationId: organizationId,
-        versionValue: versionValue,
-        customReportId: customReportData._id,
-        status: 'processing',
-        fileName: generateReportFileName,
-        filePath: path.join('uploads', organizationId, userId, 'generatedReports', `${generateReportFileName}`),
-        fileType: 'xlsx',
-        createdBy: userId,
-      };
-      const requestedReport = await reportRequestService.createReportRequest(reportRequestPayload);
-      debounceManager.debounce(customReportId as string, async () => {
-        const dAllJsonMapping = allJsonMapping;
-        const dAllJsonSeparator = allJsonSeparator;
-        const dUserId = userId;
-        const dOrganizationId = organizationId;
-        const dOrgCode = orgCode;
-        const dFiles = files;
-        const dcustomReportData = customReportData;
-        const reportRequestId = requestedReport._id;
-        // console.log('dcustomReportData',dcustomReportData);
-        try {
-          for (let i = 0; i < dcustomReportData?.dataSourceIds?.length!; i++) {
-            const dataSourceInfo = dcustomReportData?.dataSourceIds[i];
-            const dataSourceId = dataSourceInfo?.dataSourceId!;
-
-            const fileDetails = dataSourceInfo?.fileDetails!;
-            let dataSourceVersion: any = '';
-            let entityDetails: any = '';
-            let dataSourceDetails: any = '';
-            let validationErrors: any[] = [];
-            let validatedFinalData: any[] = [];
-            // console.log('fileDetails',fileDetails);
-            if (fileDetails) {
-              for (let j = 0; j < fileDetails.length; j++) {
-                try {
-                  const fileDetailName = fileDetails[j].name;
-                  const sheetName = fileDetails[j].sheetName;
-
-                  let mappingName = fileDetailName;
-                  if (sheetName && sheetName.length > 0) {
-                    mappingName = `${mappingName}__${sheetName}`;
-                  }
-                  const file = dFiles.find((file) => {
-                    return (
-                      file.originalname.split('.')[0].replace(/\s+/g, '').toLowerCase() ===
-                      fileDetailName.replace(/\s+/g, '').toLowerCase()
-                    );
-                  });
-                  // console.log('file',file);
-                  if (file) {
-                    const totalFiles = fileDetails.length;
-                    const currentFileIndex = j + 1;
-                    const progressPercentage = ((j / totalFiles) * 100).toFixed(0);
-                    console.log(
-                      `Processing file ${fileDetailName} [${currentFileIndex} of ${totalFiles}] (${progressPercentage}% complete)`
-                    );
-
-                    const { originalname, path: filePath, size, mimetype } = file;
-
-                    const fileName = originalname;
-                    const fileExtension = fileName.split('.').pop();
-                    const newFilePath = path.join(
-                      'uploads',
-                      dOrganizationId,
-                      dUserId,
-                      'dsvRequest',
-                      `${dataSourceId}_${versionValue}_${fileName}`
-                    );
-                    try {
-                      await fsPromises.access(filePath);
-                      await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
-                      await fsPromises.copyFile(filePath, newFilePath);
-                    } catch (e) {
-                      console.error('File not found.', e);
-                    }
-
-                    if (fileExtension && ['xlsx', 'xls'].includes(fileExtension)) {
-                      const jsonMapping = dAllJsonMapping[mappingName] || {};
-                      const jsonSeparator = dAllJsonSeparator[fileDetailName] || {};
-                      if (!dataSourceVersion) {
-                        dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
-                        if (dataSourceDetails && dataSourceDetails.entityId) {
-                          await dataSourceVersionService.updateDataSourceVersions({
-                            query: { dataSourceId, versionValue },
-                            updateFields: { isCurrent: false },
-                          });
-                          dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
-                            organizationId,
-                            entityId: dataSourceDetails.entityId._id,
-                            dataSourceId,
-                            versionValue,
-                            createdBy: dUserId,
-                            status: 'processing',
-                            separator: jsonSeparator,
-                            fileName: fileName,
-                            filePath: newFilePath,
-                            fileType: mimetype,
-                            fileSize: size,
-                            mappings: jsonMapping,
-                            isActive: true,
-                            isCurrent: false,
-                          });
-                          entityDetails = dataSourceDetails.entityId as any;
-                        } else {
-                          console.error('Data source details not found.');
-                        }
-                      }
-
-                      const readSheetName = sheetName ? [sheetName] : [];
-                      if (fileDetailName === 'KSA Contracts') {
-                        const currentYear = versionValue.split('-')[0];
-                        const prevYear = (Number(currentYear) - 1).toString();
-                        readSheetName.push(currentYear);
-                        readSheetName.push(prevYear);
-                      }
-
-                      const fileData = await readExcelFile(newFilePath, readSheetName);
-                      const fileDataWithRowNumber = fileData.map((row, index) => ({
-                        ...row,
-                        fileRowNumber: `${fileName}:${index + 2}`, // +1 to make it 1-based instead of 0-based
-                      }));
-
-                      let attributes = entityDetails?.attributes || [];
-                      attributes = await autoPopulateAttributeOption({
-                        fileData: fileData,
-                        entityId: dataSourceDetails?.entityId || '',
-                        attributesDetails: attributes,
-                        attributMapping: jsonMapping,
-                        userId,
-                        organizationId,
-                      });
-                      const validatedData = await validateFileData({
-                        fileData: fileDataWithRowNumber,
-                        attributes,
-                        versionValue,
-                        mapping: jsonMapping,
-                        separator: jsonSeparator,
-                        dataSourceId: dataSourceId,
-                        dataSourceVersionId: dataSourceVersion._id as string,
-                        entityId: entityDetails._id,
-                      });
-
-                      if (validatedData.errors.length > 0) {
-                        validationErrors = [...validationErrors, ...validatedData.errors];
-                      }
-                      validatedFinalData = [...validatedFinalData, ...validatedData.newRowData];
-                    } else {
-                      console.error('Invalid file type. Please upload a file in XLSX or XLS format.');
-                    }
-                    const progressPercentage2 = ((currentFileIndex / totalFiles) * 100).toFixed(0);
-
-                    console.log(
-                      `Processed file ${fileDetailName} [${currentFileIndex} of ${totalFiles}] (${progressPercentage2}% complete)`
-                    );
-
-                    console.log('Sleeping for 3 seconds...');
-                    await sleep(3000);
-                  }
-                } catch (e) {
-                  console.log(`Error while processing the file: ${fileDetails[j].name}`, e);
-                }
-              }
-            }
-            // console.log('validationErrors',validationErrors);
-            // console.log('dataSourceVersion',dataSourceVersion);
-            if (dataSourceVersion) {
-              if (validationErrors.length > 0) {
-                await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
-                  status: 'failed',
-                });
-
-                await dataImportErrorServices.createManyDataImportError(validationErrors);
-              } else {
-                const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
-                  orgCode: dOrgCode,
-                  versionCode: dataSourceDetails.code,
-                });
-                await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, validatedFinalData);
-                // await dataSourceVersionService.updateDataSourceVersions({
-                //   query: { dataSourceId, versionValue },
-                //   updateFields: { isCurrent: false },
-                // });
-                await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
-                  status: 'completed',
-                  isCurrent: true,
-                });
-              }
-            }
-          }
-
-          for (const file of dFiles) {
-            if (file.path) {
-              try {
-                await fsPromises.unlink(file.path); // Deletes the file asynchronously
-              } catch (error) {
-                console.error(`Error deleting file ${file.path}:`, error);
-              }
-            }
-          }
-          console.log('Sleeping for 3 seconds before generating custom report...');
-          await sleep(3000);
-          await generateCustomReportsFunction({
-            versionValue,
-            userId: dUserId,
-            organizationId: dOrganizationId,
-            orgCode: dOrgCode,
-            customReportId,
-            reportRequestId,
-          });
-        } catch (e) {
-          console.error('An error occurred while processing data source versions.', e);
-        }
-      });
-    } else {
-      throw 'Custom report details not found.';
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: 'Data upload is in progress.',
-    });
-  } catch (e) {
-    next(e);
-  }
-}
-
 // export async function createMultipleDataSourceVersionBasedOnCustomReportId(
 //   req: Request,
 //   res: Response,
@@ -1306,301 +1060,547 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
 // ) {
 //   try {
 //     console.log('Inside createMultipleDataSourceVersionBasedOnCustomReportId function.');
-
 //     const { mappings, separator, customReportId, versionValue } = req.body;
 //     const allJsonMapping = JSON.parse(mappings);
+
 //     const allJsonSeparator = separator ? JSON.parse(separator) : {};
 
-//     const { userId, organizationId, orgCode } = req.user;
-//     const files = Array.isArray(req.files) ? req.files : Object.values(req.files || {}).flat();
+//     const { userId, organizationId, orgCode } = req?.user;
 
+//     const files = Array.isArray(req.files) ? req.files : Object.values(req.files!).flat();
 //     const customReportData = await customReportServices.findCustomReportById(customReportId);
-//     if (!customReportData?.dataSourceIds?.length) {
-//       throw 'Custom report details not found.';
-//     }
+//     if (customReportData && customReportData.dataSourceIds) {
+//       const currentDateTime = DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss');
+//       const generateReportFileName = `${customReportData.reportName}_${versionValue}_${currentDateTime}.xlsx`;
+//       const reportRequestPayload = {
+//         organizationId: organizationId,
+//         versionValue: versionValue,
+//         customReportId: customReportData._id,
+//         status: 'processing',
+//         fileName: generateReportFileName,
+//         filePath: path.join('uploads', organizationId, userId, 'generatedReports', `${generateReportFileName}`),
+//         fileType: 'xlsx',
+//         createdBy: userId,
+//       };
+//       const requestedReport = await reportRequestService.createReportRequest(reportRequestPayload);
+//       debounceManager.debounce(customReportId as string, async () => {
+//         const dAllJsonMapping = allJsonMapping;
+//         const dAllJsonSeparator = allJsonSeparator;
+//         const dUserId = userId;
+//         const dOrganizationId = organizationId;
+//         const dOrgCode = orgCode;
+//         const dFiles = files;
+//         const dcustomReportData = customReportData;
+//         const reportRequestId = requestedReport._id;
+//         // console.log('dcustomReportData',dcustomReportData);
+//         try {
+//           for (let i = 0; i < dcustomReportData?.dataSourceIds?.length!; i++) {
+//             const dataSourceInfo = dcustomReportData?.dataSourceIds[i];
+//             const dataSourceId = dataSourceInfo?.dataSourceId!;
 
-//     const currentDateTime = DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss');
-//     const generateReportFileName =
-//       `${customReportData.reportName}_${versionValue}_${currentDateTime}.xlsx`;
+//             const fileDetails = dataSourceInfo?.fileDetails!;
+//             let dataSourceVersion: any = '';
+//             let entityDetails: any = '';
+//             let dataSourceDetails: any = '';
+//             let validationErrors: any[] = [];
+//             let validatedFinalData: any[] = [];
+//             // console.log('fileDetails',fileDetails);
+//             if (fileDetails) {
+//               for (let j = 0; j < fileDetails.length; j++) {
+//                 try {
+//                   const fileDetailName = fileDetails[j].name;
+//                   const sheetName = fileDetails[j].sheetName;
 
-//     const reportRequest = await reportRequestService.createReportRequest({
-//       organizationId,
-//       versionValue,
-//       customReportId,
-//       status: 'processing',
-//       fileName: generateReportFileName,
-//       filePath: path.join(
-//         'uploads',
-//         organizationId,
-//         userId,
-//         'generatedReports',
-//         generateReportFileName
-//       ),
-//       fileType: 'xlsx',
-//       createdBy: userId,
-//     });
+//                   let mappingName = fileDetailName;
+//                   if (sheetName && sheetName.length > 0) {
+//                     mappingName = `${mappingName}__${sheetName}`;
+//                   }
+//                   const file = dFiles.find((file) => {
+//                     return (
+//                       file.originalname.split('.')[0].replace(/\s+/g, '').toLowerCase() ===
+//                       fileDetailName.replace(/\s+/g, '').toLowerCase()
+//                     );
+//                   });
+//                   // console.log('file',file);
+//                   if (file) {
+//                     const totalFiles = fileDetails.length;
+//                     const currentFileIndex = j + 1;
+//                     const progressPercentage = ((j / totalFiles) * 100).toFixed(0);
+//                     console.log(
+//                       `Processing file ${fileDetailName} [${currentFileIndex} of ${totalFiles}] (${progressPercentage}% complete)`
+//                     );
 
-//     const reportRequestId: any = reportRequest._id;
-//     const BATCH_SIZE = 5000;
-//     let isAnyDataSourceFailed = false;
-//     const completedVersionIds: string[] = [];
+//                     const { originalname, path: filePath, size, mimetype } = file;
 
-//     debounceManager.debounce(customReportId as string, async () => {
-//       try {
-//         for (let i = 0; i < customReportData.dataSourceIds.length; i++) {
-//           const dsInfo = customReportData.dataSourceIds[i];
-//           const dataSourceId = dsInfo.dataSourceId;
-//           const fileDetails = dsInfo.fileDetails || [];
+//                     const fileName = originalname;
+//                     const fileExtension = fileName.split('.').pop();
+//                     const newFilePath = path.join(
+//                       'uploads',
+//                       dOrganizationId,
+//                       dUserId,
+//                       'dsvRequest',
+//                       `${dataSourceId}_${versionValue}_${fileName}`
+//                     );
+//                     try {
+//                       await fsPromises.access(filePath);
+//                       await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
+//                       await fsPromises.copyFile(filePath, newFilePath);
+//                     } catch (e) {
+//                       console.error('File not found.', e);
+//                     }
 
-//           let dataSourceVersion: any = null;
-//           let dataSourceDetails: any = null;
-//           let entityDetails: any = null;
-//           let validationErrors: any[] = [];
-//           let validatedFinalData: any[] = [];
+//                     if (fileExtension && ['xlsx', 'xls'].includes(fileExtension)) {
+//                       const jsonMapping = dAllJsonMapping[mappingName] || {};
+//                       const jsonSeparator = dAllJsonSeparator[fileDetailName] || {};
+//                       if (!dataSourceVersion) {
+//                         dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+//                         if (dataSourceDetails && dataSourceDetails.entityId) {
+//                           await dataSourceVersionService.updateDataSourceVersions({
+//                             query: { dataSourceId, versionValue },
+//                             updateFields: { isCurrent: false },
+//                           });
+//                           dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
+//                             organizationId,
+//                             entityId: dataSourceDetails.entityId._id,
+//                             dataSourceId,
+//                             versionValue,
+//                             createdBy: dUserId,
+//                             status: 'processing',
+//                             separator: jsonSeparator,
+//                             fileName: fileName,
+//                             filePath: newFilePath,
+//                             fileType: mimetype,
+//                             fileSize: size,
+//                             mappings: jsonMapping,
+//                             isActive: true,
+//                             isCurrent: false,
+//                           });
+//                           entityDetails = dataSourceDetails.entityId as any;
+//                         } else {
+//                           console.error('Data source details not found.');
+//                         }
+//                       }
 
-//           for (let j = 0; j < fileDetails.length; j++) {
-//             const fd = fileDetails[j];
+//                       const readSheetName = sheetName ? [sheetName] : [];
+//                       if (fileDetailName === 'KSA Contracts') {
+//                         const currentYear = versionValue.split('-')[0];
+//                         const prevYear = (Number(currentYear) - 1).toString();
+//                         readSheetName.push(currentYear);
+//                         readSheetName.push(prevYear);
+//                       }
 
-//             try {
-//               const fileDetailName = fd.name;
-//               const sheetName = fd.sheetName;
-//               const mappingName = sheetName
-//                 ? `${fileDetailName}__${sheetName}`
-//                 : fileDetailName;
+//                       const fileData = await readExcelFile(newFilePath, readSheetName);
+//                       const fileDataWithRowNumber = fileData.map((row, index) => ({
+//                         ...row,
+//                         fileRowNumber: `${fileName}:${index + 2}`, // +1 to make it 1-based instead of 0-based
+//                       }));
 
-//               const file = files.find(f =>
-//                 f.originalname.split('.')[0].replace(/\s+/g, '').toLowerCase() ===
-//                 fileDetailName.replace(/\s+/g, '').toLowerCase()
-//               );
+//                       let attributes = entityDetails?.attributes || [];
+//                       attributes = await autoPopulateAttributeOption({
+//                         fileData: fileData,
+//                         entityId: dataSourceDetails?.entityId || '',
+//                         attributesDetails: attributes,
+//                         attributMapping: jsonMapping,
+//                         userId,
+//                         organizationId,
+//                       });
+//                       const validatedData = await validateFileData({
+//                         fileData: fileDataWithRowNumber,
+//                         attributes,
+//                         versionValue,
+//                         mapping: jsonMapping,
+//                         separator: jsonSeparator,
+//                         dataSourceId: dataSourceId,
+//                         dataSourceVersionId: dataSourceVersion._id as string,
+//                         entityId: entityDetails._id,
+//                       });
 
-//               if (!file) continue;
+//                       if (validatedData.errors.length > 0) {
+//                         validationErrors = [...validationErrors, ...validatedData.errors];
+//                       }
+//                       validatedFinalData = [...validatedFinalData, ...validatedData.newRowData];
+//                     } else {
+//                       console.error('Invalid file type. Please upload a file in XLSX or XLS format.');
+//                     }
+//                     const progressPercentage2 = ((currentFileIndex / totalFiles) * 100).toFixed(0);
 
-//               const totalFiles = fileDetails.length;
-//               const currentIndex = j + 1;
-//               console.log(
-//                 `Processing file ${fileDetailName} [${currentIndex}/${totalFiles}] (${Math.floor(
-//                   (j / totalFiles) * 100
-//                 )}%)`
-//               );
+//                     console.log(
+//                       `Processed file ${fileDetailName} [${currentFileIndex} of ${totalFiles}] (${progressPercentage2}% complete)`
+//                     );
 
-//               const { originalname, path: filePath, size, mimetype } = file;
-//               const ext = originalname.split('.').pop()?.toLowerCase();
-
-//               if (!['xlsx', 'xls'].includes(ext || '')) {
-//                 console.error(`Invalid file type: ${originalname}`);
-//                 continue;
-//               }
-
-//               const newFilePath = path.join(
-//                 'uploads',
-//                 organizationId,
-//                 userId,
-//                 'dsvRequest',
-//                 `${dataSourceId}_${versionValue}_${originalname}`
-//               );
-
-//               try {
-//                 await fsPromises.access(filePath);
-//                 await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
-//                 await fsPromises.copyFile(filePath, newFilePath);
-//               } catch (err) {
-//                 console.error('File system error:', err);
-//                 continue;
-//               }
-
-//               if (!dataSourceVersion) {
-//                 dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
-//                 if (!dataSourceDetails?.entityId) {
-//                   console.warn(
-//                     `Skipping datasource ${dataSourceId} - entity not found`
-//                   );
-//                   dataSourceVersion = null;   // ensure no side effects
-//                   break; // stop processing files of THIS datasource
+//                     console.log('Sleeping for 3 seconds...');
+//                     await sleep(3000);
+//                   }
+//                 } catch (e) {
+//                   console.log(`Error while processing the file: ${fileDetails[j].name}`, e);
 //                 }
-
-//                 await dataSourceVersionService.updateDataSourceVersions({
-//                   query: { dataSourceId, versionValue },
-//                   updateFields: { isCurrent: false },
+//               }
+//             }
+//             // console.log('validationErrors',validationErrors);
+//             // console.log('dataSourceVersion',dataSourceVersion);
+//             if (dataSourceVersion) {
+//               if (validationErrors.length > 0) {
+//                 await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
+//                   status: 'failed',
 //                 });
 
-//                 dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
-//                   organizationId,
-//                   entityId: dataSourceDetails.entityId._id,
-//                   dataSourceId,
-//                   versionValue,
-//                   createdBy: userId,
-//                   status: 'processing',
-//                   separator: allJsonSeparator[fileDetailName] || {},
-//                   fileName: originalname,
-//                   filePath: newFilePath,
-//                   fileType: mimetype,
-//                   fileSize: size,
-//                   mappings: allJsonMapping[mappingName] || {},
-//                   isActive: true,
-//                   isCurrent: false,
+//                 await dataImportErrorServices.createManyDataImportError(validationErrors);
+//               } else {
+//                 const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+//                   orgCode: dOrgCode,
+//                   versionCode: dataSourceDetails.code,
 //                 });
-
-//                 entityDetails = dataSourceDetails.entityId;
+//                 await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, validatedFinalData);
+//                 // await dataSourceVersionService.updateDataSourceVersions({
+//                 //   query: { dataSourceId, versionValue },
+//                 //   updateFields: { isCurrent: false },
+//                 // });
+//                 await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id as string, {
+//                   status: 'completed',
+//                   isCurrent: true,
+//                 });
 //               }
+//             }
+//           }
 
-//               const readSheetName = sheetName ? [sheetName] : [];
-//               if (fileDetailName === 'KSA Contracts') {
-//                 const currentYear = versionValue.split('-')[0];
-//                 readSheetName.push(currentYear, (Number(currentYear) - 1).toString());
+//           for (const file of dFiles) {
+//             if (file.path) {
+//               try {
+//                 await fsPromises.unlink(file.path); // Deletes the file asynchronously
+//               } catch (error) {
+//                 console.error(`Error deleting file ${file.path}:`, error);
 //               }
-
-//               const fileData = await readExcelFile(newFilePath, readSheetName);
-//               const fileDataWithRowNumber = fileData.map((r, idx) => ({
-//                 ...r,
-//                 fileRowNumber: `${originalname}:${idx + 2}`,
-//               }));
-
-//               let attributes = entityDetails?.attributes || [];
-//               attributes = await autoPopulateAttributeOption({
-//                 fileData,
-//                 entityId: dataSourceDetails.entityId,
-//                 attributesDetails: attributes,
-//                 attributMapping: allJsonMapping[mappingName] || {},
-//                 userId,
-//                 organizationId,
-//               });
-
-//               const validatedData = await validateFileData({
-//                 fileData: fileDataWithRowNumber,
-//                 attributes,
-//                 versionValue,
-//                 mapping: allJsonMapping[mappingName] || {},
-//                 separator: allJsonSeparator[fileDetailName] || {},
-//                 dataSourceId,
-//                 dataSourceVersionId: dataSourceVersion._id,
-//                 entityId: entityDetails._id,
-//               });
-
-//               if (validatedData.errors.length) {
-//                 validationErrors.push(...validatedData.errors);
-//               }
-//               validatedFinalData.push(...validatedData.newRowData);
-
-//               console.log(
-//                 `Completed ${fileDetailName} [${currentIndex}/${totalFiles}] (${Math.floor(
-//                   (currentIndex / totalFiles) * 100
-//                 )}%)`
-//               );
-//             } catch (fileErr) {
-//               console.error(`Error processing file ${fd.name}`, fileErr);
 //             }
 //           }
-
-//           /* ---------- ONLY REQUIRED GUARD ---------- */
-//           if (dataSourceVersion && dataSourceDetails?.code) {
-//             const importLogSchema = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
-//               orgCode,
-//               versionCode: dataSourceDetails.code,
-//             });
-
-//             for (let i = 0; i < validatedFinalData.length; i += BATCH_SIZE) {
-//               await importLogDataSourceVersionValueService.createImportLogDataSourceVersionValue(
-//                 importLogSchema,
-//                 validatedFinalData.slice(i, i + BATCH_SIZE)
-//               );
-//             }
-//           }
-
-//           if (dataSourceVersion && validationErrors.length) {
-//             isAnyDataSourceFailed = true;
-
-//             await dataSourceVersionService.updateDataSourceVersion(
-//               dataSourceVersion._id,
-//               { status: 'failed' }
-//             );
-
-//             for (let i = 0; i < validationErrors.length; i += BATCH_SIZE) {
-//               await dataImportErrorServices.createManyDataImportError(
-//                 validationErrors.slice(i, i + BATCH_SIZE)
-//               );
-//             }
-//           } else if (dataSourceVersion) {
-//             completedVersionIds.push(dataSourceVersion._id);
-//           }
-//         }
-
-//         if (isAnyDataSourceFailed) {
-//           await reportRequestService.updateReportRequest(reportRequestId, { status: 'error' });
-//         } else {
-//           for (const versionId of completedVersionIds) {
-//             const versionDetails: any = await dataSourceVersionService.getDataSourceVersion({
-//               query: { _id: versionId },
-//               populate: ['dataSourceId'],
-//             });
-
-//             const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
-//               orgCode,
-//               versionCode: versionDetails.dataSourceId.code,
-//             });
-
-//             const importLogSchema = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
-//               orgCode,
-//               versionCode: versionDetails.dataSourceId.code,
-//             });
-
-//             const rows =
-//               await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(
-//                 importLogSchema,
-//                 { dataSourceVersionId: versionId, isErrorLog: 0 }
-//               );
-
-//             for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-//               await dataSourceVersionValueService.createDataSourceVersionValue(
-//                 schemaName,
-//                 rows.slice(i, i + BATCH_SIZE)
-//               );
-//             }
-
-//             await importLogDataSourceVersionValueService.deleteImportLogDataSourceVersionValues(
-//               importLogSchema,
-//               { dataSourceVersionId: versionId, isErrorLog: 0 }
-//             );
-
-//             await dataSourceVersionService.updateDataSourceVersion(versionId, {
-//               status: 'completed',
-//               isCurrent: true,
-//             });
-//           }
-
+//           console.log('Sleeping for 3 seconds before generating custom report...');
 //           await sleep(3000);
 //           await generateCustomReportsFunction({
 //             versionValue,
-//             userId,
-//             organizationId,
-//             orgCode,
+//             userId: dUserId,
+//             organizationId: dOrganizationId,
+//             orgCode: dOrgCode,
 //             customReportId,
 //             reportRequestId,
 //           });
+//         } catch (e) {
+//           console.error('An error occurred while processing data source versions.', e);
 //         }
-//       } catch (err) {
-//         console.error('Processing error:', err);
-//         await reportRequestService.updateReportRequest(reportRequestId, { status: 'failed' });
-//       } finally {
-//         for (const file of files) {
-//           if (file.path) {
-//             try {
-//               await fsPromises.unlink(file.path);
-//             } catch (e) {
-//               console.error('File cleanup error:', e);
-//             }
-//           }
-//         }
-//       }
-//     });
+//       });
+//     } else {
+//       throw 'Custom report details not found.';
+//     }
 
 //     return res.status(200).json({
 //       success: true,
-//       message: 'Report generation sent to queue successfully.',
+//       message: 'Data upload is in progress.',
 //     });
-//   } catch (err) {
-//     next(err);
+//   } catch (e) {
+//     next(e);
 //   }
 // }
+
+export async function createMultipleDataSourceVersionBasedOnCustomReportId(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    console.log('Inside createMultipleDataSourceVersionBasedOnCustomReportId function.');
+
+    const { mappings, separator, customReportId, versionValue } = req.body;
+    const allJsonMapping = JSON.parse(mappings);
+    const allJsonSeparator = separator ? JSON.parse(separator) : {};
+
+    const { userId, organizationId, orgCode } = req.user;
+    const files = Array.isArray(req.files) ? req.files : Object.values(req.files || {}).flat();
+
+    const customReportData = await customReportServices.findCustomReportById(customReportId);
+    if (!customReportData?.dataSourceIds?.length) {
+      throw 'Custom report details not found.';
+    }
+
+    const currentDateTime = DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss');
+    const generateReportFileName =
+      `${customReportData.reportName}_${versionValue}_${currentDateTime}.xlsx`;
+
+    const reportRequest = await reportRequestService.createReportRequest({
+      organizationId,
+      versionValue,
+      customReportId,
+      status: 'processing',
+      fileName: generateReportFileName,
+      filePath: path.join(
+        'uploads',
+        organizationId,
+        userId,
+        'generatedReports',
+        generateReportFileName
+      ),
+      fileType: 'xlsx',
+      createdBy: userId,
+    });
+
+    const reportRequestId: any = reportRequest._id;
+    const BATCH_SIZE = 5000;
+    let isAnyDataSourceFailed = false;
+    const completedVersionIds: string[] = [];
+
+    debounceManager.debounce(customReportId as string, async () => {
+      try {
+        for (let i = 0; i < customReportData.dataSourceIds.length; i++) {
+          const dsInfo = customReportData.dataSourceIds[i];
+          const dataSourceId = dsInfo.dataSourceId;
+          const fileDetails = dsInfo.fileDetails || [];
+
+          let dataSourceVersion: any = null;
+          let dataSourceDetails: any = null;
+          let entityDetails: any = null;
+          let validationErrors: any[] = [];
+          let validatedFinalData: any[] = [];
+
+          for (let j = 0; j < fileDetails.length; j++) {
+            const fd = fileDetails[j];
+
+            try {
+              const fileDetailName = fd.name;
+              const sheetName = fd.sheetName;
+              const mappingName = sheetName
+                ? `${fileDetailName}__${sheetName}`
+                : fileDetailName;
+
+              const file = files.find(f =>
+                f.originalname.split('.')[0].replace(/\s+/g, '').toLowerCase() ===
+                fileDetailName.replace(/\s+/g, '').toLowerCase()
+              );
+
+              if (!file) continue;
+
+              const totalFiles = fileDetails.length;
+              const currentIndex = j + 1;
+              console.log(
+                `Processing file ${fileDetailName} [${currentIndex}/${totalFiles}] (${Math.floor(
+                  (j / totalFiles) * 100
+                )}%)`
+              );
+
+              const { originalname, path: filePath, size, mimetype } = file;
+              const ext = originalname.split('.').pop()?.toLowerCase();
+
+              if (!['xlsx', 'xls'].includes(ext || '')) {
+                console.error(`Invalid file type: ${originalname}`);
+                continue;
+              }
+
+              const newFilePath = path.join(
+                'uploads',
+                organizationId,
+                userId,
+                'dsvRequest',
+                `${dataSourceId}_${versionValue}_${originalname}`
+              );
+
+              try {
+                await fsPromises.access(filePath);
+                await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
+                await fsPromises.copyFile(filePath, newFilePath);
+              } catch (err) {
+                console.error('File system error:', err);
+                continue;
+              }
+
+              if (!dataSourceVersion) {
+                dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+                if (!dataSourceDetails?.entityId) {
+                  console.warn(
+                    `Skipping datasource ${dataSourceId} - entity not found`
+                  );
+                  dataSourceVersion = null;   // ensure no side effects
+                  break; // stop processing files of THIS datasource
+                }
+
+                await dataSourceVersionService.updateDataSourceVersions({
+                  query: { dataSourceId, versionValue },
+                  updateFields: { isCurrent: false },
+                });
+
+                dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
+                  organizationId,
+                  entityId: dataSourceDetails.entityId._id,
+                  dataSourceId,
+                  versionValue,
+                  createdBy: userId,
+                  status: 'processing',
+                  separator: allJsonSeparator[fileDetailName] || {},
+                  fileName: originalname,
+                  filePath: newFilePath,
+                  fileType: mimetype,
+                  fileSize: size,
+                  mappings: allJsonMapping[mappingName] || {},
+                  isActive: true,
+                  isCurrent: false,
+                });
+
+                entityDetails = dataSourceDetails.entityId;
+              }
+
+              const readSheetName = sheetName ? [sheetName] : [];
+              if (fileDetailName === 'KSA Contracts') {
+                const currentYear = versionValue.split('-')[0];
+                readSheetName.push(currentYear, (Number(currentYear) - 1).toString());
+              }
+
+              const fileData = await readExcelFile(newFilePath, readSheetName);
+              const fileDataWithRowNumber = fileData.map((r, idx) => ({
+                ...r,
+                fileRowNumber: `${originalname}:${idx + 2}`,
+              }));
+
+              let attributes = entityDetails?.attributes || [];
+              attributes = await autoPopulateAttributeOption({
+                fileData,
+                entityId: dataSourceDetails.entityId,
+                attributesDetails: attributes,
+                attributMapping: allJsonMapping[mappingName] || {},
+                userId,
+                organizationId,
+              });
+
+              const validatedData = await validateFileData({
+                fileData: fileDataWithRowNumber,
+                attributes,
+                versionValue,
+                mapping: allJsonMapping[mappingName] || {},
+                separator: allJsonSeparator[fileDetailName] || {},
+                dataSourceId,
+                dataSourceVersionId: dataSourceVersion._id,
+                entityId: entityDetails._id,
+              });
+
+              if (validatedData.errors.length) {
+                validationErrors.push(...validatedData.errors);
+              }
+              validatedFinalData.push(...validatedData.newRowData);
+
+              console.log(
+                `Completed ${fileDetailName} [${currentIndex}/${totalFiles}] (${Math.floor(
+                  (currentIndex / totalFiles) * 100
+                )}%)`
+              );
+            } catch (fileErr) {
+              console.error(`Error processing file ${fd.name}`, fileErr);
+            }
+          }
+
+          /* ---------- ONLY REQUIRED GUARD ---------- */
+          if (dataSourceVersion && dataSourceDetails?.code) {
+            const importLogSchema = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+              orgCode,
+              versionCode: dataSourceDetails.code,
+            });
+
+            for (let i = 0; i < validatedFinalData.length; i += BATCH_SIZE) {
+              await importLogDataSourceVersionValueService.createImportLogDataSourceVersionValue(
+                importLogSchema,
+                validatedFinalData.slice(i, i + BATCH_SIZE)
+              );
+            }
+          }
+
+          if (dataSourceVersion && validationErrors.length) {
+            isAnyDataSourceFailed = true;
+
+            await dataSourceVersionService.updateDataSourceVersion(
+              dataSourceVersion._id,
+              { status: 'failed' }
+            );
+
+            for (let i = 0; i < validationErrors.length; i += BATCH_SIZE) {
+              await dataImportErrorServices.createManyDataImportError(
+                validationErrors.slice(i, i + BATCH_SIZE)
+              );
+            }
+          } else if (dataSourceVersion) {
+            completedVersionIds.push(dataSourceVersion._id);
+          }
+        }
+
+        if (isAnyDataSourceFailed) {
+          await reportRequestService.updateReportRequest(reportRequestId, { status: 'error' });
+        } else {
+          for (const versionId of completedVersionIds) {
+            const versionDetails: any = await dataSourceVersionService.getDataSourceVersion({
+              query: { _id: versionId },
+              populate: ['dataSourceId'],
+            });
+
+            const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+              orgCode,
+              versionCode: versionDetails.dataSourceId.code,
+            });
+
+            const importLogSchema = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+              orgCode,
+              versionCode: versionDetails.dataSourceId.code,
+            });
+
+            const rows =
+              await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(
+                importLogSchema,
+                { dataSourceVersionId: versionId, isErrorLog: 0 }
+              );
+
+            for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+              await dataSourceVersionValueService.createDataSourceVersionValue(
+                schemaName,
+                rows.slice(i, i + BATCH_SIZE)
+              );
+            }
+
+            await importLogDataSourceVersionValueService.deleteImportLogDataSourceVersionValues(
+              importLogSchema,
+              { dataSourceVersionId: versionId, isErrorLog: 0 }
+            );
+
+            await dataSourceVersionService.updateDataSourceVersion(versionId, {
+              status: 'completed',
+              isCurrent: true,
+            });
+          }
+
+          await sleep(3000);
+          await generateCustomReportsFunction({
+            versionValue,
+            userId,
+            organizationId,
+            orgCode,
+            customReportId,
+            reportRequestId,
+          });
+        }
+      } catch (err) {
+        console.error('Processing error:', err);
+        await reportRequestService.updateReportRequest(reportRequestId, { status: 'failed' });
+      } finally {
+        for (const file of files) {
+          if (file.path) {
+            try {
+              await fsPromises.unlink(file.path);
+            } catch (e) {
+              console.error('File cleanup error:', e);
+            }
+          }
+        }
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Report generation sent to queue successfully.',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
 
 
 
