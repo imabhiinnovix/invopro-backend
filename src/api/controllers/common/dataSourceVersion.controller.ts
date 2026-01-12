@@ -1567,6 +1567,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
             });
           }
 
+          console.log('Sleeping for 3 seconds before generating custom report...');
           await sleep(3000);
           await generateCustomReportsFunction({
             versionValue,
