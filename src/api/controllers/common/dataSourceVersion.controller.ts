@@ -398,7 +398,7 @@ async function validateFileData({
   );
 
   for (const [index, row] of fileData.entries()) {
-    // console.log('Processing Index:', index);
+    console.log('Processing Index:', index);
     const parts = row.fileRowNumber.split(':');
     const rowNum = parts.pop(); // last part → row number
     const fileName = parts.join(':');
