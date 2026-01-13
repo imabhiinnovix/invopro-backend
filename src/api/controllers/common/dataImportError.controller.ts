@@ -884,6 +884,540 @@ export const resolveDataImportError = async (req: Request, res: Response, next: 
   }
 };
 
+async function getGroupedErrorContext({
+  reportRequestId,
+  dataSourceId,
+  dataSourceVersionId,
+  rowNumbers,
+}: {
+  reportRequestId?: string;
+  dataSourceId?: string;
+  dataSourceVersionId?: string;
+  rowNumbers?: number[];
+}) {
+  let dataSourceVersionIds: Types.ObjectId[] = [];
+
+  // -------------------------------
+  // CUSTOM REPORT FLOW
+  // -------------------------------
+  if (reportRequestId) {
+    const reportRequest: any = await findReportRequestById(reportRequestId);
+    const customReport: any = await findCustomReportById(
+      reportRequest?.customReportId
+    );
+
+    if (!customReport?.dataSourceIds?.length) {
+      return new Map();
+    }
+
+    for (const ds of customReport.dataSourceIds) {
+      const version: any = await getDataSourceVersion({
+        query: {
+          dataSourceId: ds.dataSourceId,
+          versionValue: reportRequest?.versionValue,
+          status: "failed",
+          isActive: true,
+        },
+        sort: { createdAt: -1 },
+      });
+
+      if (version) {
+        dataSourceVersionIds.push(version._id);
+      }
+    }
+  }
+
+  // -------------------------------
+  // DIRECT DATASOURCE FLOW
+  // -------------------------------
+  if (!reportRequestId && dataSourceVersionId) {
+    dataSourceVersionIds = [new Types.ObjectId(dataSourceVersionId)];
+  }
+
+  if (!dataSourceVersionIds.length) {
+    return new Map();
+  }
+
+  // -------------------------------
+  // ERROR QUERY
+  // -------------------------------
+  const query: any = {
+    dataSourceVersionId: { $in: dataSourceVersionIds },
+  };
+
+  if (rowNumbers?.length) {
+    query.rowNumber = { $in: rowNumbers };
+  }
+
+  const records =
+    await dataImportErrorServices.getDataImportErrorRecords(query);
+
+  // -------------------------------
+  // GROUPING
+  // -------------------------------
+  const map = new Map<
+    string,
+    {
+      dataSourceId: Types.ObjectId;
+      dataSourceVersionId: Types.ObjectId;
+      rowNumbers: number[];
+    }
+  >();
+
+  for (const r of records) {
+    const key = `${r.dataSourceId}_${r.dataSourceVersionId}`;
+    if (!map.has(key)) {
+      map.set(key, {
+        dataSourceId: r.dataSourceId,
+        dataSourceVersionId: r.dataSourceVersionId,
+        rowNumbers: [],
+      });
+    }
+    map.get(key)!.rowNumbers.push(r.rowNumber);
+  }
+
+  return map;
+}
+
+export const resolveDataImportError = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      action,
+      rowNumber,
+      reportRequestId,
+      dataSourceVersionId,
+      attributeOptionId,
+      fileAttributeValue,
+      attributeName,
+    } = req.body;
+
+    let { rowData } = req.body;
+    const { orgCode, userId, organizationId } = req.user;
+
+    const rowNumbers = Array.isArray(rowNumber) ? rowNumber : [rowNumber];
+
+    if (!reportRequestId && !dataSourceVersionId) {
+      return res.status(400).json({
+        success: false,
+        message: "Either reportRequestId or dataSourceVersionId is required",
+      });
+    }
+
+    const groupedContexts = await getGroupedErrorContext({
+      reportRequestId,
+      dataSourceVersionId,
+      rowNumbers: rowNumber ? rowNumbers : undefined,
+    });
+
+    if (!groupedContexts.size) {
+      return res.status(400).json({
+        success: false,
+        message: "No error records found",
+      });
+    }
+
+    // =====================================================
+    // DISCARD
+    // =====================================================
+    if (action === "discard") {
+      for (const [, ctx] of groupedContexts) {
+        const dataSource = await dataSourceService.findDataSourceById(
+          ctx.dataSourceId,
+          true
+        );
+
+        const errorSchema =
+          getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+            orgCode,
+            versionCode: dataSource?.code!,
+          });
+
+        const openRecords =
+          await dataImportErrorServices.getDataImportErrorRecords({
+            dataSourceVersionId: ctx.dataSourceVersionId,
+            rowNumber: { $in: ctx.rowNumbers },
+            status: "open",
+          });
+
+        const openRows = new Set(openRecords.map((r) => r.rowNumber));
+        const invalid = ctx.rowNumbers.filter((r) => !openRows.has(r));
+
+        if (invalid.length) {
+          const allErrors =
+            await dataImportErrorServices.getDataImportErrorRecords({
+              dataSourceVersionId: ctx.dataSourceVersionId,
+              rowNumber: { $in: invalid },
+            });
+
+          const fileRows = [
+            ...new Set(allErrors.map((r) => r.fileRowNumber)),
+          ];
+
+          return res.status(400).json({
+            success: false,
+            message: `These row numbers can not be discarded: ${fileRows.join(
+              ", "
+            )}`,
+          });
+        }
+
+        await Promise.all([
+          dataImportErrorServices.updateDataImportErrors(
+            {
+              dataSourceVersionId: ctx.dataSourceVersionId,
+              rowNumber: { $in: ctx.rowNumbers },
+            },
+            { status: "discarded" }
+          ),
+          importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+            errorSchema,
+            {
+              dataSourceVersionId: ctx.dataSourceVersionId,
+              rowNumber: { $in: ctx.rowNumbers },
+            },
+            { isErrorLog: 1000 }
+          ),
+        ]);
+      }
+    }
+
+    // =====================================================
+    // DISCARD ALL & SUBMIT
+    // =====================================================
+    else if (action === "discardAllSubmit") {
+      for (const [, ctx] of groupedContexts) {
+        const dataSource = await dataSourceService.findDataSourceById(
+          ctx.dataSourceId,
+          true
+        );
+
+        const errorSchema =
+          getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+            orgCode,
+            versionCode: dataSource?.code!,
+          });
+
+        const mainSchema =
+          getSchemaNameBasedOnVersionCodeAndOrgCode({
+            orgCode,
+            versionCode: dataSource?.code!,
+          });
+
+        await dataImportErrorServices.updateDataImportErrors(
+          {
+            dataSourceVersionId: ctx.dataSourceVersionId,
+            status: "open",
+          },
+          { status: "discarded" }
+        );
+
+        const validRows =
+          await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(
+            errorSchema,
+            {
+              dataSourceVersionId: ctx.dataSourceVersionId,
+              isErrorLog: 0,
+            }
+          );
+
+        if (validRows.length) {
+          await dataSourceVersionValueService.createDataSourceVersionValue(
+            mainSchema,
+            validRows
+          );
+        }
+
+        await importLogDataSourceVersionValueService.deleteImportLogDataSourceVersionValues(
+          errorSchema,
+          {
+            dataSourceVersionId: ctx.dataSourceVersionId,
+            isErrorLog: 0,
+          }
+        );
+
+        await updateCustomDataSourceVersionIsCurrentFunction({
+          dataSourceVersionId: ctx.dataSourceVersionId,
+        });
+      }
+    }
+
+    // =====================================================
+    // UPDATE
+    // =====================================================
+    else if (action === "update") {
+      for (const [, ctx] of groupedContexts) {
+        const dataSource = await dataSourceService.findDataSourceById(
+          ctx.dataSourceId,
+          true
+        );
+
+        const entity = dataSource?.entityId as any;
+
+        const errorSchema =
+          getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+            orgCode,
+            versionCode: dataSource?.code!,
+          });
+
+        rowData = Object.fromEntries(
+          Object.entries(rowData || {}).filter(
+            ([key]) => key === attributeName
+          )
+        );
+
+        await autoPopulateAttributeOptionFromRow({
+          entityId: entity._id,
+          attributes: entity.attributes,
+          rowData,
+          userId,
+          organizationId,
+        });
+
+        const { isValid, errors, validatedRowData } = await validateRowData({
+          rowData,
+          attributes: entity.attributes,
+        });
+
+        if (!isValid) {
+          return res.status(400).json({ success: false, errors });
+        }
+
+        const updateFields: any = {};
+        Object.entries(validatedRowData).forEach(
+          ([k, v]) => (updateFields[`rowData.${k}`] = v)
+        );
+
+        await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+          errorSchema,
+          {
+            dataSourceVersionId: ctx.dataSourceVersionId,
+            rowNumber: { $in: ctx.rowNumbers },
+          },
+          updateFields,
+          { isErrorLog: -1 }
+        );
+
+        const version = await getDataSourceVersion({
+          query: { _id: ctx.dataSourceVersionId },
+        });
+
+        await handleReferenceSubFields({
+          rowData: validatedRowData,
+          attributes: entity.attributes,
+          dataSourceId: ctx.dataSourceId,
+          versionId: version?._id,
+          versionValue: version?.versionValue,
+          userId,
+          organizationId,
+        });
+
+        await dataImportErrorServices.updateDataImportErrors(
+          {
+            dataSourceVersionId: ctx.dataSourceVersionId,
+            rowNumber: { $in: ctx.rowNumbers },
+            attributeName,
+            fileAttributeValue,
+          },
+          { status: "resolved" }
+        );
+      }
+
+    }
+
+    // =====================================================
+    // ADD OPTION
+    // =====================================================
+    else if (action === "addOption") {
+      await attributeOptionService.addAttributeValueById(
+        attributeOptionId,
+        fileAttributeValue
+      );
+
+      for (const [, ctx] of groupedContexts) {
+        const dataSource = await dataSourceService.findDataSourceById(
+          ctx.dataSourceId,
+          true
+        );
+
+        const errorSchema =
+          getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+            orgCode,
+            versionCode: dataSource?.code!,
+          });
+
+        const records =
+          await dataImportErrorServices.getDataImportErrorRecords({
+            dataSourceVersionId: ctx.dataSourceVersionId,
+            attributeOptionId,
+            fileAttributeValue,
+            status: "open",
+          });
+
+        const rows = records.map((r) => r.rowNumber);
+
+        await dataImportErrorServices.updateDataImportErrors(
+          {
+            dataSourceVersionId: ctx.dataSourceVersionId,
+            rowNumber: { $in: rows },
+          },
+          { status: "resolved" }
+        );
+
+        await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+          errorSchema,
+          {
+            dataSourceVersionId: ctx.dataSourceVersionId,
+            rowNumber: { $in: rows },
+          },
+          {},
+          { isErrorLog: -1 }
+        );
+      }
+
+    }
+
+    // =====================================================
+    // SUBMIT
+    // =====================================================
+    else if (action === "submit") {
+      for (const [, ctx] of groupedContexts) {
+        const open =
+          await dataImportErrorServices.getDataImportErrorRecords({
+            dataSourceVersionId: ctx.dataSourceVersionId,
+            status: "open",
+          });
+
+        if (open.length) {
+          return res.status(400).json({
+            message: "Some of the record has not been resolved.",
+          });
+        }
+
+        const dataSource = await dataSourceService.findDataSourceById(
+          ctx.dataSourceId,
+          true
+        );
+
+        const errorSchema =
+          getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+            orgCode,
+            versionCode: dataSource?.code!,
+          });
+
+        const mainSchema =
+          getSchemaNameBasedOnVersionCodeAndOrgCode({
+            orgCode,
+            versionCode: dataSource?.code!,
+          });
+
+        const validRows =
+          await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(
+            errorSchema,
+            {
+              dataSourceVersionId: ctx.dataSourceVersionId,
+              isErrorLog: 0,
+            }
+          );
+
+        await dataSourceVersionValueService.createDataSourceVersionValue(
+          mainSchema,
+          validRows
+        );
+
+        await importLogDataSourceVersionValueService.deleteImportLogDataSourceVersionValues(
+          errorSchema,
+          {
+            dataSourceVersionId: ctx.dataSourceVersionId,
+            isErrorLog: 0,
+          }
+        );
+
+        await updateCustomDataSourceVersionIsCurrentFunction({
+          dataSourceVersionId: ctx.dataSourceVersionId,
+        });
+      }
+
+    }
+
+    // =====================================================
+    // UNIQUE
+    // =====================================================
+    else if (action === "unique") {
+      for (const [, ctx] of groupedContexts) {
+        const dataSource = await dataSourceService.findDataSourceById(
+          ctx.dataSourceId,
+          true
+        );
+
+        const errorSchema =
+          getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+            orgCode,
+            versionCode: dataSource?.code!,
+          });
+
+        await dataImportErrorServices.updateDataImportErrors(
+          {
+            dataSourceVersionId: ctx.dataSourceVersionId,
+            rowNumber: { $in: ctx.rowNumbers },
+          },
+          { status: "resolved" }
+        );
+
+        await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+        errorSchema,
+        { dataSourceVersionId: new ObjectId(ctx.dataSourceVersionId), rowNumber: { $in: ctx.rowNumbers } },
+        {},
+        {
+          isErrorLog: -1,
+        }
+      );
+
+        const dublicateRecords = await dataImportErrorServices.getDataImportErrorRecords({
+        dataSourceVersionId: ctx.dataSourceVersionId,
+        fileAttributeValue: fileAttributeValue,
+        errorCode: '1005',
+        status: 'open',
+      });
+
+      const rowNumbersToUpdate = dublicateRecords.map((record) => record.rowNumber);
+
+      await dataImportErrorServices.updateDataImportErrors(
+        {
+          dataSourceVersionId: ctx.dataSourceVersionId,
+          rowNumber: { $in: rowNumbersToUpdate },
+        },
+        { status: 'discarded' }
+      );
+      await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+        errorSchema,
+        {
+          dataSourceVersionId: new ObjectId(ctx.dataSourceVersionId),
+          rowNumber: { $in: rowNumbersToUpdate },
+        },
+        {
+          isErrorLog: 1000,
+        }
+      );
+      }
+
+    }else{
+
+      return res.status(400).json({
+        success: false,
+        message: "Invalid action",
+      });
+    }
+    return res.status(200).json({ success: true, message: 'Action Applied.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 export const getErrorRowDataBasedOnDataSourceVersionIdAndRowNumber = async (
   req: Request,
   res: Response,
