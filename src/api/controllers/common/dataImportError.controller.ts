@@ -492,397 +492,397 @@ export const exportDataSourceVersionErrorToExcel = async (
 
 
 
-export const resolveDataImportError = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const {
-      action,
-      rowNumber,
-      dataSourceVersionId,
-      dataSourceId,
-      attributeOptionId,
-      fileAttributeValue,
-      attributeName,
-    } = req.body;
-    let { rowData } = req.body;
-    const { orgCode, userId, organizationId } = req.user;
+// export const resolveDataImportError = async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const {
+//       action,
+//       rowNumber,
+//       dataSourceVersionId,
+//       dataSourceId,
+//       attributeOptionId,
+//       fileAttributeValue,
+//       attributeName,
+//     } = req.body;
+//     let { rowData } = req.body;
+//     const { orgCode, userId, organizationId } = req.user;
 
-    // ✅ Normalize rowNumber to always be an array
-    const rowNumbers = Array.isArray(rowNumber) ? rowNumber : [rowNumber];
+//     // ✅ Normalize rowNumber to always be an array
+//     const rowNumbers = Array.isArray(rowNumber) ? rowNumber : [rowNumber];
 
-    const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
-    const errorSchemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
-      orgCode,
-      versionCode: dataSourceDetails?.code!,
-    });
+//     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+//     const errorSchemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+//       orgCode,
+//       versionCode: dataSourceDetails?.code!,
+//     });
 
-    const mainTableSchemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
-      orgCode,
-      versionCode: dataSourceDetails?.code!,
-    });
-    if (action === 'discard') {
-  // 1️ Check which rows have at least one open record
-  const openRecords = await dataImportErrorServices.getDataImportErrorRecords({
-    dataSourceVersionId,
-    rowNumber: { $in: rowNumbers },
-    status: 'open',
-  });
+//     const mainTableSchemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+//       orgCode,
+//       versionCode: dataSourceDetails?.code!,
+//     });
+//     if (action === 'discard') {
+//   // 1️ Check which rows have at least one open record
+//   const openRecords = await dataImportErrorServices.getDataImportErrorRecords({
+//     dataSourceVersionId,
+//     rowNumber: { $in: rowNumbers },
+//     status: 'open',
+//   });
 
-  const openRowNumbers = [...new Set(openRecords.map((r: any) => r.rowNumber))];
-  // 2️ Find invalid rows (no open record)
-  const invalidRowNumbers = rowNumbers.filter(
-    (num) => !openRowNumbers.includes(num)
-  );
-  if (invalidRowNumbers.length > 0) {
-    // 4️ Get their corresponding fileRowNumbers from all error records (for better user clarity)
-    const allErrorRecords = await dataImportErrorServices.getDataImportErrorRecords({
-      dataSourceVersionId,
-      rowNumber: { $in: invalidRowNumbers },
-    });
-    const invalidFileRows = [...new Set(
-      allErrorRecords.map((r: any) => r.fileRowNumber)
-    )];
+//   const openRowNumbers = [...new Set(openRecords.map((r: any) => r.rowNumber))];
+//   // 2️ Find invalid rows (no open record)
+//   const invalidRowNumbers = rowNumbers.filter(
+//     (num) => !openRowNumbers.includes(num)
+//   );
+//   if (invalidRowNumbers.length > 0) {
+//     // 4️ Get their corresponding fileRowNumbers from all error records (for better user clarity)
+//     const allErrorRecords = await dataImportErrorServices.getDataImportErrorRecords({
+//       dataSourceVersionId,
+//       rowNumber: { $in: invalidRowNumbers },
+//     });
+//     const invalidFileRows = [...new Set(
+//       allErrorRecords.map((r: any) => r.fileRowNumber)
+//     )];
 
 
-    return res.status(400).json({
-      success: false,
-      message: `These row numbers can not be discarded: ${invalidFileRows.join(', ')}`,
-    });
+//     return res.status(400).json({
+//       success: false,
+//       message: `These row numbers can not be discarded: ${invalidFileRows.join(', ')}`,
+//     });
 
-  }
+//   }
 
-  // 3️ Proceed with bulk discard (no status filter now)
-  await Promise.all([
-    dataImportErrorServices.updateDataImportErrors(
-      { dataSourceVersionId, rowNumber: { $in: rowNumbers } },
-      { status: 'discarded' }
-    ),
-    importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
-      errorSchemaName,
-      {
-        dataSourceVersionId: new ObjectId(dataSourceVersionId),
-        rowNumber: { $in: rowNumbers },
-      },
-      { isErrorLog: 1000 }
-    ),
-  ]);
+//   // 3️ Proceed with bulk discard (no status filter now)
+//   await Promise.all([
+//     dataImportErrorServices.updateDataImportErrors(
+//       { dataSourceVersionId, rowNumber: { $in: rowNumbers } },
+//       { status: 'discarded' }
+//     ),
+//     importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+//       errorSchemaName,
+//       {
+//         dataSourceVersionId: new ObjectId(dataSourceVersionId),
+//         rowNumber: { $in: rowNumbers },
+//       },
+//       { isErrorLog: 1000 }
+//     ),
+//   ]);
 
-  return res.status(200).json({
-    success: true,
-    message: 'Records discarded successfully.',
-  });
-}else if (action === 'discardAllSubmit') {
-      await dataImportErrorServices.updateDataImportErrors(
-        {
-          dataSourceVersionId: dataSourceVersionId,
-          status: 'open',
-        },
-        {
-          status: 'discarded',
-        }
-      );
-      await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
-        errorSchemaName,
-        {
-          dataSourceVersionId: new ObjectId(dataSourceVersionId),
-          isErrorLog: 1,
-        },
-        {
-          isErrorLog: 1000,
-        }
-      );
-      let allProcessedVersionValue = await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(
-        errorSchemaName,
-        {
-          dataSourceVersionId: new ObjectId(dataSourceVersionId),
-          isErrorLog: 0,
-        }
-      );
-      // const entityDetails = dataSourceDetails?.entityId as any;
-      // const attributes = entityDetails?.attributes || [];
-      // const uniqueAttributeRules = dataSourceDetails?.uniqueAttributeRules || [];
+//   return res.status(200).json({
+//     success: true,
+//     message: 'Records discarded successfully.',
+//   });
+// }else if (action === 'discardAllSubmit') {
+//       await dataImportErrorServices.updateDataImportErrors(
+//         {
+//           dataSourceVersionId: dataSourceVersionId,
+//           status: 'open',
+//         },
+//         {
+//           status: 'discarded',
+//         }
+//       );
+//       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+//         errorSchemaName,
+//         {
+//           dataSourceVersionId: new ObjectId(dataSourceVersionId),
+//           isErrorLog: 1,
+//         },
+//         {
+//           isErrorLog: 1000,
+//         }
+//       );
+//       let allProcessedVersionValue = await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(
+//         errorSchemaName,
+//         {
+//           dataSourceVersionId: new ObjectId(dataSourceVersionId),
+//           isErrorLog: 0,
+//         }
+//       );
+//       // const entityDetails = dataSourceDetails?.entityId as any;
+//       // const attributes = entityDetails?.attributes || [];
+//       // const uniqueAttributeRules = dataSourceDetails?.uniqueAttributeRules || [];
 
-      // if (uniqueAttributeRules.length > 0 && allProcessedVersionValue.length > 0) {
-      //   // ✅ build quick lookup map from attributeId → attributeName
-      //   const attributeIdToNameMap = attributes.reduce(
-      //     (acc, attr) => {
-      //       acc[attr._id.toString()] = attr.name;
-      //       return acc;
-      //     },
-      //     {} as Record<string, string>
-      //   );
-      //   const seenKeys = new Set<string>();
-      //   const validRows: any[] = [];
-      //   const duplicateRowNumbers: number[] = [];
+//       // if (uniqueAttributeRules.length > 0 && allProcessedVersionValue.length > 0) {
+//       //   // ✅ build quick lookup map from attributeId → attributeName
+//       //   const attributeIdToNameMap = attributes.reduce(
+//       //     (acc, attr) => {
+//       //       acc[attr._id.toString()] = attr.name;
+//       //       return acc;
+//       //     },
+//       //     {} as Record<string, string>
+//       //   );
+//       //   const seenKeys = new Set<string>();
+//       //   const validRows: any[] = [];
+//       //   const duplicateRowNumbers: number[] = [];
 
-      //   for (const row of allProcessedVersionValue) {
-      //     let compositeKey = '';
+//       //   for (const row of allProcessedVersionValue) {
+//       //     let compositeKey = '';
 
-      //     for (const rule of uniqueAttributeRules) {
-      //       const keyValues: string[] = [];
-      //       let validRule = true;
+//       //     for (const rule of uniqueAttributeRules) {
+//       //       const keyValues: string[] = [];
+//       //       let validRule = true;
 
-      //       for (const attrId of rule) {
-      //         const attrName = attributeIdToNameMap[attrId.toString()];
-      //         if (!attrName) {
-      //           validRule = false;
-      //           break;
-      //         }
+//       //       for (const attrId of rule) {
+//       //         const attrName = attributeIdToNameMap[attrId.toString()];
+//       //         if (!attrName) {
+//       //           validRule = false;
+//       //           break;
+//       //         }
 
-      //         const val = row.rowData?.[attrName];
-      //         if (val === undefined || val === null || val === '') {
-      //           validRule = false;
-      //           break;
-      //         }
+//       //         const val = row.rowData?.[attrName];
+//       //         if (val === undefined || val === null || val === '') {
+//       //           validRule = false;
+//       //           break;
+//       //         }
 
-      //         keyValues.push(String(val).toLowerCase().trim());
-      //       }
+//       //         keyValues.push(String(val).toLowerCase().trim());
+//       //       }
 
-      //       if (validRule) {
-      //         compositeKey = keyValues.join('|');
-      //         break;
-      //       }
-      //     }
+//       //       if (validRule) {
+//       //         compositeKey = keyValues.join('|');
+//       //         break;
+//       //       }
+//       //     }
 
-      //     if (compositeKey) {
-      //       if (seenKeys.has(compositeKey)) {
-      //         duplicateRowNumbers.push(row.rowNumber);
-      //       } else {
-      //         seenKeys.add(compositeKey);
-      //         validRows.push(row);
-      //       }
-      //     } else {
-      //       // no valid composite key → just keep row
-      //       validRows.push(row);
-      //     }
-      //   }
+//       //     if (compositeKey) {
+//       //       if (seenKeys.has(compositeKey)) {
+//       //         duplicateRowNumbers.push(row.rowNumber);
+//       //       } else {
+//       //         seenKeys.add(compositeKey);
+//       //         validRows.push(row);
+//       //       }
+//       //     } else {
+//       //       // no valid composite key → just keep row
+//       //       validRows.push(row);
+//       //     }
+//       //   }
 
-      //   // ✅ discard duplicates
-      //   if (duplicateRowNumbers.length > 0) {
-      //     await dataImportErrorServices.updateDataImportErrors(
-      //       {
-      //         dataSourceVersionId,
-      //         rowNumber: { $in: duplicateRowNumbers },
-      //       },
-      //       { status: 'discarded' }
-      //     );
+//       //   // ✅ discard duplicates
+//       //   if (duplicateRowNumbers.length > 0) {
+//       //     await dataImportErrorServices.updateDataImportErrors(
+//       //       {
+//       //         dataSourceVersionId,
+//       //         rowNumber: { $in: duplicateRowNumbers },
+//       //       },
+//       //       { status: 'discarded' }
+//       //     );
 
-      //     await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
-      //       errorSchemaName,
-      //       {
-      //         dataSourceVersionId: new ObjectId(dataSourceVersionId),
-      //         rowNumber: { $in: duplicateRowNumbers },
-      //       },
-      //       { isErrorLog: 1000 }
-      //     );
-      //   }
+//       //     await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+//       //       errorSchemaName,
+//       //       {
+//       //         dataSourceVersionId: new ObjectId(dataSourceVersionId),
+//       //         rowNumber: { $in: duplicateRowNumbers },
+//       //       },
+//       //       { isErrorLog: 1000 }
+//       //     );
+//       //   }
 
-      //   allProcessedVersionValue = validRows;
-      // }
+//       //   allProcessedVersionValue = validRows;
+//       // }
 
-      if (allProcessedVersionValue.length > 0) {
-        await dataSourceVersionValueService.createDataSourceVersionValue(mainTableSchemaName, allProcessedVersionValue);
-        await importLogDataSourceVersionValueService.deleteImportLogDataSourceVersionValues(errorSchemaName, {
-          dataSourceVersionId: new ObjectId(dataSourceVersionId),
-          isErrorLog: 0,
-        });
-      }
+//       if (allProcessedVersionValue.length > 0) {
+//         await dataSourceVersionValueService.createDataSourceVersionValue(mainTableSchemaName, allProcessedVersionValue);
+//         await importLogDataSourceVersionValueService.deleteImportLogDataSourceVersionValues(errorSchemaName, {
+//           dataSourceVersionId: new ObjectId(dataSourceVersionId),
+//           isErrorLog: 0,
+//         });
+//       }
 
-      await updateCustomDataSourceVersionIsCurrentFunction({ dataSourceVersionId });
-    } else if (action === 'update') {
+//       await updateCustomDataSourceVersionIsCurrentFunction({ dataSourceVersionId });
+//     } else if (action === 'update') {
 
-      // const updateFields: any = {};
-      const entityDetails = dataSourceDetails?.entityId as any;
-      // for (const [key, value] of Object.entries(rowData)) {
-      //   const attribute: any = await getAttributeByName(entityDetails, key);
-      //   if(attribute.type == 'date' || attribute.type == 'date-range' && value){
-      //     updateFields[`rowData.${key}`] = new Date(value as string);
-      //   }else{
-      //     updateFields[`rowData.${key}`] = value;
-      //   }
-      // }
+//       // const updateFields: any = {};
+//       const entityDetails = dataSourceDetails?.entityId as any;
+//       // for (const [key, value] of Object.entries(rowData)) {
+//       //   const attribute: any = await getAttributeByName(entityDetails, key);
+//       //   if(attribute.type == 'date' || attribute.type == 'date-range' && value){
+//       //     updateFields[`rowData.${key}`] = new Date(value as string);
+//       //   }else{
+//       //     updateFields[`rowData.${key}`] = value;
+//       //   }
+//       // }
       
-      // await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
-      //   errorSchemaName,
-      //   {
-      //     dataSourceVersionId: new ObjectId(dataSourceVersionId),
-      //     rowNumber: rowNumber,
-      //   },
-      //   updateFields, // ✅ only update given keys inside rowData
-      //   {
-      //     isErrorLog: -1,
-      //   }
-      // );
-    // 🔹 Filter rowData to only keep the target attributeName
-    rowData = Object.fromEntries(
-      Object.entries(rowData || {}).filter(([key]) => key === attributeName)
-    );
+//       // await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+//       //   errorSchemaName,
+//       //   {
+//       //     dataSourceVersionId: new ObjectId(dataSourceVersionId),
+//       //     rowNumber: rowNumber,
+//       //   },
+//       //   updateFields, // ✅ only update given keys inside rowData
+//       //   {
+//       //     isErrorLog: -1,
+//       //   }
+//       // );
+//     // 🔹 Filter rowData to only keep the target attributeName
+//     rowData = Object.fromEntries(
+//       Object.entries(rowData || {}).filter(([key]) => key === attributeName)
+//     );
 
-    // Ensure the attribute exists in rowData
-    if (Object.keys(rowData).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Attribute "${attributeName}" not found in rowData.`,
-      });
-    }
+//     // Ensure the attribute exists in rowData
+//     if (Object.keys(rowData).length === 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: `Attribute "${attributeName}" not found in rowData.`,
+//       });
+//     }
 
-    await autoPopulateAttributeOptionFromRow({
-      entityId: entityDetails?._id,
-      attributes: entityDetails.attributes,
-      rowData,
-      userId,
-      organizationId,
-    });
+//     await autoPopulateAttributeOptionFromRow({
+//       entityId: entityDetails?._id,
+//       attributes: entityDetails.attributes,
+//       rowData,
+//       userId,
+//       organizationId,
+//     });
 
-    const { isValid, errors, validatedRowData } = await validateRowData({
-      rowData,
-      attributes: entityDetails.attributes,
-    });
+//     const { isValid, errors, validatedRowData } = await validateRowData({
+//       rowData,
+//       attributes: entityDetails.attributes,
+//     });
 
-    if (!isValid) {
-      return res.status(400).json({ success: false, errors });
-    }
-    const updateFields: any = {};
-    for (const [key, value] of Object.entries(validatedRowData)) {
-        updateFields[`rowData.${key}`] = value;
-    }
-    await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
-        errorSchemaName,
-        {
-          dataSourceVersionId: new ObjectId(dataSourceVersionId),
-          rowNumber: { $in: rowNumbers },
-        },
-        updateFields, // ✅ only update given keys inside rowData
-        {
-          isErrorLog: -1,
-        }
-    );
+//     if (!isValid) {
+//       return res.status(400).json({ success: false, errors });
+//     }
+//     const updateFields: any = {};
+//     for (const [key, value] of Object.entries(validatedRowData)) {
+//         updateFields[`rowData.${key}`] = value;
+//     }
+//     await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+//         errorSchemaName,
+//         {
+//           dataSourceVersionId: new ObjectId(dataSourceVersionId),
+//           rowNumber: { $in: rowNumbers },
+//         },
+//         updateFields, // ✅ only update given keys inside rowData
+//         {
+//           isErrorLog: -1,
+//         }
+//     );
 
-    let version = await getDataSourceVersion({
-      query: {_id: dataSourceVersionId}
-    });
+//     let version = await getDataSourceVersion({
+//       query: {_id: dataSourceVersionId}
+//     });
 
-    // 🔹 Handle reference subfields
-    await handleReferenceSubFields({
-      rowData: validatedRowData,
-      attributes: entityDetails.attributes,
-      dataSourceId,
-      versionId: version?._id,
-      versionValue: version?.versionValue,
-      userId,
-      organizationId,
-    });
+//     // 🔹 Handle reference subfields
+//     await handleReferenceSubFields({
+//       rowData: validatedRowData,
+//       attributes: entityDetails.attributes,
+//       dataSourceId,
+//       versionId: version?._id,
+//       versionValue: version?.versionValue,
+//       userId,
+//       organizationId,
+//     });
 
-      await dataImportErrorServices.updateDataImportErrors(
-        { 
-          dataSourceVersionId: dataSourceVersionId, 
-          rowNumber: { $in: rowNumbers },
-          attributeName,
-          fileAttributeValue,
-        },
-        { status: 'resolved' }
-      );
-    } else if (action === 'addOption') {
-      await attributeOptionService.addAttributeValueById(attributeOptionId, fileAttributeValue);
+//       await dataImportErrorServices.updateDataImportErrors(
+//         { 
+//           dataSourceVersionId: dataSourceVersionId, 
+//           rowNumber: { $in: rowNumbers },
+//           attributeName,
+//           fileAttributeValue,
+//         },
+//         { status: 'resolved' }
+//       );
+//     } else if (action === 'addOption') {
+//       await attributeOptionService.addAttributeValueById(attributeOptionId, fileAttributeValue);
 
-      const optionRecords = await dataImportErrorServices.getDataImportErrorRecords({
-        dataSourceVersionId: dataSourceVersionId,
-        attributeOptionId,
-        fileAttributeValue,
-        status: 'open',
-      });
+//       const optionRecords = await dataImportErrorServices.getDataImportErrorRecords({
+//         dataSourceVersionId: dataSourceVersionId,
+//         attributeOptionId,
+//         fileAttributeValue,
+//         status: 'open',
+//       });
 
-      const rowNumbersToUpdate = optionRecords.map((record) => record.rowNumber);
+//       const rowNumbersToUpdate = optionRecords.map((record) => record.rowNumber);
 
-      console.log('rowNumbersToUpdate', rowNumbersToUpdate);
-      await dataImportErrorServices.updateDataImportErrors(
-        {
-          dataSourceVersionId: dataSourceVersionId,
-          attributeOptionId,
-          fileAttributeValue,
-          rowNumber: { $in: rowNumbersToUpdate },
-        },
-        { status: 'resolved' }
-      );
+//       console.log('rowNumbersToUpdate', rowNumbersToUpdate);
+//       await dataImportErrorServices.updateDataImportErrors(
+//         {
+//           dataSourceVersionId: dataSourceVersionId,
+//           attributeOptionId,
+//           fileAttributeValue,
+//           rowNumber: { $in: rowNumbersToUpdate },
+//         },
+//         { status: 'resolved' }
+//       );
 
-      await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
-        errorSchemaName,
-        { dataSourceVersionId: new ObjectId(dataSourceVersionId), rowNumber: { $in: rowNumbersToUpdate } },
-        {},
-        {
-          isErrorLog: -1,
-        }
-      );
-    } else if (action === 'submit') {
-      const openRecords = await dataImportErrorServices.getDataImportErrorRecords({
-        dataSourceVersionId: dataSourceVersionId,
-        status: 'open',
-      });
-      if (openRecords && openRecords.length > 0) {
-        return res.status(400).json({ message: 'Some of the record has not been resolved.' });
-      }
+//       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+//         errorSchemaName,
+//         { dataSourceVersionId: new ObjectId(dataSourceVersionId), rowNumber: { $in: rowNumbersToUpdate } },
+//         {},
+//         {
+//           isErrorLog: -1,
+//         }
+//       );
+//     } else if (action === 'submit') {
+//       const openRecords = await dataImportErrorServices.getDataImportErrorRecords({
+//         dataSourceVersionId: dataSourceVersionId,
+//         status: 'open',
+//       });
+//       if (openRecords && openRecords.length > 0) {
+//         return res.status(400).json({ message: 'Some of the record has not been resolved.' });
+//       }
 
-      const allProcessedVersionValue = await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(
-        errorSchemaName,
-        {
-          dataSourceVersionId: new ObjectId(dataSourceVersionId),
-          isErrorLog: 0,
-        }
-      );
+//       const allProcessedVersionValue = await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(
+//         errorSchemaName,
+//         {
+//           dataSourceVersionId: new ObjectId(dataSourceVersionId),
+//           isErrorLog: 0,
+//         }
+//       );
 
-      await dataSourceVersionValueService.createDataSourceVersionValue(mainTableSchemaName, allProcessedVersionValue);
-      await importLogDataSourceVersionValueService.deleteImportLogDataSourceVersionValues(errorSchemaName, {
-        dataSourceVersionId: new ObjectId(dataSourceVersionId),
-        isErrorLog: 0,
-      });
-      await updateCustomDataSourceVersionIsCurrentFunction({ dataSourceVersionId });
-    } else if (action === 'unique') {
-      await dataImportErrorServices.updateDataImportErrors(
-        { dataSourceVersionId: dataSourceVersionId, rowNumber: { $in: rowNumbers } },
-        { status: 'resolved' }
-      );
-      await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
-        errorSchemaName,
-        { dataSourceVersionId: new ObjectId(dataSourceVersionId), rowNumber: { $in: rowNumbers } },
-        {},
-        {
-          isErrorLog: -1,
-        }
-      );
+//       await dataSourceVersionValueService.createDataSourceVersionValue(mainTableSchemaName, allProcessedVersionValue);
+//       await importLogDataSourceVersionValueService.deleteImportLogDataSourceVersionValues(errorSchemaName, {
+//         dataSourceVersionId: new ObjectId(dataSourceVersionId),
+//         isErrorLog: 0,
+//       });
+//       await updateCustomDataSourceVersionIsCurrentFunction({ dataSourceVersionId });
+//     } else if (action === 'unique') {
+//       await dataImportErrorServices.updateDataImportErrors(
+//         { dataSourceVersionId: dataSourceVersionId, rowNumber: { $in: rowNumbers } },
+//         { status: 'resolved' }
+//       );
+//       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+//         errorSchemaName,
+//         { dataSourceVersionId: new ObjectId(dataSourceVersionId), rowNumber: { $in: rowNumbers } },
+//         {},
+//         {
+//           isErrorLog: -1,
+//         }
+//       );
 
-      const dublicateRecords = await dataImportErrorServices.getDataImportErrorRecords({
-        dataSourceVersionId: dataSourceVersionId,
-        fileAttributeValue: fileAttributeValue,
-        errorCode: '1005',
-        status: 'open',
-      });
+//       const dublicateRecords = await dataImportErrorServices.getDataImportErrorRecords({
+//         dataSourceVersionId: dataSourceVersionId,
+//         fileAttributeValue: fileAttributeValue,
+//         errorCode: '1005',
+//         status: 'open',
+//       });
 
-      const rowNumbersToUpdate = dublicateRecords.map((record) => record.rowNumber);
+//       const rowNumbersToUpdate = dublicateRecords.map((record) => record.rowNumber);
 
-      await dataImportErrorServices.updateDataImportErrors(
-        {
-          dataSourceVersionId: dataSourceVersionId,
-          rowNumber: { $in: rowNumbersToUpdate },
-        },
-        { status: 'discarded' }
-      );
-      await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
-        errorSchemaName,
-        {
-          dataSourceVersionId: new ObjectId(dataSourceVersionId),
-          rowNumber: { $in: rowNumbersToUpdate },
-        },
-        {
-          isErrorLog: 1000,
-        }
-      );
-    } else {
-      return res.status(400).json({ success: false, message: 'Not valid action.' });
-    }
-    return res.status(200).json({ success: true, message: 'Action Applied.', data: { dataSourceId } });
-  } catch (err) {
-    next(err);
-  }
-};
+//       await dataImportErrorServices.updateDataImportErrors(
+//         {
+//           dataSourceVersionId: dataSourceVersionId,
+//           rowNumber: { $in: rowNumbersToUpdate },
+//         },
+//         { status: 'discarded' }
+//       );
+//       await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+//         errorSchemaName,
+//         {
+//           dataSourceVersionId: new ObjectId(dataSourceVersionId),
+//           rowNumber: { $in: rowNumbersToUpdate },
+//         },
+//         {
+//           isErrorLog: 1000,
+//         }
+//       );
+//     } else {
+//       return res.status(400).json({ success: false, message: 'Not valid action.' });
+//     }
+//     return res.status(200).json({ success: true, message: 'Action Applied.', data: { dataSourceId } });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
 
 async function getGroupedErrorContext({
   reportRequestId,
