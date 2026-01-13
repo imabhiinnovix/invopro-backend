@@ -398,7 +398,7 @@ async function validateFileData({
   );
 
   for (const [index, row] of fileData.entries()) {
-    console.log('Processing Index:', index);
+    // console.log('Processing Index:', index);
     const parts = row.fileRowNumber.split(':');
     const rowNum = parts.pop(); // last part → row number
     const fileName = parts.join(':');
@@ -1542,7 +1542,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                 fileData,
                 entityId: dataSourceDetails.entityId,
                 attributesDetails: attributes,
-                attributMapping: allJsonMapping[mappingName] || {},
+                attributMapping: jsonMapping,
                 userId,
                 organizationId,
               });
@@ -1551,8 +1551,8 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                 fileData: fileDataWithRowNumber,
                 attributes,
                 versionValue,
-                mapping: allJsonMapping[mappingName] || {},
-                separator: allJsonSeparator[fileDetailName] || {},
+                mapping: jsonMapping,
+                separator: jsonSeparator,
                 dataSourceId,
                 dataSourceVersionId: dataSourceVersion._id,
                 entityId: entityDetails._id,
