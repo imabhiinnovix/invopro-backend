@@ -8,6 +8,7 @@ interface IDataSource {
   dataSourceId: string;
   fileDetails: { name: string; sheetName: string; isRequired: boolean }[];
   isRequired: boolean;
+  entityId: string;
 }
 
 interface IColumn {

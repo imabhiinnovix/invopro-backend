@@ -397,6 +397,44 @@ export const normalizeBoolean = (value: any): boolean | undefined => {
   return undefined;
 };
 
+type QueryConfig = {
+  module?: string;   // default = common
+  service: string;
+  method: string;
+};
+
+export async function resolveServiceMethod(queryConfig: QueryConfig) {
+  const {
+    module = "common", // default module
+    service,
+    method,
+  } = queryConfig;
+
+  if (!service || !method) {
+    throw new Error("queryConfig must include service and method");
+  }
+
+  const servicePath = `../database/services/${module}/${service}`;
+
+  let loadedService: any;
+  try {
+    loadedService = require(servicePath);
+  } catch (err) {
+    throw new Error(`Service file not found: ${servicePath}`);
+  }
+
+  const fn = loadedService?.[method];
+
+  if (typeof fn !== "function") {
+    throw new Error(
+      `Method "${method}" not found in ${module}/${service}`
+    );
+  }
+
+  return fn;
+}
+
+
 
 
 

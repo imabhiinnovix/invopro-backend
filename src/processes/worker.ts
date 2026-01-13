@@ -12,7 +12,7 @@ import "../database/models/common/dashboard";
 import "../database/models/common/dataSource";
 import "../database/models/common/user";
 import fs from "fs";
-import { formatDateValue } from "../utils/common.utils";
+import { formatDateValue, resolveServiceMethod } from "../utils/common.utils";
 import { getDashboardWidget, updateDashboardWidget } from "../database/services/common/dashboardWidget.services";
 import axios from "axios";
 import { buildWidgetRequestPayload } from "../utils/buildWidgetRequest.utils";
@@ -98,13 +98,17 @@ async function connectDB() {
           console.log('rows',JSON.stringify(rows[0]));
           
 
-        // Parse selected fields safely
+          // Parse selected fields safely
           let selectedFieldsParsed: string[] | null = null;
 
-          try {
-            selectedFieldsParsed = selectedFields ? JSON.parse(selectedFields) : null;
-          } catch (e) {
-            selectedFieldsParsed = null;
+          if (Array.isArray(selectedFields)) {
+            selectedFieldsParsed = selectedFields;
+          } else {
+            try {
+              selectedFieldsParsed = selectedFields ? JSON.parse(selectedFields) : null;
+            } catch (e) {
+              selectedFieldsParsed = null;
+            }
           }
 
           // Apply filter
@@ -146,7 +150,106 @@ async function connectDB() {
 
               worksheet.addRow(dataRow);
             });
-          }else{
+          }else if (job.name === "exportCustomData") {
+// ================================================================
+// CUSTOM DATA EXPORT (GENERIC, BATCHED)
+// ================================================================
+
+        const {
+        query,
+        sort,
+        selectedFields,
+        queryConfig,
+      } = req.requestPayload;
+
+      if (!queryConfig?.service || !queryConfig?.method) {
+        throw new Error("queryConfig.service and queryConfig.method are required");
+      }
+
+      const fetchMethod = await resolveServiceMethod(queryConfig);
+
+      const safeLimit = 1000;
+      let page = 1;
+      let isFirstBatch = true;
+
+      // Parse selectedFields once
+      let selectedFieldsParsed: string[] | null = null;
+
+      if (Array.isArray(selectedFields)) {
+        selectedFieldsParsed = selectedFields;
+      } else {
+        try {
+          selectedFieldsParsed = selectedFields ? JSON.parse(selectedFields) : null;
+        } catch {
+          selectedFieldsParsed = null;
+        }
+      }
+
+
+      while (true) {
+        const result = await fetchMethod({
+          query,
+          page,
+          limit: safeLimit,
+          sort,
+        });
+
+        const rows = result?.data ?? [];
+        if (!rows.length) break;
+
+        // ------------------------------------------------------
+        // SET HEADERS ONCE (SAFE & STABLE)
+        // ------------------------------------------------------
+        if (isFirstBatch) {
+          const firstRow =
+            rows[0]?.toObject ? rows[0].toObject() : rows[0];
+
+          const headers =
+            selectedFieldsParsed?.length
+              ? selectedFieldsParsed
+              : Object.keys(firstRow).filter(
+                  (k) => !k.startsWith("_")
+                );
+
+          worksheet.columns = headers.map((key) => ({
+            header: key,
+            key,
+            width: 30,
+          }));
+
+          isFirstBatch = false;
+        }
+
+        // ------------------------------------------------------
+        // WRITE ROWS (SAFE VALUE HANDLING)
+        // ------------------------------------------------------
+        rows.forEach((doc: any) => {
+          const row = doc?.toObject ? doc.toObject() : doc;
+          const excelRow: any = {};
+
+          worksheet.columns.forEach((col: any) => {
+            let value = row[col.key];
+
+            if (value === null || value === undefined) {
+              excelRow[col.key] = "";
+            } else if (Array.isArray(value)) {
+              excelRow[col.key] = value.join(", ");
+            } else if (value instanceof Date) {
+              excelRow[col.key] = value.toISOString();
+            } else if (typeof value === "object") {
+              excelRow[col.key] = JSON.stringify(value);
+            } else {
+              excelRow[col.key] = value;
+            }
+          });
+
+          worksheet.addRow(excelRow);
+        });
+
+        if (rows.length < safeLimit) break;
+        page++;
+      }
+    } else{
              const safeLimit = 1000; // batch size
           let page = 1;
           let dataResults: any[] = [];

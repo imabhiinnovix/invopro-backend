@@ -1346,6 +1346,58 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
     const completedVersionIds: string[] = [];
 
     debounceManager.debounce(customReportId as string, async () => {
+
+      // NEW: existing custom report path
+        const existingCustomReportPath = path.join(
+          'uploads',
+          organizationId,
+          'customReports'
+        );
+
+        // NEW: resolver helper (ONLY addition)
+        const resolveFile = async (fileDetailName: string) => {
+          const isSpecialFile = ['KSA Contracts', 'Required Mapping-Contracts'].includes(fileDetailName);
+
+          const uploadedFile = files.find(file =>
+            file.originalname.split('.')[0].replace(/\s+/g, '').toLowerCase() ===
+            fileDetailName.replace(/\s+/g, '').toLowerCase()
+          );
+
+          // 1️ If uploaded → copy to customReports (replace if exists)
+          if (uploadedFile && isSpecialFile) {
+            await fsPromises.mkdir(existingCustomReportPath, { recursive: true });
+
+            const targetPath = path.join(existingCustomReportPath, uploadedFile.originalname);
+
+            await fsPromises.copyFile(uploadedFile.path, targetPath);
+            console.log('use uploaded file');
+            return {
+              ...uploadedFile,
+              path: targetPath, // use copied file
+            };
+          }
+
+          // 2️ If uploaded but NOT special → use as-is
+          if (uploadedFile) return uploadedFile;
+
+          // 3️ If NOT uploaded & NOT special → skip
+          if (!isSpecialFile) return null;
+
+          // 4️ Try existing customReports file
+          const existingFiles = await fsPromises.readdir(existingCustomReportPath).catch(() => []);
+          const matchedFile = existingFiles.find(f =>
+            f.replace(/\s+/g, '').toLowerCase().startsWith(
+              fileDetailName.replace(/\s+/g, '').toLowerCase()
+            )
+          );
+
+          if (!matchedFile) return null;
+          console.log('use existing file');
+          return {
+            originalname: matchedFile,
+            path: path.join(existingCustomReportPath, matchedFile),
+          } as any;
+        };
       try {
         for (let i = 0; i < customReportData.dataSourceIds.length; i++) {
           const dsInfo = customReportData.dataSourceIds[i];
@@ -1368,10 +1420,12 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                 ? `${fileDetailName}__${sheetName}`
                 : fileDetailName;
 
-              const file = files.find(f =>
-                f.originalname.split('.')[0].replace(/\s+/g, '').toLowerCase() ===
-                fileDetailName.replace(/\s+/g, '').toLowerCase()
-              );
+              // const file = files.find(f =>
+              //   f.originalname.split('.')[0].replace(/\s+/g, '').toLowerCase() ===
+              //   fileDetailName.replace(/\s+/g, '').toLowerCase()
+              // );
+              const file = await resolveFile(fileDetailName);
+              console.log('file',file);
 
               if (!file) continue;
 
@@ -1408,6 +1462,34 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                 continue;
               }
 
+              let jsonMapping = allJsonMapping[mappingName] || {};
+              const jsonSeparator = allJsonSeparator[fileDetailName] || {};
+
+              const isSpecialFile = ['KSA Contracts', 'Required Mapping-Contracts'].includes(fileDetailName);
+
+              // NEW: auto-generate mapping only if NOT provided
+              if (
+                isSpecialFile &&
+                (!jsonMapping || Object.keys(jsonMapping).length === 0)
+              ) {
+                console.log('jsonMapping not provided, generating from entity attributes');
+
+                const entityId = dsInfo?.entityId;
+
+                if (entityId) {
+                  const entity = await findEntityById(entityId);
+
+                  if (entity?.attributes?.length) {
+                    jsonMapping = {};
+                    for (const attr of entity.attributes) {
+                      if (attr?.name && attr?.mappingName) {
+                        jsonMapping[attr.name] = attr.mappingName;
+                      }
+                    }
+                  }
+                }
+              }
+
               if (!dataSourceVersion) {
                 dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
                 if (!dataSourceDetails?.entityId) {
@@ -1430,12 +1512,12 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                   versionValue,
                   createdBy: userId,
                   status: 'processing',
-                  separator: allJsonSeparator[fileDetailName] || {},
+                  separator: jsonSeparator,
                   fileName: originalname,
                   filePath: newFilePath,
                   fileType: mimetype,
                   fileSize: size,
-                  mappings: allJsonMapping[mappingName] || {},
+                  mappings: jsonMapping,
                   isActive: true,
                   isCurrent: false,
                 });
