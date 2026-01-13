@@ -15,9 +15,10 @@ import { getAttributeByName } from '../../../utils/entity.utils';
 import { getDataSourceVersion } from '../../../database/services/common/dataSourceVersion.services';
 import { autoPopulateAttributeOptionFromRow } from '../../../utils/attributeOption.utils';
 import { findCustomReportById } from '../../../database/services/reportivix/customReport.services';
-import { findReportRequestById } from '../../../database/services/reportivix/reportRequest.services';
+import { findReportRequestById, updateReportRequest } from '../../../database/services/reportivix/reportRequest.services';
 import { createDownloadRequest } from '../../../database/services/common/downloadRequest.service';
 import { Queue } from 'bullmq';
+import { generateCustomReportsFunction } from '../reportivix/customReport.controller';
 const ObjectId = mongoose.Types.ObjectId;
 
 // export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
@@ -1143,6 +1144,22 @@ export const resolveDataImportError = async (
           dataSourceVersionId: ctx.dataSourceVersionId,
         });
       }
+
+      // GENERATE CUSTOM REPORT (ONLY IF reportRequestId)
+      if (reportRequestId) {
+        const reportRequest: any = await findReportRequestById(reportRequestId);
+        await updateReportRequest(reportRequestId, {
+          status: 'processing'
+        });
+        await generateCustomReportsFunction({
+          versionValue: reportRequest?.versionValue,
+          userId,
+          organizationId,
+          orgCode,
+          customReportId: reportRequest?.customReportId,
+          reportRequestId,
+        });
+      }
     }
 
     // =====================================================
@@ -1338,6 +1355,22 @@ export const resolveDataImportError = async (
 
         await updateCustomDataSourceVersionIsCurrentFunction({
           dataSourceVersionId: ctx.dataSourceVersionId,
+        });
+      }
+
+      // GENERATE CUSTOM REPORT (ONLY IF reportRequestId)
+      if (reportRequestId) {
+        const reportRequest: any = await findReportRequestById(reportRequestId);
+        await updateReportRequest(reportRequestId, {
+          status: 'processing'
+        });
+        await generateCustomReportsFunction({
+          versionValue: reportRequest?.versionValue,
+          userId,
+          organizationId,
+          orgCode,
+          customReportId: reportRequest?.customReportId,
+          reportRequestId,
         });
       }
 
