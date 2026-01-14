@@ -173,7 +173,7 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
 ) => {
   try {
     const {
-      paginate = "false",
+      paginate = true,
       dataSourceVersionId,
       dataSourceId,
       reportRequestId,
@@ -300,7 +300,7 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
     const sort: any = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
 
     const result =
-      paginate === "true"
+      paginate === true
         ? await dataImportErrorServices.getDataSourceVersionErrrorList({
             query: finalQuery,
             page,
