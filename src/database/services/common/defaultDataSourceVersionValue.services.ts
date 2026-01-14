@@ -230,7 +230,7 @@ export const getDataSourceVersionValueV1 = async ({
                 localField: '_id',
                 foreignField: localField,
                 as: asField,
-                pipeline: [{ $match: { status: 'active' } }],
+                // pipeline: [{ $match: { status: 'active' } }],
               },
             });
           }else{
@@ -240,7 +240,7 @@ export const getDataSourceVersionValueV1 = async ({
                 localField,
                 foreignField: '_id',
                 as: asField,
-                pipeline: [{ $match: { status: 'active' } }],
+                // pipeline: [{ $match: { status: 'active' } }],
               },
             });
           }
@@ -250,6 +250,30 @@ export const getDataSourceVersionValueV1 = async ({
         }
       }
     }
+
+    // --------------------------------------------------
+// Normalize resolved references (status: active only)
+// --------------------------------------------------
+const addFields: Record<string, any> = {};
+
+for (const [attrName, attr] of Object.entries(attributesMap)) {
+  if (attr.referenceEntitySetting?.refEntityId) {
+    const resolvedPath = `rowData.${attrName}_resolved`;
+
+    addFields[resolvedPath] = {
+      $cond: [
+        { $eq: [`$${resolvedPath}.status`, 'active'] },
+        `$${resolvedPath}`,
+        null,
+      ],
+    };
+  }
+}
+
+if (Object.keys(addFields).length > 0) {
+  aggregationPipeline.push({ $addFields: addFields });
+}
+
 async function buildNestedLookups({
   entityId,
   pathSegments,
@@ -315,7 +339,7 @@ async function buildNestedLookups({
             localField: `${prefix}._id`,
             foreignField: `rowData.${displayField}`,
             as: asField,
-            pipeline: [{ $match: { status: 'active' } }],
+            // pipeline: [{ $match: { status: 'active' } }],
             // pipeline: [{ $project: { _id: 1, rowData: 1 } }],
           },
         });
@@ -326,7 +350,7 @@ async function buildNestedLookups({
             localField: `_id`,
             foreignField: `rowData.${displayField}`,
             as: asField,
-            pipeline: [{ $match: { status: 'active' } }],
+            // pipeline: [{ $match: { status: 'active' } }],
             // pipeline: [{ $project: { _id: 1, rowData: 1 } }],
           },
         });
@@ -418,7 +442,7 @@ async function buildNestedLookups({
           localField: `${prefix}.rowData.${field}`,
           foreignField: '_id',
           as: asField,
-          pipeline: [{ $match: { status: 'active' } }],
+          // pipeline: [{ $match: { status: 'active' } }],
         },
       });
         pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
@@ -551,7 +575,7 @@ async function buildNestedLookupsForSearch({
           localField: `${prefix}._id`,
           foreignField: `rowData.${displayField}`,
           as: asField,
-          pipeline: [{ $match: { status: 'active' } }],
+          // pipeline: [{ $match: { status: 'active' } }],
           // pipeline: [{ $project: { _id: 1, rowData: 1 } }],
         },
       });
@@ -594,7 +618,7 @@ async function buildNestedLookupsForSearch({
           localField: `${prefix}.rowData.${field}`,
           foreignField: '_id',
           as: asField,
-          pipeline: [{ $match: { status: 'active' } }],
+          // pipeline: [{ $match: { status: 'active' } }],
         },
       });
         aggregationPipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
@@ -828,7 +852,7 @@ else if (cond.operator === 'not_match_case_insensitive_array') {
             localField,
             foreignField: "_id",
             as: asField,
-            pipeline: [{ $match: { status: 'active' } }],
+            // pipeline: [{ $match: { status: 'active' } }],
           },
         });
         aggregationPipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
@@ -949,7 +973,7 @@ else if (cond.operator === 'not_match_case_insensitive_array') {
             localField,
             foreignField: "_id",
             as: asField,
-            pipeline: [{ $match: { status: 'active' } }],
+            // pipeline: [{ $match: { status: 'active' } }],
           },
         });
         aggregationPipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
@@ -1043,7 +1067,7 @@ async function buildAggregationPathAndReturnExpr({
             localField: prefix?.endsWith('_resolved') ? `${prefix}._id` : '_id',
             foreignField: `rowData.${displayField}`,
             as: asField,
-            pipeline: [{ $match: { status: 'active' } }],
+            // pipeline: [{ $match: { status: 'active' } }],
           },
         });
         pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
@@ -1073,7 +1097,7 @@ async function buildAggregationPathAndReturnExpr({
             localField: `${prefix}.rowData.${field}`,
             foreignField: '_id',
             as: asField,
-            pipeline: [{ $match: { status: 'active' } }],
+            // pipeline: [{ $match: { status: 'active' } }],
           },
         });
         pipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
