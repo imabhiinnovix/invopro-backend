@@ -37,7 +37,7 @@ const defaultDataSourceVersionSchema = new Schema<IDefaultDataSourceVersionValue
   }
 );
 
-defaultDataSourceVersionSchema.index({ dataSourceVersionId: 1 });
+defaultDataSourceVersionSchema.index({ dataSourceVersionId: 1, status: 1, updatedAt: 1 });
 
 // Expected top-level fields
 const expectedFields = Object.keys(defaultDataSourceVersionSchema.paths);
