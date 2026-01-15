@@ -24,11 +24,23 @@ export const triggerPrepareTodayNotifications = async (req: Request, res: Respon
 
     const { organizationId } = req.user;
 
-    await prepareTodayNotifications(isForce, organizationId);
+    // Fire-and-forget
+    prepareTodayNotifications(isForce, organizationId)
+      .then(() => {
+        console.log(
+          `[${new Date().toISOString()}] prepareTodayNotifications completed`
+        );
+      })
+      .catch((err) => {
+        console.error(
+          `[${new Date().toISOString()}] prepareTodayNotifications failed`,
+          err
+        );
+      });
 
     res.status(200).json({
       success: true,
-      message: 'prepareTodayNotifications executed successfully',
+      message: 'prepareTodayNotifications started successfully',
     });
   } catch (err) {
     console.error(`[${new Date().toISOString()}] On-demand trigger failed:`, err);
