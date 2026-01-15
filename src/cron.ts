@@ -4,8 +4,8 @@ import { prepareTodayNotifications } from "./cronServices/prepareNotificationsFo
 export function startCronJobs() {
   console.log(`[${new Date().toISOString()}] Cron service initialized`);
 
-  // ✅ Run every day at 1 AM server time
-  cron.schedule("0 1 * * *", async () => {
+  // ✅ Run every day at 1 AM server time EXCEPT Monday
+  cron.schedule("0 1 * * 0,2-6", async () => {
     console.log(`[${new Date().toISOString()}] Starting prepareTodayNotifications job...`);
 
     try {
