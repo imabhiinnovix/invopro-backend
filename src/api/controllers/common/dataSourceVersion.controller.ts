@@ -206,16 +206,26 @@ export async function validateFileDataCondition({ fileData, attributeSetting, co
         const refEntityId: string = attr.referenceEntitySetting.refEntityId;
         const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
 
-        const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
-        const RefModel = await getModelForEntity(refEntityId);
+        // const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
+        // const RefModel = await getModelForEntity(refEntityId);
+        const { field: refEntityField, model: RefModel } = await getRefMeta(refEntityId, refEntityFieldId);
 
-        const escapedValue = escapeRegExp(fieldValue.trim());
-        const regex = new RegExp(`^${escapedValue}$`, 'i');
+        // const escapedValue = escapeRegExp(fieldValue.trim());
+        // const regex = new RegExp(`^${escapedValue}$`, 'i');
 
-        const referencedDoc: any = await RefModel.findOne({
-          [`rowData.${refEntityField.name}`]: regex,
-          'status': 'active'
-        });
+        // const referencedDoc: any = await RefModel.findOne({
+        //   [`rowData.${refEntityField.name}`]: regex,
+        //   'status': 'active'
+        // });
+
+        const referencedDoc = await resolveReference(
+                            refEntityId,
+                            // refEntityFieldId,
+                            fieldValue,
+                            refEntityField,
+                            RefModel
+                          );
+
 
         if (referencedDoc) {
           const subField = condition.field.split('.')[1];
@@ -307,9 +317,12 @@ async function validateAndConvert({
 
   if (type === 'option' || type === 'multioption') {
   if (optionAttributeId) {
-    const attributeOptionDetails = await attributeOptionService.findAttributeOptionById(optionAttributeId);
+    // const attributeOptionDetails = await attributeOptionService.findAttributeOptionById(optionAttributeId);
 
-    const attributeOptionValue: string[] = attributeOptionDetails?.attributeValue || [];
+    // const attributeOptionValue: string[] = attributeOptionDetails?.attributeValue || [];
+
+    const attributeOptionValue = await getOptionSet(optionAttributeId);
+
 
     // normalize available options to lowercase
     const optionSet = new Set(attributeOptionValue.map((v) => v.trim().toLowerCase()));
@@ -468,16 +481,25 @@ async function validateFileData({
           const refEntityId = attr.referenceEntitySetting.refEntityId;
           const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
 
-          const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
-          const RefModel = await getModelForEntity(refEntityId);
+          // const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
+          // const RefModel = await getModelForEntity(refEntityId);
+          const { field: refEntityField, model: RefModel } = await getRefMeta(refEntityId, refEntityFieldId);
 
-          const escapedValue = escapeRegExp(value.trim());
-          const regex = new RegExp(`^${escapedValue}$`, 'i');
+          // const escapedValue = escapeRegExp(value.trim());
+          // const regex = new RegExp(`^${escapedValue}$`, 'i');
 
-          const referencedDoc: any = await RefModel.findOne({
-            [`rowData.${refEntityField.name}`]: regex,
-            'status': 'active'
-          });
+          // const referencedDoc: any = await RefModel.findOne({
+          //   [`rowData.${refEntityField.name}`]: regex,
+          //   'status': 'active'
+          // });
+          const referencedDoc = await resolveReference(
+                              refEntityId,
+                              // refEntityFieldId,
+                              value,
+                              refEntityField,
+                              RefModel
+                            );
+
 
           if (!referencedDoc) {
             const refDataSourceDetails = await dataSourceService.findDataSourcesByEntityId(refEntityId);
@@ -801,6 +823,102 @@ export async function validateRowData({
   return { isValid: errors.length === 0, errors, validatedRowData };
 }
 
+// =====================
+// Reference cache
+// =====================
+const refMetaCache = new Map<
+  string,
+  {
+    field: any;
+    model: any;
+  }
+>();
+
+async function getRefMeta(
+  refEntityId: string,
+  refEntityFieldId: string
+) {
+  const cacheKey = `${refEntityId}:${refEntityFieldId}`;
+
+  if (!refMetaCache.has(cacheKey)) {
+    const field = await getEntityAttribute(refEntityId, refEntityFieldId);
+    const model = await getModelForEntity(refEntityId);
+
+    refMetaCache.set(cacheKey, { field, model });
+  }
+
+  return refMetaCache.get(cacheKey)!;
+}
+
+// =====================
+// Option value cache
+// =====================
+const optionCache = new Map<string, string[]>();
+
+async function getOptionSet(optionAttributeId: string) {
+  if (!optionCache.has(optionAttributeId)) {
+    const opt =
+      await attributeOptionService.findAttributeOptionById(optionAttributeId);
+
+    optionCache.set(optionAttributeId, opt?.attributeValue || []);
+  }
+
+  return optionCache.get(optionAttributeId)!;
+}
+
+// =====================
+// Regex cache (exact match, bracket-safe)
+// =====================
+const regexCache = new Map<string, RegExp>();
+function getExactRegex(value: string): RegExp {
+  const key = value.trim().toLowerCase();
+
+  if (!regexCache.has(key)) {
+    const escaped = escapeRegExp(value.trim());
+    regexCache.set(key, new RegExp(`^${escaped}$`, 'i'));
+  }
+
+  return regexCache.get(key)!;
+}
+
+
+// =====================
+// Reference value cache
+// =====================
+const refValueCache = new Map<string, any | null>();
+async function resolveReference(
+  refEntityId: string,
+  // refEntityFieldId: string,
+  value: string,
+  field: any,
+  model: any
+) {
+  // 1️⃣ get metadata (cached)
+  // const { field, model } = await getRefMeta(refEntityId, refEntityFieldId);
+
+  // 2️⃣ value cache key
+  const cacheKey = `${refEntityId}:${field.name}:${value.trim().toLowerCase()}`;
+
+  if (refValueCache.has(cacheKey)) {
+    return refValueCache.get(cacheKey);
+  }
+
+  // 3️⃣ exact regex (bracket-safe)
+  const regex = getExactRegex(value);
+
+  const doc =
+    (await model.findOne({
+      [`rowData.${field.name}`]: regex,
+      status: 'active',
+    })) || null;
+
+  refValueCache.set(cacheKey, doc);
+  return doc;
+}
+
+
+
+
 export async function createDataSourceVersion(req: Request, res: Response, next: NextFunction) {
   try {
     const { versionName, mappings, separator, dataSourceId, versionValue } = req.body;
@@ -817,6 +935,13 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
     let combinedSize = 0;
     let combinedData: any[] = [];
     let dataSourceVersionId;
+
+    // reset cache for this import
+    refMetaCache.clear();
+    optionCache.clear();
+    regexCache.clear();
+    refValueCache.clear();
+
     for (const file of files) {
       const { originalname, path: tempPath, size, mimetype } = file;
       const fileName = originalname;
@@ -1065,6 +1190,12 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
     const allJsonSeparator = separator ? JSON.parse(separator) : {};
 
     const { userId, organizationId, orgCode } = req?.user;
+    
+     // reset cache for this import
+    refMetaCache.clear();
+    optionCache.clear();
+    regexCache.clear();
+    refValueCache.clear();
 
     const files = Array.isArray(req.files) ? req.files : Object.values(req.files!).flat();
     const customReportData = await customReportServices.findCustomReportById(customReportId);
