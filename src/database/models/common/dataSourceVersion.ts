@@ -35,7 +35,7 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
     reportRequestId: { type: Schema.Types.ObjectId, ref: 'report_requests' },
     status: {
       type: String,
-      enum: ['failed', 'processing', 'completed'], // Restricting the values of status
+      enum: ['failed', 'processing', 'completed', 'partially-completed'], // Restricting the values of status
       required: true,
       default: 'processing', // Optional: Default value for status
     },

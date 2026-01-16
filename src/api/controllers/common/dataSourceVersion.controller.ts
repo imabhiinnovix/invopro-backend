@@ -554,7 +554,7 @@ async function validateFileData({
                 status: 'open',
                 fileRowNumber: rowNum,
                 fileName,
-                errorMessage: `${attrName}- ${value} is not a valid ${attr.type}.Expected value from options: ${attributeOptionValue}.`,
+                errorMessage: `Invalid ${attrName} value ${value} must be one of the allowed options.`,
               });
             } else {
               errors.push({
@@ -1080,6 +1080,16 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
               isCurrent: true,
             });
           }
+          await attributeOptionService.updateAttributeOptionsByQuery({
+                                                query: {
+                                                  organizationId,
+                                                  isPopulateFixed: 1,
+                                                },
+                                                updateFields: {
+                                                  isPopulateFixed: 2,
+                                                },
+                                              });
+
         } catch (error) {
           console.error('Error while processing data:', error);
         }
@@ -1738,6 +1748,12 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
         }
 
         if (isAnyDataSourceFailed) {
+          await dataSourceVersionService.updateDataSourceVersions({
+            query: {
+             _id: { $in : completedVersionIds }
+            },
+            updateFields: { status: 'partially-completed' },
+          });
           await reportRequestService.updateReportRequest(reportRequestId, { status: 'error' });
         } else {
           for (const versionId of completedVersionIds) {
@@ -1791,6 +1807,16 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
             reportRequestId,
           });
         }
+
+        await attributeOptionService.updateAttributeOptionsByQuery({
+                                                query: {
+                                                  organizationId,
+                                                  isPopulateFixed: 1,
+                                                },
+                                                updateFields: {
+                                                  isPopulateFixed: 2,
+                                                },
+                                              });
       } catch (err) {
         console.error('Processing error:', err);
         await reportRequestService.updateReportRequest(reportRequestId, { status: 'failed' });

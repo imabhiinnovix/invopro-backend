@@ -400,11 +400,13 @@ export const exportDataSourceVersionErrorToExcel = async (
       filters,
       search,
       selectedFields,
+      reportRequestId
     } = req.query as {
       dataSourceVersionId: string;
       filters?: string;
       search?: string;
       selectedFields?: string[];
+      reportRequestId: string;
     };
 
     const { userId, organizationId } = req.user;
@@ -413,7 +415,54 @@ export const exportDataSourceVersionErrorToExcel = async (
     // BUILD QUERY COMPLETELY HERE
     // --------------------------------------------------------------------
     const parsedFilters = filters ? JSON.parse(filters) : {};
-    const query: any = { dataSourceVersionId };
+    
+    if (!reportRequestId && !dataSourceVersionId) {
+      return res.status(400).json({
+        success: false,
+        message: "Either reportRequestId or dataSourceVersionId is required",
+      });
+    }
+    
+    let dataSourceVersionIds: Types.ObjectId[] = [];
+
+  // -------------------------------
+  // CUSTOM REPORT FLOW
+  // -------------------------------
+  if (reportRequestId) {
+    const reportRequest: any = await findReportRequestById(reportRequestId);
+    const customReport: any = await findCustomReportById(
+      reportRequest?.customReportId
+    );
+
+    if (!customReport?.dataSourceIds?.length) {
+      return new Map();
+    }
+
+    for (const ds of customReport.dataSourceIds) {
+      const version: any = await getDataSourceVersion({
+        query: {
+          dataSourceId: ds.dataSourceId,
+          versionValue: reportRequest?.versionValue,
+          status: "failed",
+          isActive: true,
+        },
+        sort: { createdAt: -1 },
+      });
+
+      if (version) {
+        dataSourceVersionIds.push(version._id);
+      }
+    }
+  }else{
+    dataSourceVersionIds = [new Types.ObjectId(dataSourceVersionId)];
+  }
+
+  // -------------------------------
+  // ERROR QUERY
+  // -------------------------------
+  const query: any = {
+    dataSourceVersionId: { $in: dataSourceVersionIds },
+  };
 
     const filterableFields = [
       "errorCode",
@@ -916,7 +965,7 @@ async function getGroupedErrorContext({
         query: {
           dataSourceId: ds.dataSourceId,
           versionValue: reportRequest?.versionValue,
-          status: "failed",
+          status: { $in : ["failed", "partially-completed"] },
           isActive: true,
         },
         sort: { createdAt: -1 },
@@ -947,7 +996,7 @@ async function getGroupedErrorContext({
   };
 
   if (rowNumbers?.length) {
-    query.rowNumber = { $in: rowNumbers };
+    query._id = { $in: rowNumbers };
   }
 
   const records =
@@ -965,15 +1014,35 @@ async function getGroupedErrorContext({
     }
   >();
 
-  for (const r of records) {
-    const key = `${r.dataSourceId}_${r.dataSourceVersionId}`;
+  // 1️ Pre-fill map (safe)
+  for (const dsvId of dataSourceVersionIds) {
+    const version: any = await getDataSourceVersion({
+      query: { _id: dsvId },
+    });
+
+    if (!version) continue;
+
+    const key = `${version.dataSourceId}_${version._id}`;
+
     if (!map.has(key)) {
       map.set(key, {
-        dataSourceId: r.dataSourceId,
-        dataSourceVersionId: r.dataSourceVersionId,
+        dataSourceId: version.dataSourceId,
+        dataSourceVersionId: version._id,
         rowNumbers: [],
       });
     }
+  }
+
+  // 2️ Just push row numbers (no need to check map existence)
+  for (const r of records) {
+    const key = `${r.dataSourceId}_${r.dataSourceVersionId}`;
+    // if (!map.has(key)) {
+    //   map.set(key, {
+    //     dataSourceId: r.dataSourceId,
+    //     dataSourceVersionId: r.dataSourceVersionId,
+    //     rowNumbers: [],
+    //   });
+    // }
     map.get(key)!.rowNumbers.push(r.rowNumber);
   }
 
@@ -1014,7 +1083,17 @@ export const resolveDataImportError = async (
       rowNumbers: rowNumber ? rowNumbers : undefined,
     });
 
-    if (!groupedContexts.size) {
+    const contextsToProcess =
+                    action === "discardAllSubmit" || action === "submit"
+                      ? groupedContexts
+                      : new Map(
+                          [...groupedContexts].filter(
+                            ([, ctx]) => ctx.rowNumbers.length > 0
+                          )
+                        );
+
+
+    if (!contextsToProcess.size) {
       return res.status(400).json({
         success: false,
         message: "No error records found",
@@ -1025,7 +1104,7 @@ export const resolveDataImportError = async (
     // DISCARD
     // =====================================================
     if (action === "discard") {
-      for (const [, ctx] of groupedContexts) {
+      for (const [, ctx] of contextsToProcess) {
         const dataSource = await dataSourceService.findDataSourceById(
           ctx.dataSourceId,
           true
@@ -1090,7 +1169,7 @@ export const resolveDataImportError = async (
     // DISCARD ALL & SUBMIT
     // =====================================================
     else if (action === "discardAllSubmit") {
-      for (const [, ctx] of groupedContexts) {
+      for (const [, ctx] of contextsToProcess) {
         const dataSource = await dataSourceService.findDataSourceById(
           ctx.dataSourceId,
           true
@@ -1166,7 +1245,7 @@ export const resolveDataImportError = async (
     // UPDATE
     // =====================================================
     else if (action === "update") {
-      for (const [, ctx] of groupedContexts) {
+      for (const [, ctx] of contextsToProcess) {
         const dataSource = await dataSourceService.findDataSourceById(
           ctx.dataSourceId,
           true
@@ -1254,7 +1333,7 @@ export const resolveDataImportError = async (
         fileAttributeValue
       );
 
-      for (const [, ctx] of groupedContexts) {
+      for (const [, ctx] of contextsToProcess) {
         const dataSource = await dataSourceService.findDataSourceById(
           ctx.dataSourceId,
           true
@@ -1301,7 +1380,7 @@ export const resolveDataImportError = async (
     // SUBMIT
     // =====================================================
     else if (action === "submit") {
-      for (const [, ctx] of groupedContexts) {
+      for (const [, ctx] of contextsToProcess) {
         const open =
           await dataImportErrorServices.getDataImportErrorRecords({
             dataSourceVersionId: ctx.dataSourceVersionId,
@@ -1380,7 +1459,7 @@ export const resolveDataImportError = async (
     // UNIQUE
     // =====================================================
     else if (action === "unique") {
-      for (const [, ctx] of groupedContexts) {
+      for (const [, ctx] of contextsToProcess) {
         const dataSource = await dataSourceService.findDataSourceById(
           ctx.dataSourceId,
           true
@@ -1479,7 +1558,7 @@ export const getErrorRowDataBasedOnDataSourceVersionIdAndRowNumber = async (
     if (errorRecord) {
       const { errorCode, attributeName } = errorRecord;
 
-      if (["1001", "1002"].includes(errorCode)) {
+      if (["1001", "1002", "1004"].includes(errorCode)) {
         errorAction = `Fix Error - ${attributeName}`;
       } else if (errorCode === "1003") {
         errorAction = `Create New ${attributeName}`;

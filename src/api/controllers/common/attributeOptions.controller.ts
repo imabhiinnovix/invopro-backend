@@ -5,7 +5,7 @@ import { unlink } from 'fs/promises';
 import mongoose from 'mongoose';
 export const createAttribute = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { attributeName, attributeValue } = req.body;
+    const { attributeName, attributeValue, isPopulateFixed = 0 } = req.body;
     const { organizationId, userId } = req.user;
 
     const attributeData = await attributeOptionService.findAttributeByNameAndOrganization(
@@ -18,6 +18,7 @@ export const createAttribute = async (req: Request, res: Response, next: NextFun
     const attribute = await attributeOptionService.createAttribute({
       attributeName,
       attributeValue: attributeValue || [],
+      isPopulateFixed,
       organizationId,
       createdBy: userId,
       isActive: true,
@@ -35,7 +36,7 @@ export const createAttribute = async (req: Request, res: Response, next: NextFun
 
 export const updateAttribute = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { attributeName, attributeValue } = req.body;
+    const { attributeName, attributeValue, isPopulateFixed } = req.body;
     const { userId, organizationId } = req.user;
 
     const attributeData: any = await attributeOptionService.findAttributeByNameAndOrganization(
@@ -49,6 +50,7 @@ export const updateAttribute = async (req: Request, res: Response, next: NextFun
     await attributeOptionService.updateAttribute(req.params.attributeId, {
       attributeName,
       attributeValue,
+      isPopulateFixed,
       updatedBy: userId,
     });
     res.status(201).json({

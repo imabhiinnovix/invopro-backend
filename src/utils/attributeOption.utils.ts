@@ -77,6 +77,11 @@ export async function autoPopulateAttributeOption({
       if (!uniqueValues || uniqueValues.length === 0) continue;
       if (attributeOptionId) {
         const existing = await attributeOptionService.findAttributeOptionById(attributeOptionId);
+
+        if (existing?.isPopulateFixed === 2) {
+          continue;
+        }
+
         const existingValues: string[] = existing?.attributeValue || [];
 
         const existingSet = new Set(existingValues.map((v) => v.toLowerCase()));
@@ -91,6 +96,15 @@ export async function autoPopulateAttributeOption({
       } else {
         // 🔑 Fix: check if attribute already exists before creating
         const existing: any = await attributeOptionService.findAttributeByNameAndOrganization(attributeName, organizationId);
+        if (existing?.isPopulateFixed === 2) {
+          await entityService.updateEntityAttributeOptionId({
+            entityId,
+            attributeName,
+            attributeType: attribute.type,
+            optionAttributeId: existing._id,
+          });
+          continue;
+        }
         if (existing) {
           const existingValues: string[] = existing?.attributeValue || [];
           const existingSet = new Set(existingValues.map((v) => v.toLowerCase()));
@@ -113,6 +127,7 @@ export async function autoPopulateAttributeOption({
           const created = await attributeOptionService.createAttribute({
             attributeName,
             attributeValue: uniqueValues,
+            isPopulateFixed: attribute?.isOptionFixed === true ? 1 : 0,
             organizationId,
             createdBy: userId,
             isActive: true,
@@ -180,6 +195,9 @@ export async function autoPopulateAttributeOptionFromRow({
 
       if (attribute.optionAttributeId) {
         const existing = await attributeOptionService.findAttributeOptionById(attribute.optionAttributeId);
+        if (existing?.isPopulateFixed === 2) {
+          continue;
+        }
         const existingValues: string[] = existing?.attributeValue || [];
         const existingSet = new Set(existingValues.map((v) => v.toLowerCase()));
 
@@ -192,7 +210,15 @@ export async function autoPopulateAttributeOptionFromRow({
       } else {
         // 🔑 Fix: check before creating
         const existing: any = await attributeOptionService.findAttributeByNameAndOrganization(attributeName, organizationId);
-
+        if (existing?.isPopulateFixed === 2) {
+          await entityService.updateEntityAttributeOptionId({
+            entityId,
+            attributeName,
+            attributeType: attribute.type,
+            optionAttributeId: existing._id,
+          });
+          continue;
+        }
         if (existing) {
           const existingValues: string[] = existing?.attributeValue || [];
           const existingSet = new Set(existingValues.map((v) => v.toLowerCase()));
@@ -214,6 +240,7 @@ export async function autoPopulateAttributeOptionFromRow({
             attributeName,
             attributeValue: values,
             organizationId,
+            isPopulateFixed: attribute?.isOptionFixed === true ? 1 : 0,
             createdBy: userId,
             isActive: true,
           });
