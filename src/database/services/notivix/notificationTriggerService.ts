@@ -91,13 +91,13 @@ export async function processNotification(notif: IPreparedNotification, extraCon
     // OVERALL template
     else if (template.type === "overall") {
       const groups: Array<{ groupKey: string; rows: Record<string, any>[] }> = [];
-      let firstRow: Record<string, any> | null = null;
+      // let firstRow: Record<string, any> | null = null;
 
       for (const [groupKey, rows] of Object.entries(notif.payload || {})) {
         const rowArray = rows as Array<{ rowData: Record<string, any> }>;
-        if (!firstRow && rowArray.length > 0) {
-          firstRow = flattenObject(rowArray[0].rowData);
-        }
+        // if (!firstRow && rowArray.length > 0) {
+        //   firstRow = flattenObject(rowArray[0].rowData);
+        // }
 
         groups.push({
           groupKey,
@@ -125,7 +125,8 @@ export async function processNotification(notif: IPreparedNotification, extraCon
         });
       }
 
-      const baseContext = { ...(firstRow || {}), groups, todayDate, lastUploadedDate, acknowledgeIdentifierKey: acknowledge?.identifierKey, acknowledgeId: acknowledge?._id, baseFrontendUrl: process.env.BASE_FRONTEND_URL };
+      // const baseContext = { ...(firstRow || {}), groups, todayDate, lastUploadedDate, acknowledgeIdentifierKey: acknowledge?.identifierKey, acknowledgeId: acknowledge?._id, baseFrontendUrl: process.env.BASE_FRONTEND_URL };
+      const baseContext = { groups, todayDate, lastUploadedDate, acknowledgeIdentifierKey: acknowledge?.identifierKey, acknowledgeId: acknowledge?._id, baseFrontendUrl: process.env.BASE_FRONTEND_URL };
       // merge extraContext if provided
       if (extraContext) Object.assign(baseContext, extraContext);
 
