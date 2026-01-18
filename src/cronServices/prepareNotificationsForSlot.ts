@@ -678,6 +678,9 @@ async function resolveRefAttribute(
 
   // --- Pagination loop ---
   let skip = 0;
+  const dueDateField = "DueDate"; // change if different
+  const dueDateAggPath = await toAggregationFieldPath(dueDateField);
+
 // const lookups = await generateLookupsForAllReferences(attributesMap);
 // --- Build lookups for each root-level attribute separately ---
 let lookups: any[] = [];
@@ -703,6 +706,11 @@ while (true) {
   } else {
     aggregationPipeline.push({ $match: { dataSourceVersionId: dataSourceVersion._id } });
   }
+
+  // SORT BY DUE DATE (ASC)
+  aggregationPipeline.push({
+    $sort: { [dueDateAggPath]: 1 }
+  });
 
 
   aggregationPipeline.push({ $skip: skip }, { $limit: batchSize });
