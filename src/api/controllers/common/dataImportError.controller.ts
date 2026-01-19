@@ -1100,15 +1100,32 @@ export const resolveDataImportError = async (
       });
     }
 
+    // --------------------------------------------------
+    // PRELOAD DATASOURCE CACHE (ONE DB HIT PER DATASOURCE)
+    // --------------------------------------------------
+    const dataSourceCache = new Map<string, any>();
+
+    await Promise.all(
+      [...contextsToProcess.values()].map(async (ctx) => {
+        if (!dataSourceCache.has(ctx.dataSourceId)) {
+          const ds = await dataSourceService.findDataSourceById(
+            ctx.dataSourceId,
+            true
+          );
+          dataSourceCache.set(ctx.dataSourceId, ds);
+        }
+      })
+    );
+
+    // helper
+    const getCachedDataSource = (id: string) => dataSourceCache.get(id);
+
     // =====================================================
     // DISCARD
     // =====================================================
     if (action === "discard") {
       for (const [, ctx] of contextsToProcess) {
-        const dataSource = await dataSourceService.findDataSourceById(
-          ctx.dataSourceId,
-          true
-        );
+        const dataSource = getCachedDataSource(ctx.dataSourceId);
 
         const errorSchema =
           getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
@@ -1170,10 +1187,7 @@ export const resolveDataImportError = async (
     // =====================================================
     else if (action === "discardAllSubmit") {
       for (const [, ctx] of contextsToProcess) {
-        const dataSource = await dataSourceService.findDataSourceById(
-          ctx.dataSourceId,
-          true
-        );
+        const dataSource = getCachedDataSource(ctx.dataSourceId);
 
         const errorSchema =
           getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
@@ -1230,13 +1244,23 @@ export const resolveDataImportError = async (
         await updateReportRequest(reportRequestId, {
           status: 'processing'
         });
-        await generateCustomReportsFunction({
-          versionValue: reportRequest?.versionValue,
-          userId,
-          organizationId,
-          orgCode,
-          customReportId: reportRequest?.customReportId,
-          reportRequestId,
+          generateCustomReportsFunction({
+            versionValue: reportRequest?.versionValue,
+            userId,
+            organizationId,
+            orgCode,
+            customReportId: reportRequest?.customReportId,
+            reportRequestId,
+          }).then(() => {
+          console.log(
+            `[${new Date().toISOString()}] generateCustomReportsFunction completed`
+          );
+        })
+        .catch((err) => {
+          console.error(
+            `[${new Date().toISOString()}] generateCustomReportsFunction failed`,
+            err
+          );
         });
       }
     }
@@ -1246,10 +1270,7 @@ export const resolveDataImportError = async (
     // =====================================================
     else if (action === "update") {
       for (const [, ctx] of contextsToProcess) {
-        const dataSource = await dataSourceService.findDataSourceById(
-          ctx.dataSourceId,
-          true
-        );
+        const dataSource = getCachedDataSource(ctx.dataSourceId);
 
         const entity = dataSource?.entityId as any;
 
@@ -1334,10 +1355,7 @@ export const resolveDataImportError = async (
       );
 
       for (const [, ctx] of contextsToProcess) {
-        const dataSource = await dataSourceService.findDataSourceById(
-          ctx.dataSourceId,
-          true
-        );
+        const dataSource = getCachedDataSource(ctx.dataSourceId);
 
         const errorSchema =
           getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
@@ -1393,10 +1411,7 @@ export const resolveDataImportError = async (
           });
         }
 
-        const dataSource = await dataSourceService.findDataSourceById(
-          ctx.dataSourceId,
-          true
-        );
+        const dataSource = getCachedDataSource(ctx.dataSourceId);
 
         const errorSchema =
           getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
@@ -1443,13 +1458,23 @@ export const resolveDataImportError = async (
         await updateReportRequest(reportRequestId, {
           status: 'processing'
         });
-        await generateCustomReportsFunction({
+        generateCustomReportsFunction({
           versionValue: reportRequest?.versionValue,
           userId,
           organizationId,
           orgCode,
           customReportId: reportRequest?.customReportId,
           reportRequestId,
+        }).then(() => {
+          console.log(
+            `[${new Date().toISOString()}] generateCustomReportsFunction completed`
+          );
+        })
+        .catch((err) => {
+          console.error(
+            `[${new Date().toISOString()}] generateCustomReportsFunction failed`,
+            err
+          );
         });
       }
 
@@ -1460,10 +1485,7 @@ export const resolveDataImportError = async (
     // =====================================================
     else if (action === "unique") {
       for (const [, ctx] of contextsToProcess) {
-        const dataSource = await dataSourceService.findDataSourceById(
-          ctx.dataSourceId,
-          true
-        );
+        const dataSource = getCachedDataSource(ctx.dataSourceId);
 
         const errorSchema =
           getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
