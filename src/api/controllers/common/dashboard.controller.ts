@@ -949,6 +949,41 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
   }
 };
 
+export const getImageWidgetData = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { widgetId } = req.params;
+    const { organizationId } = req.user;
+
+    const widget = await dashboardWidgetdService.getDashboardWidget({
+      _id: widgetId,
+      organizationId,
+      widgetKind: 'image',
+      isActive: true,
+      isDeleted: false,
+    });
+
+    if (!widget) {
+      return res.status(404).json({
+        success: false,
+        message: 'Image widget not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Image widget fetched successfully',
+      data: widget,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 export const saveDashboardWidgets = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { widgets } = req.body;
