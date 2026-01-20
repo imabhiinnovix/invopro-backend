@@ -14,8 +14,11 @@ import {
   updateWidget,
   selectDashboardTheme,
   getPlotTypes,
+  createImageWidget,
+  getDashboardNameList,
 } from '../../controllers/common/dashboard.controller';
 import { permissionMiddleware } from '../../../middlewares/permission.middleware';
+import { uploadSingleFile } from '../../../middlewares/upload.middleware';
 
 const router = Router();
 
@@ -34,6 +37,9 @@ router.post('/widget/save', authenticateToken, permissionMiddleware(), saveDashb
 router.post('/widget/update/:dashboardWidgetId', authenticateToken, permissionMiddleware(), updateWidget);
 router.post('/widget/delete/:dashboardWidgetId', authenticateToken, permissionMiddleware(), deleteWidget);
 router.get('/widget/getPlotTypes', authenticateToken, permissionMiddleware(), getPlotTypes);
+router.post('/image-widget/save', authenticateToken, uploadSingleFile, createImageWidget);
+router.get('/name-list', authenticateToken, getDashboardNameList);
+
 
 
 export default router;

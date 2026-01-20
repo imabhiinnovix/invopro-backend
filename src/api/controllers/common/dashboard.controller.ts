@@ -88,6 +88,38 @@ export const getDashboards = async (req: Request, res: Response, next: NextFunct
   }
 };
 
+export const getDashboardNameList = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { userId, organizationId } = req.user;
+
+    const { data } = await dashboardService.getAllDashboards({
+      query: {
+        createdBy: userId,
+        organizationId,
+        isActive: true,
+        isDeleted: false,
+      },
+      select: '_id name',
+      paginate: false,
+      page: 0,
+      limit: 0,
+      sort: { name: 1 },
+    });
+
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 export const updateDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userId: createdBy } = req.user;
@@ -998,6 +1030,93 @@ export const saveDashboardWidgets = async (req: Request, res: Response, next: Ne
     next(err);
   }
 };
+
+export const createImageWidget = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { dashboardId, name, description } = req.body;
+    const { organizationId, userId } = req.user;
+    const file = req.file as Express.Multer.File;
+
+    if (!dashboardId || !name) {
+      return res.status(400).json({
+        success: false,
+        message: 'dashboardId, name are required',
+      });
+    }
+
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Image file is required',
+      });
+    }
+
+    // Duplicate name check
+    const existingWidget = await dashboardWidgetdService.getDashboardWidget(
+      {
+        dashboardId,
+        name,
+        isActive: true,
+        isDeleted: false,
+      },
+      []
+    );
+
+    if (existingWidget) {
+      return res.status(400).json({
+        success: false,
+        message: 'Widget name already exists in this dashboard',
+      });
+    }
+
+    // Get next index
+    const lastWidget = await dashboardWidgetdService.getLastWidgetIndex(dashboardId);
+    const nextIndex = (lastWidget?.position?.index || 0) + 1;
+
+    // Handle logo upload
+    let imagePath = '';
+    if (file) {
+      // Assuming first uploaded file is the logo
+      imagePath = `${process.env.BASE_BACKEND_URL}/${file.path.replace(/\\/g, '/')}`;
+    }
+
+    const widget = await dashboardWidgetdService.createDashboardWidget({
+      createdBy: userId,
+      organizationId,
+      dashboardId,
+      widgetKind: 'image',
+
+      name,
+      description,
+
+      position: {
+        x: 0,
+        y: 0,
+        index: nextIndex,
+      },
+
+      image: imagePath,
+
+      // Flags
+      isActive: true,
+      isDeleted: false,
+      isIncremental: false,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Image widget created successfully',
+      data: widget,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 export const deleteWidget = async (req: Request, res: Response, next: NextFunction) => {
   try {
