@@ -1464,22 +1464,76 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
     const generateReportFileName =
       `${customReportData.reportName}_${versionValue}_${currentDateTime}.xlsx`;
 
-    const reportRequest = await reportRequestService.createReportRequest({
-      organizationId,
-      versionValue,
-      customReportId,
-      status: 'processing',
-      fileName: generateReportFileName,
-      filePath: path.join(
-        'uploads',
+    // const reportRequest = await reportRequestService.createReportRequest({
+    //   organizationId,
+    //   versionValue,
+    //   customReportId,
+    //   status: 'processing',
+    //   fileName: generateReportFileName,
+    //   filePath: path.join(
+    //     'uploads',
+    //     organizationId,
+    //     userId,
+    //     'generatedReports',
+    //     generateReportFileName
+    //   ),
+    //   fileType: 'xlsx',
+    //   createdBy: userId,
+    // });
+    let reportRequest: any = await reportRequestService.findReportRequest({
+                  query: {
+                    customReportId,
+                    versionValue,
+                    organizationId,
+                    status: 'error',
+                  },
+                });
+
+    if (reportRequest) {
+      reportRequest = await reportRequestService.updateReportRequest(
+        reportRequest._id,
+        {
+          status: 'processing',
+          fileName: generateReportFileName,
+          filePath: path.join(
+            'uploads',
+            organizationId,
+            userId,
+            'generatedReports',
+            generateReportFileName
+          ),
+          updatedAt: new Date(),
+        }
+      );
+
+      // deactivate failed datasource versions
+      await dataSourceVersionService.updateDataSourceVersions({
+        query: {
+          versionValue,
+          status: 'failed',
+          isActive: true,
+        },
+        updateFields: { isActive: false },
+      });
+    } else {
+      reportRequest = await reportRequestService.createReportRequest({
         organizationId,
-        userId,
-        'generatedReports',
-        generateReportFileName
-      ),
-      fileType: 'xlsx',
-      createdBy: userId,
-    });
+        versionValue,
+        customReportId,
+        status: 'processing',
+        fileName: generateReportFileName,
+        filePath: path.join(
+          'uploads',
+          organizationId,
+          userId,
+          'generatedReports',
+          generateReportFileName
+        ),
+        fileType: 'xlsx',
+        createdBy: userId,
+      });
+    }
+
 
     const reportRequestId: any = reportRequest._id;
     const BATCH_SIZE = 5000;

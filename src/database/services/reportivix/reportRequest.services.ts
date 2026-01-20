@@ -77,3 +77,17 @@ export const findReportRequestById = async (id: string, populate: PopulateOption
     throw err;
   }
 };
+
+export const findReportRequest = async ({
+  query,
+  sort = { updatedAt: -1 },
+  lean = true,
+}: {
+  query: Record<string, any>;
+  sort?: Record<string, 1 | -1>;
+  lean?: boolean;
+}) => {
+  let q = ReportRequestModel.findOne(query).sort(sort);
+  return lean ? q.lean() : q;
+};
+
