@@ -1506,11 +1506,11 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
         }
       );
 
-      // deactivate failed datasource versions
+      // deactivate failed and partially completed datasource versions
       await dataSourceVersionService.updateDataSourceVersions({
         query: {
           versionValue,
-          status: 'failed',
+          status: { $in: ['failed', 'partially-completed'] },
           isActive: true,
         },
         updateFields: { isActive: false },
@@ -1715,6 +1715,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
                   mappings: jsonMapping,
                   isActive: true,
                   isCurrent: false,
+                  reportRequestId
                 });
 
                 entityDetails = dataSourceDetails.entityId;

@@ -967,6 +967,7 @@ async function getGroupedErrorContext({
           versionValue: reportRequest?.versionValue,
           status: { $in : ["failed", "partially-completed"] },
           isActive: true,
+          reportRequestId
         },
         sort: { createdAt: -1 },
       });
