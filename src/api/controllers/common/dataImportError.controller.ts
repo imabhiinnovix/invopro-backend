@@ -229,7 +229,7 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
                               query: {
                                 dataSourceId: ds.dataSourceId,
                                 versionValue: reportRequest?.versionValue,
-                                status: 'failed',
+                                status: { $in : ["failed", "partially-completed"] },
                                 isActive: true,
                                 reportRequestId
                               },
