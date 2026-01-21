@@ -231,6 +231,7 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
                                 versionValue: reportRequest?.versionValue,
                                 status: 'failed',
                                 isActive: true,
+                                reportRequestId
                               },
                               sort: { createdAt: -1 }, // LATEST
                             });
@@ -445,6 +446,7 @@ export const exportDataSourceVersionErrorToExcel = async (
           versionValue: reportRequest?.versionValue,
           status: "failed",
           isActive: true,
+          reportRequestId
         },
         sort: { createdAt: -1 },
       });
