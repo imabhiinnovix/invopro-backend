@@ -54,6 +54,11 @@ const DataImportErrorSchema = new Schema<IDataImportError>(
   }
 );
 
+DataImportErrorSchema.index({
+  dataSourceVersionId: 1,
+  status: 1,
+});
+
 const DataImportErrorModel = model<IDataImportError>('data_import_error', DataImportErrorSchema);
 
 export default DataImportErrorModel;

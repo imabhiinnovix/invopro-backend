@@ -35,7 +35,7 @@ const defaultImportLogDataSourceVersionSchema = new Schema<IDefaultImportLogData
   }
 );
 
-defaultImportLogDataSourceVersionSchema.index({ dataSourceVersionId: 1 });
+defaultImportLogDataSourceVersionSchema.index({ dataSourceVersionId: 1, isErrorLog: 1 });
 
 // Function to create a model with a dynamic schema name
 const createDefaultImportLogDataSourceVersionModel = (schemaName: string) => {
