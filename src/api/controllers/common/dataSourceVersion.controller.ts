@@ -1512,6 +1512,7 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
           versionValue,
           status: { $in: ['failed', 'partially-completed'] },
           isActive: true,
+          reportRequestId: reportRequest._id
         },
         updateFields: { isActive: false },
       });
