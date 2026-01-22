@@ -18,7 +18,7 @@ interface IDataSourceVersion extends Document {
   isActive: boolean;
   versionName: string;
   isCurrent: boolean;
-  status: 'failed' | 'processing' | 'completed';
+  status: 'failed' | 'processing' | 'completed' | 'partially-completed';
   fileName: string;
   mappings: Record<string, string>;
   separator: Record<string, string>;
