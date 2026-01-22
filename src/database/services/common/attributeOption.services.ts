@@ -121,3 +121,26 @@ export const executeAttributeOptionQuery = async ({
 
   return { data, totalCount };
 };
+
+export const updateAttributeOptionsByQuery = async ({
+  query,
+  updateFields,
+}: {
+  query: Record<string, any>;
+  updateFields: Record<string, any>;
+}) => {
+  try {
+    const result = await Attribute.updateMany(
+      query,
+      { $set: updateFields }
+    );
+
+    return {
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
+    };
+  } catch (err) {
+    throw err;
+  }
+};
+

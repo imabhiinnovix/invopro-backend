@@ -11,20 +11,50 @@ interface IAttribute extends Document {
   createdBy: Types.ObjectId;
   updatedBy?: Types.ObjectId;
   isActive: boolean;
+  isPopulateFixed: number; // 0 | 1 | 2
 }
 
 // Define the attribute Schema
 const attributeSchema = new Schema<IAttribute>(
   {
     attributeName: { type: String, required: true },
-    attributeValue: { type: [String] },
-    organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'user' },
-    updatedBy: { type: Schema.Types.ObjectId, ref: 'user' },
-    isActive: { type: Boolean, required: true },
+
+    attributeValue: {
+      type: [String],
+      default: [],
+    },
+
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization',
+      required: true,
+    },
+
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'user',
+      required: true,
+    },
+
+    updatedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'user',
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
+    // ✅ ONLY ADDITION
+    isPopulateFixed: {
+      type: Number,
+      enum: [0, 1, 2],
+      default: 0,
+    },
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt
+    timestamps: true,
   }
 );
 
@@ -34,6 +64,9 @@ attributeSchema.index(
 );
 
 // Create the attribute model
-const AttributeOption = model<IAttribute>('attribute_option', attributeSchema);
+const AttributeOption = model<IAttribute>(
+  'attribute_option',
+  attributeSchema
+);
 
 export default AttributeOption;

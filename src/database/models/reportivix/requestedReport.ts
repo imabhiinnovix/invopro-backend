@@ -24,7 +24,7 @@ interface IReportRequest extends Document {
   filePath?: string;
   fileType?: string;
   fileSize?: string;
-  status: 'failed' | 'processing' | 'completed';
+  status: 'failed' | 'processing' | 'completed' | 'error';
   fileName?: string;
   createdBy: Types.ObjectId;
   dataSourceVersion: IDataSourceVersion[];
@@ -56,7 +56,7 @@ const reportRequestSchema = new Schema<IReportRequest>(
     versionValue: { type: String, required: true },
     status: {
       type: String,
-      enum: ['failed', 'processing', 'completed'], // Restricting the values of status
+      enum: ['failed', 'processing', 'completed', 'error'], // Restricting the values of status
       required: true,
       default: 'processing', // Optional: Default value for status
     },

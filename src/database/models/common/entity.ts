@@ -36,6 +36,7 @@ export interface IAttribute {
   validation?: string[];
   transformations?: string[];
   optionAttributeId?: string;
+  isOptionFixed?: boolean;
   cleaner?: string[];
   referenceEntitySetting?: IReferenceEntitySetting;
   isReferenceEditable?: string; // ✅ Added
@@ -100,6 +101,10 @@ const attributeSchema = new Schema<IAttribute>(
       ref: 'attribute_option',
       default: null,
       set: (value: any) => (value === '' ? null : value),
+    },
+    isOptionFixed: {
+      type: Boolean,
+      default: false
     },
     cleaner: { type: [String] },
     referenceEntitySetting: {
