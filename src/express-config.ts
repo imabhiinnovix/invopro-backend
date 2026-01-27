@@ -65,11 +65,11 @@ const configureExpress = async (app: Express) => {
       [
         "default-src 'self'",
         "script-src 'self'",
-        "style-src 'self' 'unsafe-inline'",
+        "style-src 'self'",
         "img-src 'self' data: https:",
         "font-src 'self' data:",
         "connect-src 'self' https:",
-        "frame-ancestors 'self' https://stgagent.reportivix.com",
+        "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'",
       ].join('; ')
