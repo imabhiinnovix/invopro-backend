@@ -54,6 +54,36 @@ const configureExpress = async (app: Express) => {
 
   app.use(compression());
 
+  // Remove "X-Powered-By: Express"
+  app.disable('x-powered-by');
+
+  // Click jacking protection (App-level)
+  app.use((req, res, next) => {
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader(
+      'Content-Security-Policy',
+      [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: https:",
+        "font-src 'self' data:",
+        "connect-src 'self' https:",
+        "frame-ancestors 'self' https://stgagent.reportivix.com",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ].join('; ')
+    );
+    // Default Permissions-Policy
+    res.setHeader(
+    'Permissions-Policy',
+    'geolocation=(), microphone=(), camera=()'
+    );
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    next();
+  });
+
   // Apply the rate limiting middleware to all requests.
   app.use(limiter);
 
