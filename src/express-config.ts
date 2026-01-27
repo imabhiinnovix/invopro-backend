@@ -59,7 +59,7 @@ const configureExpress = async (app: Express) => {
 
   // Click jacking protection (App-level)
   app.use((req, res, next) => {
-    res.setHeader('X-Frame-Options', 'DENY');
+    // res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader(
       'Content-Security-Policy',
       [
