@@ -56,20 +56,25 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const isPasswordMatch = await comparePassword(password, user.password);
 
     if (!isPasswordMatch) {
-      user.loginAttempts = (user.loginAttempts || 0) + 1;
+      const maxLoginAttempts = config.MAX_LOGIN_ATTEMPTS;
+      const warningLoginAttempts = config.WARNING_LOGIN_ATTEMPTS;
 
+      user.loginAttempts = (user.loginAttempts || 0) + 1;
+      let message = 'Invalid credentials';
       // Lock after 5 failed attempts
-      if (user.loginAttempts >= 5) {
+      if (user.loginAttempts >= maxLoginAttempts) {
         user.isLocked = true;
+        message = 'Your account has been locked due to multiple failed login attempts. Please reset your password.';
+      }else if (user.loginAttempts >= warningLoginAttempts) {
+        message = `Invalid credentials. ${maxLoginAttempts - user.loginAttempts} login attempt(s) remaining before your account is locked.`;
       }
 
       await user.save();
 
       return res.status(400).json({
         success: false,
-        message: user.isLocked
-          ? 'Your account has been locked due to multiple failed login attempts. Please reset your password.'
-          : 'Invalid credentials',
+        message,
+        ...(user.isLocked && { code: 'ACCOUNT_LOCKED' }),
       });
     }
 
