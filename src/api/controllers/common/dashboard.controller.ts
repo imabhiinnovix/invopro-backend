@@ -175,6 +175,7 @@ export const updateDashboard = async (req: Request, res: Response, next: NextFun
     }
 
     const dashboardExist = await dashboardService.getDashboard({
+      _id: {$ne : req.params.dashboardId},
       name,
       createdBy,
       isDeleted: false,
