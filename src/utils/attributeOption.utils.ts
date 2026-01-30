@@ -177,7 +177,7 @@ export async function autoPopulateAttributeOptionFromRow({
       const values = Array.isArray(rawValue) ? rawValue.map((v) => String(v).trim()) : [String(rawValue).trim()];
 
       // Reference entity case
-      if (attribute.referenceEntitySetting?.refEntityId && attribute.referenceEntitySetting?.refEntityField) {
+      if (attribute.referenceEntitySetting?.refEntityId && attribute.referenceEntitySetting?.refEntityField && !['mapping_many_to_one', 'mapping_one_to_one'].includes(attribute.referenceEntitySetting?.relationType)) {
         const refEntityId = attribute.referenceEntitySetting.refEntityId;
         const refFieldId = attribute.referenceEntitySetting.refEntityField;
 
