@@ -29,6 +29,7 @@ import downloadRequests from './common/downloadRequest.routes';
 import organizationVisibilitySettingRoutes from './common/organizationVisibilitySettingRoutes';
 import roleDefaultDashboardRoutes from './common/roleDefaultDashboard.routes';
 import businessUnitRoutes from './common/businessUnit.routes';
+import centralFileRoutes from './common/centralFile.routes';
 
 
 const router = Router();
@@ -63,5 +64,6 @@ router.use('/download-request', downloadRequests);
 router.use('/organization-visibility-setting', organizationVisibilitySettingRoutes);
 router.use('/role-default-dashboard', roleDefaultDashboardRoutes);
 router.use('/business-unit', businessUnitRoutes);
+router.use('/central-file', centralFileRoutes);
 
 export default router;
