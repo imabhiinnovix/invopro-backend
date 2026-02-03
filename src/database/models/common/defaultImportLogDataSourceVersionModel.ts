@@ -6,6 +6,7 @@ import { Schema, model, models, Document, Types } from 'mongoose';
 interface IDefaultImportLogDataSourceVersionValue extends Document {
   entityId: Types.ObjectId;
   dataSourceId: Types.ObjectId;
+  centralFileId?: Types.ObjectId; // NEW
   dataSourceVersionId: Types.ObjectId;
   versionValue: string;
   rowNumber: Number,
@@ -21,7 +22,18 @@ const defaultImportLogDataSourceVersionSchema = new Schema<IDefaultImportLogData
   {
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'DataSource' },
-    dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'data_source_version' },
+    // NEW: Central file reference (always present)
+    centralFileId: {
+      type: Schema.Types.ObjectId,
+      ref: 'central_file',
+      index: true,
+    },
+    // datasource version may not exist initially
+    dataSourceVersionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'data_source_version',
+      default: null,
+    },
     versionValue: { type: String },
     rowNumber: {type: Number},
     rowData: { type: Schema.Types.Mixed }, // Accepts any type of object
@@ -34,6 +46,8 @@ const defaultImportLogDataSourceVersionSchema = new Schema<IDefaultImportLogData
     timestamps: false, // Automatically manage createdAt and updatedAt timestamps
   }
 );
+
+defaultImportLogDataSourceVersionSchema.index({ centralFileId: 1, isErrorLog: 1 });
 
 defaultImportLogDataSourceVersionSchema.index({ dataSourceVersionId: 1, isErrorLog: 1 });
 

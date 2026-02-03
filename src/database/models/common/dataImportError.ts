@@ -6,6 +6,7 @@ import { Schema, model, Document, Types } from 'mongoose';
 interface IDataImportError extends Document {
   dataSourceId: Types.ObjectId;
   entityId: Types.ObjectId;
+  centralFileId?: Types.ObjectId; // NEW
   dataSourceVersionId: Types.ObjectId;
   rowNumber: number;
   fileAttributeName: string;
@@ -28,7 +29,14 @@ const DataImportErrorSchema = new Schema<IDataImportError>(
   {
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
-    dataSourceVersionId: { type: Schema.Types.ObjectId, ref: 'data_source_version' },
+    //NEW: Central File reference (always present)
+    centralFileId: { type: Schema.Types.ObjectId, ref: 'central_file', index: true },
+    // ✅ datasource version may not exist yet
+    dataSourceVersionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'data_source_version',
+      default: null,
+    },
     rowNumber: { type: Number },
     fileRowNumber: { type: String },
     fileName: { type: String },
@@ -53,7 +61,10 @@ const DataImportErrorSchema = new Schema<IDataImportError>(
     timestamps: true,
   }
 );
-
+DataImportErrorSchema.index({
+  centralFileId: 1,
+  status: 1,
+});
 DataImportErrorSchema.index({
   dataSourceVersionId: 1,
   status: 1,

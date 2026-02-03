@@ -64,6 +64,6 @@ router.use('/download-request', downloadRequests);
 router.use('/organization-visibility-setting', organizationVisibilitySettingRoutes);
 router.use('/role-default-dashboard', roleDefaultDashboardRoutes);
 router.use('/business-unit', businessUnitRoutes);
-router.use('/central-file', centralFileRoutes);
+router.use('/central-files', centralFileRoutes);
 
 export default router;

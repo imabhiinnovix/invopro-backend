@@ -5,7 +5,9 @@ import { Schema, model, Document, Types } from 'mongoose';
 
 interface ICentralFile extends Document {
   organizationId: Types.ObjectId;
-  reportId: Types.ObjectId; // ✅ Custom Report ID instead of category
+  reportId: Types.ObjectId;
+  dataSourceId: Types.ObjectId; // ✅ Custom Report ID instead of category
+  entityId: Types.ObjectId;
   year: number;
   month: number;
 
@@ -19,7 +21,10 @@ interface ICentralFile extends Document {
   fileType: string;
   fileSize: number;
 
-  validationStatus: 'pending' | 'validated' | 'failed';
+  validationStatus: 'pending' | 'processing' | 'mapping' | 'validated' | 'failed';
+
+  mapping?: Record<string, any>;
+  separator?: Record<string, string>;
 
   createdBy: Types.ObjectId;
   updatedBy: Types.ObjectId;
@@ -29,8 +34,11 @@ const centralFileSchema = new Schema<ICentralFile>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
 
-    // ✅ Custom Report Reference
-    reportId: { type: Schema.Types.ObjectId, ref: 'custom_reports', required: true },
+    reportId: { type: Schema.Types.ObjectId, ref: 'custom_reports', default: null },
+
+    dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
+
+    entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
 
     year: { type: Number, required: true },
     month: { type: Number, required: true },
@@ -45,9 +53,12 @@ const centralFileSchema = new Schema<ICentralFile>(
     fileType: { type: String },
     fileSize: { type: Number },
 
+    mapping: { type: Schema.Types.Mixed },
+    separator: { type: Schema.Types.Mixed },
+
     validationStatus: {
       type: String,
-      enum: ['pending', 'validated', 'failed'],
+      enum: ['pending', 'processing', 'mapping', 'validated', 'failed'],
       default: 'pending',
     },
 
@@ -60,7 +71,7 @@ const centralFileSchema = new Schema<ICentralFile>(
 // ✅ Index for fast lookup
 centralFileSchema.index({
   organizationId: 1,
-  reportId: 1,
+  dataSourceId: 1,
   year: 1,
   month: 1,
   originalFileName: 1,

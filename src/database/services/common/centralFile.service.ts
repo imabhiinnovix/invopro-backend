@@ -11,6 +11,10 @@ export const findLatestCentralFile = async (query: any) => {
   return await CentralFile.findOne(query).sort({ version: -1 });
 };
 
+export const findCentralFileById = async (id: string) => {
+  return await CentralFile.findById(id);
+};
+
 export const createCentralFile = async (data: any) => {
   const file = new CentralFile(data);
   return await file.save();
