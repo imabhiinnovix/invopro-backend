@@ -14,14 +14,14 @@ import { uploadMultipleFile } from '../../../middlewares/upload.middleware';
 const router = Router();
 
 router.post('/upload', authenticateToken, /*permissionMiddleware(),*/ uploadMultipleFile, uploadCentralFile);
-router.get('/list', authenticateToken, permissionMiddleware(), getCentralFileList);
-router.get('/latest', authenticateToken, permissionMiddleware(), getLatestCentralFiles);
+router.get('/list', authenticateToken, /*permissionMiddleware(),*/ getCentralFileList);
+router.get('/latest', authenticateToken, /*permissionMiddleware(),*/ getLatestCentralFiles);
 
 // ✅ REVALIDATE CENTRAL FILE
 router.put(
   '/revalidate/:centralFileId',
   authenticateToken,
-  permissionMiddleware(),
+  // permissionMiddleware(),
   revalidateCentralFile
 );
 
