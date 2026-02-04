@@ -25,6 +25,26 @@ export function getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
   return `data_${orgCode}_import_log_${versionCode}`;
 }
 
+export function getCentralFileSchemaNameBasedOnVersionCodeAndOrgCode({
+  orgCode,
+  versionCode,
+}: {
+  orgCode: string;
+  versionCode: string;
+}) {
+  return `data_${orgCode}_central_file_${versionCode}`;
+}
+
+export function getImportLogCentralFileSchemaNameBasedOnVersionCodeAndOrgCode({
+  orgCode,
+  versionCode,
+}: {
+  orgCode: string;
+  versionCode: string;
+}) {
+  return `data_${orgCode}_import_log_central_file_${versionCode}`;
+}
+
 export function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);

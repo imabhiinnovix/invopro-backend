@@ -402,7 +402,7 @@ export async function validateFileData({
     };
 
     // track temporary __display keys for cleanup later
-    const tempDisplayAttrs: string[] = [];
+    // const tempDisplayAttrs: string[] = [];
 
     for (const attr of attributes) {
       const attrName = attr.name;
@@ -450,63 +450,65 @@ export async function validateFileData({
           errorMessage: `The attribute "${attrName}" is required but is missing.`,
         });
         newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
-      } else if (value !== undefined && value != null && value) {
-        if (
-          attr.referenceEntitySetting?.refEntityId &&
-          ['one_to_one', 'many_to_one'].includes(attr.referenceEntitySetting?.relationType)
-        ) {
-          const refEntityId = attr.referenceEntitySetting.refEntityId;
-          const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
+      } 
+      else if (value !== undefined && value != null && value) {
+        // if (
+        //   attr.referenceEntitySetting?.refEntityId &&
+        //   ['one_to_one', 'many_to_one'].includes(attr.referenceEntitySetting?.relationType)
+        // ) {
+        //   const refEntityId = attr.referenceEntitySetting.refEntityId;
+        //   const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
 
-          // const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
-          // const RefModel = await getModelForEntity(refEntityId);
-          const { field: refEntityField, model: RefModel } = await getRefMeta(refEntityId, refEntityFieldId);
+        //   // const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
+        //   // const RefModel = await getModelForEntity(refEntityId);
+        //   const { field: refEntityField, model: RefModel } = await getRefMeta(refEntityId, refEntityFieldId);
 
-          // const escapedValue = escapeRegExp(value.trim());
-          // const regex = new RegExp(`^${escapedValue}$`, 'i');
+        //   // const escapedValue = escapeRegExp(value.trim());
+        //   // const regex = new RegExp(`^${escapedValue}$`, 'i');
 
-          // const referencedDoc: any = await RefModel.findOne({
-          //   [`rowData.${refEntityField.name}`]: regex,
-          //   'status': 'active'
-          // });
-          const referencedDoc = await resolveReference(
-                              refEntityId,
-                              // refEntityFieldId,
-                              value,
-                              refEntityField,
-                              RefModel
-                            );
+        //   // const referencedDoc: any = await RefModel.findOne({
+        //   //   [`rowData.${refEntityField.name}`]: regex,
+        //   //   'status': 'active'
+        //   // });
+        //   const referencedDoc = await resolveReference(
+        //                       refEntityId,
+        //                       // refEntityFieldId,
+        //                       value,
+        //                       refEntityField,
+        //                       RefModel
+        //                     );
 
 
-          if (!referencedDoc) {
-            const refDataSourceDetails = await dataSourceService.findDataSourcesByEntityId(refEntityId);
-            errors.push({
-              entityId,
-              dataSourceId,
-              dataSourceVersionId,
-              centralFileId,
-              rowNumber: index + 1,
-              fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
-              fileAttributeValue: value,
-              attributeName: attrName,
-              attributeType: attr.type,
-              refEntityId,
-              refAttributeId: refEntityFieldId,
-              refDataSourceId: refDataSourceDetails?.[0]?._id,
-              errorType: ERROR_CODES.INVALID_REFERENCE.type,
-              errorCode: ERROR_CODES.INVALID_REFERENCE.code,
-              fileRowNumber: rowNum,
-              fileName,
-              status: 'open',
-              errorMessage: `${attrName}- ${value} not found.`,
-            });
-            newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
-          } else {
-            newRow.rowData[attrName] = referencedDoc._id;
-            newRow.rowData[`${attrName}__display`] = referencedDoc.rowData?.[refEntityField.name];
-            tempDisplayAttrs.push(`${attrName}__display`); // ✅ track for cleanup
-          }
-        } else {
+        //   if (!referencedDoc) {
+        //     const refDataSourceDetails = await dataSourceService.findDataSourcesByEntityId(refEntityId);
+        //     errors.push({
+        //       entityId,
+        //       dataSourceId,
+        //       dataSourceVersionId,
+        //       centralFileId,
+        //       rowNumber: index + 1,
+        //       fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
+        //       fileAttributeValue: value,
+        //       attributeName: attrName,
+        //       attributeType: attr.type,
+        //       refEntityId,
+        //       refAttributeId: refEntityFieldId,
+        //       refDataSourceId: refDataSourceDetails?.[0]?._id,
+        //       errorType: ERROR_CODES.INVALID_REFERENCE.type,
+        //       errorCode: ERROR_CODES.INVALID_REFERENCE.code,
+        //       fileRowNumber: rowNum,
+        //       fileName,
+        //       status: 'open',
+        //       errorMessage: `${attrName}- ${value} not found.`,
+        //     });
+        //     newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
+        //   } else {
+        //     newRow.rowData[attrName] = referencedDoc._id;
+        //     newRow.rowData[`${attrName}__display`] = referencedDoc.rowData?.[refEntityField.name];
+        //     tempDisplayAttrs.push(`${attrName}__display`); // ✅ track for cleanup
+        //   }
+        // } 
+        // else {
           const { isValid, convertedValue, attributeOptionValue } = await validateAndConvert({
             value,
             type: attr.type,
@@ -559,7 +561,7 @@ export async function validateFileData({
           } else {
             newRow.rowData[attrName] = convertedValue;
           }
-        }
+        // }
       }
     }
 
@@ -621,9 +623,9 @@ export async function validateFileData({
     }
 
     // ✅ cleanup temporary __display keys (always, not just for unique)
-    for (const tempKey of tempDisplayAttrs) {
-      delete newRow.rowData[tempKey];
-    }
+    // for (const tempKey of tempDisplayAttrs) {
+    //   delete newRow.rowData[tempKey];
+    // }
 
     newRowData.push(newRow);
   }

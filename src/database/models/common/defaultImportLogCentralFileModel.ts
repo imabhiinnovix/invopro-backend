@@ -3,11 +3,10 @@
 
 import { Schema, model, models, Document, Types } from 'mongoose';
 
-interface IDefaultImportLogDataSourceVersionValue extends Document {
+interface IDefaultImportLogCentralFileValue extends Document {
   entityId: Types.ObjectId;
   dataSourceId: Types.ObjectId;
   centralFileId?: Types.ObjectId; // NEW
-  dataSourceVersionId: Types.ObjectId;
   versionValue: string;
   rowNumber: Number,
   rowData: Record<string, any>; // Defines rowData as an object with string keys and values of any type
@@ -18,7 +17,7 @@ interface IDefaultImportLogDataSourceVersionValue extends Document {
 }
 
 // Mongoose Schema
-const defaultImportLogDataSourceVersionSchema = new Schema<IDefaultImportLogDataSourceVersionValue>(
+const defaultImportLogCentralFileSchema = new Schema<IDefaultImportLogCentralFileValue>(
   {
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'DataSource' },
@@ -27,11 +26,6 @@ const defaultImportLogDataSourceVersionSchema = new Schema<IDefaultImportLogData
       type: Schema.Types.ObjectId,
       ref: 'central_file',
       index: true,
-    },
-    // datasource version may not exist initially
-    dataSourceVersionId: {
-      type: Schema.Types.ObjectId,
-      ref: 'data_source_version'
     },
     versionValue: { type: String },
     rowNumber: {type: Number},
@@ -46,18 +40,16 @@ const defaultImportLogDataSourceVersionSchema = new Schema<IDefaultImportLogData
   }
 );
 
-defaultImportLogDataSourceVersionSchema.index({ centralFileId: 1, isErrorLog: 1 });
-
-defaultImportLogDataSourceVersionSchema.index({ dataSourceVersionId: 1, isErrorLog: 1 });
+defaultImportLogCentralFileSchema.index({ centralFileId: 1, isErrorLog: 1 });
 
 // Function to create a model with a dynamic schema name
-const createDefaultImportLogDataSourceVersionModel = (schemaName: string) => {
+const createDefaultImportLogCentralFileModel = (schemaName: string) => {
   if (models[schemaName]) {
     // If the model already exists, return it
     return models[schemaName];
   }
   // Otherwise, create and return the model
-  return model<IDefaultImportLogDataSourceVersionValue>(schemaName, defaultImportLogDataSourceVersionSchema);
+  return model<IDefaultImportLogCentralFileValue>(schemaName, defaultImportLogCentralFileSchema);
 };
 
-export default createDefaultImportLogDataSourceVersionModel;
+export default createDefaultImportLogCentralFileModel;

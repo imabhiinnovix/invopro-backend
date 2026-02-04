@@ -3,11 +3,10 @@
 
 import { Schema, model, Document, Types } from 'mongoose';
 
-interface IDataImportError extends Document {
+interface IDataImportCentralFileError extends Document {
   dataSourceId: Types.ObjectId;
   entityId: Types.ObjectId;
   centralFileId?: Types.ObjectId; // NEW
-  dataSourceVersionId: Types.ObjectId;
   rowNumber: number;
   fileAttributeName: string;
   attributeName: string;
@@ -25,17 +24,12 @@ interface IDataImportError extends Document {
   fileRowNumber: String;
   fileName: String;
 }
-const DataImportErrorSchema = new Schema<IDataImportError>(
+const DataImportCentralFileErrorSchema = new Schema<IDataImportCentralFileError>(
   {
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
     //NEW: Central File reference (always present)
     centralFileId: { type: Schema.Types.ObjectId, ref: 'central_file', index: true },
-    // ✅ datasource version may not exist yet
-    dataSourceVersionId: {
-      type: Schema.Types.ObjectId,
-      ref: 'data_source_version',
-    },
     rowNumber: { type: Number },
     fileRowNumber: { type: String },
     fileName: { type: String },
@@ -60,15 +54,12 @@ const DataImportErrorSchema = new Schema<IDataImportError>(
     timestamps: true,
   }
 );
-DataImportErrorSchema.index({
+DataImportCentralFileErrorSchema.index({
   centralFileId: 1,
   status: 1,
 });
-DataImportErrorSchema.index({
-  dataSourceVersionId: 1,
-  status: 1,
-});
 
-const DataImportErrorModel = model<IDataImportError>('data_import_error', DataImportErrorSchema);
 
-export default DataImportErrorModel;
+const DataImportCentralFileErrorModel = model<IDataImportCentralFileError>('data_import_central_file_error', DataImportCentralFileErrorSchema);
+
+export default DataImportCentralFileErrorModel;

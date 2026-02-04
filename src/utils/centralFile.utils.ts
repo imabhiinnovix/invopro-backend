@@ -9,9 +9,9 @@ import { readExcelFile } from './excel.utils';
 import { findDataSourceById } from '../database/services/common/dataSource.services';
 import { validateFileData, validateFileDataCondition } from './validateFileData.utils';
 import { autoPopulateAttributeOption } from './attributeOption.utils';
-import { getImportLogSchemaNameBasedOnVersionCodeAndOrgCode } from './common.utils';
-import * as importLogDataSourceVersionValueService from '../database/services/common/defaultImportLogDataSourceVersionValue.services';
-import * as dataImportErrorServices from '../database/services/common/dataImportError.services';
+import { getImportLogCentralFileSchemaNameBasedOnVersionCodeAndOrgCode, getImportLogSchemaNameBasedOnVersionCodeAndOrgCode } from './common.utils';
+import * as importLogCentralFileService from '../database/services/common/defaultImportLogCentralFile.service';
+import * as dataImportErrorServices from '../database/services/common/dataImportCentralFileError.service';
 
 
 export function normalize(name: string) {
@@ -216,7 +216,7 @@ export async function validateCentralFileForDataSource({
   const { newRowData, errors } = validatedData;
 
   // 7️⃣ Resolve ImportLog schema
-  const importLogSchema = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+  const importLogSchema = getImportLogCentralFileSchemaNameBasedOnVersionCodeAndOrgCode({
     orgCode,
     versionCode: dataSourceDetails.code,
   });
@@ -235,7 +235,7 @@ export async function validateCentralFileForDataSource({
     }));
 
     for (let i = 0; i < rowsWithMeta.length; i += BATCH_SIZE) {
-      await importLogDataSourceVersionValueService.createImportLogDataSourceVersionValue(
+      await importLogCentralFileService.createCentralFileImportLog(
         importLogSchema,
         rowsWithMeta.slice(i, i + BATCH_SIZE)
       );
@@ -255,7 +255,7 @@ export async function validateCentralFileForDataSource({
     }));
 
     for (let i = 0; i < errorRows.length; i += BATCH_SIZE) {
-      await dataImportErrorServices.createManyDataImportError(
+      await dataImportErrorServices.createManyDataImportCentralFileError(
         errorRows.slice(i, i + BATCH_SIZE)
       );
     }
