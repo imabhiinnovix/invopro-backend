@@ -227,11 +227,7 @@ export async function validateCentralFileForDataSource({
   if (newRowData?.length) {
     const rowsWithMeta = newRowData.map(row => ({
       ...row,
-      centralFileId,
-      dataSourceId: finalDataSourceId,
-      versionValue,
-      createdBy: userId,
-      isErrorLog: 0,
+      createdBy: userId
     }));
 
     for (let i = 0; i < rowsWithMeta.length; i += BATCH_SIZE) {
@@ -246,17 +242,10 @@ export async function validateCentralFileForDataSource({
   // ✅ PUSH ERRORS INTO IMPORT ERROR
   // ================================
   if (errors?.length) {
-    const errorRows = errors.map(err => ({
-      ...err,
-      centralFileId,
-      dataSourceId: finalDataSourceId,
-      versionValue,
-      createdBy: userId,
-    }));
 
-    for (let i = 0; i < errorRows.length; i += BATCH_SIZE) {
+    for (let i = 0; i < errors.length; i += BATCH_SIZE) {
       await dataImportErrorServices.createManyDataImportCentralFileError(
-        errorRows.slice(i, i + BATCH_SIZE)
+        errors.slice(i, i + BATCH_SIZE)
       );
     }
 

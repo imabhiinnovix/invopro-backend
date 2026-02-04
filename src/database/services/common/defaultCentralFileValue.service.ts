@@ -1,0 +1,145 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* @ts-nocheck */
+
+import { getAttributeByName, getEntityAttribute, getModelForEntity } from '../../../utils/entity.utils';
+import createDefaultImportLogCentralFileModel from '../../models/common/defaultImportLogCentralFileModel';
+import { Model, Document, AnyBulkWriteOperation } from 'mongoose';
+import { findEntityById } from './entity.services';
+import createDefaultCentralFileModel from '../../models/common/defaultCentralFileModel';
+
+/**
+ * ✅ UPSERT VALIDATED CENTRAL FILE DATA (UNIQUE LOGIC)
+ */
+export const updateCentralFileValue = async (
+  schemaName: string,
+  data: any[],
+  uniqueKeys: string[][] = []
+) => {
+  const Model = createDefaultCentralFileModel(schemaName) as Model<Document>;
+
+  if (!Array.isArray(uniqueKeys) || uniqueKeys.length === 0) {
+    return await Model.insertMany(data);
+  }
+
+  const bulkOps: AnyBulkWriteOperation<Document>[] = data.map((row) => {
+    const filters: Record<string, any>[] = [];
+
+    for (const rule of uniqueKeys) {
+      const condition: Record<string, any> = {};
+      for (const key of rule) {
+        condition[`rowData.${key}`] = row.rowData?.[key];
+      }
+      filters.push(condition);
+    }
+
+    const finalQuery = filters.length === 1 ? filters[0] : { $or: filters };
+
+    return {
+      updateOne: {
+        filter: finalQuery,
+        update: {
+          $set: {
+            ...row,
+            updatedAt: new Date(),
+          },
+        },
+        upsert: true,
+      },
+    };
+  });
+
+  if (bulkOps.length > 0) {
+    await Model.bulkWrite(bulkOps, { ordered: false });
+  }
+
+  return true;
+};
+
+/**
+ * ✅ CREATE EMPTY COLLECTION (OPTIONAL)
+ */
+export const createEmptyCentralFileCollection = async (schemaName: string) => {
+  try {
+    const Model = createDefaultCentralFileModel(schemaName);
+    const emptyDoc = new Model({});
+    await emptyDoc.save();
+  } catch (err) {
+    throw err;
+  }
+};
+
+/**
+ * ✅ INSERT IMPORT LOG DATA (NO UPSERT)
+ */
+export const createCentralFileValue = async (schemaName: string, data: any[]) => {
+  try {
+    const Model = createDefaultCentralFileModel(schemaName);
+    return await Model.insertMany(data);
+  } catch (err) {
+    throw err;
+  }
+};
+
+/**
+ * ✅ GET CENTRAL FILE IMPORT LOG DATA (PAGINATED)
+ */
+export const getCentralFileValue = async ({
+  schemaName,
+  query,
+  select = '',
+  page = 1,
+  limit = 50,
+  sort = { updatedAt: 1 },
+}: any) => {
+  try {
+    const Model = createDefaultCentralFileModel(schemaName);
+
+    const pipeline: any[] = [
+      { $match: query },
+      { $sort: sort },
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
+    ];
+
+    if (select) {
+      const projectionFields = select.split(' ').reduce((acc: any, field: string) => {
+        acc[field] = 1;
+        return acc;
+      }, {});
+      pipeline.push({ $project: projectionFields });
+    }
+
+    const [data, totalCount] = await Promise.all([
+      Model.aggregate(pipeline).exec(),
+      Model.countDocuments(query),
+    ]);
+
+    return { data, totalCount };
+  } catch (err) {
+    throw err;
+  }
+};
+
+/**
+ * ✅ COUNT IMPORT LOG RECORDS
+ */
+export const getCentralFileValueCount = async (schemaName: string, query: Record<string, any>) => {
+  try {
+    const Model = createDefaultCentralFileModel(schemaName);
+    return await Model.countDocuments(query);
+  } catch (err) {
+    throw err;
+  }
+};
+
+/**
+ * ✅ DELETE CENTRAL FILE IMPORT LOG DATA
+ */
+export const deleteCentralFileValue = async (schemaName: string, query: Record<string, any>) => {
+  try {
+    const Model: any = createDefaultCentralFileModel(schemaName);
+    return await Model.deleteMany(query);
+  } catch (err) {
+    throw err;
+  }
+};

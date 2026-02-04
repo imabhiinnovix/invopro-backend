@@ -30,6 +30,7 @@ import organizationVisibilitySettingRoutes from './common/organizationVisibility
 import roleDefaultDashboardRoutes from './common/roleDefaultDashboard.routes';
 import businessUnitRoutes from './common/businessUnit.routes';
 import centralFileRoutes from './common/centralFile.routes';
+import dataImportCentralFileErrorRoutes from './common/dataImportCentralFileError.routes';
 
 
 const router = Router();
@@ -65,5 +66,6 @@ router.use('/organization-visibility-setting', organizationVisibilitySettingRout
 router.use('/role-default-dashboard', roleDefaultDashboardRoutes);
 router.use('/business-unit', businessUnitRoutes);
 router.use('/central-files', centralFileRoutes);
+router.use('/central-files/dataImportError', dataImportCentralFileErrorRoutes);
 
 export default router;

@@ -356,7 +356,6 @@ export async function validateFileData({
   separator,
   dataSourceId,
   entityId,
-  dataSourceVersionId,
   centralFileId,
   versionValue,
   uniqueAttributeRules = [],
@@ -367,7 +366,6 @@ export async function validateFileData({
   separator: Record<string, string>;
   dataSourceId: string;
   entityId: any;
-  dataSourceVersionId?: string;
   centralFileId?: string;
   versionValue: string;
   uniqueAttributeRules?: Types.ObjectId[][];
@@ -393,7 +391,6 @@ export async function validateFileData({
     const newRow = {
       dataSourceId,
       entityId,
-      dataSourceVersionId,
       centralFileId,
       versionValue,
       rowData: {},
@@ -434,7 +431,6 @@ export async function validateFileData({
         errors.push({
           entityId,
           dataSourceId,
-          dataSourceVersionId,
           centralFileId,
           rowNumber: index + 1,
           fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
@@ -521,7 +517,6 @@ export async function validateFileData({
               errors.push({
                 entityId,
                 dataSourceId,
-                dataSourceVersionId,
                 centralFileId,
                 rowNumber: index + 1,
                 fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
@@ -541,7 +536,6 @@ export async function validateFileData({
               errors.push({
                 entityId,
                 dataSourceId,
-                dataSourceVersionId,
                 centralFileId,
                 rowNumber: index + 1,
                 fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
@@ -601,7 +595,6 @@ export async function validateFileData({
             errors.push({
               entityId,
               dataSourceId,
-              dataSourceVersionId,
               centralFileId,
               rowNumber: index + 1,
               errorType: ERROR_CODES.DUPLICATE_ENTRY.type,
