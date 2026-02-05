@@ -4135,55 +4135,92 @@ if (aggregation?.type === "distinctCount") {
   await applySafeSort(sort, aggregationPipeline, entityId, attributesMap);
 
   // 4️⃣ Collect all distinct documents into an array
+  // aggregationPipeline.push({
+  //   $group: {
+  //     _id: null,
+  //     distinctRows: { $push: "$$ROOT" }
+  //   }
+  // });
+
+  // // 5️⃣ Pagination using facet
+  // if (limit === Number.MAX_SAFE_INTEGER) {
+  //   aggregationPipeline.push({
+  //     $project: {
+  //       _id: 0,
+  //       data: "$distinctRows",
+  //       totalCount: { $size: "$distinctRows" }
+  //     }
+  //   });
+  // } else {
+  //   aggregationPipeline.push({
+  //     $facet: {
+  //       metadata: [
+  //         { $project: { totalRecords: { $size: "$distinctRows" } } }
+  //       ],
+  //       data: [
+  //         { $project: { rowData: "$distinctRows" } },
+  //         { $unwind: "$rowData" },
+  //         { $skip: (page - 1) * limit },
+  //         { $limit: limit },
+  //         { $replaceRoot: { newRoot: "$rowData" } }
+  //       ]
+  //     }
+  //   });
+
+  //   aggregationPipeline.push({
+  //     $project: {
+  //       data: "$data",
+  //       pagination: {
+  //         currentPage: page,
+  //         limit: limit,
+  //         totalRecords: { $arrayElemAt: ["$metadata.totalRecords", 0] },
+  //         totalPages: {
+  //           $ceil: {
+  //             $divide: [{ $arrayElemAt: ["$metadata.totalRecords", 0] }, limit]
+  //           }
+  //         }
+  //       },
+  //       totalCount: { $arrayElemAt: ["$metadata.totalRecords", 0] }
+  //     }
+  //   });
+  // }
+  // 4️⃣ pagination + total count WITHOUT $push
   aggregationPipeline.push({
-    $group: {
-      _id: null,
-      distinctRows: { $push: "$$ROOT" }
+    $facet: {
+      data: [
+        ...(limit === Number.MAX_SAFE_INTEGER
+          ? []
+          : [
+              { $skip: (page - 1) * limit },
+              { $limit: limit }
+            ])
+      ],
+      totalCount: [
+        { $count: "count" }
+      ]
     }
   });
 
-  // 5️⃣ Pagination using facet
-  if (limit === Number.MAX_SAFE_INTEGER) {
-    aggregationPipeline.push({
-      $project: {
-        _id: 0,
-        data: "$distinctRows",
-        totalCount: { $size: "$distinctRows" }
-      }
-    });
-  } else {
-    aggregationPipeline.push({
-      $facet: {
-        metadata: [
-          { $project: { totalRecords: { $size: "$distinctRows" } } }
-        ],
-        data: [
-          { $project: { rowData: "$distinctRows" } },
-          { $unwind: "$rowData" },
-          { $skip: (page - 1) * limit },
-          { $limit: limit },
-          { $replaceRoot: { newRoot: "$rowData" } }
-        ]
-      }
-    });
-
-    aggregationPipeline.push({
-      $project: {
-        data: "$data",
-        pagination: {
-          currentPage: page,
-          limit: limit,
-          totalRecords: { $arrayElemAt: ["$metadata.totalRecords", 0] },
-          totalPages: {
-            $ceil: {
-              $divide: [{ $arrayElemAt: ["$metadata.totalRecords", 0] }, limit]
-            }
+  // 5️⃣ final response shape
+  aggregationPipeline.push({
+    $project: {
+      data: "$data",
+      pagination: {
+        currentPage: page,
+        limit: limit,
+        totalRecords: { $ifNull: [{ $arrayElemAt: ["$totalCount.count", 0] }, 0] },
+        totalPages: {
+          $ceil: {
+            $divide: [
+              { $ifNull: [{ $arrayElemAt: ["$totalCount.count", 0] }, 0] },
+              limit
+            ]
           }
-        },
-        totalCount: { $arrayElemAt: ["$metadata.totalRecords", 0] }
-      }
-    });
-  }
+        }
+      },
+      totalCount: { $ifNull: [{ $arrayElemAt: ["$totalCount.count", 0] }, 0] }
+    }
+  });
 }
 
 // === COUNT / SUM / AVERAGE HANDLER ===
