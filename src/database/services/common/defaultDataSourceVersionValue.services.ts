@@ -3747,156 +3747,161 @@ const safeDate = (value: any) => {
   return null;
 }
 
-    const filterConditions: any[] = [];
-    const visited = new Set<string>();
-    const filters = dashboardFilters?.filters ?? {};
-    for (const [key, val] of Object.entries(filters)) {
-      // ✅ Date / Date-Range
-        const attr = attributesMap[key] || refAttributesMap[key];
-        const dateFilter = buildDateFilter(`rowData.${key}`, val, attr);
-        if (dateFilter) {
-          filterConditions.push(dateFilter);
-          continue;
+    
+    const filters: any = dashboardFilters?.filters ?? {};
+    const parseFilterConditions = async (filters) => {
+      const filterConditions: any[] = [];
+      const visited = new Set<string>();
+      for (const [key, val] of Object.entries(filters)) {
+        // ✅ Date / Date-Range
+          const attr = attributesMap[key] || refAttributesMap[key];
+          const dateFilter = buildDateFilter(`rowData.${key}`, val, attr);
+          if (dateFilter) {
+            filterConditions.push(dateFilter);
+            continue;
+          }
+
+        if (key.startsWith('Derived.')) {
+          const derivedName = key.split('.')[1];
+          const derivedField = await getDerivedField({ name: derivedName, entityId });
+          if (!derivedField) continue;
+
+          const matchedRules = derivedField.valueRules.filter((vr) =>
+            Array.isArray(val) ? val.includes(vr.value) : vr.value === val
+          );
+
+          const derivedRuleConditions: any = [];
+          for (const rule of matchedRules) {
+            const conditionExpressions: any = [];
+            for (const cond of rule.conditions || []) {
+              const path = await resolveFieldPath(cond, entity.attributes);
+              if (!path) continue;
+
+              if (cond.operator === 'equals') {
+    conditionExpressions.push({ [path]: cond.matchValues[0] });
+  } 
+  else if (cond.operator === 'in') {
+    conditionExpressions.push({ [path]: { $in: cond.matchValues } });
+  } 
+  else if (cond.operator === 'not_in') {
+    conditionExpressions.push({ [path]: { $nin: cond.matchValues } });
+  } 
+  else if (cond.operator === 'exists') {
+    conditionExpressions.push({ [path]: { $exists: true, $ne: null } });
+  } 
+  else if (cond.operator === 'not_exists') {
+    conditionExpressions.push({ [path]: { $in: [null, undefined] } });
+  } 
+  else if (cond.operator === 'match_case_insensitive_array') {
+    const regexArray = (cond.matchValues || []).map((val: string) => ({
+      [path]: { $regex: `^${val}$`, $options: 'i' },
+    }));
+
+    if (regexArray.length > 0) {
+      conditionExpressions.push({ $or: regexArray });
+    }
+  } 
+  else if (cond.operator === 'not_match_case_insensitive_array') {
+    const regexArray = (cond.matchValues || []).map((val: string) => ({
+      [path]: { $regex: `^${val}$`, $options: 'i' },
+    }));
+
+    if (regexArray.length > 0) {
+      conditionExpressions.push({ $nor: regexArray });
+    }
+  }
+
+            }
+            if (conditionExpressions.length > 0) {
+              derivedRuleConditions.push(
+                rule.conditionOperator === 'OR' ? { $or: conditionExpressions } : { $and: conditionExpressions }
+              );
+            }
+          }
+
+          if (derivedRuleConditions.length > 0) filterConditions.push({ $or: derivedRuleConditions });
+      } else if (key.includes(".")) {
+    const pathSegments = key.split(".");
+    const lastField = pathSegments[pathSegments.length - 1];
+
+    // Full filter path inside the nested document
+    const filterCondition = Array.isArray(val)
+      ? {
+          $or: val.map((v) => ({
+            [`rowData.${lastField}`]: buildFilterForValue(v),
+          })),
+        }
+      : { [`rowData.${lastField}`]: buildFilterForValue(val) };
+
+    // Pass filter into buildNestedLookups for correct nested $lookup pipeline
+    await buildNestedLookups({
+      entityId,
+      pathSegments: pathSegments.slice(0, -1), // all except last
+      pipeline: aggregationPipeline,
+      visited,
+      filtersForLookup: { [lastField]: filterCondition },
+      filterConditions
+    });
+  }
+
+        // Top-level attribute (primitive or reference)
+        else {
+      const attr = attributesMap[key];
+      if (attr?.referenceEntitySetting?.refEntityId && !attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
+        const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
+        const refModel = await getModelForEntity(refEntityId);
+
+        const localField = `rowData.${key}`;
+        const asField = `rowData.${key}_resolved`;
+
+        // Add lookup if not already present
+        if (!aggregationPipeline.some((stage) => stage.$lookup?.as === asField)) {
+          aggregationPipeline.push({
+            $lookup: {
+              from: refModel.collection.name,
+              localField,
+              foreignField: "_id",
+              as: asField,
+              pipeline: [{ $match: { status: 'active' } }],
+            },
+          });
+          aggregationPipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
         }
 
-      if (key.startsWith('Derived.')) {
-        const derivedName = key.split('.')[1];
-        const derivedField = await getDerivedField({ name: derivedName, entityId });
-        if (!derivedField) continue;
-
-        const matchedRules = derivedField.valueRules.filter((vr) =>
-          Array.isArray(val) ? val.includes(vr.value) : vr.value === val
+        // ✅ Resolve actual attribute name from reference entity
+        const refFieldAttr = await getEntityAttribute(
+          attr.referenceEntitySetting.refEntityId,
+          attr.referenceEntitySetting.refEntityField
         );
+        const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
 
-        const derivedRuleConditions: any = [];
-        for (const rule of matchedRules) {
-          const conditionExpressions: any = [];
-          for (const cond of rule.conditions || []) {
-            const path = await resolveFieldPath(cond, entity.attributes);
-            if (!path) continue;
-
-            if (cond.operator === 'equals') {
-  conditionExpressions.push({ [path]: cond.matchValues[0] });
-} 
-else if (cond.operator === 'in') {
-  conditionExpressions.push({ [path]: { $in: cond.matchValues } });
-} 
-else if (cond.operator === 'not_in') {
-  conditionExpressions.push({ [path]: { $nin: cond.matchValues } });
-} 
-else if (cond.operator === 'exists') {
-  conditionExpressions.push({ [path]: { $exists: true, $ne: null } });
-} 
-else if (cond.operator === 'not_exists') {
-  conditionExpressions.push({ [path]: { $in: [null, undefined] } });
-} 
-else if (cond.operator === 'match_case_insensitive_array') {
-  const regexArray = (cond.matchValues || []).map((val: string) => ({
-    [path]: { $regex: `^${val}$`, $options: 'i' },
-  }));
-
-  if (regexArray.length > 0) {
-    conditionExpressions.push({ $or: regexArray });
-  }
-} 
-else if (cond.operator === 'not_match_case_insensitive_array') {
-  const regexArray = (cond.matchValues || []).map((val: string) => ({
-    [path]: { $regex: `^${val}$`, $options: 'i' },
-  }));
-
-  if (regexArray.length > 0) {
-    conditionExpressions.push({ $nor: regexArray });
-  }
-}
-
+        const filterCondition = Array.isArray(val)
+        ? {
+            $or: val.map((v) => ({
+              [`${asField}.rowData.${displayField}`]: buildFilterForValue(v),
+            })),
           }
-          if (conditionExpressions.length > 0) {
-            derivedRuleConditions.push(
-              rule.conditionOperator === 'OR' ? { $or: conditionExpressions } : { $and: conditionExpressions }
-            );
+        : { [`${asField}.rowData.${displayField}`]: buildFilterForValue(val) };
+
+        filterConditions.push(filterCondition);
+      } else {
+        const filterCondition = Array.isArray(val)
+        ? {
+            $or: val.map((v) => ({
+              [`rowData.${key}`]: buildFilterForValue(v),
+            })),
           }
-        }
+        : { [`rowData.${key}`]: buildFilterForValue(val) };
 
-        if (derivedRuleConditions.length > 0) filterConditions.push({ $or: derivedRuleConditions });
-     } else if (key.includes(".")) {
-  const pathSegments = key.split(".");
-  const lastField = pathSegments[pathSegments.length - 1];
-
-  // Full filter path inside the nested document
-  const filterCondition = Array.isArray(val)
-    ? {
-        $or: val.map((v) => ({
-          [`rowData.${lastField}`]: buildFilterForValue(v),
-        })),
+        filterConditions.push(filterCondition);
       }
-    : { [`rowData.${lastField}`]: buildFilterForValue(val) };
-
-  // Pass filter into buildNestedLookups for correct nested $lookup pipeline
-  await buildNestedLookups({
-    entityId,
-    pathSegments: pathSegments.slice(0, -1), // all except last
-    pipeline: aggregationPipeline,
-    visited,
-    filtersForLookup: { [lastField]: filterCondition },
-    filterConditions
-  });
-}
-
-      // Top-level attribute (primitive or reference)
-       else {
-    const attr = attributesMap[key];
-    if (attr?.referenceEntitySetting?.refEntityId && !attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
-      const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
-      const refModel = await getModelForEntity(refEntityId);
-
-      const localField = `rowData.${key}`;
-      const asField = `rowData.${key}_resolved`;
-
-      // Add lookup if not already present
-      if (!aggregationPipeline.some((stage) => stage.$lookup?.as === asField)) {
-        aggregationPipeline.push({
-          $lookup: {
-            from: refModel.collection.name,
-            localField,
-            foreignField: "_id",
-            as: asField,
-            pipeline: [{ $match: { status: 'active' } }],
-          },
-        });
-        aggregationPipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
-      }
-
-      // ✅ Resolve actual attribute name from reference entity
-      const refFieldAttr = await getEntityAttribute(
-        attr.referenceEntitySetting.refEntityId,
-        attr.referenceEntitySetting.refEntityField
-      );
-      const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
-
-      const filterCondition = Array.isArray(val)
-      ? {
-          $or: val.map((v) => ({
-            [`${asField}.rowData.${displayField}`]: buildFilterForValue(v),
-          })),
         }
-      : { [`${asField}.rowData.${displayField}`]: buildFilterForValue(val) };
-
-      filterConditions.push(filterCondition);
-    } else {
-      const filterCondition = Array.isArray(val)
-      ? {
-          $or: val.map((v) => ({
-            [`rowData.${key}`]: buildFilterForValue(v),
-          })),
-        }
-      : { [`rowData.${key}`]: buildFilterForValue(val) };
-
-      filterConditions.push(filterCondition);
-    }
       }
-    }
+      return filterConditions;
+    };
+    const filterConditions = await parseFilterConditions(filters);
     console.log('filterConditions', JSON.stringify(filterConditions));
-
+    
    const matchStage: any = { $and: [] };
 
   // Collect filter conditions
@@ -3905,9 +3910,24 @@ else if (cond.operator === 'not_match_case_insensitive_array') {
   }
 
   // Only push if not empty
-  if (matchStage.$and.length > 0) {
-    aggregationPipeline.push({ $match: matchStage });
+    if (matchStage.$and.length > 0) {
+      aggregationPipeline.push({ $match: matchStage });
+    }
+
+
+  const chartFilters: any = dashboardFilters?.chartFilters ?? {};
+  const chartFilterConditions = await parseFilterConditions(chartFilters);
+  console.log('chartFilterConditions', JSON.stringify(chartFilterConditions));
+  
+  const chartMatchStage: any = { $and: [] };
+
+  // Collect filter conditions
+  if (chartFilterConditions.length > 0) {
+    chartMatchStage.$and.push(...chartFilterConditions);
   }
+
+
+
   console.log('dashboardFilters', JSON.stringify(dashboardFilters), JSON.stringify(aggregationPipeline));
   
    // Step 3: Build group-by keys
@@ -3990,17 +4010,24 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
     if (Object.keys(matchConditions).length > 0) {
       aggregationPipeline.push({ $match: matchConditions });
     }
+    
+    // Resolve aggregation field path
+    const aggPath = getFieldPath(await getReferenceField(aggregation?.attributeName));
+
+    // ✅ MOVE DISTINCT HERE (BEFORE CONDITIONS)
+    if (aggregation?.type === "distinctCount") {
+      aggregationPipeline.push(
+        { $group: { _id: aggPath, doc: { $first: "$$ROOT" } } },
+        { $replaceRoot: { newRoot: "$doc" } }
+      );
+    }
+
+    // Only push if not empty
+      if (chartMatchStage.$and.length > 0) {
+        aggregationPipeline.push({ $match: chartMatchStage });
+      }
 
     // ------------------ SORTING ------------------
-
-
-
-// Resolve aggregation field path
-// Resolve aggregation field path
-// Resolve aggregation field path
-// Resolve aggregation field path
-const aggPath = getFieldPath(await getReferenceField(aggregation?.attributeName));
-
 
 // === Generalized sort helper (works for strings, arrays, nulls, case-insensitive) ===
 function getSortSafeExpr(fieldPath: string) {
@@ -4080,15 +4107,15 @@ async function applySafeSort(sort: Record<string, any>, aggregationPipeline: any
 // === DISTINCT COUNT HANDLER ===
 if (aggregation?.type === "distinctCount") {
   // 1️⃣ Group by the distinct field, preserve full rowData
-  aggregationPipeline.push({
-    $group: {
-      _id: aggPath,        // distinct field, e.g., DisclosureNumber
-      doc: { $first: "$$ROOT" } // preserves full rowData + all top-level fields
-    }
-  });
+  // aggregationPipeline.push({
+  //   $group: {
+  //     _id: aggPath,        // distinct field, e.g., DisclosureNumber
+  //     doc: { $first: "$$ROOT" } // preserves full rowData + all top-level fields
+  //   }
+  // });
 
-  // 2️⃣ Flatten grouped docs
-  aggregationPipeline.push({ $replaceRoot: { newRoot: "$doc" } });
+  // // 2️⃣ Flatten grouped docs
+  // aggregationPipeline.push({ $replaceRoot: { newRoot: "$doc" } });
 
   // 3️⃣ Apply sorting AFTER distinct grouping
   // if (sort && Object.keys(sort).length > 0) {
@@ -4135,55 +4162,92 @@ if (aggregation?.type === "distinctCount") {
   await applySafeSort(sort, aggregationPipeline, entityId, attributesMap);
 
   // 4️⃣ Collect all distinct documents into an array
+  // aggregationPipeline.push({
+  //   $group: {
+  //     _id: null,
+  //     distinctRows: { $push: "$$ROOT" }
+  //   }
+  // });
+
+  // // 5️⃣ Pagination using facet
+  // if (limit === Number.MAX_SAFE_INTEGER) {
+  //   aggregationPipeline.push({
+  //     $project: {
+  //       _id: 0,
+  //       data: "$distinctRows",
+  //       totalCount: { $size: "$distinctRows" }
+  //     }
+  //   });
+  // } else {
+  //   aggregationPipeline.push({
+  //     $facet: {
+  //       metadata: [
+  //         { $project: { totalRecords: { $size: "$distinctRows" } } }
+  //       ],
+  //       data: [
+  //         { $project: { rowData: "$distinctRows" } },
+  //         { $unwind: "$rowData" },
+  //         { $skip: (page - 1) * limit },
+  //         { $limit: limit },
+  //         { $replaceRoot: { newRoot: "$rowData" } }
+  //       ]
+  //     }
+  //   });
+
+  //   aggregationPipeline.push({
+  //     $project: {
+  //       data: "$data",
+  //       pagination: {
+  //         currentPage: page,
+  //         limit: limit,
+  //         totalRecords: { $arrayElemAt: ["$metadata.totalRecords", 0] },
+  //         totalPages: {
+  //           $ceil: {
+  //             $divide: [{ $arrayElemAt: ["$metadata.totalRecords", 0] }, limit]
+  //           }
+  //         }
+  //       },
+  //       totalCount: { $arrayElemAt: ["$metadata.totalRecords", 0] }
+  //     }
+  //   });
+  // }
+  // 4️⃣ pagination + total count WITHOUT $push
   aggregationPipeline.push({
-    $group: {
-      _id: null,
-      distinctRows: { $push: "$$ROOT" }
+    $facet: {
+      data: [
+        ...(limit === Number.MAX_SAFE_INTEGER
+          ? []
+          : [
+              { $skip: (page - 1) * limit },
+              { $limit: limit }
+            ])
+      ],
+      totalCount: [
+        { $count: "count" }
+      ]
     }
   });
 
-  // 5️⃣ Pagination using facet
-  if (limit === Number.MAX_SAFE_INTEGER) {
-    aggregationPipeline.push({
-      $project: {
-        _id: 0,
-        data: "$distinctRows",
-        totalCount: { $size: "$distinctRows" }
-      }
-    });
-  } else {
-    aggregationPipeline.push({
-      $facet: {
-        metadata: [
-          { $project: { totalRecords: { $size: "$distinctRows" } } }
-        ],
-        data: [
-          { $project: { rowData: "$distinctRows" } },
-          { $unwind: "$rowData" },
-          { $skip: (page - 1) * limit },
-          { $limit: limit },
-          { $replaceRoot: { newRoot: "$rowData" } }
-        ]
-      }
-    });
-
-    aggregationPipeline.push({
-      $project: {
-        data: "$data",
-        pagination: {
-          currentPage: page,
-          limit: limit,
-          totalRecords: { $arrayElemAt: ["$metadata.totalRecords", 0] },
-          totalPages: {
-            $ceil: {
-              $divide: [{ $arrayElemAt: ["$metadata.totalRecords", 0] }, limit]
-            }
+  // 5️⃣ final response shape
+  aggregationPipeline.push({
+    $project: {
+      data: "$data",
+      pagination: {
+        currentPage: page,
+        limit: limit,
+        totalRecords: { $ifNull: [{ $arrayElemAt: ["$totalCount.count", 0] }, 0] },
+        totalPages: {
+          $ceil: {
+            $divide: [
+              { $ifNull: [{ $arrayElemAt: ["$totalCount.count", 0] }, 0] },
+              limit
+            ]
           }
-        },
-        totalCount: { $arrayElemAt: ["$metadata.totalRecords", 0] }
-      }
-    });
-  }
+        }
+      },
+      totalCount: { $ifNull: [{ $arrayElemAt: ["$totalCount.count", 0] }, 0] }
+    }
+  });
 }
 
 // === COUNT / SUM / AVERAGE HANDLER ===
