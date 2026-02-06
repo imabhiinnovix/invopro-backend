@@ -3904,10 +3904,7 @@ else if (cond.operator === 'not_match_case_insensitive_array') {
     matchStage.$and.push(...filterConditions);
   }
 
-  // Only push if not empty
-  if (matchStage.$and.length > 0) {
-    aggregationPipeline.push({ $match: matchStage });
-  }
+  
   console.log('dashboardFilters', JSON.stringify(dashboardFilters), JSON.stringify(aggregationPipeline));
   
    // Step 3: Build group-by keys
@@ -3990,17 +3987,24 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
     if (Object.keys(matchConditions).length > 0) {
       aggregationPipeline.push({ $match: matchConditions });
     }
+    
+    // Resolve aggregation field path
+    const aggPath = getFieldPath(await getReferenceField(aggregation?.attributeName));
+
+    // ✅ MOVE DISTINCT HERE (BEFORE CONDITIONS)
+    if (aggregation?.type === "distinctCount") {
+      aggregationPipeline.push(
+        { $group: { _id: aggPath, doc: { $first: "$$ROOT" } } },
+        { $replaceRoot: { newRoot: "$doc" } }
+      );
+    }
+
+    // Only push if not empty
+      if (matchStage.$and.length > 0) {
+        aggregationPipeline.push({ $match: matchStage });
+      }
 
     // ------------------ SORTING ------------------
-
-
-
-// Resolve aggregation field path
-// Resolve aggregation field path
-// Resolve aggregation field path
-// Resolve aggregation field path
-const aggPath = getFieldPath(await getReferenceField(aggregation?.attributeName));
-
 
 // === Generalized sort helper (works for strings, arrays, nulls, case-insensitive) ===
 function getSortSafeExpr(fieldPath: string) {
@@ -4080,15 +4084,15 @@ async function applySafeSort(sort: Record<string, any>, aggregationPipeline: any
 // === DISTINCT COUNT HANDLER ===
 if (aggregation?.type === "distinctCount") {
   // 1️⃣ Group by the distinct field, preserve full rowData
-  aggregationPipeline.push({
-    $group: {
-      _id: aggPath,        // distinct field, e.g., DisclosureNumber
-      doc: { $first: "$$ROOT" } // preserves full rowData + all top-level fields
-    }
-  });
+  // aggregationPipeline.push({
+  //   $group: {
+  //     _id: aggPath,        // distinct field, e.g., DisclosureNumber
+  //     doc: { $first: "$$ROOT" } // preserves full rowData + all top-level fields
+  //   }
+  // });
 
-  // 2️⃣ Flatten grouped docs
-  aggregationPipeline.push({ $replaceRoot: { newRoot: "$doc" } });
+  // // 2️⃣ Flatten grouped docs
+  // aggregationPipeline.push({ $replaceRoot: { newRoot: "$doc" } });
 
   // 3️⃣ Apply sorting AFTER distinct grouping
   // if (sort && Object.keys(sort).length > 0) {
