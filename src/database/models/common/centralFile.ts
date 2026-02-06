@@ -21,7 +21,7 @@ interface ICentralFile extends Document {
   fileType: string;
   fileSize: number;
 
-  validationStatus: 'pending' | 'processing' | 'mapping' | 'validated' | 'failed';
+  validationStatus: 'pending' | 'processing' | 'mapping' | 'error' | 'validated' | 'failed';
 
   mapping?: Record<string, any>;
   separator?: Record<string, string>;
@@ -58,7 +58,7 @@ const centralFileSchema = new Schema<ICentralFile>(
 
     validationStatus: {
       type: String,
-      enum: ['pending', 'processing', 'mapping', 'validated', 'failed'],
+      enum: ['pending', 'processing', 'mapping', 'error', 'validated', 'failed'],
       default: 'pending',
     },
 

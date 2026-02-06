@@ -250,10 +250,10 @@ export async function validateCentralFileForDataSource({
     }
 
     await updateCentralFileById(centralFileId, {
-      validationStatus: 'failed',
+      validationStatus: 'error',
     });
 
-    return { status: 'failed' };
+    return { status: 'error' };
   }
 
   // ✅ Mark validated
