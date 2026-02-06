@@ -728,7 +728,7 @@ if (plotType) {
         } else if(isDateField(field) && dateGroupingMode){
           getDateGroupingModeCondition(field, value);
         }else{
-          filters[`${field}`] = value;
+          filters[`${field}`] = value === "Unknown" ? { $in: [null, "", "Unknown"] } : value;
         }
       }
     });
@@ -745,7 +745,7 @@ if (plotType) {
         } else if(isDateField(field) && dateGroupingMode){
           getDateGroupingModeCondition(field, value);
         } else {
-          filters[`${field}`] = value;
+          filters[`${field}`] = value === "Unknown" ? { $in: [null, "", "Unknown"] } : value;
         }
       }
     });
@@ -1181,7 +1181,7 @@ if (plotType) {
             }else if(isDateField(field) && dateGroupingMode){
               getDateGroupingModeCondition(field, value);
             }else {
-              filters[`${field}`] = value;
+              filters[`${field}`] = value === "Unknown" ? { $in: [null, "", "Unknown"] } : value;
             }
           }
         });
@@ -1197,7 +1197,7 @@ if (plotType) {
             }else if(isDateField(field) && dateGroupingMode){
               getDateGroupingModeCondition(field, value);
             } else {
-              filters[`${field}`] = value;
+              filters[`${field}`] = value === "Unknown" ? { $in: [null, "", "Unknown"] } : value;
             }
           }
         });
