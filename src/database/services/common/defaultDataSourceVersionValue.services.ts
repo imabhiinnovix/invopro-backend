@@ -3747,156 +3747,161 @@ const safeDate = (value: any) => {
   return null;
 }
 
-    const filterConditions: any[] = [];
-    const visited = new Set<string>();
-    const filters = dashboardFilters?.filters ?? {};
-    for (const [key, val] of Object.entries(filters)) {
-      // ✅ Date / Date-Range
-        const attr = attributesMap[key] || refAttributesMap[key];
-        const dateFilter = buildDateFilter(`rowData.${key}`, val, attr);
-        if (dateFilter) {
-          filterConditions.push(dateFilter);
-          continue;
+    
+    const filters: any = dashboardFilters?.filters ?? {};
+    const parseFilterConditions = async (filters) => {
+      const filterConditions: any[] = [];
+      const visited = new Set<string>();
+      for (const [key, val] of Object.entries(filters)) {
+        // ✅ Date / Date-Range
+          const attr = attributesMap[key] || refAttributesMap[key];
+          const dateFilter = buildDateFilter(`rowData.${key}`, val, attr);
+          if (dateFilter) {
+            filterConditions.push(dateFilter);
+            continue;
+          }
+
+        if (key.startsWith('Derived.')) {
+          const derivedName = key.split('.')[1];
+          const derivedField = await getDerivedField({ name: derivedName, entityId });
+          if (!derivedField) continue;
+
+          const matchedRules = derivedField.valueRules.filter((vr) =>
+            Array.isArray(val) ? val.includes(vr.value) : vr.value === val
+          );
+
+          const derivedRuleConditions: any = [];
+          for (const rule of matchedRules) {
+            const conditionExpressions: any = [];
+            for (const cond of rule.conditions || []) {
+              const path = await resolveFieldPath(cond, entity.attributes);
+              if (!path) continue;
+
+              if (cond.operator === 'equals') {
+    conditionExpressions.push({ [path]: cond.matchValues[0] });
+  } 
+  else if (cond.operator === 'in') {
+    conditionExpressions.push({ [path]: { $in: cond.matchValues } });
+  } 
+  else if (cond.operator === 'not_in') {
+    conditionExpressions.push({ [path]: { $nin: cond.matchValues } });
+  } 
+  else if (cond.operator === 'exists') {
+    conditionExpressions.push({ [path]: { $exists: true, $ne: null } });
+  } 
+  else if (cond.operator === 'not_exists') {
+    conditionExpressions.push({ [path]: { $in: [null, undefined] } });
+  } 
+  else if (cond.operator === 'match_case_insensitive_array') {
+    const regexArray = (cond.matchValues || []).map((val: string) => ({
+      [path]: { $regex: `^${val}$`, $options: 'i' },
+    }));
+
+    if (regexArray.length > 0) {
+      conditionExpressions.push({ $or: regexArray });
+    }
+  } 
+  else if (cond.operator === 'not_match_case_insensitive_array') {
+    const regexArray = (cond.matchValues || []).map((val: string) => ({
+      [path]: { $regex: `^${val}$`, $options: 'i' },
+    }));
+
+    if (regexArray.length > 0) {
+      conditionExpressions.push({ $nor: regexArray });
+    }
+  }
+
+            }
+            if (conditionExpressions.length > 0) {
+              derivedRuleConditions.push(
+                rule.conditionOperator === 'OR' ? { $or: conditionExpressions } : { $and: conditionExpressions }
+              );
+            }
+          }
+
+          if (derivedRuleConditions.length > 0) filterConditions.push({ $or: derivedRuleConditions });
+      } else if (key.includes(".")) {
+    const pathSegments = key.split(".");
+    const lastField = pathSegments[pathSegments.length - 1];
+
+    // Full filter path inside the nested document
+    const filterCondition = Array.isArray(val)
+      ? {
+          $or: val.map((v) => ({
+            [`rowData.${lastField}`]: buildFilterForValue(v),
+          })),
+        }
+      : { [`rowData.${lastField}`]: buildFilterForValue(val) };
+
+    // Pass filter into buildNestedLookups for correct nested $lookup pipeline
+    await buildNestedLookups({
+      entityId,
+      pathSegments: pathSegments.slice(0, -1), // all except last
+      pipeline: aggregationPipeline,
+      visited,
+      filtersForLookup: { [lastField]: filterCondition },
+      filterConditions
+    });
+  }
+
+        // Top-level attribute (primitive or reference)
+        else {
+      const attr = attributesMap[key];
+      if (attr?.referenceEntitySetting?.refEntityId && !attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
+        const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
+        const refModel = await getModelForEntity(refEntityId);
+
+        const localField = `rowData.${key}`;
+        const asField = `rowData.${key}_resolved`;
+
+        // Add lookup if not already present
+        if (!aggregationPipeline.some((stage) => stage.$lookup?.as === asField)) {
+          aggregationPipeline.push({
+            $lookup: {
+              from: refModel.collection.name,
+              localField,
+              foreignField: "_id",
+              as: asField,
+              pipeline: [{ $match: { status: 'active' } }],
+            },
+          });
+          aggregationPipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
         }
 
-      if (key.startsWith('Derived.')) {
-        const derivedName = key.split('.')[1];
-        const derivedField = await getDerivedField({ name: derivedName, entityId });
-        if (!derivedField) continue;
-
-        const matchedRules = derivedField.valueRules.filter((vr) =>
-          Array.isArray(val) ? val.includes(vr.value) : vr.value === val
+        // ✅ Resolve actual attribute name from reference entity
+        const refFieldAttr = await getEntityAttribute(
+          attr.referenceEntitySetting.refEntityId,
+          attr.referenceEntitySetting.refEntityField
         );
+        const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
 
-        const derivedRuleConditions: any = [];
-        for (const rule of matchedRules) {
-          const conditionExpressions: any = [];
-          for (const cond of rule.conditions || []) {
-            const path = await resolveFieldPath(cond, entity.attributes);
-            if (!path) continue;
-
-            if (cond.operator === 'equals') {
-  conditionExpressions.push({ [path]: cond.matchValues[0] });
-} 
-else if (cond.operator === 'in') {
-  conditionExpressions.push({ [path]: { $in: cond.matchValues } });
-} 
-else if (cond.operator === 'not_in') {
-  conditionExpressions.push({ [path]: { $nin: cond.matchValues } });
-} 
-else if (cond.operator === 'exists') {
-  conditionExpressions.push({ [path]: { $exists: true, $ne: null } });
-} 
-else if (cond.operator === 'not_exists') {
-  conditionExpressions.push({ [path]: { $in: [null, undefined] } });
-} 
-else if (cond.operator === 'match_case_insensitive_array') {
-  const regexArray = (cond.matchValues || []).map((val: string) => ({
-    [path]: { $regex: `^${val}$`, $options: 'i' },
-  }));
-
-  if (regexArray.length > 0) {
-    conditionExpressions.push({ $or: regexArray });
-  }
-} 
-else if (cond.operator === 'not_match_case_insensitive_array') {
-  const regexArray = (cond.matchValues || []).map((val: string) => ({
-    [path]: { $regex: `^${val}$`, $options: 'i' },
-  }));
-
-  if (regexArray.length > 0) {
-    conditionExpressions.push({ $nor: regexArray });
-  }
-}
-
+        const filterCondition = Array.isArray(val)
+        ? {
+            $or: val.map((v) => ({
+              [`${asField}.rowData.${displayField}`]: buildFilterForValue(v),
+            })),
           }
-          if (conditionExpressions.length > 0) {
-            derivedRuleConditions.push(
-              rule.conditionOperator === 'OR' ? { $or: conditionExpressions } : { $and: conditionExpressions }
-            );
+        : { [`${asField}.rowData.${displayField}`]: buildFilterForValue(val) };
+
+        filterConditions.push(filterCondition);
+      } else {
+        const filterCondition = Array.isArray(val)
+        ? {
+            $or: val.map((v) => ({
+              [`rowData.${key}`]: buildFilterForValue(v),
+            })),
           }
-        }
+        : { [`rowData.${key}`]: buildFilterForValue(val) };
 
-        if (derivedRuleConditions.length > 0) filterConditions.push({ $or: derivedRuleConditions });
-     } else if (key.includes(".")) {
-  const pathSegments = key.split(".");
-  const lastField = pathSegments[pathSegments.length - 1];
-
-  // Full filter path inside the nested document
-  const filterCondition = Array.isArray(val)
-    ? {
-        $or: val.map((v) => ({
-          [`rowData.${lastField}`]: buildFilterForValue(v),
-        })),
+        filterConditions.push(filterCondition);
       }
-    : { [`rowData.${lastField}`]: buildFilterForValue(val) };
-
-  // Pass filter into buildNestedLookups for correct nested $lookup pipeline
-  await buildNestedLookups({
-    entityId,
-    pathSegments: pathSegments.slice(0, -1), // all except last
-    pipeline: aggregationPipeline,
-    visited,
-    filtersForLookup: { [lastField]: filterCondition },
-    filterConditions
-  });
-}
-
-      // Top-level attribute (primitive or reference)
-       else {
-    const attr = attributesMap[key];
-    if (attr?.referenceEntitySetting?.refEntityId && !attr.referenceEntitySetting?.relationType?.startsWith('mapping_')) {
-      const refEntityId = attr.referenceEntitySetting.refEntityId.toString();
-      const refModel = await getModelForEntity(refEntityId);
-
-      const localField = `rowData.${key}`;
-      const asField = `rowData.${key}_resolved`;
-
-      // Add lookup if not already present
-      if (!aggregationPipeline.some((stage) => stage.$lookup?.as === asField)) {
-        aggregationPipeline.push({
-          $lookup: {
-            from: refModel.collection.name,
-            localField,
-            foreignField: "_id",
-            as: asField,
-            pipeline: [{ $match: { status: 'active' } }],
-          },
-        });
-        aggregationPipeline.push({ $unwind: { path: `$${asField}`, preserveNullAndEmptyArrays: true } });
-      }
-
-      // ✅ Resolve actual attribute name from reference entity
-      const refFieldAttr = await getEntityAttribute(
-        attr.referenceEntitySetting.refEntityId,
-        attr.referenceEntitySetting.refEntityField
-      );
-      const displayField = refFieldAttr?.name || attr.referenceEntitySetting.refEntityField;
-
-      const filterCondition = Array.isArray(val)
-      ? {
-          $or: val.map((v) => ({
-            [`${asField}.rowData.${displayField}`]: buildFilterForValue(v),
-          })),
         }
-      : { [`${asField}.rowData.${displayField}`]: buildFilterForValue(val) };
-
-      filterConditions.push(filterCondition);
-    } else {
-      const filterCondition = Array.isArray(val)
-      ? {
-          $or: val.map((v) => ({
-            [`rowData.${key}`]: buildFilterForValue(v),
-          })),
-        }
-      : { [`rowData.${key}`]: buildFilterForValue(val) };
-
-      filterConditions.push(filterCondition);
-    }
       }
-    }
+      return filterConditions;
+    };
+    const filterConditions = await parseFilterConditions(filters);
     console.log('filterConditions', JSON.stringify(filterConditions));
-
+    
    const matchStage: any = { $and: [] };
 
   // Collect filter conditions
@@ -3904,7 +3909,25 @@ else if (cond.operator === 'not_match_case_insensitive_array') {
     matchStage.$and.push(...filterConditions);
   }
 
+  // Only push if not empty
+    if (matchStage.$and.length > 0) {
+      aggregationPipeline.push({ $match: matchStage });
+    }
+
+
+  const chartFilters: any = dashboardFilters?.chartFilters ?? {};
+  const chartFilterConditions = await parseFilterConditions(chartFilters);
+  console.log('chartFilterConditions', JSON.stringify(chartFilterConditions));
   
+  const chartMatchStage: any = { $and: [] };
+
+  // Collect filter conditions
+  if (chartFilterConditions.length > 0) {
+    chartMatchStage.$and.push(...chartFilterConditions);
+  }
+
+
+
   console.log('dashboardFilters', JSON.stringify(dashboardFilters), JSON.stringify(aggregationPipeline));
   
    // Step 3: Build group-by keys
@@ -4000,8 +4023,8 @@ console.log("conditionsByField", JSON.stringify(conditionsByField));
     }
 
     // Only push if not empty
-      if (matchStage.$and.length > 0) {
-        aggregationPipeline.push({ $match: matchStage });
+      if (chartMatchStage.$and.length > 0) {
+        aggregationPipeline.push({ $match: chartMatchStage });
       }
 
     // ------------------ SORTING ------------------

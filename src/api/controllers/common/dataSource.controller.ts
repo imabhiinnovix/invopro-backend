@@ -485,7 +485,7 @@ export const getDataSourceWithFieldOptionDetails = async (req: Request, res: Res
 
 export const getWidgetDataByFilter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    let { dataSourceId, conditions, entityId, dimensions, groupBy, dashBoardType, dashboardFilters, plotType, sort, aggregation } = req.body;
+    let { dataSourceId, conditions, entityId, dimensions, groupBy, dashBoardType, dashboardFilters = {}, plotType, sort, aggregation } = req.body;
 
     let startVersionValue = dashboardFilters?.startVersionValue;
     let endVersionValue = dashboardFilters?.endVersionValue;
@@ -627,7 +627,8 @@ export const getWidgetDataByFilter = async (req: Request, res: Response, next: N
     status: "active",
   };
 
-  const filters: Record<string, any> = dashboardFilters?.filters ?? {};
+  // const filters: Record<string, any> = dashboardFilters?.filters ?? {};
+  const filters: Record<string, any> = {};
   let dueDaysFilterValue: string | null = null;
 
   const isDueDaysField = (key: string) => key === "Derived.dueDays";
@@ -815,7 +816,7 @@ if (!effectiveSortBy || Object.keys(effectiveSortBy).length === 0) {
     }
   }
   // Assign filters to dashboardFilters
-  dashboardFilters.filters = filters;
+  dashboardFilters.chartFilters = filters;
 
   // Fetch data
   const result = await defaultDataSourceVersionValue.getDataSourceVersionValueWidgetDataV2({
@@ -969,7 +970,7 @@ export const exportWidgetDataByFilterToExcel = async (
       dimensions,
       groupBy,
       dashBoardType,
-      dashboardFilters,
+      dashboardFilters = {},
       plotType,
       selectedFields, // Optional
       sort,
@@ -1080,7 +1081,8 @@ export const exportWidgetDataByFilterToExcel = async (
         status: "active",
       };
 
-      const filters: Record<string, any> = dashboardFilters?.filters ?? {};
+      //const filters: Record<string, any> = dashboardFilters?.filters ?? {};
+      const filters: Record<string, any> = {};
       let dueDaysFilterValue: string | null = null;
 
       const isDueDaysField = (key: string) => key === "Derived.dueDays";
@@ -1259,7 +1261,7 @@ if (!effectiveSortBy || Object.keys(effectiveSortBy).length === 0) {
         }
       }
 
-      dashboardFilters.filters = filters;
+      dashboardFilters.chartFilters = filters;
 
       //  Original aggregation call preserved
       // const result =
