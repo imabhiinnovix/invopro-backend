@@ -35,6 +35,8 @@ interface IDashboardWidget extends Document {
   isActive: boolean;
   isDeleted: boolean;
   isIncremental: boolean;
+  widgetKind: 'chart' | 'image';
+  image?: string;
 }
 
 const dashboardWidgetSchema = new Schema<IDashboardWidget>(
@@ -43,8 +45,8 @@ const dashboardWidgetSchema = new Schema<IDashboardWidget>(
     createdBy: { type: Schema.Types.ObjectId, ref: 'user', required: true },
     dashboardId: { type: Schema.Types.ObjectId, ref: 'dashboard', required: true },
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
-    widgetTypeId: { type: Schema.Types.ObjectId, ref: 'widget_type', required: true },
-    entityId: { type: Schema.Types.ObjectId, ref: 'Entity', required: true },
+    widgetTypeId: { type: Schema.Types.ObjectId, ref: 'widget_type', required: false },
+    entityId: { type: Schema.Types.ObjectId, ref: 'Entity', required: false },
     name: { type: Schema.Types.String, required: true, trim: true },
     description: { type: Schema.Types.String, trim: true },
     position: {
@@ -52,17 +54,17 @@ const dashboardWidgetSchema = new Schema<IDashboardWidget>(
       y: { type: Schema.Types.Number, required: true, min: 0 },
       index: { type: Schema.Types.Number, required: true, min: 0 },
     },
-    dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source', required: true },
+    dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source', required: false },
     dimensions: { type: [String], default: [] },
     groupBy: { type: [String], default: [] },
     plotType: { type: [String], default: [] },
     aggregation: {
       type: {
         type: String,
-        required: true,
+        required: false,
         enum: ['Count', 'Sum', 'Average', 'distinctCount'],
       },
-      attributeName: { type: String, required: true },
+      attributeName: { type: String, required: false },
     },
     conditions: [
       {
@@ -71,6 +73,22 @@ const dashboardWidgetSchema = new Schema<IDashboardWidget>(
         value: Schema.Types.Mixed, // Value (supports various data types)
       },
     ],
+    /* ----------------------------
+       Widget Kind
+    ----------------------------- */
+    widgetKind: {
+      type: String,
+      enum: ['chart', 'image'],
+      default: 'chart',
+      required: true,
+    },
+
+    /* ----------------------------
+       Image widget fields
+    ----------------------------- */
+    image: {
+      type: String,
+    },
     isActive: { type: Schema.Types.Boolean, default: true, required: true },
     isDeleted: { type: Schema.Types.Boolean, default: false, required: true },
     isIncremental: { type: Schema.Types.Boolean, default: false, required: true },

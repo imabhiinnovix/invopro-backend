@@ -996,7 +996,8 @@ for (const org of organizations) {
 
   console.log(`⚙️ Found ${settings.length} active frequency settings`);
 
-  
+  // Track processed notification types (only for force mode)
+  const processedNotifTypes = new Set<string>();
 
   for (const setting of settings) {
     try {
@@ -1012,6 +1013,18 @@ for (const org of organizations) {
       const template = setting.templateId as any;
       const mediumSetting = setting.medium as any;
       const sentAt = combineDateAndTime(today, setting.triggerTime);
+
+       // Skip duplicate frequency settings in force mode
+        if (isForce === true && notifType?._id) {
+          const key = String(notifType._id);
+
+          if (processedNotifTypes.has(key)) {
+            console.log(`⏭ Skipping extra frequency setting for notificationType ${key}`);
+            continue;
+          }
+
+          processedNotifTypes.add(key);
+        }
 
       if (!notifType || !template) {
         console.log("⚠️ Missing notificationType or template, skipping");

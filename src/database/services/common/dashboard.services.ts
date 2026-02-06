@@ -37,13 +37,16 @@ export const getAllDashboards = async ({
   limit,
   sort = { createdAt: -1 },
   populate,
+  paginate = true,
 }: any) => {
   try {
     let dashboardsQuery = Dashboard.find(query)
       .select(select)
-      .skip(page * limit)
-      .limit(limit)
       .sort(sort);
+
+    if (paginate) {
+      dashboardsQuery = dashboardsQuery.skip(page * limit).limit(limit);
+    }
 
     if (populate && Array.isArray(populate)) {
       populate.forEach((field) => {
