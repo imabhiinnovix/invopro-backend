@@ -313,22 +313,40 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
       }
     }
 
+    // await dashboardWidgetdService.updateDashboardWidget(dashboardWidgetId, {
+    //   ...(name && { name }),
+    //   ...(description && { description }),
+    //   ...(dataSourceId && { dataSourceId }),
+    //   ...(aggregation && { aggregation }),
+    //   ...(dimensions && { dimensions }),
+    //   ...(groupBy && { groupBy }),
+    //   ...(plotType && { plotType }),
+    //   ...(conditions && { conditions }),
+    //   ...(position && { position }),
+    //   ...(widgetTypeId && { widgetTypeId }),
+    //   ...(entityId && { entityId }),
+    //   ...(typeof isActive !== 'undefined' && { isActive }),
+    //   ...(typeof isDeleted !== 'undefined' && { isDeleted }),
+    //   ...(typeof isIncremental !== 'undefined' && { isIncremental }),
+    // });
+
     await dashboardWidgetdService.updateDashboardWidget(dashboardWidgetId, {
-      ...(name && { name }),
-      ...(description && { description }),
-      ...(dataSourceId && { dataSourceId }),
-      ...(aggregation && { aggregation }),
-      ...(dimensions && { dimensions }),
-      ...(groupBy && { groupBy }),
-      ...(plotType && { plotType }),
-      ...(conditions && { conditions }),
-      ...(position && { position }),
-      ...(widgetTypeId && { widgetTypeId }),
-      ...(entityId && { entityId }),
+      ...(name !== undefined && { name }),
+      ...(description !== undefined && { description }), // allow blank string
+      ...(dataSourceId !== undefined && { dataSourceId }),
+      ...(aggregation !== undefined && { aggregation }),
+      ...(dimensions !== undefined && { dimensions }),
+      ...(groupBy !== undefined && { groupBy }),
+      ...(plotType !== undefined && { plotType }),
+      ...(conditions !== undefined && { conditions }),
+      ...(position !== undefined && { position }),
+      ...(widgetTypeId !== undefined && { widgetTypeId }),
+      ...(entityId !== undefined && { entityId }),
       ...(typeof isActive !== 'undefined' && { isActive }),
       ...(typeof isDeleted !== 'undefined' && { isDeleted }),
       ...(typeof isIncremental !== 'undefined' && { isIncremental }),
     });
+
 
     if(!description){
       // Create BullMQ connection (same name as worker uses)
