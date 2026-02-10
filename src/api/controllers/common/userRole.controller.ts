@@ -5,7 +5,7 @@ import { getPermissionsByRoleIds } from '../../../database/services/common/roleH
 import cacheService from '../../../database/services/reportivix/cacheService';
 export const getUserRoleList = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let { organizationId, isSuperUser } = req.user;
+    let { organizationId, isSuperUser, roleIds } = req.user;
     const { search, organizationId: paramOrgId, paginate = true }: any = req.query;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
@@ -16,8 +16,20 @@ export const getUserRoleList = async (req: Request, res: Response, next: NextFun
 
     const query: any = { organizationId };
     if (!isSuperUser) {
-      query['isSuperUser'] = false;
-      query['name'] = { $ne: 'Super Admin' };
+      // query['isSuperUser'] = false;
+      // query['name'] = { $ne: 'Super Admin' };
+      const superAdminRoles = await userRoleService.getAllUserRole({
+        organizationId,
+        isSuperUser: false,
+        name: 'Super Admin',
+        status: 'active',
+        _id: { $nin: roleIds }
+      });
+
+      const superAdminRoleIds = superAdminRoles.map(r => r._id);
+      if(superAdminRoleIds.length > 0){
+        query._id = { $nin: superAdminRoleIds };
+      }
     }
 
     if (search) query.name = { $regex: search, $options: 'i' };
