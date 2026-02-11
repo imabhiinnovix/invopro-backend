@@ -6,10 +6,12 @@ import { Schema, model, Document, Types } from 'mongoose';
 interface ICentralFile extends Document {
   organizationId: Types.ObjectId;
   reportId: Types.ObjectId;
-  dataSourceId: Types.ObjectId; // ✅ Custom Report ID instead of category
+  dataSourceId: Types.ObjectId;
   entityId: Types.ObjectId;
+
   year: number;
   month: number;
+  week?: number; // ✅ ADDED
 
   originalFileName: string;
   storedFileName: string;
@@ -42,6 +44,7 @@ const centralFileSchema = new Schema<ICentralFile>(
 
     year: { type: Number, required: true },
     month: { type: Number, required: true },
+    week: { type: Number, default: null }, // ✅ ADDED (optional)
 
     originalFileName: { type: String, required: true },
     storedFileName: { type: String, required: true },
@@ -68,12 +71,13 @@ const centralFileSchema = new Schema<ICentralFile>(
   { timestamps: true }
 );
 
-// ✅ Index for fast lookup
+// ✅ UPDATED INDEX (week added)
 centralFileSchema.index({
   organizationId: 1,
   dataSourceId: 1,
   year: 1,
   month: 1,
+  week: 1, // ✅ ADDED
   originalFileName: 1,
   isLatest: 1,
 });

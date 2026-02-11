@@ -12,8 +12,9 @@ import { moveCentralFileToMisc, resolveDataSourceId, validateCentralFileForDataS
 
 export const uploadCentralFile = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { reportId, year, month, dataSourceId, mappings, separator } = req.body;
+    const { reportId, year, month, week, dataSourceId, mappings, separator } = req.body;
     const { organizationId, userId, orgCode } = req.user;
+
 
     // ✅ Safe JSON parse
     let allJsonMapping = {};
@@ -39,14 +40,15 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
       });
     }
 
-    // ✅ Always group central files by reportId (best practice)
+    // ✅ Build basePath safely (week optional)
     const basePath = path.join(
       'uploads',
       organizationId,
       'central-files',
       reportId || dataSourceId || 'MISC',
       year,
-      month.toString().padStart(2, '0')
+      String(month).padStart(2, '0'), // ✅ month padded only here
+      ...(week ? [`W${week}`] : [])   // ✅ week as-is (no pad), optional
     );
 
     await fs.mkdir(basePath, { recursive: true });
@@ -63,13 +65,14 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
       const originalFileName = file.originalname;
 
       // ============================
-      // 1️⃣ VERSIONING LOGIC
+      // 1️⃣ VERSIONING LOGIC (week included)
       // ============================
       const latestFile = await centralFileService.findLatestCentralFile({
         organizationId,
         reportId: reportId ? new Types.ObjectId(reportId) : undefined,
         year,
         month,
+        week: week || undefined,
         originalFileName,
       });
 
@@ -82,6 +85,7 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
             reportId: reportId ? new Types.ObjectId(reportId) : undefined,
             year,
             month,
+            week: week || undefined,
             originalFileName,
             isLatest: true,
           },
@@ -98,13 +102,14 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
       await fs.rename(file.path, targetPath);
 
       // ============================
-      // 2️⃣ CREATE CENTRAL FILE RECORD
+      // 2️⃣ CREATE CENTRAL FILE RECORD (week stored)
       // ============================
       const record: any = await centralFileService.createCentralFile({
         organizationId,
         reportId: reportId || null,
         year,
         month,
+        week,
         originalFileName,
         storedFileName,
         version: newVersion,
@@ -148,20 +153,16 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
       }
 
       // ============================
-      // 4️⃣ MOVE TO MISC IF NO DATASOURCE
+      // 4️⃣ NO DATASOURCE → MAPPING STATUS
       // ============================
       if (!finalDataSourceId) {
-        // await moveCentralFileToMisc({
-        //   centralFile: updatedRecord,
-        //   organizationId,
-        // });
         updatedRecord = await centralFileService.updateCentralFileById(record._id, {
           validationStatus: 'mapping',
         });
       }
 
       // ============================
-      // 5️⃣ ASYNC VALIDATION (NON-BLOCKING)
+      // 5️⃣ ASYNC VALIDATION
       // ============================
       if (
         finalDataSourceId &&
@@ -171,10 +172,10 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
       ) {
         const centralFileId = updatedRecord._id.toString();
 
-         // ✅ Mark file as processing BEFORE async validation
-        updatedRecord = await centralFileService.updateCentralFileById(centralFileId, {
+        await centralFileService.updateCentralFileById(centralFileId, {
           validationStatus: 'processing',
         });
+
 
         setImmediate(async () => {
           try {
@@ -187,7 +188,6 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
             });
           } catch (err) {
             console.error('Central file validation failed:', err);
-             // ✅ Optional: mark failed if exception happens
             await centralFileService.updateCentralFileById(centralFileId, {
               validationStatus: 'failed',
             });
@@ -207,6 +207,7 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
     next(err);
   }
 };
+
 
 export const revalidateCentralFile = async (req: Request, res: Response, next: NextFunction) => {
   try {
