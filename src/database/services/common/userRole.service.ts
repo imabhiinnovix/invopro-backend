@@ -215,3 +215,12 @@ export const getUserRole = async (query: any) => {
     throw err;
   }
 };
+
+export const getAllUserRole = async (query: any) => {
+  try {
+    const userRole = await UserRole.find(query);
+    return userRole;
+  } catch (err) {
+    throw err;
+  }
+};

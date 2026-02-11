@@ -927,6 +927,21 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
 
     const { userId, organizationId, orgCode } = req?.user;
 
+
+    const SPECIAL_DS_ID = "6878fab8a1dfb7e7aabb0f01"; // case list datasourceId
+
+    if (
+      dataSourceId === SPECIAL_DS_ID &&
+      jsonMapping?.CaseNumber &&
+      jsonMapping?.DisclosureNumber &&
+      Array.isArray(jsonMapping.CaseNumber) &&
+      Array.isArray(jsonMapping.DisclosureNumber)
+    ) {
+      jsonMapping.CaseNumber = Array.from(
+        new Set([...jsonMapping.CaseNumber, ...jsonMapping.DisclosureNumber])
+      );
+    }
+
     const files = Array.isArray(req.files) ? req.files : Object.values(req.files!).flat();
 
     let combinedFileName = '';

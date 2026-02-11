@@ -53,6 +53,7 @@ interface IEntity extends Document {
   createdBy: Types.ObjectId;
   updatedBy: Types.ObjectId;
   isActive: boolean;
+  isVisible: boolean;
 }
 
 // ---------------------------
@@ -132,6 +133,7 @@ const entitySchema = new Schema<IEntity>(
     createdBy: { type: Schema.Types.ObjectId, ref: 'user' },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'user' },
     isActive: { type: Boolean, required: true },
+    isVisible: { type: Boolean, default: true },
   },
   {
     timestamps: true,
