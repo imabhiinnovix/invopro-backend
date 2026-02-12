@@ -885,31 +885,36 @@ export const getWidgetData = async (req: Request, res: Response, next: NextFunct
       dataSourceId,
       organizationId,
     });
-
+    
     // ✅ Merge user conditions with incoming conditions
     if (userPermission?.conditions?.length) {
-      const userConditionsMap = new Map(
-        userPermission.conditions.map((c: any) => [c.field, c])
-      );
+        const userConditionsMap = new Map(
+          userPermission.conditions.map((c: any) => [c.field, c])
+        );
 
-      // Merge in one pass
-      const mergedMap = new Map();
+        // Merge in one pass
+        const mergedMap = new Map();
 
-      // Step 1: Start with payload conditions
-      for (const cond of conditions || []) {
-        mergedMap.set(cond.field, cond);
-      }
+        // Step 1: Start with payload conditions (✅ minimal change here)
+        for (const cond of conditions || []) {
+          if (userConditionsMap.has(cond.field)) {
+            // if field exists in userPermission → normal overwrite behavior
+            mergedMap.set(cond.field, cond);
+          } else {
+            // if field NOT in userPermission → keep all conditions (before/after etc.)
+            mergedMap.set(`${cond.field}_${cond.operator}`, cond);
+          }
+        }
 
-      // Step 2: Overwrite or add user permission conditions
-      for (const [field, cond] of userConditionsMap.entries()) {
-        mergedMap.set(field, cond);
-      }
+        // Step 2: Overwrite or add user permission conditions
+        for (const [field, cond] of userConditionsMap.entries()) {
+          mergedMap.set(field, cond);
+        }
 
-      // Step 3: Convert back to array
-      conditions = Array.from(mergedMap.values());
+        // Step 3: Convert back to array
+        conditions = Array.from(mergedMap.values());
     }
 
-    // console.log('conditions',JSON.stringify(conditions));
     // Normalize dimension and groupBy: remove "Derived." prefix from all fields
     dimensions = dimensions.map((d) => d.replace(/^Derived\./, ""));
     groupBy = groupBy.map((g) => g.replace(/^Derived\./, ""));
