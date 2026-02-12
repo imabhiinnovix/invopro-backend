@@ -65,6 +65,83 @@ function safeDateString(fieldPath) {
     const fieldPath = getFieldPath(`rowData.${field}`);
     const fieldName = `rowData.${field}`;
 
+
+     // ============================================================
+    //  MINIMAL CHANGE: MULTIPLE DATE CONDITIONS (AND + blank/notblank)
+    // ============================================================
+    if ((fieldType === 'date' || fieldType === 'date-range') && conditions.length > 1) {
+      const convertedField = `converted_${field}`;
+
+      dateConversions[convertedField] = {
+        $cond: {
+          if: { $eq: [{ $type: fieldPath }, 'date'] },
+          then: fieldPath,
+          else: safeDateString(fieldPath),
+        },
+      };
+
+      const andConditions: any[] = [];
+
+      conditions.forEach((condition) => {
+        const convertedValue = safeDate(condition.value);
+
+        switch (condition.operator) {
+          case 'before':
+            andConditions.push({ [convertedField]: { $lt: convertedValue } });
+            break;
+
+          case 'after':
+            andConditions.push({ [convertedField]: { $gt: convertedValue } });
+            break;
+
+          case 'on': {
+            const startOfDay = new Date(convertedValue);
+            startOfDay.setUTCHours(0, 0, 0, 0);
+            const endOfDay = new Date(convertedValue);
+            endOfDay.setUTCHours(23, 59, 59, 999);
+            andConditions.push({
+              [convertedField]: { $gte: startOfDay, $lt: endOfDay },
+            });
+            break;
+          }
+
+          case 'noton': {
+            const startOfDay = new Date(convertedValue);
+            startOfDay.setUTCHours(0, 0, 0, 0);
+            const endOfDay = new Date(convertedValue);
+            endOfDay.setUTCHours(23, 59, 59, 999);
+            andConditions.push({
+              [convertedField]: { $not: { $gte: startOfDay, $lt: endOfDay } },
+            });
+            break;
+          }
+
+          case 'blank':
+            andConditions.push({ [convertedField]: null });
+            break;
+
+          case 'notblank':
+            andConditions.push({ [convertedField]: { $ne: null } });
+            break;
+        }
+      });
+
+      if (andConditions.length === 1) {
+        Object.assign(matchConditions, andConditions[0]);
+      } else if (andConditions.length > 1) {
+        matchConditions.$and = matchConditions.$and || [];
+        matchConditions.$and.push(...andConditions);
+      }
+
+      return;
+  }
+
+
+    // ============================================================
+    // EXISTING SINGLE CONDITION LOGIC (UNCHANGED)
+    // ============================================================
+
+
     // If there's only one condition for this field, process it normally
     if (conditions.length === 1) {
       const condition = conditions[0];
