@@ -126,14 +126,15 @@ function safeDateString(fieldPath) {
         }
       });
 
-      if (andConditions.length === 1) {
-        Object.assign(matchConditions, andConditions[0]);
-      } else if (andConditions.length > 1) {
-        matchConditions.$and = matchConditions.$and || [];
-        matchConditions.$and.push(...andConditions);
+      if(andConditions.length > 0){
+        if (andConditions.length === 1) {
+          Object.assign(matchConditions, andConditions[0]);
+        } else if (andConditions.length > 1) {
+          matchConditions.$and = matchConditions.$and || [];
+          matchConditions.$and.push(...andConditions);
+        }
+         return;
       }
-
-      return;
   }
 
 
