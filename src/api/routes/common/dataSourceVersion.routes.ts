@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
 import {
   checkDataSourceVersionNameAvailableOrNot,
+  createMultipleDataSourceVersionFromValidatedCentralData,
   createSingleRowVersionValue,
   createUpdateCustomDataSourceVersionValue,
   deleteMultipleRowsFromVersion,
@@ -69,5 +70,8 @@ router.get(
 
 // router.post('/chartData', authenticateToken, permissionMiddleware(), getNewChartData);
 router.get('/:dataSourceVersionId', authenticateToken, getDataSourceVersionDetailsBasedOnId);
+
+router.post('/createCustomReport', authenticateToken, /*permissionMiddleware(),*/ createMultipleDataSourceVersionFromValidatedCentralData);
+
 
 export default router;

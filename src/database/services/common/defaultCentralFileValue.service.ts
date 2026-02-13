@@ -90,6 +90,7 @@ export const getCentralFileValue = async ({
   page = 1,
   limit = 50,
   sort = { updatedAt: 1 },
+  paginate = true
 }: any) => {
   try {
     const Model = createDefaultCentralFileModel(schemaName);
@@ -97,10 +98,17 @@ export const getCentralFileValue = async ({
     const pipeline: any[] = [
       { $match: query },
       { $sort: sort },
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
     ];
 
+    // Apply pagination only if paginate = true
+    if (paginate) {
+      pipeline.push(
+        { $skip: (page - 1) * limit },
+        { $limit: limit }
+      );
+    }
+
+    // Apply projection
     if (select) {
       const projectionFields = select.split(' ').reduce((acc: any, field: string) => {
         acc[field] = 1;
@@ -109,12 +117,23 @@ export const getCentralFileValue = async ({
       pipeline.push({ $project: projectionFields });
     }
 
+    // If paginate = false → no need for countDocuments
+    if (!paginate) {
+      const data = await Model.aggregate(pipeline).exec();
+      return {
+        data,
+        totalCount: data.length
+      };
+    }
+
+    // If paginate = true → return paginated data + total count
     const [data, totalCount] = await Promise.all([
       Model.aggregate(pipeline).exec(),
       Model.countDocuments(query),
     ]);
 
     return { data, totalCount };
+
   } catch (err) {
     throw err;
   }

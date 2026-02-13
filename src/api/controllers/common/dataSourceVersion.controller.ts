@@ -11,6 +11,7 @@ import {
   createMongoCondition,
   escapeRegExp,
   formatDateTime,
+  getCentralFileSchemaNameBasedOnVersionCodeAndOrgCode,
   getImportLogSchemaNameBasedOnVersionCodeAndOrgCode,
   getSchemaNameBasedOnVersionCodeAndOrgCode,
   sleep,
@@ -33,6 +34,8 @@ import { getUserDataPermissionRecord } from '../../../database/services/common/u
 import ExcelJS from 'exceljs';
 import { createDownloadRequest } from '../../../database/services/common/downloadRequest.service';
 import { Queue } from 'bullmq';
+import { findLatestCentralFile } from '../../../database/services/common/centralFile.service';
+import { getCentralFileValue } from '../../../database/services/common/defaultCentralFileValue.service';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -1912,6 +1915,243 @@ export async function createMultipleDataSourceVersionBasedOnCustomReportId(
     next(err);
   }
 }
+
+export async function createMultipleDataSourceVersionFromValidatedCentralData(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    console.log('Inside createReportFromValidatedCentralData');
+
+    const { customReportId, year, month } = req.body;
+    const versionValue = `${year}-${month}`;
+
+    const { userId, organizationId, orgCode } = req.user;
+
+    const customReportData =
+      await customReportServices.findCustomReportById(customReportId);
+
+    if (!customReportData?.dataSourceIds?.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'Custom report details not found.',
+      });
+    }
+
+    /* -------------------------------------------------------
+       STEP 1️⃣ CHECK ALL DATASOURCE HAVE VALIDATED DATA
+    --------------------------------------------------------*/
+
+    const centralFilesMap: Record<string, any> = {};
+    let missingDataSource: string[] = [];
+
+    for (const dsInfo of customReportData.dataSourceIds) {
+
+      const dataSourceId = String(dsInfo.dataSourceId);
+
+      /* -------------------------------------------------------
+         ⭐ UPDATED: DETERMINE SPECIAL DATASOURCE USING fileDetails.name
+      --------------------------------------------------------*/
+
+      const fileDetailNames =
+        (dsInfo.fileDetails || []).map(fd => fd.name);
+
+      const isSpecialFile =
+        fileDetailNames.some(name =>
+          ['KSA Contracts', 'Required Mapping-Contracts'].includes(name)
+        );
+
+      /* -------------------------------------------------------
+         STEP 1A: STRICT MONTH-YEAR VALIDATED FILE CHECK
+      --------------------------------------------------------*/
+
+      let centralFile = await findLatestCentralFile({
+        organizationId,
+        dataSourceId,
+        year,
+        month,
+        validationStatus: 'validated',
+        isLatest: true,
+      });
+
+      /* -------------------------------------------------------
+         ⭐ UPDATED: APPLY FALLBACK ONLY IF SPECIAL FILE
+      --------------------------------------------------------*/
+
+      if (!centralFile && isSpecialFile) {
+
+        console.log(
+          `Applying fallback for special file datasource: ${dataSourceId}`
+        );
+
+        centralFile = await findLatestCentralFile({
+          organizationId,
+          dataSourceId,
+          validationStatus: 'validated',
+          isLatest: true,
+        });
+      }
+
+      if (!centralFile) {
+        missingDataSource.push(dataSourceId);
+      } else {
+        centralFilesMap[dataSourceId] = centralFile;
+      }
+    }
+
+    if (missingDataSource.length) {
+      return res.status(400).json({
+        success: false,
+        message: `Validated data missing for some datasource`,
+        missingDataSource,
+      });
+    }
+
+    /* -------------------------------------------------------
+       STEP 2️⃣ CREATE REPORT REQUEST
+    --------------------------------------------------------*/
+
+    const currentDateTime =
+      DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss');
+
+    const generateReportFileName =
+      `${customReportData.reportName}_${versionValue}_${currentDateTime}.xlsx`;
+
+    const reportRequest = await reportRequestService.createReportRequest({
+      organizationId,
+      versionValue,
+      customReportId,
+      status: 'processing',
+      fileName: generateReportFileName,
+      fileType: 'xlsx',
+      createdBy: userId,
+    });
+
+    const reportRequestId: any = reportRequest._id;
+    const BATCH_SIZE = 5000;
+    const completedVersionIds: string[] = [];
+
+    /* -------------------------------------------------------
+       STEP 3️⃣ PROCESS EACH DATASOURCE
+    --------------------------------------------------------*/
+
+    for (const dsInfo of customReportData.dataSourceIds) {
+
+      const dataSourceId = String(dsInfo.dataSourceId);
+      const centralFile = centralFilesMap[dataSourceId];
+
+      const dataSourceDetails =
+        await dataSourceService.findDataSourceById(dataSourceId, true);
+
+      if (!dataSourceDetails?.entityId) continue;
+
+      /* -------------------------------------------------------
+         DEACTIVATE OLD CURRENT VERSION
+      --------------------------------------------------------*/
+
+      await dataSourceVersionService.updateDataSourceVersions({
+        query: { dataSourceId, versionValue },
+        updateFields: { isCurrent: false },
+      });
+
+      const dataSourceVersion: any =
+        await dataSourceVersionService.createDataSourceVersion({
+          organizationId,
+          entityId: dataSourceDetails.entityId._id,
+          dataSourceId,
+          versionValue,
+          createdBy: userId,
+          status: 'processing',
+          isActive: true,
+          isCurrent: false,
+          reportRequestId
+        });
+
+      /* -------------------------------------------------------
+         STEP 4️⃣ FETCH VALIDATED CENTRAL FILE DATA
+      --------------------------------------------------------*/
+
+      const mainTableSchemaName =
+        getCentralFileSchemaNameBasedOnVersionCodeAndOrgCode({
+          orgCode,
+          versionCode: dataSourceDetails.code,
+        });
+
+      const { data: validatedRows } =
+        await getCentralFileValue({
+          schemaName: mainTableSchemaName,
+          query: {
+            centralFileId: centralFile._id,
+            status: 'active',
+          },
+          paginate: false
+        });
+
+      if (!validatedRows?.length) {
+        await dataSourceVersionService.updateDataSourceVersion(
+          dataSourceVersion?._id,
+          { status: 'failed' }
+        );
+        continue;
+      }
+
+      /* -------------------------------------------------------
+         STEP 5️⃣ DIRECT INSERT INTO MAIN TABLE
+      --------------------------------------------------------*/
+
+      const mainSchema =
+        getSchemaNameBasedOnVersionCodeAndOrgCode({
+          orgCode,
+          versionCode: dataSourceDetails.code,
+        });
+
+      for (let i = 0; i < validatedRows.length; i += BATCH_SIZE) {
+        await dataSourceVersionValueService.createDataSourceVersionValue(
+          mainSchema,
+          validatedRows.slice(i, i + BATCH_SIZE).map(row => ({
+            ...row,
+            dataSourceVersionId: dataSourceVersion._id,
+          }))
+        );
+      }
+
+      await dataSourceVersionService.updateDataSourceVersion(
+        dataSourceVersion._id,
+        {
+          status: 'completed',
+          isCurrent: true,
+        }
+      );
+
+      completedVersionIds.push(dataSourceVersion._id);
+    }
+
+    /* -------------------------------------------------------
+       STEP 6️⃣ GENERATE CUSTOM REPORT
+    --------------------------------------------------------*/
+
+    await sleep(3000);
+
+    await generateCustomReportsFunction({
+      versionValue,
+      userId,
+      organizationId,
+      orgCode,
+      customReportId,
+      reportRequestId,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Report generation started successfully.',
+    });
+
+  } catch (err) {
+    next(err);
+  }
+}
+
 
 
 
