@@ -57,16 +57,31 @@ export const buildWidgetRequestPayload = async (widget: any) => {
     });
 
     if (userPermission?.conditions?.length) {
-      const userConditionsMap = new Map(
-        userPermission.conditions.map((c: any) => [c.field, c])
-      );
+        const userConditionsMap = new Map(
+          userPermission.conditions.map((c: any) => [c.field, c])
+        );
 
-      const mergedMap = new Map();
-      for (const cond of conditions || []) mergedMap.set(cond.field, cond);
-      for (const [field, cond] of userConditionsMap.entries())
-        mergedMap.set(field, cond);
+        // Merge in one pass
+        const mergedMap = new Map();
 
-      conditions = Array.from(mergedMap.values());
+        // Step 1: Start with payload conditions (✅ minimal change here)
+        for (const cond of conditions || []) {
+          if (userConditionsMap.has(cond.field)) {
+            // if field exists in userPermission → normal overwrite behavior
+            mergedMap.set(cond.field, cond);
+          } else {
+            // if field NOT in userPermission → keep all conditions (before/after etc.)
+            mergedMap.set(`${cond.field}_${cond.operator}`, cond);
+          }
+        }
+
+        // Step 2: Overwrite or add user permission conditions
+        for (const [field, cond] of userConditionsMap.entries()) {
+          mergedMap.set(field, cond);
+        }
+
+        // Step 3: Convert back to array
+        conditions = Array.from(mergedMap.values());
     }
 
   
