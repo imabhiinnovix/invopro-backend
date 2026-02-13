@@ -40,6 +40,8 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
       });
     }
 
+    const padMonth = String(month).padStart(2, '0');
+
     // ✅ Build basePath safely (week optional)
     const basePath = path.join(
       'uploads',
@@ -47,7 +49,7 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
       'central-files',
       reportId || dataSourceId || 'MISC',
       year,
-      String(month).padStart(2, '0'), // ✅ month padded only here
+      padMonth, // ✅ month padded only here
       ...(week ? [`W${week}`] : [])   // ✅ week as-is (no pad), optional
     );
 
@@ -184,7 +186,7 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
               userId,
               orgCode,
               centralFileId,
-              versionValue: `${year}-${month}`,
+              versionValue: `${year}-${padMonth}`,
             });
           } catch (err) {
             console.error('Central file validation failed:', err);
@@ -277,6 +279,8 @@ export const revalidateCentralFile = async (req: Request, res: Response, next: N
       updatedBy: userId,
     });
 
+    const padCentralFileMonth = String(centralFile.month).padStart(2, '0');
+
     // ✅ Async validation
     setImmediate(async () => {
       try {
@@ -285,7 +289,7 @@ export const revalidateCentralFile = async (req: Request, res: Response, next: N
           userId,
           orgCode,
           centralFileId,
-          versionValue: `${centralFile.year}-${centralFile.month}`,
+          versionValue: `${centralFile.year}-${padCentralFileMonth}`,
         });
       } catch (err) {
         console.error('Re-validation failed:', err);

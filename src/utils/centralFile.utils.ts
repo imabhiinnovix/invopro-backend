@@ -9,10 +9,10 @@ import { readExcelFile } from './excel.utils';
 import { findDataSourceById } from '../database/services/common/dataSource.services';
 import { validateFileData, validateFileDataCondition } from './validateFileData.utils';
 import { autoPopulateAttributeOption } from './attributeOption.utils';
-import { getImportLogCentralFileSchemaNameBasedOnVersionCodeAndOrgCode, getImportLogSchemaNameBasedOnVersionCodeAndOrgCode } from './common.utils';
+import { getCentralFileSchemaNameBasedOnVersionCodeAndOrgCode, getImportLogCentralFileSchemaNameBasedOnVersionCodeAndOrgCode, getImportLogSchemaNameBasedOnVersionCodeAndOrgCode } from './common.utils';
 import * as importLogCentralFileService from '../database/services/common/defaultImportLogCentralFile.service';
 import * as dataImportErrorServices from '../database/services/common/dataImportCentralFileError.service';
-
+import * as centralFileValueService from '../database/services/common/defaultCentralFileValue.service';
 
 export function normalize(name: string) {
   return name
@@ -215,6 +215,7 @@ export async function validateCentralFileForDataSource({
 
   const { newRowData, errors } = validatedData;
 
+  if (errors?.length) {
   // 7️⃣ Resolve ImportLog schema
   const importLogSchema = getImportLogCentralFileSchemaNameBasedOnVersionCodeAndOrgCode({
     orgCode,
@@ -241,7 +242,6 @@ export async function validateCentralFileForDataSource({
   // ================================
   // ✅ PUSH ERRORS INTO IMPORT ERROR
   // ================================
-  if (errors?.length) {
 
     for (let i = 0; i < errors.length; i += BATCH_SIZE) {
       await dataImportErrorServices.createManyDataImportCentralFileError(
@@ -254,13 +254,18 @@ export async function validateCentralFileForDataSource({
     });
 
     return { status: 'error' };
+  }else{
+    const mainTableSchemaName = getCentralFileSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSourceDetails.code,
+    });
+    await centralFileValueService.createCentralFileValue(mainTableSchemaName, newRowData);
+    // ✅ Mark validated
+    await updateCentralFileById(centralFileId, {
+      validationStatus: 'validated',
+    });
+
+    return { status: 'validated' };
   }
-
-  // ✅ Mark validated
-  await updateCentralFileById(centralFileId, {
-    validationStatus: 'validated',
-  });
-
-  return { status: 'validated' };
 }
 
