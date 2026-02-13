@@ -11,7 +11,9 @@ interface ICentralFile extends Document {
 
   year: number;
   month: number;
-  week?: number; // ✅ ADDED
+  week?: number;
+
+  sheetName?: string; // ✅ ADDED
 
   originalFileName: string;
   storedFileName: string;
@@ -35,16 +37,15 @@ interface ICentralFile extends Document {
 const centralFileSchema = new Schema<ICentralFile>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
-
     reportId: { type: Schema.Types.ObjectId, ref: 'custom_reports', default: null },
-
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
-
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
 
     year: { type: Number, required: true },
     month: { type: Number, required: true },
-    week: { type: Number, default: null }, // ✅ ADDED (optional)
+    week: { type: Number, default: null },
+
+    sheetName: { type: String, default: null }, // ✅ ADDED
 
     originalFileName: { type: String, required: true },
     storedFileName: { type: String, required: true },
@@ -71,14 +72,15 @@ const centralFileSchema = new Schema<ICentralFile>(
   { timestamps: true }
 );
 
-// ✅ UPDATED INDEX (week added)
+// ✅ Updated index (sheetName included)
 centralFileSchema.index({
   organizationId: 1,
   dataSourceId: 1,
   year: 1,
   month: 1,
-  week: 1, // ✅ ADDED
+  week: 1,
   originalFileName: 1,
+  sheetName: 1,
   isLatest: 1,
 });
 

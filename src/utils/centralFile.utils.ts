@@ -24,12 +24,14 @@ export function normalize(name: string) {
 
 export async function resolveDataSourceId({
   originalFileName,
+  sheetName, // ✅ NEW
   dataSourceId,
   customReportData,
   allJsonMapping,
   allJsonSeparator,
 }: {
   originalFileName: string;
+  sheetName?: string | null; // ✅ NEW
   dataSourceId?: string;
   customReportData?: any;
   allJsonMapping?: Record<string, any>;
@@ -41,20 +43,25 @@ export async function resolveDataSourceId({
   separator: Record<string, any> | null;
 }> {
 
-  // ✅ Case 1: datasourceId explicitly provided
+  // ===============================
+  // ✅ Case 1: datasourceId provided explicitly
+  // ===============================
   if (dataSourceId) {
     const dataSourceDetails: any = await findDataSourceById(dataSourceId, true);
-     if (dataSourceDetails && dataSourceDetails.entityId) {
+
+    if (dataSourceDetails?.entityId) {
       return {
         dataSourceId,
-        entityId: dataSourceDetails?.entityId,
+        entityId: dataSourceDetails.entityId,
         mapping: allJsonMapping || null,
         separator: allJsonSeparator || null,
       };
     }
   }
 
+  // ===============================
   // ✅ Case 2: no report mapping
+  // ===============================
   if (!customReportData?.dataSourceIds?.length) {
     return {
       dataSourceId: null,
@@ -65,28 +72,44 @@ export async function resolveDataSourceId({
   }
 
   const normalizedFileName = normalize(originalFileName);
+  const normalizedSheetName = sheetName ? normalize(sheetName) : null;
 
-  // ✅ Case 3: derive from report mapping
+  // ===============================
+  // ✅ Case 3: derive from report mapping (FILE + SHEET MATCH)
+  // ===============================
   for (const dsInfo of customReportData.dataSourceIds) {
+
     const fileDetails = dsInfo.fileDetails || [];
 
     for (const fd of fileDetails) {
-      const fileDetailName = fd.name;
-      const sheetName = fd.sheetName;
 
-      const mappingName = sheetName
-        ? `${fileDetailName}__${sheetName}`
-        : fileDetailName;
+      const fileDetailName = fd.name;
+      const reportSheetName = fd.sheetName || null;
 
       const normalizedDetailName = normalize(fileDetailName);
-      const normalizedMappingName = normalize(mappingName);
+      const normalizedReportSheetName = reportSheetName
+        ? normalize(reportSheetName)
+        : null;
 
-      if (
+      const isFileMatch =
         normalizedFileName === normalizedDetailName ||
-        normalizedFileName === normalizedMappingName ||
-        normalizedFileName.includes(normalizedDetailName)
-      ) {
-        const mapping = allJsonMapping?.[mappingName] || null;
+        normalizedFileName.includes(normalizedDetailName);
+
+      const isSheetMatch =
+        !reportSheetName || // if report doesn't require sheet
+        !sheetName ||       // if sheet not provided
+        normalizedSheetName === normalizedReportSheetName;
+
+      if (isFileMatch && isSheetMatch) {
+
+        // Mapping key should be file__sheet if sheet exists
+        const mappingKey = reportSheetName
+          ? `${fileDetailName}__${reportSheetName}`
+          : fileDetailName;
+
+        const mapping = allJsonMapping?.[mappingKey] || null;
+
+        // separator is generally file-based
         const separator = allJsonSeparator?.[fileDetailName] || null;
 
         return {
@@ -99,6 +122,9 @@ export async function resolveDataSourceId({
     }
   }
 
+  // ===============================
+  // ❌ No match found
+  // ===============================
   return {
     dataSourceId: null,
     entityId: null,

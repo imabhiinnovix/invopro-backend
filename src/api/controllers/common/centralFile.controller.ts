@@ -8,15 +8,13 @@ import { Types } from 'mongoose';
 import * as centralFileService from '../../../database/services/common/centralFile.service';
 import { findCustomReportById } from '../../../database/services/reportivix/customReport.services';
 import { moveCentralFileToMisc, resolveDataSourceId, validateCentralFileForDataSource } from '../../../utils/centralFile.utils';
-
+import * as XLSX from 'xlsx';
 
 export const uploadCentralFile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { reportId, year, month, week, dataSourceId, mappings, separator } = req.body;
     const { organizationId, userId, orgCode } = req.user;
 
-
-    // ✅ Safe JSON parse
     let allJsonMapping = {};
     let allJsonSeparator = {};
 
@@ -42,20 +40,18 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
 
     const padMonth = String(month).padStart(2, '0');
 
-    // ✅ Build basePath safely (week optional)
     const basePath = path.join(
       'uploads',
       organizationId,
       'central-files',
       reportId || dataSourceId || 'MISC',
       year,
-      padMonth, // ✅ month padded only here
-      ...(week ? [`W${week}`] : [])   // ✅ week as-is (no pad), optional
+      padMonth,
+      ...(week ? [`W${week}`] : [])
     );
 
     await fs.mkdir(basePath, { recursive: true });
 
-    // ✅ Load report once
     let customReportData: any = null;
     if (reportId) {
       customReportData = await findCustomReportById(reportId);
@@ -65,150 +61,187 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
 
     for (const file of files) {
       const originalFileName = file.originalname;
-
-      // ============================
-      // 1️⃣ VERSIONING LOGIC (week included)
-      // ============================
-      const latestFile = await centralFileService.findLatestCentralFile({
-        organizationId,
-        reportId: reportId ? new Types.ObjectId(reportId) : undefined,
-        year,
-        month,
-        week: week || undefined,
-        originalFileName,
-      });
-
-      const newVersion = latestFile ? latestFile.version + 1 : 1;
-
-      if (latestFile) {
-        await centralFileService.updateCentralFiles(
-          {
-            organizationId,
-            reportId: reportId ? new Types.ObjectId(reportId) : undefined,
-            year,
-            month,
-            week: week || undefined,
-            originalFileName,
-            isLatest: true,
-          },
-          { isLatest: false }
-        );
-      }
-
       const ext = path.extname(originalFileName);
       const base = path.basename(originalFileName, ext);
-      const storedFileName =
-        newVersion === 1 ? originalFileName : `${base}__v${newVersion}${ext}`;
 
+      const storedFileName = originalFileName;
       const targetPath = path.join(basePath, storedFileName);
       await fs.rename(file.path, targetPath);
 
       // ============================
-      // 2️⃣ CREATE CENTRAL FILE RECORD (week stored)
+      // Detect Sheets
       // ============================
-      const record: any = await centralFileService.createCentralFile({
-        organizationId,
-        reportId: reportId || null,
-        year,
-        month,
-        week,
-        originalFileName,
-        storedFileName,
-        version: newVersion,
-        isLatest: true,
-        filePath: targetPath,
-        fileType: file.mimetype,
-        fileSize: file.size,
-        createdBy: userId,
-        updatedBy: userId,
-        validationStatus: 'pending',
-      });
+      let sheetNames: any[] = [null];
 
-      // ============================
-      // 3️⃣ RESOLVE DATASOURCE + ENTITY + MAPPING
-      // ============================
-      const result = await resolveDataSourceId({
-        originalFileName,
-        dataSourceId,
-        customReportData,
-        allJsonMapping,
-        allJsonSeparator,
-      });
-
-      const {
-        dataSourceId: finalDataSourceId,
-        entityId: finalEntityId,
-        mapping: finalMapping,
-        separator: finalSeparator,
-      } = result;
-
-      let updatedRecord = record;
-
-      // ✅ Update central file with resolved metadata
-      if (finalDataSourceId) {
-        updatedRecord = await centralFileService.updateCentralFileById(record._id, {
-          dataSourceId: finalDataSourceId,
-          entityId: finalEntityId || null,
-          mapping: finalMapping || null,
-          separator: finalSeparator || null,
-        });
+      if (ext.match(/\.xlsx|\.xls/i)) {
+        const workbook = XLSX.readFile(targetPath);
+        sheetNames = workbook.SheetNames.length ? workbook.SheetNames : [null];
       }
 
-      // ============================
-      // 4️⃣ NO DATASOURCE → MAPPING STATUS
-      // ============================
-      if (!finalDataSourceId) {
-        updatedRecord = await centralFileService.updateCentralFileById(record._id, {
-          validationStatus: 'mapping',
-        });
+      // ===================================================
+      // ⭐ KSA Contracts Sheet Restriction (Controller level)
+      // ===================================================
+
+      if (originalFileName.includes('KSA Contracts')) {
+
+        const currentYear = String(year);
+        const previousYear = (Number(year) - 1).toString();
+
+        sheetNames = sheetNames.filter(
+          (sheet) =>
+            sheet === currentYear ||
+            sheet === previousYear
+        );
+
+        // If no valid sheet found, skip file entirely
+        if (!sheetNames.length) {
+          continue;
+        }
       }
 
-      // ============================
-      // 5️⃣ ASYNC VALIDATION
-      // ============================
-      if (
-        finalDataSourceId &&
-        finalEntityId &&
-        finalMapping &&
-        Object.keys(finalMapping).length > 0
-      ) {
-        const centralFileId = updatedRecord._id.toString();
 
-        await centralFileService.updateCentralFileById(centralFileId, {
-          validationStatus: 'processing',
+      for (const sheetName of sheetNames) {
+
+        // ============================
+        // VERSIONING PER SHEET
+        // ============================
+
+        const latestFile = await centralFileService.findLatestCentralFile({
+          organizationId,
+          reportId: reportId ? new Types.ObjectId(reportId) : undefined,
+          year,
+          month,
+          week: week || undefined,
+          originalFileName,
+          sheetName,
         });
 
+        const newVersion = latestFile ? latestFile.version + 1 : 1;
 
-        setImmediate(async () => {
-          try {
-            await validateCentralFileForDataSource({
+        if (latestFile) {
+          await centralFileService.updateCentralFiles(
+            {
               organizationId,
-              userId,
-              orgCode,
-              centralFileId,
-              versionValue: `${year}-${padMonth}`,
-            });
-          } catch (err) {
-            console.error('Central file validation failed:', err);
-            await centralFileService.updateCentralFileById(centralFileId, {
-              validationStatus: 'failed',
-            });
-          }
-        });
-      }
+              reportId: reportId ? new Types.ObjectId(reportId) : undefined,
+              year,
+              month,
+              week: week || undefined,
+              originalFileName,
+              sheetName,
+              isLatest: true,
+            },
+            { isLatest: false }
+          );
+        }
 
-      records.push(updatedRecord.toObject());
+        const versionedStoredFileName =
+          newVersion === 1 ? storedFileName : `${base}__v${newVersion}${ext}`;
+
+        // ============================
+        // CREATE CENTRAL FILE RECORD
+        // ============================
+
+        let record: any = await centralFileService.createCentralFile({
+          organizationId,
+          reportId: reportId || null,
+          year,
+          month,
+          week,
+          sheetName,
+          originalFileName,
+          storedFileName: versionedStoredFileName,
+          version: newVersion,
+          isLatest: true,
+          filePath: targetPath,
+          fileType: file.mimetype,
+          fileSize: file.size,
+          createdBy: userId,
+          updatedBy: userId,
+          validationStatus: 'pending',
+        });
+
+        // ============================
+        // Resolve DataSource
+        // ============================
+
+        const result = await resolveDataSourceId({
+          originalFileName,
+          sheetName,
+          dataSourceId,
+          customReportData,
+          allJsonMapping,
+          allJsonSeparator,
+        });
+
+        const {
+          dataSourceId: finalDataSourceId,
+          entityId: finalEntityId,
+          mapping: finalMapping,
+          separator: finalSeparator,
+        } = result;
+
+        if (finalDataSourceId) {
+          record = await centralFileService.updateCentralFileById(record._id, {
+            dataSourceId: finalDataSourceId,
+            entityId: finalEntityId || null,
+            mapping: finalMapping || null,
+            separator: finalSeparator || null,
+          });
+        } else {
+          record = await centralFileService.updateCentralFileById(record._id, {
+            validationStatus: 'mapping',
+          });
+        }
+
+        // ============================
+        // Async Validation Per Sheet
+        // ============================
+
+        if (
+          finalDataSourceId &&
+          finalEntityId &&
+          finalMapping &&
+          Object.keys(finalMapping).length > 0
+        ) {
+          const centralFileId = record._id.toString();
+
+          await centralFileService.updateCentralFileById(centralFileId, {
+            validationStatus: 'processing',
+          });
+
+          setImmediate(async () => {
+            try {
+              await validateCentralFileForDataSource({
+                organizationId,
+                userId,
+                orgCode,
+                centralFileId,
+                versionValue: `${year}-${padMonth}`
+              });
+            } catch (err) {
+              console.error('Central file validation failed:', err);
+              await centralFileService.updateCentralFileById(centralFileId, {
+                validationStatus: 'failed',
+              });
+            }
+          });
+        }
+
+        records.push(record.toObject());
+      }
     }
 
     return res.status(201).json({
       success: true,
-      message: `${records.length} file(s) uploaded successfully`,
+      message: `${records.length} record(s) created (sheet-wise)`,
       data: records,
     });
+
   } catch (err) {
     next(err);
   }
 };
+
 
 
 export const revalidateCentralFile = async (req: Request, res: Response, next: NextFunction) => {
