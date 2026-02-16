@@ -1096,7 +1096,7 @@ export const createImageWidget = async (
   next: NextFunction
 ) => {
   try {
-    const { dashboardId, name, description } = req.body;
+    const { dashboardId, name, description, imageLastUpdatedAt } = req.body;
     const { organizationId, userId } = req.user;
     const file = req.file as Express.Multer.File;
 
@@ -1164,6 +1164,7 @@ export const createImageWidget = async (
       isActive: true,
       isDeleted: false,
       isIncremental: false,
+      imageLastUpdatedAt
     });
 
     res.status(201).json({
