@@ -434,6 +434,14 @@ export async function resolveServiceMethod(queryConfig: QueryConfig) {
   return fn;
 }
 
+export const parseSafeDate = (value: any): Date | null => {
+  if (!value) return null;
+
+  const d = new Date(value);
+  return !isNaN(d.getTime()) ? d : null;
+};
+
+
 
 
 

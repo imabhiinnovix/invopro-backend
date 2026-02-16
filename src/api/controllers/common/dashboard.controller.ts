@@ -12,7 +12,7 @@ import * as widgetThemeService from '../../../database/services/common/widgetThe
 // import * as widgetAppearanceService from '../../database/services/widgetAppearance.service';
 
 import { buildAggregationPipeline } from '../../../utils/aggregationPipeline';
-import { checkReferenceFieldExist, getSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
+import { checkReferenceFieldExist, getSchemaNameBasedOnVersionCodeAndOrgCode, parseSafeDate } from '../../../utils/common.utils';
 import createDefaultDataSourceVersionModel from '../../../database/models/common/defaultDataSourceVersionModel';
 import { DataSourceVersion } from '../../../types/widget.types';
 import { DateTime } from 'luxon';
@@ -1164,7 +1164,7 @@ export const createImageWidget = async (
       isActive: true,
       isDeleted: false,
       isIncremental: false,
-      imageLastUpdatedAt
+      imageLastUpdatedAt: parseSafeDate(imageLastUpdatedAt)
     });
 
     res.status(201).json({
