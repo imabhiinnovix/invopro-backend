@@ -99,12 +99,10 @@ export const getDashboardNameList = async (
 
     // 🔹 1. Get dashboards using aggregation
     const { data } = await dashboardService.getAllDashboardsAggregation({
-      organizationId,
-      userId,
-      roleIds,
-      page: null,
-      limit: null,
-      sort: { name: 1 }, // ✅ sort by name
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+      userId: new mongoose.Types.ObjectId(userId),
+      roleIds: roleIds.map(id => new mongoose.Types.ObjectId(id)),
+      sort: { name: 1 }, // sort by name
     });
 
     let hasRoleDefaultPermission = false;
@@ -112,7 +110,6 @@ export const getDashboardNameList = async (
     // 🔹 2. Check role-default permission
     for (const roleId of roleIds || []) {
       const permissions = await getPermissionsByRole(roleId, organizationId);
-
       if (permissions['PUT:/common/role-default-dashboard/update/:roleId']) {
         hasRoleDefaultPermission = true;
         break;
