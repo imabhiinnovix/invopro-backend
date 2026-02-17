@@ -92,8 +92,7 @@ export async function resolveDataSourceId({
         : null;
 
       const isFileMatch =
-        normalizedFileName === normalizedDetailName ||
-        normalizedFileName.includes(normalizedDetailName);
+        normalizedFileName === normalizedDetailName;
 
       const isSheetMatch =
         !reportSheetName || // if report doesn't require sheet
