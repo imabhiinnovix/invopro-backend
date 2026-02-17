@@ -37,6 +37,7 @@ interface IDashboardWidget extends Document {
   isIncremental: boolean;
   widgetKind: 'chart' | 'image';
   image?: string;
+  imageLastUpdatedAt?: Date | null;
 }
 
 const dashboardWidgetSchema = new Schema<IDashboardWidget>(
@@ -92,6 +93,7 @@ const dashboardWidgetSchema = new Schema<IDashboardWidget>(
     isActive: { type: Schema.Types.Boolean, default: true, required: true },
     isDeleted: { type: Schema.Types.Boolean, default: false, required: true },
     isIncremental: { type: Schema.Types.Boolean, default: false, required: true },
+    imageLastUpdatedAt: { type: Date, default: null }
   },
   {
     timestamps: true,

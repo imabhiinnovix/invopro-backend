@@ -454,6 +454,21 @@ export async function resolveServiceMethod(queryConfig: QueryConfig) {
   return fn;
 }
 
+export const parseSafeDate = (value: any): Date | null => {
+  if (!value) return null;
+
+  const num = Number(value);
+  if (isNaN(num)) return null;
+
+  // If value is in seconds (10 digits), convert to milliseconds
+  const milliseconds = num < 1e12 ? num * 1000 : num;
+
+  const date = new Date(milliseconds);
+  return isNaN(date.getTime()) ? null : date;
+};
+
+
+
 
 
 
