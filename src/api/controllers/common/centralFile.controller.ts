@@ -216,7 +216,8 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
                 userId,
                 orgCode,
                 centralFileId,
-                versionValue: `${year}-${padMonth}`
+                versionValue: `${year}-${padMonth}`,
+                basePath
               });
             } catch (err) {
               console.error('Central file validation failed:', err);

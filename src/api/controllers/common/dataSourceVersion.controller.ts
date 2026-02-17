@@ -1127,6 +1127,240 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
   }
 }
 
+export async function createDataSourceVersionFromValidatedCentralFiles(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const {
+      versionName,
+      mappings,
+      separator,
+      dataSourceId,
+      year,
+      month,
+      week,
+    } = req.body;
+
+    const versionValue = `${year}-${month}`;
+    const jsonMapping = mappings || {};
+    const jsonSeparator = separator || {};
+
+    const { userId, organizationId, orgCode } = req.user;
+
+    // ✅ Central validated folder (WITH WEEK)
+    const validatedCentralPath = path.join(
+      'uploads',
+      organizationId,
+      'central-files',
+      dataSourceId,
+      year,
+      month,
+      week
+    );
+
+    // reset cache
+    refMetaCache.clear();
+    optionCache.clear();
+    regexCache.clear();
+    refValueCache.clear();
+
+    const existingFiles = await fsPromises.readdir(validatedCentralPath).catch(() => []);
+    if (!existingFiles.length) {
+      throw new Error('No validated central files found.');
+    }
+
+    let combinedFileName = '';
+    let combinedFilePath = '';
+    let combinedMimType = '';
+    let combinedSize = 0;
+    let combinedData: any[] = [];
+    let dataSourceVersionId;
+
+    for (const fileName of existingFiles) {
+      const fileExtension = fileName.split('.').pop()?.toLowerCase();
+      if (!['xlsx', 'xls'].includes(fileExtension || '')) continue;
+
+      const sourcePath = path.join(validatedCentralPath, fileName);
+
+      const newFilePath = path.join(
+        'uploads',
+        organizationId,
+        userId,
+        'dsvRequest',
+        `${dataSourceId}_${versionValue}_${versionName}_${fileName}`
+      );
+
+      await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
+      await fsPromises.copyFile(sourcePath, newFilePath);
+
+      const fileData = await readExcelFile(newFilePath);
+
+      const fileDataWithRowNumber = fileData.map((row, index) => ({
+        ...row,
+        fileRowNumber: `${fileName}:${index + 2}`,
+      }));
+
+      combinedData.push(...fileDataWithRowNumber);
+
+      combinedFileName = combinedFileName
+        ? `${combinedFileName}|${fileName}`
+        : fileName;
+
+      combinedFilePath = combinedFilePath
+        ? `${combinedFilePath}|${newFilePath}`
+        : newFilePath;
+
+      combinedSize += (await fsPromises.stat(newFilePath)).size;
+      combinedMimType = combinedMimType
+        ? `${combinedMimType}|application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    }
+
+    const dataSourceDetails =
+      await dataSourceService.findDataSourceById(dataSourceId, true);
+
+    if (!dataSourceDetails?.entityId) {
+      throw new Error('Data source not found.');
+    }
+
+    const existingVersionData =
+      await dataSourceVersionService.getDataSourceVersionBasedOnDataSourceIdAndVersionValueAndVersionName(
+        dataSourceId,
+        versionValue,
+        versionName
+      );
+
+    if (existingVersionData) {
+      return res.status(400).send(
+        'Version name already exists for same data source and version value.'
+      );
+    }
+
+    const dataSourceVersion: any =
+      await dataSourceVersionService.createDataSourceVersion({
+        organizationId,
+        entityId: dataSourceDetails.entityId._id,
+        dataSourceId,
+        versionName,
+        versionValue,
+        createdBy: userId,
+        status: 'processing',
+        separator: jsonSeparator,
+        fileName: combinedFileName,
+        filePath: combinedFilePath,
+        fileType: combinedMimType,
+        fileSize: combinedSize,
+        mappings: jsonMapping,
+        isActive: true,
+        isCurrent: false,
+      });
+
+    dataSourceVersionId = dataSourceVersion._id;
+
+    // ✅ Background processing (same pattern as your other function)
+    debounceManager.debounce(dataSourceVersion._id.toString(), async () => {
+      try {
+        const entityDetails = dataSourceDetails.entityId as any;
+        let attributes = entityDetails?.attributes || [];
+
+        const fileData = await validateFileDataCondition({
+          fileData: combinedData,
+          attributeSetting: attributes,
+          conditions: dataSourceDetails.condition,
+          jsonMapping,
+        });
+
+        attributes = await autoPopulateAttributeOption({
+          fileData,
+          entityId: dataSourceDetails.entityId,
+          attributesDetails: attributes,
+          attributMapping: jsonMapping,
+          userId,
+          organizationId,
+        });
+
+        const validatedData = await validateFileData({
+          fileData,
+          attributes,
+          versionValue,
+          mapping: jsonMapping,
+          separator: jsonSeparator,
+          dataSourceId,
+          dataSourceVersionId: dataSourceVersion._id.toString(),
+          entityId: dataSourceDetails.entityId._id,
+          uniqueAttributeRules: dataSourceDetails.uniqueAttributeRules,
+        });
+
+        if (validatedData.errors.length > 0) {
+          await dataSourceVersionService.updateDataSourceVersion(
+            dataSourceVersion._id.toString(),
+            { status: 'failed' }
+          );
+
+          const importLogSchema =
+            getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+              orgCode,
+              versionCode: dataSourceDetails.code,
+            });
+
+          await dataImportErrorServices.createManyDataImportError(
+            validatedData.errors
+          );
+
+          await importLogDataSourceVersionValueService.createImportLogDataSourceVersionValue(
+            importLogSchema,
+            validatedData.newRowData
+          );
+        } else {
+          const schemaName =
+            getSchemaNameBasedOnVersionCodeAndOrgCode({
+              orgCode,
+              versionCode: dataSourceDetails.code,
+            });
+
+          await dataSourceVersionValueService.createDataSourceVersionValue(
+            schemaName,
+            validatedData.newRowData
+          );
+
+          await dataSourceVersionService.updateDataSourceVersions({
+            query: { dataSourceId, versionValue },
+            updateFields: { isCurrent: false },
+          });
+
+          await dataSourceVersionService.updateDataSourceVersion(
+            dataSourceVersion._id.toString(),
+            {
+              status: 'completed',
+              isCurrent: true,
+            }
+          );
+        }
+
+        await attributeOptionService.updateAttributeOptionsByQuery({
+          query: { organizationId, isPopulateFixed: 1 },
+          updateFields: { isPopulateFixed: 2 },
+        });
+
+      } catch (error) {
+        console.error('Error while processing data:', error);
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Data upload from validated central files is in progress.',
+      dataSourceVersionId,
+      status: 'pending',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+
 export const checkDataSourceVersionNameAvailableOrNot = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { versionName, dataSourceId, versionValue } = req.params;
@@ -1922,238 +2156,465 @@ export async function createMultipleDataSourceVersionFromValidatedCentralData(
   next: NextFunction
 ) {
   try {
-    console.log('Inside createReportFromValidatedCentralData');
+    console.log('Inside createMultipleDataSourceVersionBasedOnCustomReportId function.');
 
-    const { customReportId, year, month } = req.body;
+    // ✅ CHANGED: year & month instead of versionValue
+    const { mappings, separator, customReportId, year, month } = req.body;
+
+    // ✅ versionValue constructed internally
     const versionValue = `${year}-${month}`;
+
+    const allJsonMapping = mappings || {};
+    const allJsonSeparator = separator || {};
+
 
     const { userId, organizationId, orgCode } = req.user;
 
-    const customReportData =
-      await customReportServices.findCustomReportById(customReportId);
+    // ✅ CHANGED: central validated folder path
+    const validatedCentralPath = path.join(
+      'uploads',
+      organizationId,
+      'central-files',
+      customReportId,
+      year,
+      month
+    );
 
+    // reset cache for this import
+    refMetaCache.clear();
+    optionCache.clear();
+    regexCache.clear();
+    refValueCache.clear();
+
+    const customReportData = await customReportServices.findCustomReportById(customReportId);
     if (!customReportData?.dataSourceIds?.length) {
-      return res.status(400).json({
-        success: false,
-        message: 'Custom report details not found.',
-      });
+      throw 'Custom report details not found.';
     }
 
-    /* -------------------------------------------------------
-       STEP 1️⃣ CHECK ALL DATASOURCE HAVE VALIDATED DATA
-    --------------------------------------------------------*/
-
-    const centralFilesMap: Record<string, any> = {};
-    let missingDataSource: string[] = [];
-
-    for (const dsInfo of customReportData.dataSourceIds) {
-
-      const dataSourceId = String(dsInfo.dataSourceId);
-
-      /* -------------------------------------------------------
-         ⭐ UPDATED: DETERMINE SPECIAL DATASOURCE USING fileDetails.name
-      --------------------------------------------------------*/
-
-      const fileDetailNames =
-        (dsInfo.fileDetails || []).map(fd => fd.name);
-
-      const isSpecialFile =
-        fileDetailNames.some(name =>
-          ['KSA Contracts', 'Required Mapping-Contracts'].includes(name)
-        );
-
-      /* -------------------------------------------------------
-         STEP 1A: STRICT MONTH-YEAR VALIDATED FILE CHECK
-      --------------------------------------------------------*/
-
-      let centralFile = await findLatestCentralFile({
-        organizationId,
-        dataSourceId,
-        year,
-        month,
-        validationStatus: 'validated',
-        isLatest: true,
-      });
-
-      /* -------------------------------------------------------
-         ⭐ UPDATED: APPLY FALLBACK ONLY IF SPECIAL FILE
-      --------------------------------------------------------*/
-
-      if (!centralFile && isSpecialFile) {
-
-        console.log(
-          `Applying fallback for special file datasource: ${dataSourceId}`
-        );
-
-        centralFile = await findLatestCentralFile({
-          organizationId,
-          dataSourceId,
-          validationStatus: 'validated',
-          isLatest: true,
-        });
-      }
-
-      if (!centralFile) {
-        missingDataSource.push(dataSourceId);
-      } else {
-        centralFilesMap[dataSourceId] = centralFile;
-      }
-    }
-
-    if (missingDataSource.length) {
-      return res.status(400).json({
-        success: false,
-        message: `Validated data missing for some datasource`,
-        missingDataSource,
-      });
-    }
-
-    /* -------------------------------------------------------
-       STEP 2️⃣ CREATE REPORT REQUEST
-    --------------------------------------------------------*/
-
-    const currentDateTime =
-      DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss');
-
+    const currentDateTime = DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss');
     const generateReportFileName =
       `${customReportData.reportName}_${versionValue}_${currentDateTime}.xlsx`;
 
-    const reportRequest = await reportRequestService.createReportRequest({
-      organizationId,
-      versionValue,
-      customReportId,
-      status: 'processing',
-      fileName: generateReportFileName,
-      fileType: 'xlsx',
-      createdBy: userId,
+    let reportRequest: any = await reportRequestService.findReportRequest({
+      query: {
+        customReportId,
+        versionValue,
+        organizationId,
+        status: 'error',
+      },
     });
 
-    const reportRequestId: any = reportRequest._id;
-    const BATCH_SIZE = 5000;
-    const completedVersionIds: string[] = [];
-
-    /* -------------------------------------------------------
-       STEP 3️⃣ PROCESS EACH DATASOURCE
-    --------------------------------------------------------*/
-
-    for (const dsInfo of customReportData.dataSourceIds) {
-
-      const dataSourceId = String(dsInfo.dataSourceId);
-      const centralFile = centralFilesMap[dataSourceId];
-
-      const dataSourceDetails =
-        await dataSourceService.findDataSourceById(dataSourceId, true);
-
-      if (!dataSourceDetails?.entityId) continue;
-
-      /* -------------------------------------------------------
-         DEACTIVATE OLD CURRENT VERSION
-      --------------------------------------------------------*/
-
-      await dataSourceVersionService.updateDataSourceVersions({
-        query: { dataSourceId, versionValue },
-        updateFields: { isCurrent: false },
-      });
-
-      const dataSourceVersion: any =
-        await dataSourceVersionService.createDataSourceVersion({
-          organizationId,
-          entityId: dataSourceDetails.entityId._id,
-          dataSourceId,
-          versionValue,
-          createdBy: userId,
-          status: 'processing',
-          isActive: true,
-          isCurrent: false,
-          reportRequestId
-        });
-
-      /* -------------------------------------------------------
-         STEP 4️⃣ FETCH VALIDATED CENTRAL FILE DATA
-      --------------------------------------------------------*/
-
-      const mainTableSchemaName =
-        getCentralFileSchemaNameBasedOnVersionCodeAndOrgCode({
-          orgCode,
-          versionCode: dataSourceDetails.code,
-        });
-
-      const { data: validatedRows } =
-        await getCentralFileValue({
-          schemaName: mainTableSchemaName,
-          query: {
-            centralFileId: centralFile._id,
-            status: 'active',
-          },
-          paginate: false
-        });
-
-      if (!validatedRows?.length) {
-        await dataSourceVersionService.updateDataSourceVersion(
-          dataSourceVersion?._id,
-          { status: 'failed' }
-        );
-        continue;
-      }
-
-      /* -------------------------------------------------------
-         STEP 5️⃣ DIRECT INSERT INTO MAIN TABLE
-      --------------------------------------------------------*/
-
-      const mainSchema =
-        getSchemaNameBasedOnVersionCodeAndOrgCode({
-          orgCode,
-          versionCode: dataSourceDetails.code,
-        });
-
-      for (let i = 0; i < validatedRows.length; i += BATCH_SIZE) {
-        await dataSourceVersionValueService.createDataSourceVersionValue(
-          mainSchema,
-          validatedRows.slice(i, i + BATCH_SIZE).map(row => ({
-            ...row,
-            dataSourceVersionId: dataSourceVersion._id,
-          }))
-        );
-      }
-
-      await dataSourceVersionService.updateDataSourceVersion(
-        dataSourceVersion._id,
+    if (reportRequest) {
+      reportRequest = await reportRequestService.updateReportRequest(
+        reportRequest._id,
         {
-          status: 'completed',
-          isCurrent: true,
+          status: 'processing',
+          fileName: generateReportFileName,
+          filePath: path.join(
+            'uploads',
+            organizationId,
+            userId,
+            'generatedReports',
+            generateReportFileName
+          ),
+          updatedAt: new Date(),
         }
       );
 
-      completedVersionIds.push(dataSourceVersion._id);
+      await dataSourceVersionService.updateDataSourceVersions({
+        query: {
+          versionValue,
+          status: { $in: ['failed', 'partially-completed'] },
+          isActive: true,
+          reportRequestId: reportRequest._id
+        },
+        updateFields: { isActive: false },
+      });
+    } else {
+      reportRequest = await reportRequestService.createReportRequest({
+        organizationId,
+        versionValue,
+        customReportId,
+        status: 'processing',
+        fileName: generateReportFileName,
+        filePath: path.join(
+          'uploads',
+          organizationId,
+          userId,
+          'generatedReports',
+          generateReportFileName
+        ),
+        fileType: 'xlsx',
+        createdBy: userId,
+      });
     }
 
-    /* -------------------------------------------------------
-       STEP 6️⃣ GENERATE CUSTOM REPORT
-    --------------------------------------------------------*/
+    const reportRequestId: any = reportRequest._id;
+    const BATCH_SIZE = 5000;
+    let isAnyDataSourceFailed = false;
+    const completedVersionIds: string[] = [];
 
-    await sleep(3000);
+    debounceManager.debounce(customReportId as string, async () => {
 
-    await generateCustomReportsFunction({
-      versionValue,
-      userId,
-      organizationId,
-      orgCode,
-      customReportId,
-      reportRequestId,
+      // EXISTING custom report path (kept same structure)
+      const existingCustomReportPath = path.join(
+        'uploads',
+        organizationId,
+        'customReports'
+      );
+
+      // ✅ resolveFile logic SAME structure — only file source changed
+      const resolveFile = async (fileDetailName: string) => {
+        const isSpecialFile = ['KSA Contracts', 'Required Mapping-Contracts'].includes(fileDetailName);
+
+        // ✅ Instead of req.files → read from validated central folder
+        const existingFiles = await fsPromises.readdir(validatedCentralPath).catch(() => []);
+
+        const matchedCentralFile = existingFiles.find(f =>
+          f.replace(/\s+/g, '').toLowerCase().startsWith(
+            fileDetailName.replace(/\s+/g, '').toLowerCase()
+          )
+        );
+
+        // 1️ If found in central folder & special → copy to customReports
+        if (matchedCentralFile && isSpecialFile) {
+          await fsPromises.mkdir(existingCustomReportPath, { recursive: true });
+
+          const sourcePath = path.join(validatedCentralPath, matchedCentralFile);
+          const targetPath = path.join(existingCustomReportPath, matchedCentralFile);
+
+          await fsPromises.copyFile(sourcePath, targetPath);
+          console.log('use central uploaded file');
+
+          return {
+            originalname: matchedCentralFile,
+            path: targetPath,
+          } as any;
+        }
+
+        // 2️ If found in central folder & NOT special → use as-is
+        if (matchedCentralFile) {
+          return {
+            originalname: matchedCentralFile,
+            path: path.join(validatedCentralPath, matchedCentralFile),
+          } as any;
+        }
+
+        // 3️ If NOT found & NOT special → skip
+        if (!isSpecialFile) return null;
+
+        // 4️ Try existing customReports file (same as old logic)
+        const customReportFiles = await fsPromises.readdir(existingCustomReportPath).catch(() => []);
+        const matchedFile = customReportFiles.find(f =>
+          f.replace(/\s+/g, '').toLowerCase().startsWith(
+            fileDetailName.replace(/\s+/g, '').toLowerCase()
+          )
+        );
+
+        if (!matchedFile) return null;
+
+        console.log('use existing file');
+        return {
+          originalname: matchedFile,
+          path: path.join(existingCustomReportPath, matchedFile),
+        } as any;
+      };
+
+      try {
+        // 🔽 FROM HERE EVERYTHING IS 100% UNCHANGED
+
+        for (let i = 0; i < customReportData.dataSourceIds.length; i++) {
+          const dsInfo = customReportData.dataSourceIds[i];
+          const dataSourceId = dsInfo.dataSourceId;
+          const fileDetails = dsInfo.fileDetails || [];
+
+          let dataSourceVersion: any = null;
+          let dataSourceDetails: any = null;
+          let entityDetails: any = null;
+          let validationErrors: any[] = [];
+          let validatedFinalData: any[] = [];
+
+          for (let j = 0; j < fileDetails.length; j++) {
+            const fd = fileDetails[j];
+
+            try {
+              const fileDetailName = fd.name;
+              const sheetName = fd.sheetName;
+              const mappingName = sheetName
+                ? `${fileDetailName}__${sheetName}`
+                : fileDetailName;
+
+              // const file = files.find(f =>
+              //   f.originalname.split('.')[0].replace(/\s+/g, '').toLowerCase() ===
+              //   fileDetailName.replace(/\s+/g, '').toLowerCase()
+              // );
+              const file = await resolveFile(fileDetailName);
+              console.log('file',file);
+
+              if (!file) continue;
+
+              const totalFiles = fileDetails.length;
+              const currentIndex = j + 1;
+              console.log(
+                `Processing file ${fileDetailName} [${currentIndex}/${totalFiles}] (${Math.floor(
+                  (j / totalFiles) * 100
+                )}%)`
+              );
+
+              const { originalname, path: filePath, size, mimetype } = file;
+              const ext = originalname.split('.').pop()?.toLowerCase();
+
+              if (!['xlsx', 'xls'].includes(ext || '')) {
+                console.error(`Invalid file type: ${originalname}`);
+                continue;
+              }
+
+              const newFilePath = path.join(
+                'uploads',
+                organizationId,
+                userId,
+                'dsvRequest',
+                `${dataSourceId}_${versionValue}_${originalname}`
+              );
+
+              try {
+                await fsPromises.access(filePath);
+                await fsPromises.mkdir(path.dirname(newFilePath), { recursive: true });
+                await fsPromises.copyFile(filePath, newFilePath);
+              } catch (err) {
+                console.error('File system error:', err);
+                continue;
+              }
+
+              let jsonMapping = allJsonMapping[mappingName] || {};
+              const jsonSeparator = allJsonSeparator[fileDetailName] || {};
+
+              const isSpecialFile = ['KSA Contracts', 'Required Mapping-Contracts'].includes(fileDetailName);
+
+              // NEW: auto-generate mapping only if NOT provided
+              if (
+                isSpecialFile &&
+                (!jsonMapping || Object.keys(jsonMapping).length === 0)
+              ) {
+                console.log('jsonMapping not provided, generating from entity attributes');
+
+                const entityId = dsInfo?.entityId;
+
+                if (entityId) {
+                  const entity = await findEntityById(entityId);
+
+                  if (entity?.attributes?.length) {
+                    jsonMapping = {};
+                    for (const attr of entity.attributes) {
+                      if (attr?.name && attr?.mappingName) {
+                        jsonMapping[attr.name] = attr.mappingName;
+                      }
+                    }
+                  }
+                }
+              }
+
+              if (!dataSourceVersion) {
+                dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+                if (!dataSourceDetails?.entityId) {
+                  console.warn(
+                    `Skipping datasource ${dataSourceId} - entity not found`
+                  );
+                  dataSourceVersion = null;   // ensure no side effects
+                  break; // stop processing files of THIS datasource
+                }
+
+                await dataSourceVersionService.updateDataSourceVersions({
+                  query: { dataSourceId, versionValue },
+                  updateFields: { isCurrent: false },
+                });
+
+                dataSourceVersion = await dataSourceVersionService.createDataSourceVersion({
+                  organizationId,
+                  entityId: dataSourceDetails.entityId._id,
+                  dataSourceId,
+                  versionValue,
+                  createdBy: userId,
+                  status: 'processing',
+                  separator: jsonSeparator,
+                  fileName: originalname,
+                  filePath: newFilePath,
+                  fileType: mimetype,
+                  fileSize: size,
+                  mappings: jsonMapping,
+                  isActive: true,
+                  isCurrent: false,
+                  reportRequestId
+                });
+
+                entityDetails = dataSourceDetails.entityId;
+              }
+
+              const readSheetName = sheetName ? [sheetName] : [];
+              if (fileDetailName === 'KSA Contracts') {
+                const currentYear = versionValue.split('-')[0];
+                readSheetName.push(currentYear, (Number(currentYear) - 1).toString());
+              }
+
+              const fileData = await readExcelFile(newFilePath, readSheetName);
+              const fileDataWithRowNumber = fileData.map((r, idx) => ({
+                ...r,
+                fileRowNumber: `${originalname}:${idx + 2}`,
+              }));
+
+              let attributes = entityDetails?.attributes || [];
+              attributes = await autoPopulateAttributeOption({
+                fileData,
+                entityId: dataSourceDetails.entityId,
+                attributesDetails: attributes,
+                attributMapping: jsonMapping,
+                userId,
+                organizationId,
+              });
+
+              const validatedData = await validateFileData({
+                fileData: fileDataWithRowNumber,
+                attributes,
+                versionValue,
+                mapping: jsonMapping,
+                separator: jsonSeparator,
+                dataSourceId,
+                dataSourceVersionId: dataSourceVersion._id,
+                entityId: entityDetails._id,
+              });
+
+              if (validatedData.errors.length) {
+                validationErrors.push(...validatedData.errors);
+              }
+              validatedFinalData.push(...validatedData.newRowData);
+
+              console.log(
+                `Completed ${fileDetailName} [${currentIndex}/${totalFiles}] (${Math.floor(
+                  (currentIndex / totalFiles) * 100
+                )}%)`
+              );
+            } catch (fileErr) {
+              console.error(`Error processing file ${fd.name}`, fileErr);
+            }
+          }
+
+          /* ---------- ONLY REQUIRED GUARD ---------- */
+          if (dataSourceVersion && dataSourceDetails?.code) {
+            const importLogSchema = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+              orgCode,
+              versionCode: dataSourceDetails.code,
+            });
+
+            for (let i = 0; i < validatedFinalData.length; i += BATCH_SIZE) {
+              await importLogDataSourceVersionValueService.createImportLogDataSourceVersionValue(
+                importLogSchema,
+                validatedFinalData.slice(i, i + BATCH_SIZE)
+              );
+            }
+          }
+
+          if (dataSourceVersion && validationErrors.length) {
+            isAnyDataSourceFailed = true;
+
+            await dataSourceVersionService.updateDataSourceVersion(
+              dataSourceVersion._id,
+              { status: 'failed' }
+            );
+
+            for (let i = 0; i < validationErrors.length; i += BATCH_SIZE) {
+              await dataImportErrorServices.createManyDataImportError(
+                validationErrors.slice(i, i + BATCH_SIZE)
+              );
+            }
+          } else if (dataSourceVersion) {
+            completedVersionIds.push(dataSourceVersion._id);
+          }
+        }
+
+        if (isAnyDataSourceFailed) {
+          await dataSourceVersionService.updateDataSourceVersions({
+            query: {
+             _id: { $in : completedVersionIds }
+            },
+            updateFields: { status: 'partially-completed' },
+          });
+          await reportRequestService.updateReportRequest(reportRequestId, { status: 'error' });
+        } else {
+          for (const versionId of completedVersionIds) {
+            const versionDetails: any = await dataSourceVersionService.getDataSourceVersion({
+              query: { _id: versionId },
+              populate: ['dataSourceId'],
+            });
+
+            const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+              orgCode,
+              versionCode: versionDetails.dataSourceId.code,
+            });
+
+            const importLogSchema = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+              orgCode,
+              versionCode: versionDetails.dataSourceId.code,
+            });
+
+            const rows =
+              await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(
+                importLogSchema,
+                { dataSourceVersionId: versionId, isErrorLog: 0 }
+              );
+
+            for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+              await dataSourceVersionValueService.createDataSourceVersionValue(
+                schemaName,
+                rows.slice(i, i + BATCH_SIZE)
+              );
+            }
+
+            await importLogDataSourceVersionValueService.deleteImportLogDataSourceVersionValues(
+              importLogSchema,
+              { dataSourceVersionId: versionId, isErrorLog: 0 }
+            );
+
+            await dataSourceVersionService.updateDataSourceVersion(versionId, {
+              status: 'completed',
+              isCurrent: true,
+            });
+          }
+
+          console.log('Sleeping for 3 seconds before generating custom report...');
+          await sleep(3000);
+          await generateCustomReportsFunction({
+            versionValue,
+            userId,
+            organizationId,
+            orgCode,
+            customReportId,
+            reportRequestId,
+          });
+        }
+
+        await attributeOptionService.updateAttributeOptionsByQuery({
+                                                query: {
+                                                  organizationId,
+                                                  isPopulateFixed: 1,
+                                                },
+                                                updateFields: {
+                                                  isPopulateFixed: 2,
+                                                },
+                                              });
+      } catch (err) {
+        console.error('Processing error:', err);
+        await reportRequestService.updateReportRequest(reportRequestId, { status: 'failed' });
+      }
     });
 
     return res.status(200).json({
       success: true,
-      message: 'Report generation started successfully.',
+      message: 'Report generation sent to queue successfully.',
     });
-
   } catch (err) {
     next(err);
   }
 }
-
-
-
 
 
 export const createUpdateCustomDataSourceVersionValueFunction = async ({

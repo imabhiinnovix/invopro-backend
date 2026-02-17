@@ -13,6 +13,92 @@ import { getCentralFileSchemaNameBasedOnVersionCodeAndOrgCode, getImportLogCentr
 import * as importLogCentralFileService from '../database/services/common/defaultImportLogCentralFile.service';
 import * as dataImportErrorServices from '../database/services/common/dataImportCentralFileError.service';
 import * as centralFileValueService from '../database/services/common/defaultCentralFileValue.service';
+import XLSX from 'xlsx';
+
+interface WriteValidatedExcelParams {
+  basePath: string;
+  originalFileName: string;
+  mapping: Record<string, any>;
+  rowsWithMeta: any[];
+}
+
+export async function writeValidatedCentralFileExcel({
+  basePath,
+  originalFileName,
+  mapping,
+  rowsWithMeta,
+}: WriteValidatedExcelParams) {
+
+  // --------------------------------------
+  // 1️⃣ Create validated directory
+  // --------------------------------------
+  const validatedDir = path.join(basePath, 'validated');
+  await fs.mkdir(validatedDir, { recursive: true });
+
+  const validatedFilePath = path.join(
+    validatedDir,
+    originalFileName
+  );
+
+  // --------------------------------------
+  // 2️⃣ Build Reverse Mapping
+  // Skip "Extra-Attribute-Ignore"
+  // --------------------------------------
+
+  const reverseMapping: Record<string, string> = {};
+
+  Object.entries(mapping || {}).forEach(([entityAttr, fileColumn]) => {
+
+    // ❌ Ignore this attribute completely
+    if (fileColumn === 'Extra-Attribute-Ignore') return;
+
+    if (Array.isArray(fileColumn)) {
+      fileColumn.forEach(col => {
+        if (col !== 'Extra-Attribute-Ignore') {
+          reverseMapping[col] = entityAttr;
+        }
+      });
+    } else {
+      reverseMapping[fileColumn] = entityAttr;
+    }
+  });
+
+  // --------------------------------------
+  // 3️⃣ Prepare Excel Data (ONLY mapped headers)
+  // --------------------------------------
+
+  const excelData = rowsWithMeta.map(row => {
+    const formattedRow: Record<string, any> = {};
+
+    Object.keys(reverseMapping).forEach(fileHeader => {
+      const entityAttr = reverseMapping[fileHeader];
+
+      let value = row.rowData?.[entityAttr];
+
+      // ✅ If array → take first element
+      if (Array.isArray(value)) {
+        value = value.length > 0 ? value[0] : '';
+      }
+
+      formattedRow[fileHeader] = value ?? '';
+    });
+
+    return formattedRow;
+  });
+
+  // --------------------------------------
+  // 4️⃣ Create Excel
+  // --------------------------------------
+
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'ValidatedData');
+
+  XLSX.writeFile(workbook, validatedFilePath);
+
+  return validatedFilePath;
+}
+
 
 export function normalize(name: string) {
   return name
@@ -166,6 +252,7 @@ export async function validateCentralFileForDataSource({
   orgCode,
   centralFileId,
   versionValue,
+  basePath
 }: any) {
 
   const BATCH_SIZE = 5000;
@@ -280,17 +367,59 @@ export async function validateCentralFileForDataSource({
 
     return { status: 'error' };
   }else{
-    const mainTableSchemaName = getCentralFileSchemaNameBasedOnVersionCodeAndOrgCode({
+   // ======================================
+  // ✅ INSERT VALID DATA + STORE EXCEL
+  // ======================================
+
+  const mainTableSchemaName =
+    getCentralFileSchemaNameBasedOnVersionCodeAndOrgCode({
       orgCode,
       versionCode: dataSourceDetails.code,
     });
-    await centralFileValueService.createCentralFileValue(mainTableSchemaName, newRowData);
-    // ✅ Mark validated
-    await updateCentralFileById(centralFileId, {
-      validationStatus: 'validated',
-    });
 
-    return { status: 'validated' };
+  const BATCH_SIZE = 1000; // Adjust if needed
+
+  if (newRowData?.length) {
+    // --------------------------------------
+    // ✅ 1. Add metadata
+    // --------------------------------------
+    const rowsWithMeta = newRowData.map((row: any) => ({
+      ...row,
+      createdBy: userId,
+    }));
+
+    // --------------------------------------
+    // ✅ 2. Batch Insert Into Central File Value
+    // --------------------------------------
+    for (let i = 0; i < rowsWithMeta.length; i += BATCH_SIZE) {
+      await centralFileValueService.createCentralFileValue(
+        mainTableSchemaName,
+        rowsWithMeta.slice(i, i + BATCH_SIZE)
+      );
+    }
+
+    // --------------------------------------
+    // ✅ 3. Write Validated Excel File
+    // --------------------------------------
+    await writeValidatedCentralFileExcel({
+                                          basePath,
+                                          originalFileName: centralFile.originalFileName,
+                                          mapping: mappings,
+                                          rowsWithMeta,
+                                        });
+
+  }
+
+  // --------------------------------------
+  // ✅ 4. Mark File as Validated
+  // --------------------------------------
+  await updateCentralFileById(centralFileId, {
+    validationStatus: 'validated',
+  });
+
+  return { status: 'validated' };
+
+
   }
 }
 
