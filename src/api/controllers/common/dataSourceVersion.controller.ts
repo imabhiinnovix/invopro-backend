@@ -1157,7 +1157,8 @@ export async function createDataSourceVersionFromValidatedCentralFiles(
       dataSourceId,
       year,
       month,
-      week
+      week,
+      'validated'
     );
 
     // reset cache
@@ -2177,7 +2178,8 @@ export async function createMultipleDataSourceVersionFromValidatedCentralData(
       'central-files',
       customReportId,
       year,
-      month
+      month,
+      'validated'
     );
 
     // reset cache for this import

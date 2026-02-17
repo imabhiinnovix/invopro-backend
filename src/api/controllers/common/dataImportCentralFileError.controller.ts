@@ -21,6 +21,8 @@ import {
 import { validateRowData } from './dataSourceVersion.controller';
 import { createDownloadRequest } from '../../../database/services/common/downloadRequest.service';
 import { Queue } from 'bullmq';
+import { writeValidatedCentralFileExcel } from '../../../utils/centralFile.utils';
+import path from 'path';
 
 /* =========================================================
    1️⃣ LIST CENTRAL FILE ERRORS
@@ -484,6 +486,12 @@ export const resolveCentralFileImportError = async (req: Request, res: Response,
             isErrorLog: 0,
           }
         );
+        await writeValidatedFileBeforeValidatedStatus({
+            centralFileId,
+            orgCode,
+            dataSourceDetails,
+            validRows
+          });
       }
 
       await centralFileService.updateCentralFileById(centralFileId, {
@@ -623,6 +631,13 @@ export const resolveCentralFileImportError = async (req: Request, res: Response,
         }
       );
 
+      await writeValidatedFileBeforeValidatedStatus({
+            centralFileId,
+            orgCode,
+            dataSourceDetails,
+            validRows
+          });
+
       await centralFileService.updateCentralFileById(centralFileId, {
           validationStatus: 'validated',
       });
@@ -683,3 +698,50 @@ export const resolveCentralFileImportError = async (req: Request, res: Response,
     next(err);
   }
 };
+
+async function writeValidatedFileBeforeValidatedStatus({
+  centralFileId,
+  orgCode,
+  dataSourceDetails,
+  validRows
+}: any) {
+
+  const centralFile: any =
+    await centralFileService.findCentralFileById(centralFileId);
+
+  if (!centralFile) return;
+
+  if (!validRows?.length) return;
+console.log('validRows?.length',validRows?.length);
+  // 🔹 Build base path using central file structure
+  const year = String(centralFile.year);
+  const month = String(centralFile.month).padStart(2, '0');
+  const week = centralFile.week ? `W${centralFile.week}` : null;
+
+  const basePath = week
+    ? path.join(
+        'uploads',
+        centralFile.organizationId.toString(),
+        'central-files',
+        centralFile.dataSourceId.toString(),
+        year,
+        month,
+        week
+      )
+    : path.join(
+        'uploads',
+        centralFile.organizationId.toString(),
+        'central-files',
+        centralFile.dataSourceId.toString(),
+        year,
+        month
+      );
+console.log('validRows',validRows);
+  await writeValidatedCentralFileExcel({
+    basePath,
+    originalFileName: centralFile.originalFileName,
+    mapping: centralFile.mapping || {},
+    rowsWithMeta: validRows,
+  });
+}
+
