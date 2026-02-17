@@ -22,6 +22,7 @@ import { getUserDataPermissionRecord } from '../../../database/services/common/u
 import { plotTypesConfig } from "../../../config/plotType.config";
 import { removeDashboardFromRoleDefaults } from '../../../database/services/common/roleDefaultDashboard.service';
 import { Queue } from "bullmq";
+import { getPermissionsByRole } from '../../../database/services/common/permissionService';
 
 export const createDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -94,25 +95,46 @@ export const getDashboardNameList = async (
   next: NextFunction
 ) => {
   try {
-    const { userId, organizationId } = req.user;
+    const { userId, organizationId, roleIds } = req.user;
 
-    const { data } = await dashboardService.getAllDashboards({
-      query: {
-        createdBy: userId,
-        organizationId,
-        isActive: true,
-        isDeleted: false,
-      },
-      select: '_id name',
-      paginate: false,
-      page: 0,
-      limit: 0,
-      sort: { name: 1 },
+    // 🔹 1. Get dashboards using aggregation
+    const { data } = await dashboardService.getAllDashboardsAggregation({
+      organizationId,
+      userId,
+      roleIds,
+      page: null,
+      limit: null,
+      sort: { name: 1 }, // ✅ sort by name
     });
+
+    let hasRoleDefaultPermission = false;
+
+    // 🔹 2. Check role-default permission
+    for (const roleId of roleIds || []) {
+      const permissions = await getPermissionsByRole(roleId, organizationId);
+
+      if (permissions['PUT:/common/role-default-dashboard/update/:roleId']) {
+        hasRoleDefaultPermission = true;
+        break;
+      }
+    }
+
+    // 🔹 3. Filter dashboards
+    const filteredDashboards = data
+      .filter((dashboard: any) => {
+        if (dashboard.isRoleDefault === true) {
+          return hasRoleDefaultPermission; // only include if permission true
+        }
+        return true;
+      })
+      .map((dashboard: any) => ({
+        _id: dashboard._id,
+        name: dashboard.name,
+      }));
 
     res.status(200).json({
       success: true,
-      data,
+      data: filteredDashboards,
     });
   } catch (err) {
     next(err);
