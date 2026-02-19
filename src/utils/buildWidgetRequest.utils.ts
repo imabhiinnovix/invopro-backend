@@ -6,7 +6,7 @@ import { getUserDataPermissionRecord } from "../database/services/common/userDat
 import { getDataSourceVersion } from "../database/services/common/dataSourceVersion.services";
 
 
-export const buildWidgetRequestPayload = async (widget: any) => {
+export const buildWidgetRequestPayload = async (widget: any, senderUserId: string) => {
   let {
     dataSourceId,
     entityId,
@@ -15,8 +15,7 @@ export const buildWidgetRequestPayload = async (widget: any) => {
     aggregation,
     conditions = [],
     organizationId,
-    createdBy,
-    senderUserId
+    createdBy
   } = widget;
 
   const organization = organizationId;
