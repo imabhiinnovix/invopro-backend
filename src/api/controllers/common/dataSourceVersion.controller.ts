@@ -1135,8 +1135,6 @@ export async function createDataSourceVersionFromValidatedCentralFiles(
   try {
     const {
       versionName,
-      mappings,
-      separator,
       dataSourceId,
       year,
       month,
@@ -1144,20 +1142,37 @@ export async function createDataSourceVersionFromValidatedCentralFiles(
     } = req.body;
 
     const versionValue = `${year}-${month}`;
-    const jsonMapping = mappings || {};
-    const jsonSeparator = separator || {};
 
     const { userId, organizationId, orgCode } = req.user;
 
+    // ---------------------------------------
+    // ✅ Fetch Latest Mapping & Separator
+    // ---------------------------------------
+
+    const { mapping, separator } =
+      await getLatestCentralMappingAndSeparator({
+        organizationId,
+        dataSourceId,
+        year,
+        month,
+        week,
+      });
+
+    // ✅ Since this controller works for ONE datasource
+    const jsonMapping = mapping?.[dataSourceId] || {};
+    const jsonSeparator = separator?.[dataSourceId] || {};
+    
+
     // ✅ Central validated folder (WITH WEEK)
+    const padMonth = String(month).padStart(2, '0');
     const validatedCentralPath = path.join(
       'uploads',
       organizationId,
       'central-files',
       dataSourceId,
       year,
-      month,
-      week,
+      padMonth,
+      ...(week ? [`W${week}`] : []),
       'validated'
     );
 
@@ -2176,13 +2191,14 @@ export async function createMultipleDataSourceVersionFromValidatedCentralData(
                                                   });
 
     // ✅ CHANGED: central validated folder path
+    const padMonth = String(month).padStart(2, '0');
     const validatedCentralPath = path.join(
       'uploads',
       organizationId,
       'central-files',
       customReportId,
       year,
-      month,
+      padMonth,
       'validated'
     );
 

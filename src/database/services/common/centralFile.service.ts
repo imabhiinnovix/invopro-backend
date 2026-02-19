@@ -39,37 +39,73 @@ export const getCentralFileList = async ({ query, page, limit }: any) => {
   return { data, totalCount };
 };
 
+
 export const getLatestCentralMappingAndSeparator = async ({
   organizationId,
   customReportId,
+  dataSourceId,
   year,
   month,
-}: {
-  organizationId: string;
-  customReportId: string;
-  year: number;
-  month: number;
-}) => {
+  week,
+}: any) => {
 
-  const centralFiles = await findCentralFiles({
+  // ✅ At least one required
+  if (!customReportId && !dataSourceId) {
+    throw new Error(
+      'Either customReportId or dataSourceId must be provided.'
+    );
+  }
+
+  // ---------------------------------------
+  // Build Dynamic Query
+  // ---------------------------------------
+
+  const query: any = {
     organizationId,
-    reportId: customReportId,
     year,
     month,
     isLatest: true,
-    validationStatus: 'validated', // optional but recommended
-  });
+    validationStatus: 'validated',
+  };
+
+  // ✅ Add week only if valid
+  if (
+    week !== undefined &&
+    week !== null &&
+    week !== '' &&
+    !isNaN(Number(week))
+  ) {
+    query.week = Number(week);
+  }
+
+  // ✅ If customReportId present → use it
+  if (customReportId) {
+    query.reportId = customReportId;
+  }
+
+  // ✅ If only dataSourceId present
+  if (!customReportId && dataSourceId) {
+    query.dataSourceId = dataSourceId;
+  }
+
+  // ---------------------------------------
+  // Fetch Central Files
+  // ---------------------------------------
+
+  const centralFiles = await findCentralFiles(query);
 
   const mapping: Record<string, any> = {};
   const separator: Record<string, any> = {};
-
   const processedDataSource = new Set<string>();
 
+  // ---------------------------------------
+  // Deduplicate by datasourceId
+  // ---------------------------------------
+
   for (const file of centralFiles) {
-    const dsId = file.dataSourceId?.toString();
+    const dsId = file?.dataSourceId?.toString();
     if (!dsId) continue;
 
-    // ✅ If already processed, skip (avoid duplicate mapping)
     if (processedDataSource.has(dsId)) continue;
 
     mapping[dsId] = file.mapping || {};
