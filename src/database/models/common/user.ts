@@ -180,7 +180,6 @@ userSchema.pre('save', function (next) {
 //
 // Indexes (recommended)
 //
-userSchema.index({ email: 1 });
 userSchema.index({ passwordExpiresAt: 1 });
 
 const User = model<IUser>('user', userSchema);
