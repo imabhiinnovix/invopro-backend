@@ -279,7 +279,7 @@ export const createWidget = async (req: Request, res: Response, next: NextFuncti
       });
 
       // Add job to queue — worker will handle the actual sending
-      await aiDataQueue.add("generateWidgetSummary", { widgetId: dashboardWidget._id });
+      await aiDataQueue.add("generateWidgetSummary", { widgetId: dashboardWidget._id, senderUserId: userId });
     }
     res.status(200).json({
       success: true,
@@ -311,6 +311,8 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
       dashboardId
     } = req.body;
     const { dashboardWidgetId } = req.params;
+
+    const { userId } = req.user;
 
     // 0️ Duplicate name check (only if name is being changed)
     if (name) {
@@ -376,7 +378,7 @@ export const updateWidget = async (req: Request, res: Response, next: NextFuncti
       });
 
       // Add job to queue — worker will handle the actual sending
-      await aiDataQueue.add("generateWidgetSummary", { widgetId: dashboardWidgetId });
+      await aiDataQueue.add("generateWidgetSummary", { widgetId: dashboardWidgetId, senderUserId: userId });
     }
 
     res.status(200).json({
@@ -1095,6 +1097,7 @@ export const saveDashboardWidgets = async (req: Request, res: Response, next: Ne
         widgetsNeedingSummary.map((widget: any) =>
           aiDataQueue.add("generateWidgetSummary", {
             widgetId: widget._id,
+            senderUserId: userId
           })
         )
       );

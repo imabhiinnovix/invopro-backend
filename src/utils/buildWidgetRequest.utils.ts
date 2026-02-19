@@ -16,11 +16,11 @@ export const buildWidgetRequestPayload = async (widget: any) => {
     conditions = [],
     organizationId,
     createdBy,
+    senderUserId
   } = widget;
 
   const organization = organizationId;
   const dataSource = dataSourceId;
-  const user = createdBy;
 
   if (!organization?.code) {
     throw new Error("Organization not populated in widget");
@@ -31,7 +31,6 @@ export const buildWidgetRequestPayload = async (widget: any) => {
   }
 
   const orgCode = organization.code;
-  const userId = user._id;
 
   // ----------------------------------
   // Schema Name
@@ -51,7 +50,7 @@ export const buildWidgetRequestPayload = async (widget: any) => {
 
   //  User permission logic (unchanged)
     const userPermission = await getUserDataPermissionRecord({
-      userId,
+      userId: senderUserId,
       dataSourceId,
       organizationId,
     });
