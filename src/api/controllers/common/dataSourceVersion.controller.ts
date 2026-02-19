@@ -2270,19 +2270,23 @@ export async function createMultipleDataSourceVersionFromValidatedCentralData(
       );
 
       // ✅ resolveFile logic SAME structure — only file source changed
-      const resolveFile = async (fileDetailName: string) => {
+     const resolveFile = async (fileDetailName: string) => {
         const isSpecialFile = ['KSA Contracts', 'Required Mapping-Contracts'].includes(fileDetailName);
 
-        // ✅ Instead of req.files → read from validated central folder
-        const existingFiles = await fsPromises.readdir(validatedCentralPath).catch(() => []);
+        const normalize = (name: string) =>
+          name.split('.')[0].replace(/\s+/g, '').toLowerCase();
 
-        const matchedCentralFile = existingFiles.find(f =>
-          f.replace(/\s+/g, '').toLowerCase().startsWith(
-            fileDetailName.replace(/\s+/g, '').toLowerCase()
-          )
+        const normalizedTarget = fileDetailName.replace(/\s+/g, '').toLowerCase();
+
+        // ✅ Read files from validated central folder
+        const centralFiles = await fsPromises.readdir(validatedCentralPath).catch(() => []);
+
+        // 🔹 SAME AS OLD: exact match only
+        const matchedCentralFile = centralFiles.find(f =>
+          normalize(f) === normalizedTarget
         );
 
-        // 1️ If found in central folder & special → copy to customReports
+        // 1️⃣ If found in central folder & special → copy to customReports
         if (matchedCentralFile && isSpecialFile) {
           await fsPromises.mkdir(existingCustomReportPath, { recursive: true });
 
@@ -2290,6 +2294,7 @@ export async function createMultipleDataSourceVersionFromValidatedCentralData(
           const targetPath = path.join(existingCustomReportPath, matchedCentralFile);
 
           await fsPromises.copyFile(sourcePath, targetPath);
+
           console.log('use central uploaded file');
 
           return {
@@ -2298,7 +2303,7 @@ export async function createMultipleDataSourceVersionFromValidatedCentralData(
           } as any;
         }
 
-        // 2️ If found in central folder & NOT special → use as-is
+        // 2️⃣ If found & NOT special → use as-is
         if (matchedCentralFile) {
           return {
             originalname: matchedCentralFile,
@@ -2306,25 +2311,26 @@ export async function createMultipleDataSourceVersionFromValidatedCentralData(
           } as any;
         }
 
-        // 3️ If NOT found & NOT special → skip
+        // 3️⃣ If NOT found & NOT special → skip
         if (!isSpecialFile) return null;
 
-        // 4️ Try existing customReports file (same as old logic)
+        // 4️⃣ SAME AS OLD: check existing customReports (exact match only)
         const customReportFiles = await fsPromises.readdir(existingCustomReportPath).catch(() => []);
+
         const matchedFile = customReportFiles.find(f =>
-          f.replace(/\s+/g, '').toLowerCase().startsWith(
-            fileDetailName.replace(/\s+/g, '').toLowerCase()
-          )
+          normalize(f) === normalizedTarget
         );
 
         if (!matchedFile) return null;
 
         console.log('use existing file');
+
         return {
           originalname: matchedFile,
           path: path.join(existingCustomReportPath, matchedFile),
         } as any;
       };
+
 
       try {
         // 🔽 FROM HERE EVERYTHING IS 100% UNCHANGED
