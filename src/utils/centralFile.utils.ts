@@ -320,9 +320,28 @@ export async function validateCentralFileForDataSource({
   const filePath = centralFile.filePath;
   const mappings = centralFile.mapping || {};
   const separator = centralFile.separator || {};
+  const sheetName = centralFile?.sheetName?.trim();
 
   // 3️⃣ Read file
-  const fileData = await readExcelFile(filePath);
+  let fileData: any[] = [];
+
+  if (sheetName) {
+    const workbook = XLSX.readFile(filePath);
+
+    const sheet =
+      workbook?.Sheets?.[sheetName] ||
+      workbook?.Sheets?.[workbook.SheetNames?.[0]];
+
+    if (sheet) {
+      fileData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    } else {
+      fileData = await readExcelFile(filePath);
+    }
+
+  } else {
+    fileData = await readExcelFile(filePath);
+  }
+
 
   const fileDataWithRowNumber = fileData.map((row, index) => ({
     ...row,
