@@ -34,7 +34,7 @@ import { getUserDataPermissionRecord } from '../../../database/services/common/u
 import ExcelJS from 'exceljs';
 import { createDownloadRequest } from '../../../database/services/common/downloadRequest.service';
 import { Queue } from 'bullmq';
-import { findLatestCentralFile } from '../../../database/services/common/centralFile.service';
+import { findLatestCentralFile, getLatestCentralMappingAndSeparator } from '../../../database/services/common/centralFile.service';
 import { getCentralFileValue } from '../../../database/services/common/defaultCentralFileValue.service';
 
 const ObjectId = mongoose.Types.ObjectId;
@@ -2160,16 +2160,20 @@ export async function createMultipleDataSourceVersionFromValidatedCentralData(
     console.log('Inside createMultipleDataSourceVersionBasedOnCustomReportId function.');
 
     // ✅ CHANGED: year & month instead of versionValue
-    const { mappings, separator, customReportId, year, month } = req.body;
+    const { customReportId, year, month } = req.body;
+
+    const { userId, organizationId, orgCode } = req.user;
 
     // ✅ versionValue constructed internally
     const versionValue = `${year}-${month}`;
 
-    const allJsonMapping = mappings || {};
-    const allJsonSeparator = separator || {};
-
-
-    const { userId, organizationId, orgCode } = req.user;
+     const { mapping: allJsonMapping, separator: allJsonSeparator } =
+                                                  await getLatestCentralMappingAndSeparator({
+                                                    organizationId,
+                                                    customReportId,
+                                                    year,
+                                                    month,
+                                                  });
 
     // ✅ CHANGED: central validated folder path
     const validatedCentralPath = path.join(
@@ -2388,8 +2392,8 @@ export async function createMultipleDataSourceVersionFromValidatedCentralData(
                 continue;
               }
 
-              let jsonMapping = allJsonMapping[mappingName] || {};
-              const jsonSeparator = allJsonSeparator[fileDetailName] || {};
+              let jsonMapping = allJsonMapping[dataSourceId] || {};
+              const jsonSeparator = allJsonSeparator[dataSourceId] || {};
 
               const isSpecialFile = ['KSA Contracts', 'Required Mapping-Contracts'].includes(fileDetailName);
 

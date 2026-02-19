@@ -38,3 +38,45 @@ export const getCentralFileList = async ({ query, page, limit }: any) => {
 
   return { data, totalCount };
 };
+
+export const getLatestCentralMappingAndSeparator = async ({
+  organizationId,
+  customReportId,
+  year,
+  month,
+}: {
+  organizationId: string;
+  customReportId: string;
+  year: number;
+  month: number;
+}) => {
+
+  const centralFiles = await findCentralFiles({
+    organizationId,
+    reportId: customReportId,
+    year,
+    month,
+    isLatest: true,
+    validationStatus: 'validated', // optional but recommended
+  });
+
+  const mapping: Record<string, any> = {};
+  const separator: Record<string, any> = {};
+
+  const processedDataSource = new Set<string>();
+
+  for (const file of centralFiles) {
+    const dsId = file.dataSourceId?.toString();
+    if (!dsId) continue;
+
+    // ✅ If already processed, skip (avoid duplicate mapping)
+    if (processedDataSource.has(dsId)) continue;
+
+    mapping[dsId] = file.mapping || {};
+    separator[dsId] = file.separator || {};
+
+    processedDataSource.add(dsId);
+  }
+
+  return { mapping, separator };
+};

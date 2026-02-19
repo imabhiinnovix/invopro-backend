@@ -20,6 +20,7 @@ interface WriteValidatedExcelParams {
   originalFileName: string;
   mapping: Record<string, any>;
   rowsWithMeta: any[];
+  sheetName?:string | null;
 }
 
 export async function writeValidatedCentralFileExcel({
@@ -27,29 +28,22 @@ export async function writeValidatedCentralFileExcel({
   originalFileName,
   mapping,
   rowsWithMeta,
+  sheetName
 }: WriteValidatedExcelParams) {
 
-  // --------------------------------------
-  // 1️⃣ Create validated directory
-  // --------------------------------------
   const validatedDir = path.join(basePath, 'validated');
   await fs.mkdir(validatedDir, { recursive: true });
 
-  const validatedFilePath = path.join(
-    validatedDir,
-    originalFileName
-  );
+  const validatedFilePath = path.join(validatedDir, originalFileName);
 
   // --------------------------------------
-  // 2️⃣ Build Reverse Mapping
-  // Skip "Extra-Attribute-Ignore"
+  // 1️⃣ Build Reverse Mapping
   // --------------------------------------
 
   const reverseMapping: Record<string, string> = {};
 
   Object.entries(mapping || {}).forEach(([entityAttr, fileColumn]) => {
 
-    // ❌ Ignore this attribute completely
     if (fileColumn === 'Extra-Attribute-Ignore') return;
 
     if (Array.isArray(fileColumn)) {
@@ -64,7 +58,7 @@ export async function writeValidatedCentralFileExcel({
   });
 
   // --------------------------------------
-  // 3️⃣ Prepare Excel Data (ONLY mapped headers)
+  // 2️⃣ Prepare Excel Data
   // --------------------------------------
 
   const excelData = rowsWithMeta.map(row => {
@@ -75,7 +69,6 @@ export async function writeValidatedCentralFileExcel({
 
       let value = row.rowData?.[entityAttr];
 
-      // ✅ If array → take first element
       if (Array.isArray(value)) {
         value = value.length > 0 ? value[0] : '';
       }
@@ -86,13 +79,58 @@ export async function writeValidatedCentralFileExcel({
     return formattedRow;
   });
 
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
+
   // --------------------------------------
-  // 4️⃣ Create Excel
+  // 3️⃣ File Exists Logic
   // --------------------------------------
 
-  const worksheet = XLSX.utils.json_to_sheet(excelData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'ValidatedData');
+  let workbook: XLSX.WorkBook;
+
+  const fileExists = await fs
+    .access(validatedFilePath)
+    .then(() => true)
+    .catch(() => false);
+
+  if (fileExists) {
+
+    // Read existing workbook
+    workbook = XLSX.readFile(validatedFilePath);
+
+    // ✅ If sheetName provided → update/append logic
+    if (sheetName && sheetName.trim() !== '') {
+
+      const targetSheet = sheetName.trim();
+
+      // If sheet exists → replace it
+      if (workbook.SheetNames.includes(targetSheet)) {
+        workbook.Sheets[targetSheet] = worksheet;
+      } else {
+        // If sheet does not exist → append new sheet
+        XLSX.utils.book_append_sheet(workbook, worksheet, targetSheet);
+      }
+
+    } else {
+      // ❗ No sheetName → overwrite entire file (existing behavior)
+      workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'ValidatedData');
+    }
+
+  } else {
+    // File does not exist → create new
+    workbook = XLSX.utils.book_new();
+
+    const finalSheetName =
+      sheetName && sheetName.trim() !== ''
+        ? sheetName.trim()
+        : 'ValidatedData';
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, finalSheetName);
+  }
+
+  // --------------------------------------
+  // 4️⃣ Write File
+  // --------------------------------------
 
   XLSX.writeFile(workbook, validatedFilePath);
 
@@ -406,6 +444,7 @@ export async function validateCentralFileForDataSource({
                                           originalFileName: centralFile.originalFileName,
                                           mapping: mappings,
                                           rowsWithMeta,
+                                          sheetName: centralFile?.sheetName
                                         });
 
   }

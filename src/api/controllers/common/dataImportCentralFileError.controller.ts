@@ -742,6 +742,7 @@ console.log('validRows',validRows);
     originalFileName: centralFile.originalFileName,
     mapping: centralFile.mapping || {},
     rowsWithMeta: validRows,
+    sheetName: centralFile?.sheetName
   });
 }
 
