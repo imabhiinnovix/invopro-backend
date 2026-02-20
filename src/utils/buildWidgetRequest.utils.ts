@@ -6,7 +6,7 @@ import { getUserDataPermissionRecord } from "../database/services/common/userDat
 import { getDataSourceVersion } from "../database/services/common/dataSourceVersion.services";
 
 
-export const buildWidgetRequestPayload = async (widget: any) => {
+export const buildWidgetRequestPayload = async (widget: any, senderUserId: string) => {
   let {
     dataSourceId,
     entityId,
@@ -15,12 +15,11 @@ export const buildWidgetRequestPayload = async (widget: any) => {
     aggregation,
     conditions = [],
     organizationId,
-    createdBy,
+    createdBy
   } = widget;
 
   const organization = organizationId;
   const dataSource = dataSourceId;
-  const user = createdBy;
 
   if (!organization?.code) {
     throw new Error("Organization not populated in widget");
@@ -31,7 +30,6 @@ export const buildWidgetRequestPayload = async (widget: any) => {
   }
 
   const orgCode = organization.code;
-  const userId = user._id;
 
   // ----------------------------------
   // Schema Name
@@ -51,7 +49,7 @@ export const buildWidgetRequestPayload = async (widget: any) => {
 
   //  User permission logic (unchanged)
     const userPermission = await getUserDataPermissionRecord({
-      userId,
+      userId: senderUserId,
       dataSourceId,
       organizationId,
     });

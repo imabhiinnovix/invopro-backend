@@ -420,7 +420,7 @@ async function connectDB() {
       try {
         if (job.name !== "generateWidgetSummary") return;
 
-        const { widgetId } = job.data;
+        const { widgetId, senderUserId } = job.data;
         console.log("AI summary job started for widget:", widgetId);
 
         // ------------------------------------------------------
@@ -432,7 +432,8 @@ async function connectDB() {
         );
 
         if (!widget) {
-          throw new Error("Dashboard widget not found");
+          console.warn("Dashboard widget not found. Skipping:", widgetId);
+          return;
         }
 
         // ------------------------------------------------------
@@ -440,7 +441,7 @@ async function connectDB() {
         // ------------------------------------------------------
         const safeLimit = 5000;
         let dataResults: any[] = [];
-        const widgetRequestPayload = await buildWidgetRequestPayload(widget);
+        const widgetRequestPayload = await buildWidgetRequestPayload(widget, senderUserId);
         let page = 1;
         while (true) {
           const result =
