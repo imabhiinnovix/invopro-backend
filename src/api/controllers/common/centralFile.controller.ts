@@ -9,6 +9,10 @@ import * as centralFileService from '../../../database/services/common/centralFi
 import { findCustomReportById } from '../../../database/services/reportivix/customReport.services';
 import { moveCentralFileToMisc, resolveDataSourceId, validateCentralFileForDataSource } from '../../../utils/centralFile.utils';
 import * as XLSX from 'xlsx';
+import { formatDateTime, getCentralFileSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
+import { findDataSourceById } from '../../../database/services/common/dataSource.services';
+import { createDownloadRequest } from '../../../database/services/common/downloadRequest.service';
+import { Queue } from 'bullmq';
 
 export const uploadCentralFile = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -395,6 +399,104 @@ export const getCentralFileList = async (req: Request, res: Response, next: Next
       totalCount,
     });
   } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * ✅ Queue Download for Validated Central File
+ */
+export const exportValidatedCentralFileToExcel = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { centralFileId, selectedFields } = req.query as {
+      centralFileId: string;
+      selectedFields?: string[];
+    };
+
+    const { userId, organizationId, orgCode } = req.user;
+
+    if (!centralFileId) {
+      return res.status(400).json({
+        success: false,
+        message: 'centralFileId is required',
+      });
+    }
+
+    // 1️⃣ Fetch Central File
+    const centralFile = await centralFileService.findCentralFileById(centralFileId);
+    if (!centralFile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Central file not found',
+      });
+    }
+
+    if (centralFile.validationStatus !== 'validated') {
+      return res.status(422).json({
+        success: false,
+        message: 'Central file is not yet validated',
+      });
+    }
+
+    // 2️⃣ Build Query for Validated Rows
+    const query = { centralFileId: new Types.ObjectId(centralFileId) };
+
+    // Generate schemaName dynamically
+    const dataSourceDetails: any = await findDataSourceById(centralFile.dataSourceId as any, true);
+    const schemaName = getCentralFileSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode: orgCode,        // fallback to request orgCode
+      versionCode: dataSourceDetails?.code
+    });
+
+
+    const requestPayload = {
+      schemaName,
+      query,
+      page: 1,
+      limit: Number.MAX_SAFE_INTEGER,
+      sort: {},
+      selectedFields:
+        selectedFields && selectedFields.length > 0
+          ? selectedFields
+          : [], // default: all fields
+      queryConfig: {
+        service: 'defaultCentralFileValue.service',
+        method: 'getCentralFileRowDataOnly', // points to the user service you shared
+      },
+    };
+
+    // 3️⃣ Save Download Request
+    const fileName = `Central_File_Validated_${formatDateTime(Date.now())}.xlsx`;
+
+    const downloadRequest = await createDownloadRequest({
+      organizationId,
+      userId,
+      status: 'pending',
+      fileName,
+      requestPayload,
+      type: 'exportCustomData',
+    });
+
+    // 4️⃣ Push Job to Queue
+    const downloadQueue = new Queue('downloadQueue', {
+      connection: { host: 'redis' },
+    });
+
+    await downloadQueue.add('exportCustomData', {
+      downloadRequestId: downloadRequest._id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Export job queued successfully.',
+      requestId: downloadRequest._id,
+    });
+  } catch (err) {
+    console.error('exportValidatedCentralFileToExcel:', err);
     next(err);
   }
 };

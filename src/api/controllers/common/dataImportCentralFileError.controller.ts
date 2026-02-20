@@ -281,7 +281,7 @@ export const exportCentralFileErrorsToExcel = async (
               'status',
             ],
       queryConfig: {
-        service: 'centralFileError.services',
+        service: 'dataImportCentralFileError.service',
         method: 'getCentralFileImportErrorList',
       },
     };
@@ -297,7 +297,7 @@ export const exportCentralFileErrorsToExcel = async (
       status: 'pending',
       fileName,
       requestPayload,
-      type: 'exportCentralFileErrors',
+      type: 'exportCustomData',
     });
 
     /* --------------------------------------------------
@@ -307,7 +307,7 @@ export const exportCentralFileErrorsToExcel = async (
       connection: { host: 'redis' },
     });
 
-    await downloadQueue.add('exportCentralFileErrors', {
+    await downloadQueue.add('exportCustomData', {
       downloadRequestId: downloadRequest._id,
     });
 

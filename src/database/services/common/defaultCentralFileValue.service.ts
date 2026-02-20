@@ -162,3 +162,49 @@ export const deleteCentralFileValue = async (schemaName: string, query: Record<s
     throw err;
   }
 };
+
+/**
+ * ✅ Fetch Only rowData from Central File
+ */
+export const getCentralFileRowDataOnly = async ({
+  schemaName,
+  query,
+  page = 1,
+  limit = 50,
+  sort = { updatedAt: 1 },
+  paginate = true,
+}: {
+  schemaName: string;
+  query: Record<string, any>;
+  page?: number;
+  limit?: number;
+  sort?: Record<string, 1 | -1>;
+  paginate?: boolean;
+}) => {
+  try {
+    const Model = createDefaultCentralFileModel(schemaName);
+
+    const pipeline: any[] = [
+      { $match: query },
+      { $sort: sort },
+      { $project: { rowData: 1, _id: 0 } }, // Only rowData
+    ];
+
+    // Pagination
+    if (paginate) {
+      pipeline.push({ $skip: (page - 1) * limit }, { $limit: limit });
+    }
+
+    const results = await Model.aggregate(pipeline).exec();
+
+    // Map to just rowData objects
+    const data = results.map((r: any) => r.rowData);
+
+    const totalCount = paginate ? await Model.countDocuments(query) : data.length;
+
+    return { data, totalCount };
+  } catch (err) {
+    console.error('getCentralFileRowDataOnly error:', err);
+    throw err;
+  }
+};

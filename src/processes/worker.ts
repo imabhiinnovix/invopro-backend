@@ -160,6 +160,7 @@ async function connectDB() {
         sort,
         selectedFields,
         queryConfig,
+        schemaName, // ✅ optionally included in payload
       } = req.requestPayload;
 
       if (!queryConfig?.service || !queryConfig?.method) {
@@ -192,6 +193,7 @@ async function connectDB() {
           page,
           limit: safeLimit,
           sort,
+          ...(schemaName ? { schemaName } : {}), // optional schemaName
         });
 
         const rows = result?.data ?? [];

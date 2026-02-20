@@ -6,7 +6,8 @@ import {
   uploadCentralFile,
   getCentralFileList,
   getLatestCentralFiles,
-  revalidateCentralFile, // ✅ ADD THIS
+  revalidateCentralFile,
+  exportValidatedCentralFileToExcel, // ✅ ADD THIS
 } from '../../controllers/common/centralFile.controller';
 
 import { uploadMultipleFile } from '../../../middlewares/upload.middleware';
@@ -16,6 +17,7 @@ const router = Router();
 router.post('/upload', authenticateToken, /*permissionMiddleware(),*/ uploadMultipleFile, uploadCentralFile);
 router.get('/list', authenticateToken, /*permissionMiddleware(),*/ getCentralFileList);
 router.get('/latest', authenticateToken, /*permissionMiddleware(),*/ getLatestCentralFiles);
+router.get('/download', authenticateToken, /*permissionMiddleware(),*/ exportValidatedCentralFileToExcel);
 
 // ✅ REVALIDATE CENTRAL FILE
 router.put(
