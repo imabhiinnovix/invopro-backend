@@ -35,12 +35,19 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
       return res.status(400).json({ success: false, message: 'File is required' });
     }
 
-    if (!reportId && !dataSourceId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Either reportId or dataSourceId is required',
-      });
-    }
+    // if (!reportId && !dataSourceId) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: 'Either reportId or dataSourceId is required',
+    //   });
+    // }
+
+    let folderType: 'REPORT' | 'DATASOURCE' | 'MISC' = 'MISC';
+
+    if (reportId) folderType = 'REPORT';
+    else if (dataSourceId) folderType = 'DATASOURCE';
+
+    const isMisc = folderType === 'MISC';
 
     const padMonth = String(month).padStart(2, '0');
 
@@ -77,7 +84,7 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
       // ============================
       let sheetNames: any[] = [null];
 
-      if (ext.match(/\.xlsx|\.xls/i)) {
+      if (!isMisc && ext.match(/\.xlsx|\.xls/i)) {
         const workbook = XLSX.readFile(targetPath);
         sheetNames = workbook.SheetNames.length ? workbook.SheetNames : [null];
       }
@@ -147,6 +154,7 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
 
         let record: any = await centralFileService.createCentralFile({
           organizationId,
+          folderType,
           reportId: reportId || null,
           year,
           month,
@@ -165,8 +173,10 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
         });
 
         // ============================
-        // Resolve DataSource
+        // Resolve DataSource (Skip for MISC)
         // ============================
+
+      if (!isMisc) {
 
         const result = await resolveDataSourceId({
           originalFileName,
@@ -231,6 +241,15 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
             }
           });
         }
+      }else {
+        // ============================
+        // MISC → Direct Save (No Mapping / No Validation)
+        // ============================
+
+        record = await centralFileService.updateCentralFileById(record._id, {
+          validationStatus: 'validated',
+        });
+      }
 
         records.push(record.toObject());
       }
@@ -352,17 +371,30 @@ export const revalidateCentralFile = async (req: Request, res: Response, next: N
 
 export const getLatestCentralFiles = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { reportId, year, month } = req.query; // ✅ changed
+    const { reportId, year, month, dataSourceId } = req.query; // ✅ changed
     const { organizationId } = req.user;
 
-    const files = await centralFileService.findCentralFiles({
+    const query: any = {
       organizationId,
-      reportId,
-      year,
-      month,
       isLatest: true,
       validationStatus: 'validated',
-    });
+    };
+
+    // ✅ Pass only if not null
+    if (reportId) query.reportId = reportId;
+    if (dataSourceId) query.dataSourceId = dataSourceId;
+
+    if (year) query.year = Number(year);
+    if (month) query.month = Number(month);
+
+    let folderType: 'REPORT' | 'DATASOURCE' | 'MISC' = 'MISC';
+
+    if (reportId) folderType = 'REPORT';
+    else if (dataSourceId) folderType = 'DATASOURCE';
+
+    if(folderType) query.folderType = folderType;
+
+    const files = await centralFileService.findCentralFiles(query);
 
     res.status(200).json({
       success: true,
@@ -375,7 +407,7 @@ export const getLatestCentralFiles = async (req: Request, res: Response, next: N
 
 export const getCentralFileList = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { reportId, year, month } = req.query; // ✅ changed
+    const { reportId, year, month, dataSourceId } = req.query; // ✅ changed
     const { organizationId } = req.user;
 
     const page = parseInt(req.query.page as string, 10) || 1;
@@ -386,6 +418,13 @@ export const getCentralFileList = async (req: Request, res: Response, next: Next
     if (reportId) query.reportId = reportId;
     if (year) query.year = Number(year);
     if (month) query.month = Number(month);
+    if (dataSourceId) query.dataSourceId = dataSourceId;
+    let folderType: 'REPORT' | 'DATASOURCE' | 'MISC' = 'MISC';
+
+    if (reportId) folderType = 'REPORT';
+    else if (dataSourceId) folderType = 'DATASOURCE';
+
+    if(folderType) query.folderType = folderType;
 
     const { data, totalCount } = await centralFileService.getCentralFileList({
       query,
@@ -497,6 +536,42 @@ export const exportValidatedCentralFileToExcel = async (
     });
   } catch (err) {
     console.error('exportValidatedCentralFileToExcel:', err);
+    next(err);
+  }
+};
+
+
+export const getFolderYearMonthSummary = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { organizationId } = req.user;
+    const { reportId, dataSourceId } = req.query;
+
+    const query: any = {
+      organizationId: new Types.ObjectId(organizationId),
+    };
+
+    // Folder Type Logic
+    if (reportId) {
+      query.folderType = 'REPORT';
+      query.reportId = new Types.ObjectId(reportId as string);
+    } else if (dataSourceId) {
+      query.folderType = 'DATASOURCE';
+      query.dataSourceId = new Types.ObjectId(dataSourceId as string);
+    } else {
+      query.folderType = 'MISC';
+    }
+
+    const result = await centralFileService.getFolderYearMonthSummary(query);
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
     next(err);
   }
 };

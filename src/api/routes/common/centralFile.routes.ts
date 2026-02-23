@@ -7,7 +7,8 @@ import {
   getCentralFileList,
   getLatestCentralFiles,
   revalidateCentralFile,
-  exportValidatedCentralFileToExcel, // ✅ ADD THIS
+  exportValidatedCentralFileToExcel,
+  getFolderYearMonthSummary, // ✅ ADD THIS
 } from '../../controllers/common/centralFile.controller';
 
 import { uploadMultipleFile } from '../../../middlewares/upload.middleware';
@@ -18,6 +19,11 @@ router.post('/upload', authenticateToken, /*permissionMiddleware(),*/ uploadMult
 router.get('/list', authenticateToken, /*permissionMiddleware(),*/ getCentralFileList);
 router.get('/latest', authenticateToken, /*permissionMiddleware(),*/ getLatestCentralFiles);
 router.get('/download', authenticateToken, /*permissionMiddleware(),*/ exportValidatedCentralFileToExcel);
+router.get(
+  '/folder-summary',
+  authenticateToken,
+  getFolderYearMonthSummary
+);
 
 // ✅ REVALIDATE CENTRAL FILE
 router.put(

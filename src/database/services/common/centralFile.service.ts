@@ -116,3 +116,54 @@ export const getLatestCentralMappingAndSeparator = async ({
 
   return { mapping, separator };
 };
+
+export const getFolderYearMonthSummary = async (query: any) => {
+  return CentralFile.aggregate([
+    { $match: query },
+
+    // 1️⃣ Group by year + month
+    {
+      $group: {
+        _id: {
+          year: '$year',
+          month: '$month',
+        },
+        totalFiles: { $sum: 1 },
+      },
+    },
+
+    // 2️⃣ Group by year only
+    {
+      $group: {
+        _id: '$_id.year',
+        months: {
+          $push: {
+            month: '$_id.month',
+            totalFiles: '$totalFiles',
+          },
+        },
+        // totalFiles: { $sum: '$totalFiles' },
+      },
+    },
+
+    // 3️⃣ Add totalMonths
+    {
+      $addFields: {
+        totalMonths: { $size: '$months' },
+      },
+    },
+
+    // 4️⃣ Final shape
+    {
+      $project: {
+        _id: 0,
+        year: '$_id',
+        totalMonths: 1,
+        // totalFiles: 1,
+        months: 1,
+      },
+    },
+
+    { $sort: { year: -1 } },
+  ]);
+};

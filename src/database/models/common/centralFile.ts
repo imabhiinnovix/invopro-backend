@@ -13,6 +13,8 @@ interface ICentralFile extends Document {
   month: number;
   week?: number;
 
+  folderType?: 'REPORT' | 'DATASOURCE' | 'MISC';
+
   sheetName?: string; // ✅ ADDED
 
   originalFileName: string;
@@ -44,6 +46,12 @@ const centralFileSchema = new Schema<ICentralFile>(
     year: { type: Number, required: true },
     month: { type: Number, required: true },
     week: { type: Number, default: null },
+
+    folderType: {
+      type: String,
+      enum: ['REPORT', 'DATASOURCE', 'MISC'],
+      required: true,
+    },
 
     sheetName: { type: String, default: null }, // ✅ ADDED
 
