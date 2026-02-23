@@ -34,7 +34,7 @@ import { getUserDataPermissionRecord } from '../../../database/services/common/u
 import ExcelJS from 'exceljs';
 import { createDownloadRequest } from '../../../database/services/common/downloadRequest.service';
 import { Queue } from 'bullmq';
-import { findLatestCentralFile, getLatestCentralMappingAndSeparator } from '../../../database/services/common/centralFile.service';
+import { findCentralFiles, findLatestCentralFile, getLatestCentralMappingAndSeparator } from '../../../database/services/common/centralFile.service';
 import { getCentralFileValue } from '../../../database/services/common/defaultCentralFileValue.service';
 
 const ObjectId = mongoose.Types.ObjectId;
@@ -1139,11 +1139,19 @@ export async function createDataSourceVersionFromValidatedCentralFiles(
       year,
       month,
       week,
+      centralFileIds
     } = req.body;
 
     const versionValue = `${year}-${month}`;
 
     const { userId, organizationId, orgCode } = req.user;
+
+    if (!centralFileIds || !Array.isArray(centralFileIds) || centralFileIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'centralFileIds are required.'
+      });
+    }
 
     // ---------------------------------------
     // ✅ Fetch Latest Mapping & Separator
@@ -1182,9 +1190,24 @@ export async function createDataSourceVersionFromValidatedCentralFiles(
     regexCache.clear();
     refValueCache.clear();
 
-    const existingFiles = await fsPromises.readdir(validatedCentralPath).catch(() => []);
-    if (!existingFiles.length) {
-      throw new Error('No validated central files found.');
+    // const existingFiles = await fsPromises.readdir(validatedCentralPath).catch(() => []);
+    // if (!existingFiles.length) {
+    //   throw new Error('No validated central files found.');
+    // }
+
+    // ✅ FETCH SELECTED CENTRAL FILES FROM DB
+    const centralFilesFromDB = await findCentralFiles({
+      _id: { $in: centralFileIds },
+      organizationId,
+      dataSourceId,
+      year,
+      month,
+      ...(week ? { week } : {}),
+      validationStatus: 'validated',
+    });
+
+    if (!centralFilesFromDB.length) {
+      throw new Error('No validated central files found for selected IDs.');
     }
 
     let combinedFileName = '';
@@ -1194,7 +1217,8 @@ export async function createDataSourceVersionFromValidatedCentralFiles(
     let combinedData: any[] = [];
     let dataSourceVersionId;
 
-    for (const fileName of existingFiles) {
+    for (const centralFile of centralFilesFromDB) {
+      const fileName = centralFile.storedFileName;  // ✅ USE DB NAME
       const fileExtension = fileName.split('.').pop()?.toLowerCase();
       if (!['xlsx', 'xls'].includes(fileExtension || '')) continue;
 
@@ -2175,9 +2199,16 @@ export async function createMultipleDataSourceVersionFromValidatedCentralData(
     console.log('Inside createMultipleDataSourceVersionBasedOnCustomReportId function.');
 
     // ✅ CHANGED: year & month instead of versionValue
-    const { customReportId, year, month } = req.body;
+    const { customReportId, year, month, centralFileIds } = req.body;
 
     const { userId, organizationId, orgCode } = req.user;
+
+    if (!centralFileIds || !Array.isArray(centralFileIds) || centralFileIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'centralFileIds are required.'
+      });
+    }
 
     // ✅ versionValue constructed internally
     const versionValue = `${year}-${month}`;
@@ -2201,6 +2232,16 @@ export async function createMultipleDataSourceVersionFromValidatedCentralData(
       padMonth,
       'validated'
     );
+
+    // FETCH SELECTED CENTRAL FILES FROM DB
+    const centralFilesFromDB = await findCentralFiles({
+      _id: { $in: centralFileIds },
+      organizationId,
+      reportId: customReportId,
+      year,
+      month,
+      validationStatus: 'validated',
+    });
 
     // reset cache for this import
     refMetaCache.clear();
@@ -2290,31 +2331,36 @@ export async function createMultipleDataSourceVersionFromValidatedCentralData(
         const isSpecialFile = ['KSA Contracts', 'Required Mapping-Contracts'].includes(fileDetailName);
 
         const normalize = (name: string) =>
-          name.split('.')[0].replace(/\s+/g, '').toLowerCase();
+                            name
+                              .replace(/__v\d+(?=\.)/, '')
+                              .split('.')[0]
+                              .replace(/\s+/g, '')
+                              .toLowerCase();
+
 
         const normalizedTarget = fileDetailName.replace(/\s+/g, '').toLowerCase();
 
         // ✅ Read files from validated central folder
-        const centralFiles = await fsPromises.readdir(validatedCentralPath).catch(() => []);
+        // const centralFiles = await fsPromises.readdir(validatedCentralPath).catch(() => []);
 
         // 🔹 SAME AS OLD: exact match only
-        const matchedCentralFile = centralFiles.find(f =>
-          normalize(f) === normalizedTarget
+        const matchedCentralFile = centralFilesFromDB.find(f =>
+          normalize(f.storedFileName) === normalizedTarget
         );
 
         // 1️⃣ If found in central folder & special → copy to customReports
         if (matchedCentralFile && isSpecialFile) {
           await fsPromises.mkdir(existingCustomReportPath, { recursive: true });
 
-          const sourcePath = path.join(validatedCentralPath, matchedCentralFile);
-          const targetPath = path.join(existingCustomReportPath, matchedCentralFile);
+          const sourcePath = path.join(validatedCentralPath, matchedCentralFile.storedFileName);
+          const targetPath = path.join(existingCustomReportPath, matchedCentralFile.storedFileName);
 
           await fsPromises.copyFile(sourcePath, targetPath);
 
           console.log('use central uploaded file');
 
           return {
-            originalname: matchedCentralFile,
+            originalname: matchedCentralFile.storedFileName,
             path: targetPath,
           } as any;
         }
@@ -2322,8 +2368,8 @@ export async function createMultipleDataSourceVersionFromValidatedCentralData(
         // 2️⃣ If found & NOT special → use as-is
         if (matchedCentralFile) {
           return {
-            originalname: matchedCentralFile,
-            path: path.join(validatedCentralPath, matchedCentralFile),
+            originalname: matchedCentralFile.storedFileName,
+            path: path.join(validatedCentralPath, matchedCentralFile.storedFileName),
           } as any;
         }
 

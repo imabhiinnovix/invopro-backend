@@ -739,7 +739,7 @@ console.log('validRows?.length',validRows?.length);
 console.log('validRows',validRows);
   await writeValidatedCentralFileExcel({
     basePath,
-    originalFileName: centralFile.originalFileName,
+    originalFileName: centralFile.storedFileName,
     mapping: centralFile.mapping || {},
     rowsWithMeta: validRows,
     sheetName: centralFile?.sheetName

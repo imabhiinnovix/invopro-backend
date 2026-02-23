@@ -407,7 +407,7 @@ export const getLatestCentralFiles = async (req: Request, res: Response, next: N
 
 export const getCentralFileList = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { reportId, year, month, dataSourceId } = req.query; // ✅ changed
+    const { reportId, year, month, dataSourceId, validationStatus, paginate = true } = req.query; // ✅ changed
     const { organizationId } = req.user;
 
     const page = parseInt(req.query.page as string, 10) || 1;
@@ -419,6 +419,8 @@ export const getCentralFileList = async (req: Request, res: Response, next: Next
     if (year) query.year = Number(year);
     if (month) query.month = Number(month);
     if (dataSourceId) query.dataSourceId = dataSourceId;
+    if (validationStatus) query.validationStatus = validationStatus;
+
     let folderType: 'REPORT' | 'DATASOURCE' | 'MISC' = 'MISC';
 
     if (reportId) folderType = 'REPORT';
@@ -430,6 +432,7 @@ export const getCentralFileList = async (req: Request, res: Response, next: Next
       query,
       page,
       limit,
+      paginate
     });
 
     res.status(200).json({

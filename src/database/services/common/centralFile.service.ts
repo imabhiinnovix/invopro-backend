@@ -28,13 +28,28 @@ export const updateCentralFileById = async (id: string, updateData: any) => {
   return await CentralFile.findByIdAndUpdate(id, updateData, { new: true });
 };
 
-export const getCentralFileList = async ({ query, page, limit }: any) => {
-  const data = await CentralFile.find(query)
-    .skip((page - 1) * limit)
-    .limit(limit)
-    .sort({ createdAt: -1 });
+export const getCentralFileList = async ({
+  query,
+  page = 1,
+  limit = 10,
+  paginate = true, // ✅ NEW PARAM
+}: any) => {
 
-  const totalCount = await CentralFile.countDocuments(query);
+  let mongoQuery = CentralFile.find(query).sort({ createdAt: -1 });
+
+  // ✅ Apply pagination only if paginate === true
+  if (paginate) {
+    mongoQuery = mongoQuery
+      .skip((page - 1) * limit)
+      .limit(limit);
+  }
+
+  const data = await mongoQuery;
+
+  // ✅ Count only when paginating (optional optimization)
+  const totalCount = paginate
+    ? await CentralFile.countDocuments(query)
+    : data.length;
 
   return { data, totalCount };
 };

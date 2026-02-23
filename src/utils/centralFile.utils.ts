@@ -460,7 +460,7 @@ export async function validateCentralFileForDataSource({
     // --------------------------------------
     await writeValidatedCentralFileExcel({
                                           basePath,
-                                          originalFileName: centralFile.originalFileName,
+                                          originalFileName: centralFile.storedFileName,
                                           mapping: mappings,
                                           rowsWithMeta,
                                           sheetName: centralFile?.sheetName
