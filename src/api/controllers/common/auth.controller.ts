@@ -181,8 +181,15 @@ export const sendOtp = async (req: Request, res: Response, next: NextFunction) =
     const { email, type = 'login' } = req.body;
 
     // Find the user and populate organization details
-    const user: any = await authService.findUserByEmail(email);
-
+    const user: any = await authService.findUserByEmail(email, [
+       { path: 'organizationId', select: 'id name code status activatePasswordOTP' },
+      'roleIds',
+      {
+        path: 'organizationProductSubscriptionIds',
+        populate: { path: 'productId', select: 'name code status' },
+      },
+    ]);
+    
     if (!user) {
       return res.status(400).json({ success: false, message: 'User not found' });
     }
@@ -196,29 +203,33 @@ export const sendOtp = async (req: Request, res: Response, next: NextFunction) =
     }
 
     // Check organization status and license expiry if the user is not a super admin
-    if (user.roleId !== Role.Id.SUPER_ADMIN) {
+    const isSuperUser = (user.roleIds || []).some(
+      (role: any) => role.isSuperUser === true
+    );
+    if (!isSuperUser) {
       const organization = user.organizationId;
+         // 8️ Organization status check
+      if (organization && organization.status === 'inactive') {
+        return res.status(400).json({
+          success: false,
+          message: 'Your organization is currently inactive. Please contact support.',
+        });
+      }
 
-      if (organization) {
-        const currentDate = new Date();
+      // 9️ Subscription validation
+      const now = new Date();
+      const validSubscriptions = (user.organizationProductSubscriptionIds || []).filter(
+        (sub: any) =>
+          sub.status === 'active' &&
+          (!sub.licenseExpiresAt || new Date(sub.licenseExpiresAt) > now)
+      );
 
-        // Check if the organization license is expired
-        if (organization.licenseExpiresAt && organization.licenseExpiresAt < currentDate) {
-          // Update the organization status to "inactive"
-          await organizationService.updateOrganization(organization._id, { status: 'inactive' });
-          return res.status(400).json({
-            success: false,
-            message: 'Your organization license has expired. Please contact support for renewal.',
-          });
-        }
-
-        // Check if organization status is inactive
-        if (organization.status === 'inactive') {
-          return res.status(400).json({
-            success: false,
-            message: 'Your organization is currently inactive. Please contact support for assistance.',
-          });
-        }
+      if (validSubscriptions.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message:
+            'All your assigned products are either expired or inactive. Please contact support.',
+        });
       }
     }
 
@@ -619,4 +630,3 @@ export const isPasswordExpired = (user: any): boolean => {
   if (!user.passwordExpiresAt) return false;
   return new Date(user.passwordExpiresAt) < new Date();
 };
-
