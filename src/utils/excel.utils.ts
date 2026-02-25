@@ -1,5 +1,4 @@
 import ExcelJS from 'exceljs';
-import { DataItem } from '../database/services/reportivix/monthlyipReport.services';
 import * as xlsx from 'xlsx';
 import { findEntityById } from '../database/services/common/entity.services';
 import * as fs from 'fs';
@@ -206,32 +205,6 @@ export async function readExcelFile(filePath: string, sheetNames?: string[]): Pr
     console.log(e);
     throw 'Error while reading excel file.';
   }
-}
-
-export async function writeDataToExcel(data: DataItem[], filePath: string): Promise<void> {
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(filePath); // Read the existing workbook
-
-  const sheet = workbook.getWorksheet('Global')!; // Get the existing sheet by name
-
-  // Iterate through the data and write it to the sheet
-  data.forEach((item) => {
-    if (item.cellName) {
-      const cell = sheet.getCell(item.cellName);
-
-      // if (item.numFormat === 'percentage') {
-      //   cell.numFmt = '0%'; // Apply percentage format
-      // } else {
-      //   cell.numFmt = cell.numFmt || ''; // Preserve existing format
-      // }
-
-      cell.value = item.value;
-    }
-  });
-
-  // Save the updated Excel file
-  await workbook.xlsx.writeFile(filePath);
-  console.log(`Excel file written successfully to ${filePath}`);
 }
 
 export async function createExcelSheetFile(

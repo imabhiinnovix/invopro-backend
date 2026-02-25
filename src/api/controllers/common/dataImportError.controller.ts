@@ -14,11 +14,8 @@ import { updateCustomDataSourceVersionIsCurrentFunction, validateRowData, handle
 import { getAttributeByName } from '../../../utils/entity.utils';
 import { getDataSourceVersion } from '../../../database/services/common/dataSourceVersion.services';
 import { autoPopulateAttributeOptionFromRow } from '../../../utils/attributeOption.utils';
-import { findCustomReportById } from '../../../database/services/reportivix/customReport.services';
-import { findReportRequestById, updateReportRequest } from '../../../database/services/reportivix/reportRequest.services';
 import { createDownloadRequest } from '../../../database/services/common/downloadRequest.service';
 import { Queue } from 'bullmq';
-import { generateCustomReportsFunction } from '../reportivix/customReport.controller';
 const ObjectId = mongoose.Types.ObjectId;
 
 // export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
@@ -207,39 +204,40 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
 
     if (dataSourceVersionId) {
       dataSourceVersionIds = [new ObjectId(dataSourceVersionId)];
-    } else if (reportRequestId) {
-      const reportRequest: any = await findReportRequestById(reportRequestId);
-      customReport =
-        await findCustomReportById(reportRequest?.customReportId);
+    } 
+    // else if (reportRequestId) {
+    //   const reportRequest: any = await findReportRequestById(reportRequestId);
+    //   customReport =
+    //     await findCustomReportById(reportRequest?.customReportId);
 
-      if (!customReport?.dataSourceIds?.length) {
-        return res.status(200).json({
-          success: true,
-          message: "No datasource found for custom report",
-          data: [],
-          totalCount: 0,
-          totalActionCount: 0,
-          totalUploadedRecords: 0,
-        });
-      }
+    //   if (!customReport?.dataSourceIds?.length) {
+    //     return res.status(200).json({
+    //       success: true,
+    //       message: "No datasource found for custom report",
+    //       data: [],
+    //       totalCount: 0,
+    //       totalActionCount: 0,
+    //       totalUploadedRecords: 0,
+    //     });
+    //   }
 
-      for (const ds of customReport.dataSourceIds) {
-        const versionId: any =
-          await getDataSourceVersion({
-                              query: {
-                                dataSourceId: ds.dataSourceId,
-                                versionValue: reportRequest?.versionValue,
-                                status: { $in : ["failed", "partially-completed"] },
-                                isActive: true,
-                                reportRequestId
-                              },
-                              sort: { createdAt: -1 }, // LATEST
-                            });
+    //   for (const ds of customReport.dataSourceIds) {
+    //     const versionId: any =
+    //       await getDataSourceVersion({
+    //                           query: {
+    //                             dataSourceId: ds.dataSourceId,
+    //                             versionValue: reportRequest?.versionValue,
+    //                             status: { $in : ["failed", "partially-completed"] },
+    //                             isActive: true,
+    //                             reportRequestId
+    //                           },
+    //                           sort: { createdAt: -1 }, // LATEST
+    //                         });
 
-        dataSourceVersionsMap.set(ds.dataSourceId.toString(), versionId);
-        dataSourceVersionIds.push(versionId);
-      }
-    }
+    //     dataSourceVersionsMap.set(ds.dataSourceId.toString(), versionId);
+    //     dataSourceVersionIds.push(versionId);
+    //   }
+    // }
 
     /* --------------------------------------------------
        2️ Base query
@@ -342,30 +340,31 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
           schemaName,
           { dataSourceVersionId: new ObjectId(dataSourceVersionId) }
         );
-    } else if (reportRequestId && customReport) {
-      for (const ds of customReport.dataSourceIds) {
-        const dsDetails =
-          await dataSourceService.findDataSourceById(ds.dataSourceId, true);
-        if (!dsDetails) continue;
+    } 
+    // else if (reportRequestId && customReport) {
+    //   for (const ds of customReport.dataSourceIds) {
+    //     const dsDetails =
+    //       await dataSourceService.findDataSourceById(ds.dataSourceId, true);
+    //     if (!dsDetails) continue;
 
-        const schemaName =
-          getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
-            orgCode,
-            versionCode: dsDetails.code,
-          });
+    //     const schemaName =
+    //       getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+    //         orgCode,
+    //         versionCode: dsDetails.code,
+    //       });
 
-        const versionId =
-          dataSourceVersionsMap.get(ds.dataSourceId.toString()) || '';
+    //     const versionId =
+    //       dataSourceVersionsMap.get(ds.dataSourceId.toString()) || '';
 
-        if (versionId) {
-          totalUploadedRecords +=
-            await importLogDataSourceVersionValueService.getDataSourceVersionValueCount(
-              schemaName,
-              { dataSourceVersionId: versionId }
-            );
-        }
-      }
-    }
+    //     if (versionId) {
+    //       totalUploadedRecords +=
+    //         await importLogDataSourceVersionValueService.getDataSourceVersionValueCount(
+    //           schemaName,
+    //           { dataSourceVersionId: versionId }
+    //         );
+    //     }
+    //   }
+    // }
 
     /* --------------------------------------------------
        8️⃣ Response
@@ -429,35 +428,35 @@ export const exportDataSourceVersionErrorToExcel = async (
   // -------------------------------
   // CUSTOM REPORT FLOW
   // -------------------------------
-  if (reportRequestId) {
-    const reportRequest: any = await findReportRequestById(reportRequestId);
-    const customReport: any = await findCustomReportById(
-      reportRequest?.customReportId
-    );
+  // if (reportRequestId) {
+  //   const reportRequest: any = await findReportRequestById(reportRequestId);
+  //   const customReport: any = await findCustomReportById(
+  //     reportRequest?.customReportId
+  //   );
 
-    if (!customReport?.dataSourceIds?.length) {
-      return new Map();
-    }
+  //   if (!customReport?.dataSourceIds?.length) {
+  //     return new Map();
+  //   }
 
-    for (const ds of customReport.dataSourceIds) {
-      const version: any = await getDataSourceVersion({
-        query: {
-          dataSourceId: ds.dataSourceId,
-          versionValue: reportRequest?.versionValue,
-          status: "failed",
-          isActive: true,
-          reportRequestId
-        },
-        sort: { createdAt: -1 },
-      });
+  //   for (const ds of customReport.dataSourceIds) {
+  //     const version: any = await getDataSourceVersion({
+  //       query: {
+  //         dataSourceId: ds.dataSourceId,
+  //         versionValue: reportRequest?.versionValue,
+  //         status: "failed",
+  //         isActive: true,
+  //         reportRequestId
+  //       },
+  //       sort: { createdAt: -1 },
+  //     });
 
-      if (version) {
-        dataSourceVersionIds.push(version._id);
-      }
-    }
-  }else{
+  //     if (version) {
+  //       dataSourceVersionIds.push(version._id);
+  //     }
+  //   }
+  // }else{
     dataSourceVersionIds = [new Types.ObjectId(dataSourceVersionId)];
-  }
+  // }
 
   // -------------------------------
   // ERROR QUERY
@@ -952,33 +951,33 @@ async function getGroupedErrorContext({
   // -------------------------------
   // CUSTOM REPORT FLOW
   // -------------------------------
-  if (reportRequestId) {
-    const reportRequest: any = await findReportRequestById(reportRequestId);
-    const customReport: any = await findCustomReportById(
-      reportRequest?.customReportId
-    );
+  // if (reportRequestId) {
+  //   const reportRequest: any = await findReportRequestById(reportRequestId);
+  //   const customReport: any = await findCustomReportById(
+  //     reportRequest?.customReportId
+  //   );
 
-    if (!customReport?.dataSourceIds?.length) {
-      return new Map();
-    }
+  //   if (!customReport?.dataSourceIds?.length) {
+  //     return new Map();
+  //   }
 
-    for (const ds of customReport.dataSourceIds) {
-      const version: any = await getDataSourceVersion({
-        query: {
-          dataSourceId: ds.dataSourceId,
-          versionValue: reportRequest?.versionValue,
-          status: { $in : ["failed", "partially-completed"] },
-          isActive: true,
-          reportRequestId
-        },
-        sort: { createdAt: -1 },
-      });
+  //   for (const ds of customReport.dataSourceIds) {
+  //     const version: any = await getDataSourceVersion({
+  //       query: {
+  //         dataSourceId: ds.dataSourceId,
+  //         versionValue: reportRequest?.versionValue,
+  //         status: { $in : ["failed", "partially-completed"] },
+  //         isActive: true,
+  //         reportRequestId
+  //       },
+  //       sort: { createdAt: -1 },
+  //     });
 
-      if (version) {
-        dataSourceVersionIds.push(version._id);
-      }
-    }
-  }
+  //     if (version) {
+  //       dataSourceVersionIds.push(version._id);
+  //     }
+  //   }
+  // }
 
   // -------------------------------
   // DIRECT DATASOURCE FLOW
@@ -1242,30 +1241,30 @@ export const resolveDataImportError = async (
       }
 
       // GENERATE CUSTOM REPORT (ONLY IF reportRequestId)
-      if (reportRequestId) {
-        const reportRequest: any = await findReportRequestById(reportRequestId);
-        await updateReportRequest(reportRequestId, {
-          status: 'processing'
-        });
-          generateCustomReportsFunction({
-            versionValue: reportRequest?.versionValue,
-            userId,
-            organizationId,
-            orgCode,
-            customReportId: reportRequest?.customReportId,
-            reportRequestId,
-          }).then(() => {
-          console.log(
-            `[${new Date().toISOString()}] generateCustomReportsFunction completed`
-          );
-        })
-        .catch((err) => {
-          console.error(
-            `[${new Date().toISOString()}] generateCustomReportsFunction failed`,
-            err
-          );
-        });
-      }
+      // if (reportRequestId) {
+      //   const reportRequest: any = await findReportRequestById(reportRequestId);
+      //   await updateReportRequest(reportRequestId, {
+      //     status: 'processing'
+      //   });
+      //     generateCustomReportsFunction({
+      //       versionValue: reportRequest?.versionValue,
+      //       userId,
+      //       organizationId,
+      //       orgCode,
+      //       customReportId: reportRequest?.customReportId,
+      //       reportRequestId,
+      //     }).then(() => {
+      //     console.log(
+      //       `[${new Date().toISOString()}] generateCustomReportsFunction completed`
+      //     );
+      //   })
+      //   .catch((err) => {
+      //     console.error(
+      //       `[${new Date().toISOString()}] generateCustomReportsFunction failed`,
+      //       err
+      //     );
+      //   });
+      // }
     }
 
     // =====================================================
@@ -1456,30 +1455,30 @@ export const resolveDataImportError = async (
       }
 
       // GENERATE CUSTOM REPORT (ONLY IF reportRequestId)
-      if (reportRequestId) {
-        const reportRequest: any = await findReportRequestById(reportRequestId);
-        await updateReportRequest(reportRequestId, {
-          status: 'processing'
-        });
-        generateCustomReportsFunction({
-          versionValue: reportRequest?.versionValue,
-          userId,
-          organizationId,
-          orgCode,
-          customReportId: reportRequest?.customReportId,
-          reportRequestId,
-        }).then(() => {
-          console.log(
-            `[${new Date().toISOString()}] generateCustomReportsFunction completed`
-          );
-        })
-        .catch((err) => {
-          console.error(
-            `[${new Date().toISOString()}] generateCustomReportsFunction failed`,
-            err
-          );
-        });
-      }
+      // if (reportRequestId) {
+      //   const reportRequest: any = await findReportRequestById(reportRequestId);
+      //   await updateReportRequest(reportRequestId, {
+      //     status: 'processing'
+      //   });
+      //   generateCustomReportsFunction({
+      //     versionValue: reportRequest?.versionValue,
+      //     userId,
+      //     organizationId,
+      //     orgCode,
+      //     customReportId: reportRequest?.customReportId,
+      //     reportRequestId,
+      //   }).then(() => {
+      //     console.log(
+      //       `[${new Date().toISOString()}] generateCustomReportsFunction completed`
+      //     );
+      //   })
+      //   .catch((err) => {
+      //     console.error(
+      //       `[${new Date().toISOString()}] generateCustomReportsFunction failed`,
+      //       err
+      //     );
+      //   });
+      // }
 
     }
 

@@ -10,7 +10,7 @@ import createDefaultDataSourceVersionModel from '../../../database/models/common
 import * as dataSourceVersionService from '../../../database/services/common/dataSourceVersion.services';
 import { DataSourceVersion } from '../../../types/widget.types';
 import { processFieldConditions } from '../../../utils/conditionProcessor';
-import * as cacheService from '../../../database/services/reportivix/aiCache.service';
+import * as cacheService from '../../../database/services/common/aiCache.service';
 import { DateTime } from 'luxon';
 import Entity from '../../../database/models/common/entity';
 import { findDerivedFieldById } from '../../../database/services/common/derivedField.services';

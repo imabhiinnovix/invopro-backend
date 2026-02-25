@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* @ts-nocheck */
 
-import { DerivedField } from '../../models/reportivix/derivedField';
+import { DerivedField } from '../../models/common/derivedField';
 
 export const createDerivedField = async (data: {
   name: string;

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import * as userRoleService from '../../../database/services/common/userRole.service';
 import { Types } from 'mongoose';
 import { getPermissionsByRoleIds } from '../../../database/services/common/roleHasPermission.services';
-import cacheService from '../../../database/services/reportivix/cacheService';
+import cacheService from '../../../database/services/common/cacheService';
 export const getUserRoleList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     let { organizationId, isSuperUser, roleIds } = req.user;

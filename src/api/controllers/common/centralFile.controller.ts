@@ -6,7 +6,6 @@ import path from 'path';
 import fs from 'fs/promises';
 import { Types } from 'mongoose';
 import * as centralFileService from '../../../database/services/common/centralFile.service';
-import { findCustomReportById } from '../../../database/services/reportivix/customReport.services';
 import { moveCentralFileToMisc, resolveDataSourceId, validateCentralFileForDataSource } from '../../../utils/centralFile.utils';
 import * as XLSX from 'xlsx';
 import { formatDateTime, getCentralFileSchemaNameBasedOnVersionCodeAndOrgCode } from '../../../utils/common.utils';
@@ -64,9 +63,9 @@ export const uploadCentralFile = async (req: Request, res: Response, next: NextF
     await fs.mkdir(basePath, { recursive: true });
 
     let customReportData: any = null;
-    if (reportId) {
-      customReportData = await findCustomReportById(reportId);
-    }
+    // if (reportId) {
+    //   customReportData = await findCustomReportById(reportId);
+    // }
 
     const records: any[] = [];
 

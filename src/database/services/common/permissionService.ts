@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* @ts-nocheck */
 
-import cacheService from '../reportivix/cacheService';
+import cacheService from '../common/cacheService';
 import roleHasPermissionModel from '../../models/common/roleHasPermissionModel';
 import { Request } from 'express';
 import mongoose from 'mongoose';

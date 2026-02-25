@@ -4,7 +4,6 @@ import { authenticateToken } from '../../../middlewares/authenticate.middleware'
 import {
   checkDataSourceVersionNameAvailableOrNot,
   createDataSourceVersionFromValidatedCentralFiles,
-  createMultipleDataSourceVersionFromValidatedCentralData,
   createSingleRowVersionValue,
   createUpdateCustomDataSourceVersionValue,
   deleteMultipleRowsFromVersion,
@@ -71,8 +70,6 @@ router.get(
 
 // router.post('/chartData', authenticateToken, permissionMiddleware(), getNewChartData);
 router.get('/:dataSourceVersionId', authenticateToken, getDataSourceVersionDetailsBasedOnId);
-
-router.post('/createCustomReport', authenticateToken, /*permissionMiddleware(),*/ createMultipleDataSourceVersionFromValidatedCentralData);
 
 router.post('/createValidatedDataSourceVersion', authenticateToken, /*permissionMiddleware(),*/ createDataSourceVersionFromValidatedCentralFiles);
 
