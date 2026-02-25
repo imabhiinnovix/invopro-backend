@@ -6,16 +6,10 @@ import Product from '../database/models/common/product';
 export async function seedProducts(payload) {
   const predefinedProducts = [
     {
-      _id: payload.reportivixProductId,
-      name: 'ReportiVix',
+      _id: payload.invoicivixProductId,
+      name: 'InvoiciVix',
       description: '',
-      code: 'reportivix',
-    },
-    {
-      _id: payload.notivixProductId,
-      name: 'NotiVix',
-      description: '',
-      code: 'notivix',
+      code: 'invoicivix',
     },
   ];
 

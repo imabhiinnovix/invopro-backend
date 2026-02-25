@@ -1,7 +1,5 @@
 import { Worker } from "bullmq";
 import mongoose from "mongoose";
-import { processNotification } from "../database/services/notivix/notificationTriggerService";
-import { getPreparedNotification } from "../database/services/notivix/preparedNotification.service";
 import { getDownloadRequest } from "../database/services/common/downloadRequest.service";
 import * as dataSourceVersionValueService from '../database/services/common/defaultDataSourceVersionValue.services';
 import ExcelJS from 'exceljs';
@@ -371,42 +369,6 @@ async function connectDB() {
     },
     {
       connection: { host: "redis" },
-    }
-  );
-
-  // ================================================================
-  // EMAIL QUEUE WORKER
-  // ================================================================
-  const emailWorker = new Worker(
-    "emailQueue",
-    async (job) => {
-      try{
-        if (job.name === "sendEmail") {
-          const { notificationId } = job.data;
-          console.log("📨 notificationId:", notificationId);
-
-          const notification = await getPreparedNotification(notificationId, [
-            "templateId",
-            "frequencySettingId",
-            "notificationTriggerId",
-            "acknowledgeId",
-          ]);
-
-          if (!notification) {
-            throw new Error(`❌ Notification ${notificationId} not found`);
-          }
-
-          console.log(`📧 Sending email for notification ${notificationId}`);
-          await processNotification(notification);
-        }
-      } catch (error) {
-        console.error("❌ Email worker error:", error);
-      }
-    },
-    {
-      connection: {
-        host: "redis",
-      },
     }
   );
 
