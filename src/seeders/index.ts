@@ -94,6 +94,8 @@ export async function seedDatabase() {
       widgetThemeId: payload.widgetSabicThemeId
     });
 
+    await seedPermissions([]);
+
     await seedProducts(payload);
 
     await createProductSubscription([
