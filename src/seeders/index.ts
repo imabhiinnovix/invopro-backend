@@ -35,7 +35,7 @@ const payload = {
   reportivixOrganizationId: new mongoose.Types.ObjectId('66de96d3548d06560e2931cb'),
   sabicOrganizationId: new mongoose.Types.ObjectId('67caac1ec4f70d4fdbdb7294'),
 
-  invoicivixProductId: new mongoose.Types.ObjectId('6870c9e335f4e90221de9ece'),
+  invoicivixVendorProductId: new mongoose.Types.ObjectId('6870c9e335f4e90221de9ece'),
 
   pieChartId: new mongoose.Types.ObjectId('67e5011c966d261de673d1f1'),
   lineChartId: new mongoose.Types.ObjectId('67e68fd541db187651d5e6b8'),
@@ -101,14 +101,14 @@ export async function seedDatabase() {
     await createProductSubscription([
       {
         organizationId: payload.reportivixOrganizationId,
-        productIds: [payload.invoicivixProductId],
+        productIds: [payload.invoicivixVendorProductId],
         status: 'active',
         totalLicenses: 10,
         durationInMonths: 12,
       },
       {
         organizationId: payload.sabicOrganizationId,
-        productIds: [payload.invoicivixProductId],
+        productIds: [payload.invoicivixVendorProductId],
         status: 'active',
         totalLicenses: 10,
         durationInMonths: 12,
