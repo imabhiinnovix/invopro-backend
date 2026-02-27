@@ -541,6 +541,11 @@ const defaultPermissionsAdmin = [
     permission: 'DELETE:/common/business-unit/delete/:businessUnitId',
     isChangeable: true,
   },
+  { permission: 'GET:/invoicivixVendor/vendor/list', isChangeable: true },
+  { permission: 'PUT:/invoicivixVendor/vendor/update/:vendorId', isChangeable: true },
+  { permission: 'GET:/invoicivixVendor/vendor/:vendorId', isChangeable: false },
+  { permission: 'POST:/invoicivixVendor/vendor/create', isChangeable: true },
+  { permission: 'DELETE:/invoicivixVendor/vendor/delete/:vendorId', isChangeable: true },
 ];
 
 const defaultPermissionsSuperAdmin = [
