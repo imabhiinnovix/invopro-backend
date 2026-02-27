@@ -9,13 +9,17 @@ export interface IEngagementLetter extends Document {
 
   referenceNumber: string;
 
+  description?: string;
+
   startDate?: Date;
   endDate?: Date;
 
   engagementLetterFileName?: string;
   engagementLetterFilePath?: string;
 
-  status: 'active' | 'expired' | 'terminated';
+  engagementLetterStatus: 'in-force' | 'expired';
+
+  status: 'active' | 'inactive';
 
   createdAt: Date;
   updatedAt: Date;
@@ -43,6 +47,10 @@ const engagementLetterSchema = new Schema<IEngagementLetter>(
       trim: true,
     },
 
+    description: {
+      type: String,
+    },
+
     startDate: {
       type: Date,
       default: null,
@@ -65,9 +73,17 @@ const engagementLetterSchema = new Schema<IEngagementLetter>(
       default: '',
     },
 
+    engagementLetterStatus:{
+      type: String,
+      enum: ['in-force', 'expired'],
+      default: 'in-force',
+      required: true,
+      index: true,
+    },
+
     status: {
       type: String,
-      enum: ['active', 'expired', 'terminated'],
+      enum: ['active', 'inactive'],
       default: 'active',
       required: true,
       index: true,

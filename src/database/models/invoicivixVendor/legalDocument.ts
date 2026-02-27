@@ -8,13 +8,14 @@ export interface ILegalDocument extends Document {
   vendorId: Types.ObjectId;
 
   documentName: string;
-  referenceId?: string;
+  documentDescription: string;
+  referenceNumber?: string;
 
   legalDocumentFileName?: string;
   legalDocumentFilePath?: string;
 
-  validFromDate?: Date;
-  validEndDate?: Date;
+  startDate?: Date;
+  endDate?: Date;
 
   status: 'active' | 'expired';
 
@@ -44,7 +45,11 @@ const legalDocumentSchema = new Schema<ILegalDocument>(
       trim: true,
     },
 
-    referenceId: {
+    documentDescription: {
+      type: String,
+    },
+
+    referenceNumber: {
       type: String,
       trim: true,
       default: '',
@@ -62,12 +67,12 @@ const legalDocumentSchema = new Schema<ILegalDocument>(
       default: '',
     },
 
-    validFromDate: {
+    startDate: {
       type: Date,
       default: null,
     },
 
-    validEndDate: {
+    endDate: {
       type: Date,
       default: null,
       index: true,

@@ -27,7 +27,11 @@ export const updateVendor = async (vendorId: string, data: any) => {
 };
 
 export const deleteVendor = async (vendorId: string) => {
-  return await Vendor.findByIdAndDelete(vendorId);
+  return await Vendor.findByIdAndUpdate(
+    vendorId,
+    { status: 'inactive' },
+    { new: true } // returns updated document
+  );
 };
 
 export const getVendorList = async ({
@@ -54,4 +58,8 @@ export const getVendorList = async ({
   const totalCount = await Vendor.countDocuments(query);
 
   return { data: vendors, totalCount };
+};
+
+export const findOneByQuery = async (query: any) => {
+  return await Vendor.findOne(query);
 };

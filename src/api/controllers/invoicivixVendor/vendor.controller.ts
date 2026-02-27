@@ -69,6 +69,19 @@ export const createVendor = async (
       intermediaryBeneficiaryContactEmail,
     } = req.body;
 
+    // Check duplicate vendor code
+    const existing = await vendorService.findOneByQuery({
+    organizationId,
+    code
+    });
+
+    if (existing) {
+      return res.status(400).json({
+          success: false,
+          message: 'Vendor Code already exists',
+      });
+    }
+
     // Logo upload
     let logoPath = '';
     const files = req.files as Express.Multer.File[];
@@ -285,7 +298,7 @@ export const getVendorList = async (
     const limit =
       parseInt(req.query.limit as string, 10) || Number.MAX_SAFE_INTEGER;
 
-    const query: any = {};
+    const query: any = { status: 'active' };
 
     if (!isSuperUser) {
       query.organizationId = new Types.ObjectId(organizationId);
