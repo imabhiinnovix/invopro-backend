@@ -17,7 +17,8 @@ interface IVendor extends Document {
   logo?: string;
   email?: string;
   phone?: string;
-  countryCode?: string;
+  countryISOCode?: string;
+  countryDialCode?: string;
   mobile?: number;
 
   // Address
@@ -53,6 +54,9 @@ interface IVendor extends Document {
 
   beneficiaryContactName?: string;
   beneficiaryContactEmail?: string;
+  bankCity?: string;
+  bankZip?: string;
+
 
   // ------------------------
   // Intermediary Bank Details
@@ -64,6 +68,10 @@ interface IVendor extends Document {
   intermediaryBeneficiaryAccountNumber?: string;
   intermediaryBeneficiaryContactName?: string;
   intermediaryBeneficiaryContactEmail?: string;
+  intermediaryBankCountry?: string;
+  intermediaryBankState?: string;
+  intermediaryBankCity?: string;
+  intermediaryBankZip?: string;
 
   createdAt: Date;
   updatedAt: Date;
@@ -106,7 +114,8 @@ const vendorSchema = new Schema<IVendor>(
     logo: { type: String, default: '' },
     email: { type: String, default: '' },
     phone: { type: String, default: '' },
-    countryCode: { type: String, default: '' },
+    countryISOCode: { type: String, default: '' },
+    countryDialCode: { type: String, default: '' },
     mobile: { type: Number },
 
     // Address
@@ -148,6 +157,8 @@ const vendorSchema = new Schema<IVendor>(
     bankAddress2: { type: String, default: '' },
     bankState: { type: String, default: '' },
     bankCountry: { type: String, default: '' },
+    bankCity: { type: String, default: '' },
+    bankZip: { type: String, default: '' },
     bankSwiftCode: { type: String, default: '' },
     bankRoutingNumber: { type: String, default: '' },
     bankAccountNumber: { type: String, default: '' },
@@ -165,6 +176,11 @@ const vendorSchema = new Schema<IVendor>(
     intermediaryBeneficiaryAccountNumber: { type: String, default: '' },
     intermediaryBeneficiaryContactName: { type: String, default: '' },
     intermediaryBeneficiaryContactEmail: { type: String, default: '' },
+    intermediaryBankState: { type: String, default: '' },
+    intermediaryBankCountry: { type: String, default: '' },
+    intermediaryBankCity: { type: String, default: '' },
+    intermediaryBankZip: { type: String, default: '' },
+    
   },
   {
     timestamps: true,

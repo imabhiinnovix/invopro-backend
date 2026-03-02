@@ -546,6 +546,12 @@ const defaultPermissionsAdmin = [
   { permission: 'GET:/invoicivixVendor/vendor/:vendorId', isChangeable: false },
   { permission: 'POST:/invoicivixVendor/vendor/create', isChangeable: true },
   { permission: 'DELETE:/invoicivixVendor/vendor/delete/:vendorId', isChangeable: true },
+
+  { permission: 'GET:/invoicivixVendor/engagement-letter/list', isChangeable: true },
+  { permission: 'PUT:/invoicivixVendor/engagement-letter/update/:engagementLetterId', isChangeable: true },
+  { permission: 'GET:/invoicivixVendor/engagement-letter/:engagementLetterId', isChangeable: false },
+  { permission: 'POST:/invoicivixVendor/engagement-letter/create', isChangeable: true },
+  { permission: 'DELETE:/invoicivixVendor/engagement-letter/delete/:engagementLetterId', isChangeable: true },
 ];
 
 const defaultPermissionsSuperAdmin = [
