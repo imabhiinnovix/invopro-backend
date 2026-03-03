@@ -312,7 +312,7 @@ export const getVendorList = async (
       query,
       page,
       limit,
-    //   populate: [{ path: 'engagementLetterId' }],
+      populate: [{ path: 'engagementLetterId' }],
     });
 
     res.status(200).json({

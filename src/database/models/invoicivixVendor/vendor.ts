@@ -20,6 +20,13 @@ interface IVendor extends Document {
   countryISOCode?: string;
   countryDialCode?: string;
   mobile?: number;
+  primaryContactName?: string;
+
+  // Secondary Contact Info
+  secondaryContactName?: string;
+  secondaryContactCountryISOCode?: string;
+  secondaryContactCountryDialCode?: string;
+  secondaryContactMobile?: number;
 
   // Address
   address1?: string;
@@ -117,6 +124,13 @@ const vendorSchema = new Schema<IVendor>(
     countryISOCode: { type: String, default: '' },
     countryDialCode: { type: String, default: '' },
     mobile: { type: Number },
+    primaryContactName: { type: String, default: ''},
+
+    // Secondary Contact Info
+    secondaryContactName: { type: String, default: ''},
+    secondaryContactCountryISOCode: { type: String, default: '' },
+    secondaryContactCountryDialCode: { type: String, default: '' },
+    secondaryContactMobile: { type: Number },
 
     // Address
     address1: { type: String, default: '' },
