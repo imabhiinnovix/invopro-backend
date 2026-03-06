@@ -13,8 +13,13 @@ import {
 } from '../../../utils/entity.utils';
 import { getDerivedField } from './derivedField.services';
 import { processFieldConditions } from '../../../utils/conditionProcessor';
-import { escapeRegExp, getLabelByMappedAttributeName, transformRowDataWithLabels } from '../../../utils/common.utils';
+import { escapeRegExp, getLabelByMappedAttributeName, getSchemaNameBasedOnVersionCodeAndOrgCode, transformRowDataWithLabels } from '../../../utils/common.utils';
 import { getPlotTypeConfig, PlotType, plotTypesConfig } from '../../../config/plotType.config';
+import { handleReferenceSubFields, validateRowData } from '../../../api/controllers/common/dataSourceVersion.controller';
+import { autoPopulateAttributeOptionFromRow } from '../../../utils/attributeOption.utils';
+import * as dataSourceVersionService from '../../../database/services/common/dataSourceVersion.services';
+import * as dataSourceVersionValueService from '../../../database/services/common/defaultDataSourceVersionValue.services';
+import * as dataSourceService from '../../../database/services/common/dataSource.services';
 
 export const updateDataSourceVersionValue = async (
   schemaName: string,
@@ -5074,4 +5079,122 @@ export const deleteVersionValues = async (schemaName: string, filter: Record<str
   });
   // Hard delete: remove documents entirely
   // return await Model.deleteMany(filter);
+};
+
+export const createSingleRowVersionValueService = async ({
+  dataSourceId,
+  versionValue,
+  rowData,
+  user,
+}: {
+  dataSourceId: string;
+  versionValue?: string;
+  rowData: any;
+  user: any;
+}) => {
+  const { userId, organizationId, orgCode } = user;
+
+  if (!dataSourceId || !rowData) {
+    throw new Error("Missing required fields.");
+  }
+
+  const dataSourceDetails = await dataSourceService.findDataSourceById(
+    dataSourceId,
+    true
+  );
+
+  if (!dataSourceDetails) {
+    throw new Error("Data source not found.");
+  }
+
+  const versionQuery: any = {
+    dataSourceId,
+    isCurrent: true,
+    ...(versionValue && { versionValue }),
+  };
+
+  let version: any = await dataSourceVersionService.getDataSourceVersion({
+    query: versionQuery,
+    populate: [],
+    sort: { createdAt: -1 },
+  });
+
+  if (!version) {
+    const now = new Date();
+    const fallbackVersionValue = `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}`;
+
+    const newVersionValue = versionValue || fallbackVersionValue;
+
+    version = await dataSourceVersionService.createDataSourceVersion({
+      dataSourceId,
+      versionValue: newVersionValue,
+      isCurrent: true,
+      isActive: true,
+      createdBy: userId,
+      organizationId,
+    });
+  }
+
+  const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+    orgCode,
+    versionCode: dataSourceDetails.code,
+  });
+
+  const entity = await findEntityById(dataSourceDetails.entityId);
+
+  if (!entity || !entity.attributes) {
+    throw new Error("Entity or attributes not found.");
+  }
+
+  await autoPopulateAttributeOptionFromRow({
+    entityId: dataSourceDetails.entityId,
+    attributes: entity.attributes,
+    rowData,
+    userId,
+    organizationId,
+  });
+
+  const { isValid, errors, validatedRowData } = await validateRowData({
+    rowData,
+    attributes: entity.attributes,
+    entityId: dataSourceDetails.entityId,
+    dataSourceId,
+    dataSourceVersionId: version?._id,
+    uniqueAttributeRules: dataSourceDetails.uniqueAttributeRules,
+  });
+
+  if (!isValid) {
+    throw new Error(JSON.stringify(errors));
+  }
+
+  const newRow = {
+    dataSourceId,
+    versionValue: version.versionValue,
+    entityId: dataSourceDetails.entityId,
+    dataSourceVersionId: version._id,
+    rowData: validatedRowData,
+    createdBy: userId,
+    status: "active",
+  };
+
+  const newRowData =
+    await dataSourceVersionValueService.createDataSourceVersionValue(
+      schemaName,
+      [newRow]
+    );
+
+  // handle reference fields
+  await handleReferenceSubFields({
+    rowData: validatedRowData,
+    attributes: entity.attributes,
+    dataSourceId,
+    versionId: version?._id,
+    versionValue: version.versionValue,
+    userId,
+    organizationId,
+  });
+
+  return newRowData;
 };

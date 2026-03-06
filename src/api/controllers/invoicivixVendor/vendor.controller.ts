@@ -2,6 +2,9 @@
 import { Request, Response, NextFunction } from 'express';
 import * as vendorService from '../../../database/services/invoicivixVendor/vendor.service';
 import { Types } from 'mongoose';
+import { findDataSourceByCodeAndOrganization } from '../../../database/services/common/dataSource.services';
+import { createSingleRowVersionValue } from '../common/dataSourceVersion.controller';
+import { createSingleRowVersionValueService } from '../../../database/services/common/defaultDataSourceVersionValue.services';
 
 /**
  * ================================
@@ -146,6 +149,18 @@ export const createVendor = async (
       intermediaryBeneficiaryContactName,
       intermediaryBeneficiaryContactEmail,
     });
+
+    const dataSource: any = await findDataSourceByCodeAndOrganization('vendor', organizationId);
+    if(dataSource){
+      await createSingleRowVersionValueService({
+          dataSourceId: dataSource._id,
+          user: req.user,
+          rowData: {
+            "vendor name": name,
+            "vendor code": code
+          }
+      });
+    }
 
     res.status(201).json({
       success: true,
