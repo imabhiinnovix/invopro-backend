@@ -74,7 +74,7 @@ export const createEngagementLetter = async (
     // Move file
     fs.renameSync(file.path, newFilePath);
 
-    filePath = `${process.env.BASE_BACKEND_URL}/${newFilePath.replace(/\\/g, '/')}`;
+    filePath = newFilePath.replace(/\\/g, '/');
     }
 
     const engagementLetter = await engagementLetterService.createEngagementLetter({
@@ -178,7 +178,7 @@ export const updateEngagementLetter = async (
 
     updatePayload.engagementLetterFileName = file.originalname;
     updatePayload.engagementLetterFilePath =
-        `${process.env.BASE_BACKEND_URL}/${newFilePath.replace(/\\/g, '/')}`;
+        newFilePath.replace(/\\/g, '/');
     }
 
     if (updatePayload.vendorId) {

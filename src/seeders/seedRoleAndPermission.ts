@@ -552,6 +552,12 @@ const defaultPermissionsAdmin = [
   { permission: 'GET:/invoicivixVendor/engagement-letter/:engagementLetterId', isChangeable: false },
   { permission: 'POST:/invoicivixVendor/engagement-letter/create', isChangeable: true },
   { permission: 'DELETE:/invoicivixVendor/engagement-letter/delete/:engagementLetterId', isChangeable: true },
+
+  { permission: 'GET:/invoicivixVendor/legal-document/list', isChangeable: true },
+  { permission: 'PUT:/invoicivixVendor/legal-document/update/:legalDocumentId', isChangeable: true },
+  { permission: 'GET:/invoicivixVendor/legal-document/:legalDocumentId', isChangeable: false },
+  { permission: 'POST:/invoicivixVendor/legal-document/create', isChangeable: true },
+  { permission: 'DELETE:/invoicivixVendor/legal-document/delete/:legalDocumentId', isChangeable: true },
 ];
 
 const defaultPermissionsSuperAdmin = [
