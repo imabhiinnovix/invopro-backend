@@ -14,6 +14,7 @@ import {
   getCentralFileSchemaNameBasedOnVersionCodeAndOrgCode,
   getImportLogSchemaNameBasedOnVersionCodeAndOrgCode,
   getSchemaNameBasedOnVersionCodeAndOrgCode,
+  normalizeValue,
   sleep,
 } from '../../../utils/common.utils';
 import path from 'path';
@@ -205,6 +206,7 @@ export async function validateFileDataCondition({ fileData, attributeSetting, co
       ) {
         const refEntityId: string = attr.referenceEntitySetting.refEntityId;
         const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
+        const refMatchStrategy = attr.referenceEntitySetting.matchStrategy;
 
         // const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
         // const RefModel = await getModelForEntity(refEntityId);
@@ -223,6 +225,7 @@ export async function validateFileDataCondition({ fileData, attributeSetting, co
                             // refEntityFieldId,
                             fieldValue,
                             refEntityField,
+                            refMatchStrategy,
                             RefModel
                           );
 
@@ -451,6 +454,11 @@ async function validateFileData({
       }
       newRow.rowData[attrName] = value;
 
+      // if normalization enabled
+      if (attr.normalize === true) {
+        newRow.rowData[`${attrName}_normalize`] = normalizeValue(value);
+      }
+
       if (
         (attr.required === 'Mandatory' || attr.required === true) &&
         (value === undefined || value === null || value === '')
@@ -480,6 +488,7 @@ async function validateFileData({
         ) {
           const refEntityId = attr.referenceEntitySetting.refEntityId;
           const refEntityFieldId = attr.referenceEntitySetting.refEntityField;
+          const refMatchStrategy = attr.referenceEntitySetting.matchStrategy;
 
           // const refEntityField = await getEntityAttribute(refEntityId, refEntityFieldId);
           // const RefModel = await getModelForEntity(refEntityId);
@@ -497,6 +506,7 @@ async function validateFileData({
                               // refEntityFieldId,
                               value,
                               refEntityField,
+                              refMatchStrategy,
                               RefModel
                             );
 
@@ -688,6 +698,11 @@ export async function validateRowData({
   for (const attr of attributes) {
     if (!Object.prototype.hasOwnProperty.call(rowData, attr.name)) continue;
     const value = validatedRowData[attr.name];
+
+    // if normalization enabled
+    if (attr.normalize === true) {
+      validatedRowData[`${attr.name}_normalize`] = normalizeValue(value);
+    }
 
     // Required validation
     if (value === undefined || value === null || value === '') {
@@ -891,11 +906,14 @@ async function resolveReference(
   // refEntityFieldId: string,
   value: string,
   field: any,
+  matchStrategy: string,
   model: any
 ) {
   // 1️⃣ get metadata (cached)
   // const { field, model } = await getRefMeta(refEntityId, refEntityFieldId);
-
+  if(matchStrategy === 'normalized'){
+    value = normalizeValue(value);
+  }
   // 2️⃣ value cache key
   const cacheKey = `${refEntityId}:${field.name}:${value.trim().toLowerCase()}`;
 
@@ -903,14 +921,26 @@ async function resolveReference(
     return refValueCache.get(cacheKey);
   }
 
-  // 3️⃣ exact regex (bracket-safe)
+  let doc = null;
+
+  // ✅ NORMALIZED MATCH
+  if (matchStrategy === 'normalized') {
+    doc =
+      (await model.findOne({
+        [`rowData.${field.name}_normalize`]: value,
+        status: 'active',
+      })) || null;
+
+  } else {
+     // 3️⃣ exact regex (bracket-safe)
   const regex = getExactRegex(value);
 
-  const doc =
+   doc =
     (await model.findOne({
       [`rowData.${field.name}`]: regex,
       status: 'active',
     })) || null;
+  }
 
   refValueCache.set(cacheKey, doc);
   return doc;

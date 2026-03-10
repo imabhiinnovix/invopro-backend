@@ -467,6 +467,19 @@ export const parseSafeDate = (value: any): Date | null => {
   return isNaN(date.getTime()) ? null : date;
 };
 
+export function normalizeValue(value: string): string {
+  if (!value) return "";
+
+  return value
+    .toLowerCase()                       // normalize case
+    .replace(/[^a-z0-9]/g, " ")          // replace punctuation with space
+    .split(/\s+/)                        // split words
+    .flatMap(token => token.split(""))   // break initials like "ny" -> ["n","y"]
+    .filter(Boolean)                     // remove empty
+    .sort((a, b) => a.localeCompare(b))  // alphabetical sort
+    .join("");                           // single normalized string
+}
+
 
 
 

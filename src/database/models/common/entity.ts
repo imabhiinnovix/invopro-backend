@@ -11,6 +11,7 @@ export interface IReferenceEntitySetting {
   refEntityId: Types.ObjectId;
   refEntityField?: Types.ObjectId;
   relationType: 'one_to_one' | 'many_to_one' | 'mapping_one_to_one' | 'mapping_many_to_one';
+  matchStrategy?: 'exact' | 'normalized';
 }
 
 // ---------------------------
@@ -32,6 +33,7 @@ export interface IAttribute {
     | 'email'
     | 'text-with-option'
     | 'date-range';
+  normalize?: boolean;  
   required: any;
   validation?: string[];
   transformations?: string[];
@@ -74,6 +76,11 @@ const referenceEntitySettingSchema = new Schema<IReferenceEntitySetting>(
       enum: ['one_to_one', 'many_to_one', 'mapping_one_to_one', 'mapping_many_to_one'], // ✅ Added new relation types
       required: true,
     },
+    matchStrategy: {
+      type: String,
+      enum: ['exact', 'normalized'],
+      default: 'exact',
+    },
   },
   { _id: false }
 );
@@ -94,6 +101,10 @@ const attributeSchema = new Schema<IAttribute>(
       type: Boolean,
       required: true,
       get: (value: boolean) => (value ? true : false),
+    },
+    normalize: {
+      type: Boolean,
+      default: false
     },
     validation: { type: [String] },
     transformations: { type: [String] },

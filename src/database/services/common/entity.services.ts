@@ -76,6 +76,7 @@ export const getEntityList = async ({ query, select = '', page, limit, sort = { 
                       }
                     : referenceEntitySetting.refEntityField,
                   relationType: referenceEntitySetting.relationType,
+                  matchStrategy: referenceEntitySetting.matchStrategy,
                 };
               }
             }
