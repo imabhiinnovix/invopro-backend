@@ -5198,3 +5198,77 @@ export const createSingleRowVersionValueService = async ({
 
   return newRowData;
 };
+
+export const getMasterDataFromDataSource = async ({
+  dataSourceId,
+  fields,
+  user,
+}: {
+  dataSourceId: string;
+  fields?: string[];
+  user: any;
+}) => {
+  const { orgCode } = user;
+
+  const dataSourceDetails = await dataSourceService.findDataSourceById(
+    dataSourceId,
+    true
+  );
+
+  if (!dataSourceDetails) {
+    throw new Error("Data source not found");
+  }
+
+  const version = await dataSourceVersionService.getDataSourceVersion({
+    query: {
+      dataSourceId,
+      isCurrent: true,
+    },
+    populate: [],
+    sort: { createdAt: -1 },
+  });
+
+  if (!version) {
+    throw new Error("Data source version not found");
+  }
+
+  const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+    orgCode,
+    versionCode: dataSourceDetails.code,
+  });
+
+  const VersionValueModel =
+    createDefaultDataSourceVersionModel(schemaName) as Model<any>;
+
+  const rows = await VersionValueModel.find({
+    dataSourceId,
+    dataSourceVersionId: version._id,
+    status: "active",
+  })
+    .select("rowData")
+    .lean();
+
+  if (!rows.length) return [];
+
+  /**
+   * If fields not passed, use all fields from first row
+   */
+  if (!fields || !fields.length) {
+    fields = Object.keys(rows[0].rowData || {});
+  }
+
+  /**
+   * Convert to document array
+   */
+  const documents = rows.map((row: any) => {
+    const obj: any = {};
+
+    fields!.forEach((field) => {
+      obj[field] = row?.rowData?.[field];
+    });
+
+    return obj;
+  });
+
+  return documents;
+};

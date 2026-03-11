@@ -3009,3 +3009,35 @@ export const getDataSourceVersionDetailsBasedOnId = async (req: Request, res: Re
     next(err);
   }
 };
+
+export const getMasterDataListFromDataSource = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { dataSourceId, fields } = req.body;
+
+    if (!dataSourceId) {
+      return res.status(400).json({
+        success: false,
+        message: "dataSourceId is required",
+      });
+    }
+
+    const result =
+      await dataSourceVersionValueService.getMasterDataFromDataSource({
+        dataSourceId,
+        fields,
+        user: req.user,
+      });
+
+    res.status(200).json({
+      success: true,
+      message: "Master Data List Fetched Successfully",
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};

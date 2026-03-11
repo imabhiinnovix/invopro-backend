@@ -1,22 +1,30 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* @ts-nocheck */
 
-import { Schema, model, Document, Types } from 'mongoose';
+import { Schema, model, Types, Document } from "mongoose";
 
-interface IActivityRateCard extends Document {
+export interface IActivityRateCard extends Document {
   organizationId: Types.ObjectId;
   userId: Types.ObjectId;
   vendorId: Types.ObjectId;
+  engagementLetterId: Types.ObjectId;
 
-  activityCode: string;     // unique activity code
-  costTypeCode: string;     // ATFE / COOF etc.
+  costCode: string;
+  costType: string;
 
-  rateType: 'hourly' | 'fixed' | 'upper_cap' | 'per_page' | 'per_word';
-  rate: number;
+  rateType: "fixed" | "hourly" | "per_word" | "per_page" | "upper_cap";
+
+  rate?: number;
+  minRate?: number;
+  maxRate?: number;
+
+  currency: string;
+
+  languageFrom?: string;
+  languageTo?: string;
 
   upperCap?: number;
 
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
 
   createdAt: Date;
   updatedAt: Date;
@@ -26,58 +34,66 @@ const activityRateCardSchema = new Schema<IActivityRateCard>(
   {
     organizationId: {
       type: Schema.Types.ObjectId,
-      ref: 'Organization',
       required: true,
       index: true,
     },
 
     userId: {
       type: Schema.Types.ObjectId,
-      ref: 'user',
       required: true,
       index: true,
     },
 
     vendorId: {
       type: Schema.Types.ObjectId,
-      ref: 'Vendor',
       required: true,
       index: true,
     },
 
-    activityCode: {
-      type: String,
+    engagementLetterId: {
+      type: Schema.Types.ObjectId,
       required: true,
-      trim: true,
       index: true,
     },
 
-    costTypeCode: {
+    costCode: {
       type: String,
       required: true,
-      trim: true,
+      index: true,
+    },
+
+    costType: {
+      type: String,
+      required: true,
       index: true,
     },
 
     rateType: {
       type: String,
-      enum: ['hourly', 'fixed', 'upper_cap', 'per_page', 'per_word'],
+      enum: ["fixed", "hourly", "per_word", "per_page", "upper_cap"],
       required: true,
     },
 
-    rate: {
-      type: Number,
+    rate: Number,
+
+    minRate: Number,
+
+    maxRate: Number,
+
+    currency: {
+      type: String,
       required: true,
     },
 
-    upperCap: {
-      type: Number,
-    },
+    languageFrom: String,
+    languageTo: String,
+
+    upperCap: Number,
 
     status: {
       type: String,
-      enum: ['active', 'inactive'],
-      default: 'active',
+      enum: ["active", "inactive"],
+      default: "active",
     },
   },
   {
@@ -85,26 +101,19 @@ const activityRateCardSchema = new Schema<IActivityRateCard>(
   }
 );
 
-/**
- * Prevent duplicate rate definitions
- * One vendor + activity + costType should have one active rate
- */
 activityRateCardSchema.index(
-  { vendorId: 1, activityCode: 1, costTypeCode: 1 },
+  {
+    vendorId: 1,
+    engagementLetterId: 1,
+    costCode: 1,
+    costType: 1,
+    languageFrom: 1,
+    languageTo: 1,
+  },
   { unique: true }
 );
 
-/**
- * Fast validation lookup index
- */
-activityRateCardSchema.index({
-  activityCode: 1,
-  costTypeCode: 1,
-});
-
-const ActivityRateCard = model<IActivityRateCard>(
-  'ActivityRateCard',
+export default model<IActivityRateCard>(
+  "ActivityRateCard",
   activityRateCardSchema
 );
-
-export default ActivityRateCard;

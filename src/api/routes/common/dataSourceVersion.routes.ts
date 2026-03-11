@@ -11,6 +11,7 @@ import {
   getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue,
   getDataSourceVersionDetailsBasedOnId,
   getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue,
+  getMasterDataListFromDataSource,
   // getNewChartData,
   listAllAvailableDataSourceVersionValue,
   listDataSourceVersion,
@@ -73,5 +74,10 @@ router.get('/:dataSourceVersionId', authenticateToken, getDataSourceVersionDetai
 
 router.post('/createValidatedDataSourceVersion', authenticateToken, /*permissionMiddleware(),*/ createDataSourceVersionFromValidatedCentralFiles);
 
+router.post(
+  "/master-data",
+  authenticateToken,
+  getMasterDataListFromDataSource
+);
 
 export default router;

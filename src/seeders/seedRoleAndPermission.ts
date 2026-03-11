@@ -558,6 +558,12 @@ const defaultPermissionsAdmin = [
   { permission: 'GET:/invoicivixVendor/legal-document/:legalDocumentId', isChangeable: false },
   { permission: 'POST:/invoicivixVendor/legal-document/create', isChangeable: true },
   { permission: 'DELETE:/invoicivixVendor/legal-document/delete/:legalDocumentId', isChangeable: true },
+
+  { permission: 'GET:/invoicivixVendor/activity-rate-card/list', isChangeable: true },
+  { permission: 'PUT:/invoicivixVendor/activity-rate-card/update/:activityRateCardId', isChangeable: true },
+  { permission: 'GET:/invoicivixVendor/activity-rate-card/:activityRateCardId', isChangeable: false },
+  { permission: 'POST:/invoicivixVendor/activity-rate-card/create', isChangeable: true },
+  { permission: 'DELETE:/invoicivixVendor/activity-rate-card/delete/:activityRateCardId', isChangeable: true },
 ];
 
 const defaultPermissionsSuperAdmin = [

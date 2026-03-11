@@ -114,7 +114,7 @@ export const getEngagementLetterById = async (
 
     const data = await engagementLetterService.findEngagementLetterById(
       engagementLetterId,
-      [{ path: 'vendorId', select: 'name code' }]
+      [{ path: 'vendorId', select: 'name code defaultCurrency' }]
     );
 
     if (!data) {
