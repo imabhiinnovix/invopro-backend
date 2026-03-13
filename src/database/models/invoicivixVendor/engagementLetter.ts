@@ -11,6 +11,10 @@ export interface IEngagementLetter extends Document {
 
   description?: string;
 
+  generalTerms?: string;
+
+  paymentTerms?: string;
+
   startDate?: Date;
   endDate?: Date;
 
@@ -48,6 +52,14 @@ const engagementLetterSchema = new Schema<IEngagementLetter>(
     },
 
     description: {
+      type: String,
+    },
+
+    generalTerms: {
+      type: String,
+    },
+
+    paymentTerms: {
       type: String,
     },
 

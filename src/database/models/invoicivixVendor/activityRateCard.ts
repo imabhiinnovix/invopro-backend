@@ -5,11 +5,17 @@ import { Schema, model, Types, Document } from "mongoose";
 export interface IActivityRateCard extends Document {
   organizationId: Types.ObjectId;
   userId: Types.ObjectId;
+
+  activityEntity: "vendor" | "attorney" | "subvendor";
+
   vendorId: Types.ObjectId;
+  attorneyId?: Types.ObjectId | null;
+  subVendorId?: Types.ObjectId | null;
+
   engagementLetterId: Types.ObjectId;
 
-  costCode: string;
-  costType: string;
+  costCode?: string;
+  costType?: string;
 
   rateType: "fixed" | "hourly" | "per_word" | "per_page" | "upper_cap";
 
@@ -35,11 +41,21 @@ const activityRateCardSchema = new Schema<IActivityRateCard>(
     organizationId: {
       type: Schema.Types.ObjectId,
       required: true,
+      ref: "Organization",
       index: true,
     },
 
     userId: {
       type: Schema.Types.ObjectId,
+      required: true,
+      ref: "user",
+      index: true,
+    },
+
+    activityEntity: {
+      type: String,
+      enum: ["vendor", "attorney", "subvendor"],
+      default: "vendor",
       required: true,
       index: true,
     },
@@ -47,6 +63,21 @@ const activityRateCardSchema = new Schema<IActivityRateCard>(
     vendorId: {
       type: Schema.Types.ObjectId,
       required: true,
+      ref: "Vendor",
+      index: true,
+    },
+
+    attorneyId: {
+      type: Schema.Types.ObjectId,
+      ref: "VendorAttorney",
+      default: null,
+      index: true,
+    },
+
+    subVendorId: {
+      type: Schema.Types.ObjectId,
+      ref: "SubVendor",
+      default: null,
       index: true,
     },
 
@@ -58,13 +89,11 @@ const activityRateCardSchema = new Schema<IActivityRateCard>(
 
     costCode: {
       type: String,
-      required: true,
       index: true,
     },
 
     costType: {
       type: String,
-      required: true,
       index: true,
     },
 
@@ -86,6 +115,7 @@ const activityRateCardSchema = new Schema<IActivityRateCard>(
     },
 
     languageFrom: String,
+
     languageTo: String,
 
     upperCap: Number,
@@ -94,6 +124,7 @@ const activityRateCardSchema = new Schema<IActivityRateCard>(
       type: String,
       enum: ["active", "inactive"],
       default: "active",
+      index: true,
     },
   },
   {
@@ -103,14 +134,26 @@ const activityRateCardSchema = new Schema<IActivityRateCard>(
 
 activityRateCardSchema.index(
   {
+    activityEntity: 1,
     vendorId: 1,
+    attorneyId: 1,
+    subVendorId: 1,
     engagementLetterId: 1,
     costCode: 1,
     costType: 1,
     languageFrom: 1,
     languageTo: 1,
   },
-  { unique: true }
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: "active",
+      costCode: { $exists: true, $ne: null },
+      costType: { $exists: true, $ne: null },
+      languageFrom: { $exists: true, $ne: null },
+      languageTo: { $exists: true, $ne: null }
+    }
+  }
 );
 
 export default model<IActivityRateCard>(

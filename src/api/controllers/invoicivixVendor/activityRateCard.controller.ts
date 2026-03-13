@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Request, Response, NextFunction } from 'express';
-import * as activityRateCardService from '../../../database/services/invoicivixVendor/activityRateCard.service';
-import { Types } from 'mongoose';
+import { Request, Response, NextFunction } from "express";
+import * as activityRateCardService from "../../../database/services/invoicivixVendor/activityRateCard.service";
+import { Types } from "mongoose";
 
 /**
  * ================================
@@ -22,19 +22,53 @@ export const createActivityRateCard = async (
       userId,
     };
 
+    // default entity
+    payload.activityEntity = payload.activityEntity || "vendor";
+
     if (payload.vendorId) {
       payload.vendorId = new Types.ObjectId(payload.vendorId);
+    }
+
+    if (payload.attorneyId) {
+      payload.attorneyId = new Types.ObjectId(payload.attorneyId);
+    }
+
+    if (payload.subVendorId) {
+      payload.subVendorId = new Types.ObjectId(payload.subVendorId);
     }
 
     if (payload.engagementLetterId) {
       payload.engagementLetterId = new Types.ObjectId(payload.engagementLetterId);
     }
 
-    const rateCard = await activityRateCardService.createActivityRateCard(payload);
+    /**
+     * Entity validation
+     */
+    if (payload.activityEntity === "vendor") {
+      payload.attorneyId = null;
+      payload.subVendorId = null;
+    }
+    console.log('payload', payload);
+    if (payload.activityEntity === "attorney" && !payload.attorneyId) {
+      return res.status(400).json({
+        success: false,
+        message: "attorneyId is required when activityEntity is attorney",
+      });
+    }
+
+    if (payload.activityEntity === "subvendor" && !payload.subVendorId) {
+      return res.status(400).json({
+        success: false,
+        message: "subVendorId is required when activityEntity is subvendor",
+      });
+    }
+
+    const rateCard =
+      await activityRateCardService.createActivityRateCard(payload);
 
     res.status(201).json({
       success: true,
-      message: 'Activity Rate Card created successfully',
+      message: "Activity Rate Card created successfully",
       data: rateCard,
     });
   } catch (err) {
@@ -58,21 +92,23 @@ export const getActivityRateCardById = async (
     const data = await activityRateCardService.findActivityRateCardById(
       activityRateCardId,
       [
-        { path: 'vendorId', select: 'name code' },
-        { path: 'engagementLetterId', select: 'referenceNumber' },
+        { path: "vendorId", select: "name code" },
+        { path: "attorneyId", select: "name email" },
+        { path: "subVendorId", select: "name code" },
+        { path: "engagementLetterId", select: "referenceNumber" },
       ]
     );
 
     if (!data) {
       return res.status(404).json({
         success: false,
-        message: 'Activity Rate Card not found',
+        message: "Activity Rate Card not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Activity Rate Card fetched successfully',
+      message: "Activity Rate Card fetched successfully",
       data,
     });
   } catch (err) {
@@ -95,29 +131,72 @@ export const updateActivityRateCard = async (
 
     const updatePayload: any = { ...req.body };
 
+    if (!updatePayload.activityEntity) {
+      updatePayload.activityEntity = "vendor";
+    }
+
     if (updatePayload.vendorId) {
       updatePayload.vendorId = new Types.ObjectId(updatePayload.vendorId);
     }
 
-    if (updatePayload.engagementLetterId) {
-      updatePayload.engagementLetterId = new Types.ObjectId(updatePayload.engagementLetterId);
+    if (updatePayload.attorneyId) {
+      updatePayload.attorneyId = new Types.ObjectId(updatePayload.attorneyId);
     }
 
-    const updated = await activityRateCardService.updateActivityRateCard(
-      activityRateCardId,
-      updatePayload
-    );
+    if (updatePayload.subVendorId) {
+      updatePayload.subVendorId = new Types.ObjectId(updatePayload.subVendorId);
+    }
+
+    if (updatePayload.engagementLetterId) {
+      updatePayload.engagementLetterId = new Types.ObjectId(
+        updatePayload.engagementLetterId
+      );
+    }
+
+    /**
+     * Entity validation
+     */
+    if (updatePayload.activityEntity === "vendor") {
+      updatePayload.attorneyId = null;
+      updatePayload.subVendorId = null;
+    }
+
+    if (
+      updatePayload.activityEntity === "attorney" &&
+      !updatePayload.attorneyId
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "attorneyId is required when activityEntity is attorney",
+      });
+    }
+
+    if (
+      updatePayload.activityEntity === "subvendor" &&
+      !updatePayload.subVendorId
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "subVendorId is required when activityEntity is subvendor",
+      });
+    }
+
+    const updated =
+      await activityRateCardService.updateActivityRateCard(
+        activityRateCardId,
+        updatePayload
+      );
 
     if (!updated) {
       return res.status(404).json({
         success: false,
-        message: 'Activity Rate Card not found',
+        message: "Activity Rate Card not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Activity Rate Card updated successfully',
+      message: "Activity Rate Card updated successfully",
       data: updated,
     });
   } catch (err) {
@@ -138,20 +217,21 @@ export const deleteActivityRateCard = async (
   try {
     const { activityRateCardId } = req.params;
 
-    const deleted = await activityRateCardService.deleteActivityRateCard(
-      activityRateCardId
-    );
+    const deleted =
+      await activityRateCardService.deleteActivityRateCard(
+        activityRateCardId
+      );
 
     if (!deleted) {
       return res.status(404).json({
         success: false,
-        message: 'Activity Rate Card not found',
+        message: "Activity Rate Card not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Activity Rate Card deleted successfully',
+      message: "Activity Rate Card deleted successfully",
     });
   } catch (err) {
     next(err);
@@ -169,13 +249,14 @@ export const getActivityRateCardList = async (
   next: NextFunction
 ) => {
   try {
-    const { vendorId, costCode, costType } = req.query;
+    const { vendorId, costCode, costType, activityEntity } = req.query;
     const { organizationId, isSuperUser } = req.user;
 
     const page = parseInt(req.query.page as string, 10) || 1;
-    const limit = parseInt(req.query.limit as string, 10) || Number.MAX_SAFE_INTEGER;
+    const limit =
+      parseInt(req.query.limit as string, 10) || Number.MAX_SAFE_INTEGER;
 
-    const query: any = { status: 'active' };
+    const query: any = { status: "active" };
 
     if (!isSuperUser) {
       query.organizationId = new Types.ObjectId(organizationId);
@@ -183,6 +264,10 @@ export const getActivityRateCardList = async (
 
     if (vendorId) {
       query.vendorId = new Types.ObjectId(vendorId as string);
+    }
+
+    if (activityEntity) {
+      query.activityEntity = activityEntity;
     }
 
     if (costCode) {
@@ -193,19 +278,22 @@ export const getActivityRateCardList = async (
       query.costType = costType;
     }
 
-    const result = await activityRateCardService.getActivityRateCardList({
-      query,
-      page,
-      limit,
-      populate: [
-        { path: 'vendorId', select: 'name code' },
-        { path: 'engagementLetterId', select: 'referenceNumber' },
-      ],
-    });
+    const result =
+      await activityRateCardService.getActivityRateCardList({
+        query,
+        page,
+        limit,
+        populate: [
+          { path: "vendorId", select: "name code" },
+          { path: "attorneyId", select: "name email" },
+          { path: "subVendorId", select: "name code" },
+          { path: "engagementLetterId", select: "referenceNumber" },
+        ],
+      });
 
     res.status(200).json({
       success: true,
-      message: 'Activity Rate Cards fetched successfully',
+      message: "Activity Rate Cards fetched successfully",
       data: result.data,
       totalCount: result.totalCount,
     });
