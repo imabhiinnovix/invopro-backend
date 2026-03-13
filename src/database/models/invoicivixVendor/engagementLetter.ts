@@ -47,7 +47,6 @@ const engagementLetterSchema = new Schema<IEngagementLetter>(
 
     referenceNumber: {
       type: String,
-      required: true,
       trim: true,
     },
 
@@ -111,8 +110,12 @@ const engagementLetterSchema = new Schema<IEngagementLetter>(
  */
 engagementLetterSchema.index(
   { organizationId: 1, referenceNumber: 1 },
-  { unique: true }
+  { 
+    unique: true,
+    partialFilterExpression: { referenceNumber: { $exists: true, $ne: null } }
+  }
 );
+
 
 /**
  * Fast lookup: vendor engagement

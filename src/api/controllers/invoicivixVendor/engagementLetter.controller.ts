@@ -34,17 +34,19 @@ export const createEngagementLetter = async (
     }
 
     // Check duplicate reference number
-    const existing = await engagementLetterService.findOneByQuery({
-    organizationId,
-    vendorId,
-    referenceNumber,
-    });
+    if(referenceNumber){
+      const existing = await engagementLetterService.findOneByQuery({
+      organizationId,
+      vendorId,
+      referenceNumber,
+      });
 
-    if (existing) {
-    return res.status(400).json({
-        success: false,
-        message: 'Engagement Letter with same reference number already exists',
-    });
+      if (existing) {
+      return res.status(400).json({
+          success: false,
+          message: 'Engagement Letter with same reference number already exists',
+      });
+      }
     }
 
     let fileName = '';
