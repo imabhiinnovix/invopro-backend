@@ -21,7 +21,6 @@ export const createVendor = async (
 
     const {
       name,
-      code,
       description,
       status,
 
@@ -73,17 +72,32 @@ export const createVendor = async (
     } = req.body;
 
     // Check duplicate vendor code
-    const existing = await vendorService.findOneByQuery({
-    organizationId,
-    code
+    /**
+     * CODE GENERATION
+     * FORMAT:
+     * NAME4-COUNTRY-YEAR-SUB-001
+     */
+
+    const namePrefix = name
+      ?.replace(/[^a-zA-Z]/g, '')
+      ?.substring(0, 4)
+      ?.toUpperCase()
+      ?.padEnd(4, 'X');
+
+    const countryPrefix = country?.toUpperCase() || 'XX';
+
+    const year = new Date().getFullYear();
+
+    const baseCode = `${namePrefix}-${countryPrefix}-${year}-VEN`;
+
+    const count = await vendorService.countByQuery({
+      organizationId,
+      code: { $regex: `^${baseCode}` }
     });
 
-    if (existing) {
-      return res.status(400).json({
-          success: false,
-          message: 'Vendor Code already exists',
-      });
-    }
+    const sequence = String(count + 1).padStart(3, '0');
+
+    const code = `${baseCode}-${sequence}`;
 
     // Logo upload
     let logoPath = '';

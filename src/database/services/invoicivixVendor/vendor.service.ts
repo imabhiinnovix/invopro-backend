@@ -63,3 +63,7 @@ export const getVendorList = async ({
 export const findOneByQuery = async (query: any) => {
   return await Vendor.findOne(query);
 };
+
+export const countByQuery = async (query: any) => {
+  return await Vendor.countDocuments(query);
+};
