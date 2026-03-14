@@ -249,7 +249,7 @@ export const getActivityRateCardList = async (
   next: NextFunction
 ) => {
   try {
-    const { vendorId, costCode, costType, activityEntity } = req.query;
+    const { vendorId, costCode, costType, activityEntity, engagementLetterId } = req.query;
     const { organizationId, isSuperUser } = req.user;
 
     const page = parseInt(req.query.page as string, 10) || 1;
@@ -264,6 +264,10 @@ export const getActivityRateCardList = async (
 
     if (vendorId) {
       query.vendorId = new Types.ObjectId(vendorId as string);
+    }
+
+    if (engagementLetterId) {
+      query.engagementLetterId = new Types.ObjectId(engagementLetterId as string);
     }
 
     if (activityEntity) {
