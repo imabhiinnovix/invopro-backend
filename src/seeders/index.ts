@@ -15,7 +15,7 @@ import { seedWidgetTheme } from './widgetTheme.seed';
 import { seedDashboard } from './dashboard.seed';
 import { seedEntities } from './entities.seed';
 import { seedDataSource } from './dataSource.seed';
-import { seedCustomReports } from './customReport.seed';
+// import { seedCustomReports } from './customReport.seed';
 import { seedProducts } from './product.seed';
 import { seedRolesAndPermissions } from './seedRoleAndPermission';
 import { seedPermissions } from './permission.seed';
