@@ -50,16 +50,7 @@ export const createVendor = async (
       engagementLetterId,
 
       // Primary Bank
-      bankName,
-      bankAddress1,
-      bankAddress2,
-      bankState,
-      bankCountry,
-      bankSwiftCode,
-      bankRoutingNumber,
-      bankAccountNumber,
-      beneficiaryContactName,
-      beneficiaryContactEmail,
+      primaryBankDetails,
 
       // Intermediary Bank
       intermediaryBankName,
@@ -143,16 +134,7 @@ export const createVendor = async (
           : null,
 
       // Primary Bank
-      bankName,
-      bankAddress1,
-      bankAddress2,
-      bankState,
-      bankCountry,
-      bankSwiftCode,
-      bankRoutingNumber,
-      bankAccountNumber,
-      beneficiaryContactName,
-      beneficiaryContactEmail,
+      primaryBankDetails,
 
       // Intermediary Bank
       intermediaryBankName,

@@ -50,19 +50,27 @@ interface IVendor extends Document {
   // ------------------------
   // Primary Bank Details
   // ------------------------
-  bankName?: string;
-  bankAddress1?: string;
-  bankAddress2?: string;
-  bankState?: string;
-  bankCountry?: string;
-  bankSwiftCode?: string;
-  bankRoutingNumber?: string;
-  bankAccountNumber?: string;
+  primaryBankDetails?: {
+    beneficiaryName?: string;
+    beneficiaryAddress?: string;
 
-  beneficiaryContactName?: string;
-  beneficiaryContactEmail?: string;
-  bankCity?: string;
-  bankZip?: string;
+    bankName?: string;
+    bankAddress1?: string;
+    bankAddress2?: string;
+    bankState?: string;
+    bankCountry?: string;
+    bankCity?: string;
+    bankZip?: string;
+
+    bankSwiftCode?: string;
+    bankRoutingNumber?: string;
+    bankAccountNumber?: string;
+
+    beneficiaryContactName?: string;
+    beneficiaryContactEmail?: string;
+
+    isDefault?: boolean;
+  }[];
 
 
   // ------------------------
@@ -83,6 +91,31 @@ interface IVendor extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+const primaryBankSchema = new Schema(
+  {
+    beneficiaryName: { type: String, default: "" },
+    beneficiaryAddress: { type: String, default: "" },
+
+    bankName: { type: String, default: "" },
+    bankAddress1: { type: String, default: "" },
+    bankAddress2: { type: String, default: "" },
+    bankState: { type: String, default: "" },
+    bankCountry: { type: String, default: "" },
+    bankCity: { type: String, default: "" },
+    bankZip: { type: String, default: "" },
+
+    bankSwiftCode: { type: String, default: "" },
+    bankRoutingNumber: { type: String, default: "" },
+    bankAccountNumber: { type: String, default: "" },
+
+    beneficiaryContactName: { type: String, default: "" },
+    beneficiaryContactEmail: { type: String, default: "" },
+
+    isDefault: { type: Boolean, default: false }
+  },
+  { _id: true }
+);
 
 const vendorSchema = new Schema<IVendor>(
   {
@@ -164,21 +197,12 @@ const vendorSchema = new Schema<IVendor>(
     },
 
     // ------------------------
-    // Primary Bank Details
+    // Primary Bank Details (Multiple)
     // ------------------------
-    bankName: { type: String, default: '' },
-    bankAddress1: { type: String, default: '' },
-    bankAddress2: { type: String, default: '' },
-    bankState: { type: String, default: '' },
-    bankCountry: { type: String, default: '' },
-    bankCity: { type: String, default: '' },
-    bankZip: { type: String, default: '' },
-    bankSwiftCode: { type: String, default: '' },
-    bankRoutingNumber: { type: String, default: '' },
-    bankAccountNumber: { type: String, default: '' },
-
-    beneficiaryContactName: { type: String, default: '' },
-    beneficiaryContactEmail: { type: String, default: '' },
+    primaryBankDetails: {
+      type: [primaryBankSchema],
+      default: [],
+    },
 
     // ------------------------
     // Intermediary Bank Details
