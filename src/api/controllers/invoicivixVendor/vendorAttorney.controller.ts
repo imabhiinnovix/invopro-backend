@@ -17,6 +17,21 @@ export const createVendorAttorney = async (req: Request, res: Response, next: Ne
       return res.status(400).json({ success: false, message: "Vendor not found" });
     }
 
+
+    // check duplicate name
+    const existingAttorney = await vendorAttorneyService.findOneByQuery({
+      organizationId,
+      vendorId,
+      name: { $regex: `^${name}$`, $options: "i" }
+    });
+
+    if (existingAttorney) {
+      return res.status(400).json({
+        success: false,
+        message: "Attorney name already exists"
+      });
+    }
+
     // First 4 letters of Vendor
     const vendorPrefix = vendor.name.replace(/\s/g, "").substring(0, 4).toUpperCase();
 
