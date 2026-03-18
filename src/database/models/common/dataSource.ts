@@ -36,6 +36,7 @@ interface IDataSource extends Document {
   isActive: boolean;
   canEditInline: boolean;
   uniqueAttributeRules: Types.ObjectId[][];
+  isReferenceAutoGenerate?: boolean;
   isVisible: boolean;
   isShowMenu: boolean;
   fieldSettings: IFieldSetting[];
@@ -114,6 +115,10 @@ const dataSourceSchema = new Schema<IDataSource>(
     uniqueAttributeRules: {
       type: [[Schema.Types.ObjectId]],
       default: [],
+    },
+    isReferenceAutoGenerate: {
+      type: Boolean,
+      default: false,
     },
     isVisible: { type: Boolean, default: true },
     condition: {

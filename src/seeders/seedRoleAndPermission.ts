@@ -570,6 +570,12 @@ const defaultPermissionsAdmin = [
   { permission: 'GET:/invoicivixVendor/vendor-attorney/:attorneyId', isChangeable: false },
   { permission: 'POST:/invoicivixVendor/vendor-attorney/create', isChangeable: true },
   { permission: 'DELETE:/invoicivixVendor/vendor-attorney/delete/:attorneyId', isChangeable: true },
+
+  { permission: 'GET:/invoicivixVendor/vendor-invoice/list', isChangeable: true },
+  { permission: 'PUT:/invoicivixVendor/vendor-invoice/update/:invoiceId', isChangeable: true },
+  { permission: 'GET:/invoicivixVendor/vendor-invoice/:invoiceId', isChangeable: false },
+  { permission: 'POST:/invoicivixVendor/vendor-invoice/create', isChangeable: true },
+  { permission: 'DELETE:/invoicivixVendor/vendor-invoice/delete/:invoiceId', isChangeable: true },
 ];
 
 const defaultPermissionsSuperAdmin = [

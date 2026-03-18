@@ -71,7 +71,7 @@ export const updateDataSourceVersionValue = async (
           $set: {
             ...row,
             updatedAt: new Date(),
-            status: "active"
+            status: row.status ?? "active"
           },
         },
         upsert: true,
@@ -85,6 +85,66 @@ export const updateDataSourceVersionValue = async (
 
   return true;
 };
+
+export const updateDataSourceVersionValueAndReturnId = async (
+  schemaName: string,
+  query: Record<string, any>,
+  updateFields: Record<string, any>
+): Promise<Types.ObjectId> => {
+  const Model = createDefaultDataSourceVersionModel(schemaName) as Model<Document>;
+
+  const updatedDoc: any = await Model.findOneAndUpdate(
+    query,
+    { $set: { ...updateFields, updatedAt: new Date() } },
+    { new: true, upsert: true, select: "_id" } // return only _id
+  ).lean();
+
+  return updatedDoc?._id;
+};
+
+export const bulkUpdateRefCache = async (
+  refCache: Map<
+    string,
+    {
+      _id: any;
+      rowData: Record<string, any>;
+      refSchemaName: string;
+    }
+  >
+) => {
+  if (!refCache || refCache.size === 0) return;
+
+  const grouped: Record<string, any[]> = {};
+
+  // 🔹 group by schema
+  for (const value of refCache.values()) {
+    const { _id, rowData, refSchemaName } = value;
+    if (!grouped[refSchemaName]) {
+      grouped[refSchemaName] = [];
+    }
+
+    grouped[refSchemaName].push({
+      updateOne: {
+        filter: { _id },
+        update: { $set: { rowData: rowData, status: 'active'} }, // ✅ important fix
+      },
+    });
+  }
+
+  // 🔥 bulk update per schema
+  for (const schemaName of Object.keys(grouped)) {
+    const Model = createDefaultDataSourceVersionModel(schemaName) as Model<Document>;
+
+    const result = await Model.bulkWrite(grouped[schemaName]);
+    console.log('RESULT:', {
+      matched: result.matchedCount,
+      modified: result.modifiedCount,
+      upserted: result.upsertedCount,
+    });
+  }
+};
+
+
 
 export const createEmptyCollection = async (schemaName: string) => {
   try {

@@ -15,6 +15,7 @@ interface IDataImportError extends Document {
   errorType: string;
   errorMessage: string;
   errorCode: string;
+  errorRowId?: Types.ObjectId;
   fileAttributeValue: any;
   createdAt: Date;
   status: string;
@@ -52,6 +53,7 @@ const DataImportErrorSchema = new Schema<IDataImportError>(
       enum: ['open', 'resolved', 'discarded'],
       default: 'open', // optional default value
     },
+    errorRowId: {type: Schema.Types.ObjectId, default:null},
     errorType: { type: String },
     errorCode: { type: String },
     errorMessage: { type: String },

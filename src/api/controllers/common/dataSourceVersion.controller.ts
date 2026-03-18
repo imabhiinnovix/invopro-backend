@@ -34,6 +34,7 @@ import { createDownloadRequest } from '../../../database/services/common/downloa
 import { Queue } from 'bullmq';
 import { findCentralFiles, findLatestCentralFile, getLatestCentralMappingAndSeparator } from '../../../database/services/common/centralFile.service';
 import { getCentralFileValue } from '../../../database/services/common/defaultCentralFileValue.service';
+import { autoSyncReferenceRow } from '../../../utils/attributeAutoGenerate.utils';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -62,6 +63,11 @@ export const ERROR_CODES = {
     code: '1005',
     type: 'Duplicate Error',
     message: 'Duplicate combination of unique keys found.',
+  },
+  DUPLICATE_REFERENCE: {
+    code: '1006',
+    type: 'Duplicate Reference Error',
+    message: 'Duplicate Referenced value found in reference entity.',
   },
 };
 
@@ -283,7 +289,7 @@ async function validateAndConvert({
   }
 
   if (type === 'text' || type === 'richtext') {
-    const convertedValue = value !== undefined && value !== null ? String(value) : null;
+    const convertedValue = value !== undefined && value !== null ? String(value).trim() : null;
     return { isValid: typeof convertedValue === 'string', convertedValue };
   }
 
@@ -389,6 +395,7 @@ async function validateFileData({
   dataSourceVersionId,
   versionValue,
   uniqueAttributeRules = [],
+  user
 }: {
   fileData: any[];
   attributes: any[];
@@ -399,10 +406,12 @@ async function validateFileData({
   dataSourceVersionId: string;
   versionValue: string;
   uniqueAttributeRules?: Types.ObjectId[][];
+  user: any;
 }) {
   const errors: any[] = [];
   const newRowData: any[] = [];
   const seenCompositeKeys = new Set<string>();
+
 
   // Create a quick lookup map from ObjectId to attribute name
   const attributeIdToNameMap = attributes.reduce(
@@ -413,6 +422,14 @@ async function validateFileData({
     {} as Record<string, string>
   );
 
+  const refCache = new Map<
+    string,
+    {
+      _id: any;
+      rowData: Record<string, any>;
+      refSchemaName: string;
+    }
+  >();
   for (const [index, row] of fileData.entries()) {
     console.log('Processing Index:', index);
     const parts = row.fileRowNumber.split(':');
@@ -510,30 +527,69 @@ async function validateFileData({
                               RefModel
                             );
 
-
+          const refDataSources = await dataSourceService.findDataSourcesByEntityId(refEntityId);
+          const refDataSourceDetails = refDataSources?.[0] || {};
+          console.log('referencedDoc',referencedDoc, refEntityId,refEntityField ,value);
           if (!referencedDoc) {
-            const refDataSourceDetails = await dataSourceService.findDataSourcesByEntityId(refEntityId);
-            errors.push({
-              entityId,
-              dataSourceId,
-              dataSourceVersionId,
-              rowNumber: index + 1,
-              fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
-              fileAttributeValue: value,
-              attributeName: attrName,
-              attributeType: attr.type,
-              refEntityId,
-              refAttributeId: refEntityFieldId,
-              refDataSourceId: refDataSourceDetails?.[0]?._id,
-              errorType: ERROR_CODES.INVALID_REFERENCE.type,
-              errorCode: ERROR_CODES.INVALID_REFERENCE.code,
-              fileRowNumber: rowNum,
-              fileName,
-              status: 'open',
-              errorMessage: `${attrName}- ${value} not found.`,
-            });
-            newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
-          } else {
+            if (refDataSourceDetails?.isReferenceAutoGenerate && refDataSourceDetails?.isReferenceAutoGenerate == true) {
+              const newRefId = await autoSyncReferenceRow({
+                refEntityId,
+                refValue: value,
+                refEntityField,
+                row,
+                mapping,
+                user,
+                refDataSourceDetails,
+                refCache
+              });
+
+              newRow.rowData[attrName] = newRefId;
+            }else{
+              errors.push({
+                entityId,
+                dataSourceId,
+                dataSourceVersionId,
+                rowNumber: index + 1,
+                fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
+                fileAttributeValue: value,
+                attributeName: attrName,
+                attributeType: attr.type,
+                refEntityId,
+                refAttributeId: refEntityFieldId,
+                refDataSourceId: refDataSourceDetails?._id,
+                errorType: ERROR_CODES.INVALID_REFERENCE.type,
+                errorCode: ERROR_CODES.INVALID_REFERENCE.code,
+                fileRowNumber: rowNum,
+                fileName,
+                status: 'open',
+                errorMessage: `${attrName}- ${value} not found.`,
+              });
+              newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
+            }
+          } else{
+             if (refDataSourceDetails?.isReferenceAutoGenerate && refDataSourceDetails?.isReferenceAutoGenerate == true) {
+              errors.push({
+                  entityId,
+                  dataSourceId,
+                  dataSourceVersionId,
+                  rowNumber: index + 1,
+                  fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
+                  fileAttributeValue: value,
+                  attributeName: attrName,
+                  attributeType: attr.type,
+                  refEntityId,
+                  refAttributeId: refEntityFieldId,
+                  refDataSourceId: refDataSourceDetails?._id,
+                  errorType: ERROR_CODES.DUPLICATE_REFERENCE.type,
+                  errorCode: ERROR_CODES.DUPLICATE_REFERENCE.code,
+                  errorRowId: referencedDoc._id,
+                  fileRowNumber: rowNum,
+                  fileName,
+                  status: 'open',
+                  errorMessage: `${attrName}- ${value} already exists.`,
+                });
+                newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
+            }
             newRow.rowData[attrName] = referencedDoc._id;
             newRow.rowData[`${attrName}__display`] = referencedDoc.rowData?.[refEntityField.name];
             tempDisplayAttrs.push(`${attrName}__display`); // ✅ track for cleanup
@@ -660,6 +716,7 @@ async function validateFileData({
   return {
     errors,
     newRowData,
+    refCache
   };
 }
 
@@ -934,7 +991,6 @@ async function resolveReference(
   } else {
      // 3️⃣ exact regex (bracket-safe)
   const regex = getExactRegex(value);
-
    doc =
     (await model.findOne({
       [`rowData.${field.name}`]: regex,
@@ -1084,6 +1140,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
             dataSourceVersionId: dataSourceVersion._id.toString(),
             entityId: dataSourceDetails.entityId._id,
             uniqueAttributeRules: dataSourceDetails.uniqueAttributeRules,
+            user: req?.user
           });
 
           if (validatedData.errors.length > 0) {
@@ -1134,6 +1191,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
                                                   isPopulateFixed: 2,
                                                 },
                                               });
+          await dataSourceVersionValueService.bulkUpdateRefCache(validatedData.refCache);                                    
 
         } catch (error) {
           console.error('Error while processing data:', error);
@@ -1358,6 +1416,7 @@ export async function createDataSourceVersionFromValidatedCentralFiles(
           dataSourceVersionId: dataSourceVersion._id.toString(),
           entityId: dataSourceDetails.entityId._id,
           uniqueAttributeRules: dataSourceDetails.uniqueAttributeRules,
+          user:req.user
         });
 
         if (validatedData.errors.length > 0) {
@@ -2668,7 +2727,17 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
 
 export const updateSingleRowVersionValue = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { dataSourceId, versionValue, rowData } = req.body;
+    const {
+      dataSourceId,
+      versionValue,
+      rowData,
+      isErrorResolved,
+      errorDataSourceVersionId,
+      errorDataSourceId,
+      attributeName,
+      fileAttributeValue,
+    } = req.body;
+
     const { userId, organizationId, orgCode } = req.user;
     const { rowId } = req.params;
 
@@ -2733,6 +2802,7 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       return res.status(400).json({ success: false, errors });
     }
 
+    // ✅ UPDATE
     await dataSourceVersionValueService.updateOne(
       schemaName,
       { _id: rowId },
@@ -2754,7 +2824,53 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       organizationId,
     });
 
-    return res.status(200).json({ success: true, message: 'Row updated successfully.' });
+    // 🔥 ADD THIS BLOCK (same as create API)
+    if (isErrorResolved) {
+      const errorDataSourceDetails = await dataSourceService.findDataSourceById(errorDataSourceId, true);
+
+      const errorSchema = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+        orgCode,
+        versionCode: errorDataSourceDetails?.code!,
+      });
+
+      const refrenceRecords = await dataImportErrorServices.getDataImportErrorRecords({
+        dataSourceVersionId: errorDataSourceVersionId,
+        attributeName,
+        fileAttributeValue,
+      });
+
+      const rowNumbersToUpdate = refrenceRecords.map((record) => record.rowNumber);
+
+      await dataImportErrorServices.updateDataImportErrors(
+        {
+          dataSourceVersionId: errorDataSourceVersionId,
+          attributeName,
+          fileAttributeValue,
+          rowNumber: { $in: rowNumbersToUpdate },
+        },
+        { status: 'resolved' }
+      );
+
+      await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+        errorSchema,
+        {
+          dataSourceVersionId: new ObjectId(errorDataSourceVersionId),
+          rowNumber: { $in: rowNumbersToUpdate }
+        },
+        {
+          [`rowData.${attributeName}`]: rowId, // 🔥 important difference from create
+        },
+        {
+          isErrorLog: -1,
+        }
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Row updated successfully.',
+    });
+
   } catch (e) {
     console.error('Error in updateSingleRowVersionValue', e);
     next(e);
