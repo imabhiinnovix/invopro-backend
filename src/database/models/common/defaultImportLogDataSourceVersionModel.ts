@@ -11,6 +11,11 @@ interface IDefaultImportLogDataSourceVersionValue extends Document {
   versionValue: string;
   rowNumber: Number,
   rowData: Record<string, any>; // Defines rowData as an object with string keys and values of any type
+  conversion?: {
+    baseCurrency: string;
+    targetCurrency: string;
+    rate: number;
+  };
   isErrorLog: Number,
   createdBy?: Types.ObjectId;
   createdAt?: Date; // Added by timestamps
@@ -36,6 +41,11 @@ const defaultImportLogDataSourceVersionSchema = new Schema<IDefaultImportLogData
     versionValue: { type: String },
     rowNumber: {type: Number},
     rowData: { type: Schema.Types.Mixed }, // Accepts any type of object
+    conversion: {
+      baseCurrency: { type: String },
+      targetCurrency: { type: String },
+      rate: { type: Number },
+    },
     isErrorLog: {type: Number, default: 0},
     createdBy: { type: Schema.Types.ObjectId },
     createdAt: { type: Date, default: new Date(Date.now()).toISOString() },

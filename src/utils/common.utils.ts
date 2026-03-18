@@ -480,6 +480,19 @@ export function normalizeValue(value: string): string {
     .join("");                           // single normalized string
 }
 
+export const getConversionRate = async (from: string, to: string) => {
+  try {
+    const res = await fetch(
+      `https://v6.exchangerate-api.com/v6/89f401388486df7359a35327/latest/${to}`
+    );
+    const data = await res.json();
+
+    return data?.conversion_rates[from] || null;
+  } catch (err) {
+    return null;
+  }
+};
+
 
 
 

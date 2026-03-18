@@ -12,6 +12,7 @@ import {
   escapeRegExp,
   formatDateTime,
   getCentralFileSchemaNameBasedOnVersionCodeAndOrgCode,
+  getConversionRate,
   getImportLogSchemaNameBasedOnVersionCodeAndOrgCode,
   getSchemaNameBasedOnVersionCodeAndOrgCode,
   normalizeValue,
@@ -430,6 +431,14 @@ async function validateFileData({
       refSchemaName: string;
     }
   >();
+
+  const rateCache = new Map<string, number>();
+
+  const currencyConfig = {
+    baseCurrency: "USD",     // from datasource
+    defaultRate: 83.25,      // fallback
+  };
+
   for (const [index, row] of fileData.entries()) {
     console.log('Processing Index:', index);
     const parts = row.fileRowNumber.split(':');
@@ -709,6 +718,45 @@ async function validateFileData({
     for (const tempKey of tempDisplayAttrs) {
       delete newRow.rowData[tempKey];
     }
+
+  const rowCurrency = typeof row["Currency"] === "string" && row["Currency"] ? row["Currency"].toUpperCase()?.trim() : "";
+
+if (rowCurrency) {
+  const to = currencyConfig.baseCurrency;
+  const from = rowCurrency;
+
+  let rate;
+
+  // ✅ 1. SAME CURRENCY → no API, no cache
+  if (from === to) {
+    rate = 1;
+  } else {
+    const cacheKey = `${from}_${to}`;
+
+    rate = rateCache.get(cacheKey);
+
+    // ✅ 2. Fetch only if not cached
+    if (!rate) {
+      rate = await getConversionRate(from, to);
+
+      // ✅ 3. fallback
+      if (!rate) {
+        rate = currencyConfig.defaultRate;
+      }
+
+      rateCache.set(cacheKey, rate);
+    }
+  }
+
+  // ✅ 4. attach to row
+  newRow["conversion"] = {
+    baseCurrency: from,
+    targetCurrency: to,
+    rate
+  };
+}
+
+
 
     newRowData.push(newRow);
   }

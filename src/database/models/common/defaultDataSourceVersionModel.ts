@@ -9,6 +9,11 @@ interface IDefaultDataSourceVersionValue extends Document {
   dataSourceVersionId: Types.ObjectId;
   versionValue: string;
   rowData: Record<string, any>;
+  conversion?: {
+    baseCurrency: string;
+    targetCurrency: string;
+    rate: number;
+  };
   status: 'active' | 'in-active';
   createdBy?: Types.ObjectId;
   createdAt?: Date;
@@ -27,6 +32,11 @@ const defaultDataSourceVersionSchema = new Schema<IDefaultDataSourceVersionValue
       type: String,
       enum: ['active', 'in-active'],
       default: 'active',
+    },
+    conversion: {
+      baseCurrency: { type: String },
+      targetCurrency: { type: String },
+      rate: { type: Number },
     },
     createdBy: { type: Schema.Types.ObjectId },
     createdAt: { type: Date, default: () => new Date() },
