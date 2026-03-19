@@ -1020,7 +1020,7 @@ async function resolveReference(
     value = normalizeValue(value);
   }
   // 2️⃣ value cache key
-  const cacheKey = `${refEntityId}:${field.name}:${value.trim().toLowerCase()}`;
+  const cacheKey = `${refEntityId}:${field.name}:${value?.toString().trim().toLowerCase()}`;
 
   if (refValueCache.has(cacheKey)) {
     return refValueCache.get(cacheKey);
