@@ -991,10 +991,10 @@ async function getOptionSet(optionAttributeId: string) {
 // =====================
 const regexCache = new Map<string, RegExp>();
 function getExactRegex(value: string): RegExp {
-  const key = value.trim().toLowerCase();
+  const key = value?.toString().trim().toLowerCase();
 
   if (!regexCache.has(key)) {
-    const escaped = escapeRegExp(value.trim());
+    const escaped = escapeRegExp(value.toString().trim());
     regexCache.set(key, new RegExp(`^${escaped}$`, 'i'));
   }
 
@@ -2481,7 +2481,7 @@ export async function handleReferenceSubFields({
         }
       } else {
         // mapping_one_to_one → single subValue
-        const escapedValue = escapeRegExp(subValue.trim());
+        const escapedValue = escapeRegExp(subValue?.toString().trim());
         const regex = new RegExp(`^${escapedValue}$`, 'i'); // ✅ use RegExp object
         const subRefDoc = await subRefModel.findOne({ [`rowData.${subAttr.name}`]: regex, 'status': 'active' });
         if (!subRefDoc) continue;
