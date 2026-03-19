@@ -145,7 +145,7 @@ export const autoSyncReferenceRow = async ({
   //     [newRow]
   //   );
 
-  const created: any = await dataSourceVersionValueService.createSingleRowVersionValueService({
+  const created: any = await dataSourceVersionValueService.createSingleRowVersionValueFileProcessService({
           dataSourceId: refDataSourceDetails._id,
           user,
           rowData: refRowData
