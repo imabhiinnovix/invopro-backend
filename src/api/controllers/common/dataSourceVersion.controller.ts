@@ -1001,6 +1001,11 @@ function getExactRegex(value: string): RegExp {
   return regexCache.get(key)!;
 }
 
+function getStartsWithRegex(value: string): RegExp {
+  const escaped = escapeRegExp(value.trim());
+  return new RegExp(`^${escaped}`, 'i');
+}
+
 
 // =====================
 // Reference value cache
@@ -1044,6 +1049,15 @@ async function resolveReference(
       [`rowData.${field.name}`]: regex,
       status: 'active',
     })) || null;
+  // Starts-with match (fallback)
+    if (!doc) {
+      const startsWithRegex = getStartsWithRegex(value);
+
+      doc = (await model.findOne({
+        [`rowData.${field.name}`]: startsWithRegex,
+        status: 'active',
+      })) || null;
+    }  
   }
 
   refValueCache.set(cacheKey, doc);

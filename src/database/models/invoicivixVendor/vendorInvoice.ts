@@ -6,15 +6,14 @@ export interface IVendorInvoice extends Document {
   userId: Types.ObjectId;
   vendorId: Types.ObjectId;
 
-  invoiceNumber: string;
-  invoiceDate?: Date;
+  versionValue: string; // e.g., "2026-03" for March 2026
+  fileName: string;
+  filePath: string;
 
-  invoiceTotalValue: number;
-  invoiceTotalServiceFee: number;
-  invoiceTotalOfficialFee: number;
+  status: 'active' | 'inactive';
 
-  invoiceStatus: 'open' | 'closed';
-  status?: string;
+  createdBy?: Types.ObjectId;
+  updatedBy?: Types.ObjectId;
 
   createdAt: Date;
   updatedAt: Date;
@@ -41,52 +40,34 @@ const vendorInvoiceSchema = new Schema<IVendorInvoice>(
       index: true,
     },
 
-    invoiceNumber: {
+    versionValue: {
       type: String,
       required: true,
       trim: true,
+      index: true,
     },
 
-    invoiceDate: {
-      type: Date,
-    },
-
-    invoiceTotalServiceFee: {
-      type: Number,
-      default: 0,
-    },
-
-    invoiceTotalOfficialFee: {
-      type: Number,
-      default: 0,
-    },
-
-    invoiceTotalValue: {
-      type: Number,
-      default: 0,
-    },
-
-    invoiceStatus: {
+    fileName: {
       type: String,
-      enum: ['open', 'closed'],
-      default: 'open',
+      required: true,
+    },
+    filePath: {
+      type: String,
+      required: true,
     },
 
     status: {
       type: String,
-      trim: true,
+      enum: ['active', 'inactive'],
+      required: true,
+      default: 'active',
     },
+
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }
 );
-
-// Indexes
-vendorInvoiceSchema.index(
-  { organizationId: 1, invoiceNumber: 1 },
-  { unique: true }
-);
-vendorInvoiceSchema.index({ vendorId: 1 });
-vendorInvoiceSchema.index({ userId: 1 });
 
 const VendorInvoice = model<IVendorInvoice>(
   'VendorInvoice',

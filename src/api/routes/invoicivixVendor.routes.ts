@@ -5,6 +5,7 @@ import legalDocumentRoutes from './invoicivixVendor/legalDocument.route';
 import activityRateCardRoutes from './invoicivixVendor/activityRateCard.route';
 import subVendorRoutes from './invoicivixVendor/subVendor.route';
 import vendorAttorneyRoutes from './invoicivixVendor/vendorAttorney.route';
+import vendorInvoiceRoutes from './invoicivixVendor/vendorInvoice.routes';
 
 const router = Router();
 
@@ -15,5 +16,6 @@ router.use('/legal-document', legalDocumentRoutes);
 router.use('/activity-rate-card', activityRateCardRoutes);
 router.use('/sub-vendor', subVendorRoutes);
 router.use('/vendor-attorney', vendorAttorneyRoutes);
+router.use('/vendor-invoice', vendorInvoiceRoutes);
 
 export default router;
