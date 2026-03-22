@@ -13,7 +13,7 @@ import {
 } from '../../../utils/entity.utils';
 import { getDerivedField } from './derivedField.services';
 import { processFieldConditions } from '../../../utils/conditionProcessor';
-import { escapeRegExp, getLabelByMappedAttributeName, getSchemaNameBasedOnVersionCodeAndOrgCode, transformRowDataWithLabels } from '../../../utils/common.utils';
+import { escapeRegExp, getConversionRate, getLabelByMappedAttributeName, getSchemaNameBasedOnVersionCodeAndOrgCode, transformRowDataWithLabels } from '../../../utils/common.utils';
 import { getPlotTypeConfig, PlotType, plotTypesConfig } from '../../../config/plotType.config';
 import { handleReferenceSubFields, validateRowData } from '../../../api/controllers/common/dataSourceVersion.controller';
 import { autoPopulateAttributeOptionFromRow } from '../../../utils/attributeOption.utils';
@@ -5264,14 +5264,16 @@ export const createSingleRowVersionValueFileProcessService = async ({
   versionValue,
   rowData,
   user,
+  conversion
 }: {
   dataSourceId: string;
   versionValue?: string;
   rowData: any;
   user: any;
+  conversion?: any;
 }) => {
   const { userId, organizationId, orgCode } = user;
-
+try{
   if (!dataSourceId || !rowData) {
     return [];
   }
@@ -5347,6 +5349,37 @@ export const createSingleRowVersionValueFileProcessService = async ({
     return [];
   }
 
+  // ============================================================
+// 🔥 APPLY CONVERTED FIELDS (MASTER + REFERENCE SAFE)
+// ============================================================
+if (conversion && validatedRowData) {
+  for (const attr of entity.attributes) {
+    if (attr.name.startsWith("Converted|")) {
+      const originalName = attr.name.split("Converted|")[1]?.trim();
+      if (!originalName) continue;
+
+      const rawValue = validatedRowData[originalName];
+
+      if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
+        const numericValue = Number(rawValue);
+
+        if (!isNaN(numericValue)) {
+          validatedRowData[attr.name] =  Number(
+                                          (numericValue / conversion.rate).toFixed(2)
+                                        );
+        }
+      }
+    }
+  }
+
+  // ✅ set converted currency
+  if (entity.attributes.some(a => a.name === "Converted|Currency")) {
+    validatedRowData["Converted|Currency"] = conversion.targetCurrency;
+  }
+}
+
+
+
   const newRow = {
     dataSourceId,
     versionValue: version.versionValue,
@@ -5354,14 +5387,18 @@ export const createSingleRowVersionValueFileProcessService = async ({
     dataSourceVersionId: version._id,
     rowData: validatedRowData,
     createdBy: userId,
+    conversion,
     status: "active",
   };
+
 
   const newRowData =
     await dataSourceVersionValueService.createDataSourceVersionValue(
       schemaName,
       [newRow]
     );
+
+
 
   // handle reference fields
   await handleReferenceSubFields({
@@ -5375,6 +5412,9 @@ export const createSingleRowVersionValueFileProcessService = async ({
   });
 
   return newRowData;
+  } catch (error) {
+    console.error('Error while processing data:', error);
+  }
 };
 
 export const getMasterDataFromDataSource = async ({

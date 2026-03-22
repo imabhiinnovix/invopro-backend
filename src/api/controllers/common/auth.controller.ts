@@ -28,7 +28,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
     // 2️ Find user
     const user: any = await authService.findUserByEmail(email.toLowerCase(), [
-      { path: 'organizationId', select: 'id name code status activatePasswordOTP' },
+      { path: 'organizationId', select: 'id name code status activatePasswordOTP defaultCurrency' },
       'roleIds',
       {
         path: 'organizationProductSubscriptionIds',
@@ -157,6 +157,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         userId: String(user._id),
         organizationId: String(user.organizationId?._id),
         orgCode: user.organizationId?.code,
+        orgDefaultCurrency: user.organizationId?.defaultCurrency || "USD",
         roleIds,
         ...productLicenses,
         isSuperUser,
@@ -284,7 +285,7 @@ export const verifyOtp = async (req: Request, res: Response, next: NextFunction)
     const { email, otp, type = 'login' } = req.body;
      // Find the user and populate the organization details
     const user: any = await authService.findUserByEmail(email.toLowerCase(), [
-      { path: 'organizationId', select: 'id name code status' },
+      { path: 'organizationId', select: 'id name code status defaultCurrency' },
       'roleIds',
       {
         path: 'organizationProductSubscriptionIds',
@@ -366,6 +367,7 @@ export const verifyOtp = async (req: Request, res: Response, next: NextFunction)
         userId: String(user._id),
         organizationId: String(user.organizationId?._id),
         orgCode: user.organizationId?.code,
+        orgDefaultCurrency: user.organizationId?.defaultCurrency || "USD",
         roleIds,
         ...productLicenses,
         isSuperUser,
@@ -489,7 +491,7 @@ export const assumeOrRevertSession = async (
     // =========================
     if (isImpersonation && accessUserId === impersonatorUserId) {
       const adminUser: any = await authService.findUserById(accessUserId, [
-        { path: 'organizationId', select: 'id name code status' },
+        { path: 'organizationId', select: 'id name code status defaultCurrency' },
         'roleIds',
         {
           path: 'organizationProductSubscriptionIds',
@@ -517,6 +519,7 @@ export const assumeOrRevertSession = async (
       const token = generateToken({
         userId: String(adminUser._id),
         organizationId: String(adminUser.organizationId?._id),
+        orgDefaultCurrency: adminUser.organizationId?.defaultCurrency || "USD",
         orgCode: adminUser.organizationId?.code,
         roleIds,
         ...productLicenses,
@@ -572,7 +575,7 @@ export const assumeOrRevertSession = async (
     }
 
     const targetUser: any = await authService.findUserById(accessUserId, [
-      { path: 'organizationId', select: 'id name code status' },
+      { path: 'organizationId', select: 'id name code status defaultCurrency' },
       { path: 'roleIds', match: { status: 'active' } },
       {
         path: 'organizationProductSubscriptionIds',
@@ -608,6 +611,7 @@ export const assumeOrRevertSession = async (
       userId: String(targetUser._id),
       organizationId: String(targetUser.organizationId?._id),
       orgCode: targetUser.organizationId?.code,
+      orgDefaultCurrency: targetUser.organizationId?.defaultCurrency || "USD",
       roleIds: targetRoleIds,
       ...productLicenses,
       isImpersonation: true,

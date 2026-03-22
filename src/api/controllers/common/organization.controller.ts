@@ -37,7 +37,8 @@ export const createOrganization = async (req: Request, res: Response, next: Next
       businessUnitCode,
       allowedDomains,
       activatePasswordOTP,
-      businessEmail
+      businessEmail,
+      defaultCurrency
     } = req.body;
 
     const { userId } = req.user;
@@ -84,7 +85,8 @@ export const createOrganization = async (req: Request, res: Response, next: Next
                         businessUnitCode: businessUnitCode || '',
                         allowedDomains: allowedDomains || [],
                         activatePasswordOTP: activatePasswordOTP || false,
-                        businessEmail: businessEmail || ''
+                        businessEmail: businessEmail || '',
+                        defaultCurrency: defaultCurrency || "USD"
                       });
 
     // 3️⃣ Seed roles and permissions
@@ -202,7 +204,8 @@ export const updateOrganization = async (req: Request, res: Response, next: Next
       businessUnitCode,
       allowedDomains,
       activatePasswordOTP,
-      businessEmail
+      businessEmail,
+      defaultCurrency
     } = req.body;
 
     let { organizationId } = req.user as any;
@@ -241,6 +244,7 @@ export const updateOrganization = async (req: Request, res: Response, next: Next
       ...(logoPath && { logo: logoPath }),
       ...(businessUnitCode && { businessUnitCode }),
       ...(businessEmail && { businessEmail }),
+      ...(defaultCurrency && { defaultCurrency }),
       ...(allowedDomains && { allowedDomains }),
       ...(normalizedActivatePasswordOTP !== undefined && {
         activatePasswordOTP: normalizedActivatePasswordOTP,

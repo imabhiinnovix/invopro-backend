@@ -19,6 +19,8 @@ export const autoSyncReferenceRow = async ({
   user,
   refDataSourceDetails,
   refCache,
+  conversion
+
 }: {
   refEntityId: Types.ObjectId;
   refValue: any;
@@ -28,6 +30,7 @@ export const autoSyncReferenceRow = async ({
   user: any;
   refDataSourceDetails: any;
   refCache: Map<string, any>; // key → cacheKey, value → { _id, rowData }
+  conversion?: any;
 }) => {
 
   const { userId, organizationId, orgCode } = user;
@@ -114,8 +117,8 @@ export const autoSyncReferenceRow = async ({
     const cached = refCache.get(cacheKey); // { _id, rowData }
     // 🔁 sum numeric fields IN MEMORY
     for (const attr of refEntity.attributes) {
-      if (attr.type === 'number') {
-        const field = attr.name;
+      const field = attr.name;
+      if (attr.type === 'number' && cached.rowData[field]) {
         cached.rowData[field] =
           (cached.rowData[field] || 0) +
           (refRowData[field] || 0);
@@ -148,7 +151,8 @@ export const autoSyncReferenceRow = async ({
   const created: any = await dataSourceVersionValueService.createSingleRowVersionValueFileProcessService({
           dataSourceId: refDataSourceDetails._id,
           user,
-          rowData: refRowData
+          rowData: refRowData,
+          conversion
       });
   const createdDoc = created?.[0] || {};    
 

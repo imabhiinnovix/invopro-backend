@@ -35,6 +35,8 @@ interface IOrganization extends Document {
   allowedDomains?: string[];
   activatePasswordOTP?: boolean;
   businessEmail?: string;
+  // Billing
+  defaultCurrency?: string;
 }
 
 // Define the Organization Schema
@@ -71,6 +73,11 @@ const organizationSchema = new Schema<IOrganization>(
     allowedDomains: { type: [String], default: []},
     activatePasswordOTP: { type: Boolean, default: false },
     businessEmail: { type: String, default: '' },
+    // Billing
+    defaultCurrency: {
+      type: String,
+      default: 'USD',
+    },
   },
   {
     timestamps: true,

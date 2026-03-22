@@ -423,6 +423,17 @@ async function validateFileData({
     {} as Record<string, string>
   );
 
+  const convertedAttrMap = new Map<string, string>();
+
+for (const attr of attributes) {
+  if (attr.name.startsWith("Converted|")) {
+    const originalName = attr.name.split("Converted|")[1]?.trim();
+    if (originalName) {
+      convertedAttrMap.set(originalName, attr.name);
+    }
+  }
+}
+
   const refCache = new Map<
     string,
     {
@@ -435,7 +446,7 @@ async function validateFileData({
   const rateCache = new Map<string, number>();
 
   const currencyConfig = {
-    baseCurrency: "USD",     // from datasource
+    baseCurrency: user?.orgDefaultCurrency,     // from datasource
     defaultRate: 83.25,      // fallback
   };
 
@@ -454,10 +465,48 @@ async function validateFileData({
       rowNumber: index + 1,
     };
 
+const rowCurrency = typeof row["Currency"] === "string" && row["Currency"] ? row["Currency"].toUpperCase()?.trim() : "";
+let conversion: any = null;
+if (rowCurrency) {
+  const to = currencyConfig.baseCurrency;
+  const from = rowCurrency;
+
+  let rate;
+
+  // ✅ 1. SAME CURRENCY → no API, no cache
+  if (from === to) {
+    rate = 1;
+  } else {
+    const cacheKey = `${from}_${to}`;
+
+    rate = rateCache.get(cacheKey);
+
+    // ✅ 2. Fetch only if not cached
+    if (!rate) {
+      rate = await getConversionRate(from, to);
+
+      // ✅ 3. fallback
+      if (!rate) {
+        rate = currencyConfig.defaultRate;
+      }
+
+      rateCache.set(cacheKey, rate);
+    }
+  }
+
+  // ✅ 4. attach to row
+  newRow["conversion"] = conversion = {
+    baseCurrency: from,
+    targetCurrency: to,
+    rate
+  };
+}
+
     // track temporary __display keys for cleanup later
     const tempDisplayAttrs: string[] = [];
 
     for (const attr of attributes) {
+      if (attr.name.startsWith("Converted|")) continue;
       const attrName = attr.name;
       const fileKey = mapping[attrName];
       let value: any;
@@ -549,7 +598,8 @@ async function validateFileData({
                 mapping,
                 user,
                 refDataSourceDetails,
-                refCache
+                refCache,
+                conversion
               });
 
               newRow.rowData[attrName] = newRefId;
@@ -656,8 +706,25 @@ async function validateFileData({
           }
         }
       }
+
+      
     }
 
+    // After all attributes processed
+for (const [originalName, convertedName] of convertedAttrMap.entries()) {
+  const value = newRow.rowData[originalName];
+
+  if (conversion && value !== undefined && value !== null && value !== '') {
+    const numericValue = Number(value);
+
+    if (!isNaN(numericValue)) {
+      newRow.rowData[convertedName] =  Number(
+                                        (numericValue / conversion.rate).toFixed(2)
+                                      );
+      newRow.rowData["Converted|Currency"] = conversion.targetCurrency;
+    }
+  }
+}
     // handle unique attribute validation
     if (Array.isArray(uniqueAttributeRules) && uniqueAttributeRules.length > 0) {
       for (const rule of uniqueAttributeRules) {
@@ -713,49 +780,10 @@ async function validateFileData({
         }
       }
     }
-
     // ✅ cleanup temporary __display keys (always, not just for unique)
     for (const tempKey of tempDisplayAttrs) {
       delete newRow.rowData[tempKey];
     }
-
-  const rowCurrency = typeof row["Currency"] === "string" && row["Currency"] ? row["Currency"].toUpperCase()?.trim() : "";
-
-if (rowCurrency) {
-  const to = currencyConfig.baseCurrency;
-  const from = rowCurrency;
-
-  let rate;
-
-  // ✅ 1. SAME CURRENCY → no API, no cache
-  if (from === to) {
-    rate = 1;
-  } else {
-    const cacheKey = `${from}_${to}`;
-
-    rate = rateCache.get(cacheKey);
-
-    // ✅ 2. Fetch only if not cached
-    if (!rate) {
-      rate = await getConversionRate(from, to);
-
-      // ✅ 3. fallback
-      if (!rate) {
-        rate = currencyConfig.defaultRate;
-      }
-
-      rateCache.set(cacheKey, rate);
-    }
-  }
-
-  // ✅ 4. attach to row
-  newRow["conversion"] = {
-    baseCurrency: from,
-    targetCurrency: to,
-    rate
-  };
-}
-
 
 
     newRowData.push(newRow);
@@ -2622,6 +2650,42 @@ export async function handleReferenceSubFields({
   }
 }
 
+function applyConvertedFields({
+  rowData,
+  attributes,
+  conversion
+}: {
+  rowData: Record<string, any>;
+  attributes: any[];
+  conversion?: any;
+}) {
+  if (!conversion || !rowData) return;
+
+  for (const attr of attributes) {
+    if (attr.name.startsWith("Converted|")) {
+      const originalName = attr.name.split("Converted|")[1]?.trim();
+      if (!originalName) continue;
+
+      const rawValue = rowData[originalName];
+
+      if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
+        const numericValue = Number(rawValue);
+
+        if (!isNaN(numericValue)) {
+          rowData[attr.name] =  Number(
+                                  (numericValue / conversion.rate).toFixed(2)
+                                );
+        }
+      }
+    }
+  }
+
+  // ✅ Currency
+  if (attributes.some(a => a.name === "Converted|Currency")) {
+    rowData["Converted|Currency"] = conversion.targetCurrency;
+  }
+}
+
 export const createSingleRowVersionValue = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
@@ -2634,7 +2698,7 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       attributeName,
       fileAttributeValue,
     } = req.body;
-    const { userId, organizationId, orgCode } = req.user;
+    const { userId, organizationId, orgCode, orgDefaultCurrency } = req.user;
 
     if (!dataSourceId || !rowData) {
       return res.status(400).json({ success: false, message: 'Missing required fields.' });
@@ -2644,6 +2708,11 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
     if (!dataSourceDetails) {
       return res.status(404).json({ success: false, message: 'Data source not found.' });
     }
+
+    const currencyConfig = {
+    baseCurrency: orgDefaultCurrency,     // from datasource
+    defaultRate: 83.25,      // fallback
+  };
 
     const versionQuery: any = {
       dataSourceId,
@@ -2712,6 +2781,40 @@ export const createSingleRowVersionValue = async (req: Request, res: Response, n
       createdBy: userId,
       status: 'active',
     };
+
+    const rowCurrency = typeof rowData["Currency"] === "string" && rowData["Currency"] ? rowData["Currency"].toUpperCase()?.trim() : "";
+if (rowCurrency) {
+  const to = currencyConfig.baseCurrency;
+  const from = rowCurrency;
+
+  let rate;
+
+  // ✅ 1. SAME CURRENCY → no API, no cache
+  if (from === to) {
+    rate = 1;
+  } else {
+      rate = await getConversionRate(from, to);
+
+      // ✅ 3. fallback
+      if (!rate) {
+        rate = currencyConfig.defaultRate;
+      }
+
+  }
+
+  // ✅ 4. attach to row
+  newRow["conversion"] = {
+    baseCurrency: from,
+    targetCurrency: to,
+    rate
+  };
+
+  applyConvertedFields({
+    rowData: validatedRowData,
+    attributes: entity.attributes,
+    conversion: newRow["conversion"]
+});
+}
 
     const newRowData = await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, [newRow]);
 
@@ -2784,9 +2887,10 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
       errorDataSourceId,
       attributeName,
       fileAttributeValue,
+      errorCode
     } = req.body;
 
-    const { userId, organizationId, orgCode } = req.user;
+    const { userId, organizationId, orgCode, orgDefaultCurrency } = req.user;
     const { rowId } = req.params;
 
     if (!dataSourceId || !rowData || !rowId) {
@@ -2797,6 +2901,11 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     if (!dataSourceDetails) {
       return res.status(404).json({ success: false, message: 'Data source not found.' });
     }
+
+    const currencyConfig = {
+    baseCurrency: orgDefaultCurrency,     // from datasource
+    defaultRate: 83.25,      // fallback
+  };
 
     const versionQuery: any = {
       dataSourceId,
@@ -2849,16 +2958,51 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     if (!isValid) {
       return res.status(400).json({ success: false, errors });
     }
+const updateRow: any = {
+        rowData: validatedRowData,
+        updatedBy: userId,
+        status: 'active'
+      };
+      const rowCurrency = typeof rowData["Currency"] === "string" && rowData["Currency"] ? rowData["Currency"].toUpperCase()?.trim() : "";
+    if(errorCode && errorCode == ERROR_CODES.DUPLICATE_REFERENCE.code && rowCurrency){
+
+  const to = currencyConfig.baseCurrency;
+  const from = rowCurrency;
+
+  let rate;
+
+  // ✅ 1. SAME CURRENCY → no API, no cache
+  if (from === to) {
+    rate = 1;
+  } else {
+      rate = await getConversionRate(from, to);
+
+      // ✅ 3. fallback
+      if (!rate) {
+        rate = currencyConfig.defaultRate;
+      }
+}
+
+  // ✅ 4. attach to row
+  updateRow['conversion'] = {
+    baseCurrency: from,
+    targetCurrency: to,
+    rate
+  };
+
+  applyConvertedFields({
+  rowData: validatedRowData,
+  attributes: entity.attributes,
+  conversion: updateRow["conversion"]
+});
+    }
+  
 
     // ✅ UPDATE
     await dataSourceVersionValueService.updateOne(
       schemaName,
       { _id: rowId },
-      {
-        rowData: validatedRowData,
-        updatedBy: userId,
-        status: 'active'
-      }
+      updateRow
     );
 
     // 🔹 Handle reference subfields
