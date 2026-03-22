@@ -113,21 +113,47 @@ export const autoSyncReferenceRow = async ({
   // ============================================================
   // 🔥 1. CACHE HIT → UPDATE SAME RECORD (NO WRONG DB MATCH)
   // ============================================================
-  if (refCache.has(cacheKey)) {
-    const cached = refCache.get(cacheKey); // { _id, rowData }
-    // 🔁 sum numeric fields IN MEMORY
-    for (const attr of refEntity.attributes) {
-      const field = attr.name;
-      if (attr.type === 'number' && cached.rowData[field]) {
-        cached.rowData[field] =
-          (cached.rowData[field] || 0) +
-          (refRowData[field] || 0);
-      }
-      
-    }
+ if (refCache.has(cacheKey)) {
+  const cached = refCache.get(cacheKey); // { _id, rowData }
 
-    return cached._id;
+  // 🔁 1. Sum numeric base fields
+  for (const attr of refEntity.attributes) {
+    const field = attr.name;
+
+    if (attr.type === 'number') {
+      const existing = Number(cached.rowData[field] || 0);
+      const incoming = Number(refRowData[field] || 0);
+
+      if (!isNaN(existing) || !isNaN(incoming)) {
+        cached.rowData[field] = existing + incoming;
+      }
+    }
   }
+
+  // 🔁 2. Recalculate Converted| fields AFTER sum
+  if (conversion?.rate) {
+    for (const attr of refEntity.attributes) {
+      if (attr.name.startsWith("Converted|")) {
+        const originalName = attr.name.split("Converted|")[1]?.trim();
+        if (!originalName) continue;
+
+        const rawValue = cached.rowData[originalName];
+
+        if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
+          const numericValue = Number(rawValue);
+
+          if (!isNaN(numericValue)) {
+            cached.rowData[attr.name] = Number(
+              (numericValue / conversion.rate).toFixed(2)
+            );
+          }
+        }
+      }
+    }
+  }
+
+  return cached._id;
+}
 
   // ============================================================
   // 🔥 2. FIRST TIME → CREATE NEW RECORD
