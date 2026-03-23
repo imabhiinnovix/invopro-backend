@@ -2026,7 +2026,7 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
   next: NextFunction
 ) => {
   try {
-    const { dataSourceId, versionValue, page, limit, sort, filters, search } = req.query as {
+    const { dataSourceId, versionValue, year, month, page, limit, sort, filters, search } = req.query as {
       dataSourceId: string;
       versionValue: string;
       page?: string;
@@ -2034,6 +2034,8 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
       sort?: string;
       filters?: string;
       search?: string;
+      year?: string;
+      month?: string;
     };
 
     const pageNumber = page ? parseInt(page, 10) : 1;
@@ -2041,7 +2043,7 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     const { orgCode, userId, organizationId } = req.user;
 
     const searchFilters = {};
-
+    
     const dataSourceDetails: any = await dataSourceService.findDataSourceById(dataSourceId, true);
 
     if (!dataSourceDetails) {
@@ -2092,10 +2094,21 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
       isCurrent: true, // Always filter for current version
     };
 
+    // ✅ Priority 1: exact versionValue (if directly passed)
     if (versionValue) {
-      versionQuery.versionValue = versionValue; // Optional, narrows to specific version if provided
+      versionQuery.versionValue = versionValue;
     }
 
+    // ✅ Priority 2: year + month filter
+    else if (year && month) {
+      const formattedMonth = month.padStart(2, '0');
+      versionQuery.versionValue = `${year.toString().trim()}-${formattedMonth.toString().trim()}`;
+    }
+
+    // ✅ Priority 3: only year filter
+    else if (year) {
+      versionQuery.versionValue = { $regex: `^${year.toString().trim()}` };
+    }
     const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
       query: versionQuery,
     });
@@ -2109,7 +2122,8 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
       });
     }
 
-    const dataSourceVersionId = dataSourceVersionDetails.data[0]._id;
+    // const dataSourceVersionId = dataSourceVersionDetails.data[0]._id;
+    const dataSourceVersionIds = dataSourceVersionDetails.data.map(v => v._id);
     const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
       orgCode,
       versionCode: dataSourceDetails.code,
@@ -2118,8 +2132,11 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     const parsedSort = sort ? JSON.parse(sort) : {};
     const parsedFilters = filters ? JSON.parse(filters) : {};
     let query = { status: 'active' };
+    // if (dataSourceDetails.versionType != 'constant') {
+    //   query['dataSourceVersionId'] = dataSourceVersionId;
+    // }
     if (dataSourceDetails.versionType != 'constant') {
-      query['dataSourceVersionId'] = dataSourceVersionId;
+      query['dataSourceVersionId'] = { $in: dataSourceVersionIds };
     }
     // console.log(userId,dataSourceId,organizationId);
     // 🔹 🧩 Apply user-level data permission filters
@@ -2133,7 +2150,6 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     //   const permissionFilter = await createMongoCondition(userPermission.conditions);
     //   Object.assign(query, permissionFilter);
     // }
-
 
     const result = await dataSourceVersionValueService.getDataSourceVersionValueV1({
       schemaName,
