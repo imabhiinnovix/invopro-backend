@@ -2274,7 +2274,9 @@ export const exportDataSourceVersionDataToExcel = async (
         // Build summary fields dynamically
         if (
           summaryMode &&
-          field.isSummaryDisplayEnable &&
+          (field.isSummaryDisplayEnable ||
+          (segregationField &&
+          field.mappedAttributeName == segregationField)) &&
           field.mappedAttributeName &&
           field.mappedAttributeName !== 'Unknown'
         ) {
@@ -2332,6 +2334,12 @@ export const exportDataSourceVersionDataToExcel = async (
     // 2️ CREATE PAYLOAD FOR WORKER
     // --------------------------------------------------------------------
 
+    let finalSelectedFields = selectedFields;
+
+    if (summaryMode) {
+      finalSelectedFields = summaryFields;
+    }
+
     const requestPayload = {
       schemaName,
       query,
@@ -2343,7 +2351,7 @@ export const exportDataSourceVersionDataToExcel = async (
       entityId: dataSourceDetails.entityId,
       searchFilters,
       conditions: userPermission?.conditions,
-      selectedFields,
+      selectedFields: finalSelectedFields,
       dataSourceDetails,
       isSummary: summaryMode,
       summaryFields,
