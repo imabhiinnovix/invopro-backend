@@ -2230,7 +2230,7 @@ export const exportDataSourceVersionDataToExcel = async (
       versionValue?: string;
       filters?: string;
       search?: string;
-      selectedFields?: string; // optional now
+      selectedFields?: string | string[]; // optional now
       isSummary?: string;
       segregationField?: string;
     };
