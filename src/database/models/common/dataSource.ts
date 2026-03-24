@@ -15,6 +15,8 @@ interface IFieldSetting {
   type: 'number' | 'text' | 'date' | 'boolean' | 'richtext' | 'url' | 'option' | 'multioption' | 'user';
   isDerived: boolean;
   mappedAttributeName: string;
+  isSummaryDisplayEnable?: boolean;
+  isSummarySegregation?: boolean;
 }
 
 interface IDataUploadCondition {
@@ -84,7 +86,15 @@ const fieldSettingSchema = new Schema<IFieldSetting>(
     },
     mappedAttributeName: {
       type: String
-    }
+    },
+    isSummaryDisplayEnable: {
+      type: Boolean,
+      default: false,
+    },
+    isSummarySegregation: {
+      type: Boolean,
+      default: false,
+    },
   },
   { _id: false }
 );

@@ -5,6 +5,7 @@ import { Schema, model, Document, Types } from 'mongoose';
 
 interface IDataSourceVersion extends Document {
   organizationId: Types.ObjectId;
+  vendorId: Types.ObjectId | null;
   dataSourceId: Types.ObjectId;
   entityId: Types.ObjectId;
   customReportId: Types.ObjectId;
@@ -27,6 +28,7 @@ interface IDataSourceVersion extends Document {
 const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
+    vendorId: { type: Schema.Types.ObjectId, ref: 'Vendor' },
     dataSourceId: { type: Schema.Types.ObjectId, ref: 'data_source' },
     entityId: { type: Schema.Types.ObjectId, ref: 'Entity' },
     versionValue: { type: String, required: true },

@@ -120,9 +120,9 @@ export const autoSyncReferenceRow = async ({
   for (const attr of refEntity.attributes) {
     const field = attr.name;
 
-    if (attr.type === 'number') {
-      const existing = Number(cached.rowData[field] || 0);
-      const incoming = Number(refRowData[field] || 0);
+    if (attr.type === 'number' && cached.rowData) {
+      const existing = Number(cached?.rowData?.[field] || 0);
+      const incoming = Number(refRowData?.[field] || 0);
 
       if (!isNaN(existing) || !isNaN(incoming)) {
         cached.rowData[field] = existing + incoming;
@@ -133,7 +133,7 @@ export const autoSyncReferenceRow = async ({
   // 🔁 2. Recalculate Converted| fields AFTER sum
   if (conversion?.rate) {
     for (const attr of refEntity.attributes) {
-      if (attr.name.startsWith("Converted|")) {
+      if (attr.name.startsWith("Converted|") && cached.rowData) {
         const originalName = attr.name.split("Converted|")[1]?.trim();
         if (!originalName) continue;
 

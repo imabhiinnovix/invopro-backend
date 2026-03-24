@@ -75,12 +75,28 @@ async function connectDB() {
           aggregation,
           dashBoardType,
           isPaginate,
+          isSummary,
+          summaryFields,
+          segregationField
         } = req.requestPayload;  
         if (job.name === "exportDSData") {
           // --------------------------------------------------------------------
           // Fetch data
           // --------------------------------------------------------------------
-          const result = await dataSourceVersionValueService.getDataSourceVersionValueV1({
+          const result = isSummary == true ? await dataSourceVersionValueService.getDataSourceVersionSummaryValue({
+            schemaName,
+            query,
+            select,
+            page,
+            limit,
+            sort,
+            filters,
+            entityId,
+            searchFilters,
+            conditions,
+            summaryFields,
+            segregationField
+          }) : await dataSourceVersionValueService.getDataSourceVersionValueV1({
           schemaName,
           query,
           select,

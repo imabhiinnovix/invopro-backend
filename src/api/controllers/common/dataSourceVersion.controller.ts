@@ -1083,7 +1083,7 @@ async function resolveReference(
 
 export async function createDataSourceVersion(req: Request, res: Response, next: NextFunction) {
   try {
-    const { versionName, mappings, separator, dataSourceId, versionValue } = req.body;
+    const { versionName, mappings, separator, dataSourceId, versionValue, vendorId } = req.body;
     const jsonMapping = JSON.parse(mappings);
     const jsonSeparator = separator ? JSON.parse(separator) : {};
 
@@ -1167,6 +1167,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
     if (dataSourceDetails && dataSourceDetails.entityId) {
       const dataSourceVersion: any = await dataSourceVersionService.createDataSourceVersion({
         organizationId,
+        vendorId,
         entityId: dataSourceDetails.entityId._id,
         dataSourceId,
         versionName,
@@ -1249,7 +1250,7 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
             }
 
             await dataSourceVersionService.updateDataSourceVersions({
-              query: { dataSourceId, versionValue },
+              query: { dataSourceId, versionValue, vendorId },
               updateFields: { isCurrent: false },
             });
 
@@ -1979,6 +1980,7 @@ export const updateCustomDataSourceVersionIsCurrentFunction = async ({
         query: {
           dataSourceId: dataSourceVersionDetails.dataSourceId,
           versionValue: dataSourceVersionDetails.versionValue,
+          vendorId: dataSourceVersionDetails.vendorId,
         },
         updateFields: { isCurrent: false },
       });
@@ -2026,7 +2028,7 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
   next: NextFunction
 ) => {
   try {
-    const { dataSourceId, versionValue, year, month, page, limit, sort, filters, search } = req.query as {
+    const { dataSourceId, versionValue, year, month, page, limit, sort, filters, search, isSummary, segregationField } = req.query as {
       dataSourceId: string;
       versionValue: string;
       page?: string;
@@ -2036,7 +2038,11 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
       search?: string;
       year?: string;
       month?: string;
+      isSummary?: string;
+      segregationField?: string;
     };
+
+    const summaryMode = isSummary === 'true';
 
     const pageNumber = page ? parseInt(page, 10) : 1;
     const limitNumber = limit ? parseInt(limit, 10) : 10;
@@ -2053,6 +2059,8 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     // 🔹 Precompute field mappings
     const fieldOptions = await entityService.getEntityFieldOptions(String(dataSourceDetails.entityId._id));
 
+    const summaryFields: string[] = [];
+    
     if (Array.isArray(dataSourceDetails.fieldSettings)) {
       for (const field of dataSourceDetails.fieldSettings) {
         // Derived fields
@@ -2077,7 +2085,21 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
         } else {
           field.mappedAttributeName = 'Unknown';
         }
+
+        // Build summary fields dynamically
+        if (
+          summaryMode &&
+          field.isSummaryDisplayEnable &&
+          field.mappedAttributeName &&
+          field.mappedAttributeName !== 'Unknown'
+        ) {
+          summaryFields.push(field.mappedAttributeName);
+        }
       }
+    }
+
+    if(summaryMode && !summaryFields.length){
+       return res.status(400).json({ success: false, message: 'At least one summary field required.' });
     }
 
     // 🔹 Build search filters using mappedAttributeName
@@ -2151,7 +2173,20 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     //   Object.assign(query, permissionFilter);
     // }
 
-    const result = await dataSourceVersionValueService.getDataSourceVersionValueV1({
+    const result = summaryMode ? await dataSourceVersionValueService.getDataSourceVersionSummaryValue({
+      schemaName,
+      query,
+      select: '',
+      page: pageNumber,
+      limit: limitNumber,
+      sort: parsedSort,
+      filters: parsedFilters,
+      entityId: dataSourceDetails.entityId,
+      searchFilters,
+      conditions: userPermission?.conditions,
+      summaryFields,
+      segregationField,
+    }) : await dataSourceVersionValueService.getDataSourceVersionValueV1({
       schemaName,
       query,
       select: '',
@@ -2190,15 +2225,19 @@ export const exportDataSourceVersionDataToExcel = async (
   next: NextFunction
 ) => {
   try {
-    const { dataSourceId, versionValue, filters, search, selectedFields } = req.query as {
+    const { dataSourceId, versionValue, filters, search, selectedFields, isSummary, segregationField } = req.query as {
       dataSourceId: string;
       versionValue?: string;
       filters?: string;
       search?: string;
       selectedFields?: string; // optional now
+      isSummary?: string;
+      segregationField?: string;
     };
 
     const { orgCode, userId, organizationId } = req.user;
+
+    const summaryMode = isSummary === 'true';
 
     // 🔹 Data Source details
     const dataSourceDetails: any = await dataSourceService.findDataSourceById(dataSourceId, true);
@@ -2208,7 +2247,7 @@ export const exportDataSourceVersionDataToExcel = async (
 
     // 🔹 Field mappings
     const fieldOptions = await entityService.getEntityFieldOptions(String(dataSourceDetails.entityId._id));
-
+    const summaryFields: string[] = [];
     if (Array.isArray(dataSourceDetails.fieldSettings)) {
       for (const field of dataSourceDetails.fieldSettings) {
         // Derived fields
@@ -2231,6 +2270,16 @@ export const exportDataSourceVersionDataToExcel = async (
               JSON.stringify(field.refAttributeId || [])
         );
         field.mappedAttributeName = match ? match.label : 'Unknown';
+
+        // Build summary fields dynamically
+        if (
+          summaryMode &&
+          field.isSummaryDisplayEnable &&
+          field.mappedAttributeName &&
+          field.mappedAttributeName !== 'Unknown'
+        ) {
+          summaryFields.push(field.mappedAttributeName);
+        }
       }
     }
 
@@ -2296,6 +2345,9 @@ export const exportDataSourceVersionDataToExcel = async (
       conditions: userPermission?.conditions,
       selectedFields,
       dataSourceDetails,
+      isSummary: summaryMode,
+      summaryFields,
+      segregationField
     };
 
     // --------------------------------------------------------------------
