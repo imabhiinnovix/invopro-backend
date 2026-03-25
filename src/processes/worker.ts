@@ -77,7 +77,8 @@ async function connectDB() {
           isPaginate,
           isSummary,
           summaryFields,
-          segregationField
+          segregationField,
+          defaultCurrency
         } = req.requestPayload;  
         if (job.name === "exportDSData") {
           // --------------------------------------------------------------------
@@ -138,11 +139,19 @@ async function connectDB() {
             return true;
           });
 
-          worksheet.columns = selectedFieldsFiltered.map((f) => ({
-            header: f.label,
-            key: f.label,
-            width: 25,
-          }));
+          worksheet.columns = selectedFieldsFiltered.map((f) => {
+            const header =
+              f.mappedAttributeName.includes("Converted|") &&
+              f.type === "number"
+                ? `${f.label} (${defaultCurrency})`
+                : f.label;
+
+            return {
+              header,
+              key: header,
+              width: 25,
+            };
+          });
         rows.forEach((row) => {
               const dataRow: any = {};
 
@@ -227,16 +236,29 @@ async function connectDB() {
 
       const sheet = workbook.addWorksheet(safeSheetName);
 
-      sheet.columns = selectedFieldsFiltered.map((f) => ({
-        header: f.label,
-        key: f.label,
-        width: 25,
-      }));
+      // ALL FIELDS
+      const allFields = dataSourceDetails.fieldSettings.filter(
+        (f) => f.isDerived !== true
+      );
+
+      sheet.columns = allFields.map((f) => {
+        const header =
+          f.mappedAttributeName.includes("Converted|") &&
+          f.type === "number"
+            ? `${f.label} (${defaultCurrency})`
+            : f.label;
+
+        return {
+          header,
+          key: header,
+          width: 25,
+        };
+      });
 
       firmRows.forEach((row) => {
         const dataRow: any = {};
 
-        selectedFieldsFiltered.forEach((f) => {
+        allFields.forEach((f) => {
           let value = row.rowData?.[f.mappedAttributeName];
 
           if (Array.isArray(value)) {
