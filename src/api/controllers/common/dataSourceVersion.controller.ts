@@ -2173,7 +2173,7 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     //   Object.assign(query, permissionFilter);
     // }
 
-    const result = summaryMode ? await dataSourceVersionValueService.getDataSourceVersionSummaryValue({
+    const result: any = summaryMode ? await dataSourceVersionValueService.getDataSourceVersionSummaryValue({
       schemaName,
       query,
       select: '',
@@ -2200,7 +2200,22 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
     });
     const data = result?.data ?? [];
     const totalCount = result?.totalCount ?? 0;
-
+    const total = result?.total ?? {};
+    if(summaryMode){
+       return res.status(200).json({
+      success: true,
+      message: 'Version data has been successfully retrieved.',
+      data,
+      totalCount,
+      total,
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(totalCount / limitNumber),
+        totalRecords: totalCount,
+      },
+    });
+    }
     return res.status(200).json({
       success: true,
       message: 'Version data has been successfully retrieved.',

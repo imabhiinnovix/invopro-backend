@@ -2777,6 +2777,33 @@ for (const field of summaryFields) {
       summarySort[segregationField || "_id"] = 1;
     }
 
+    const buildGrandTotalFields = async (
+  summaryFields: string[],
+  getReferenceField: any,
+  getFieldType: any
+) => {
+  const totalFields: any = {};
+
+  for (const field of summaryFields) {
+    const fieldType = getFieldType(field);
+    const path = await getReferenceField(field);
+
+    if (fieldType === "number") {
+      totalFields[field] = {
+        $sum: {
+          $cond: [
+            { $isNumber: `$${path}` },
+            `$${path}`,
+            0
+          ]
+        }
+      };
+    }
+  }
+
+  return totalFields;
+};
+
     // --------------------------------------------------
     // ✅ FACET (PAGINATION + COUNT)
     // --------------------------------------------------
@@ -2790,7 +2817,28 @@ for (const field of summaryFields) {
         ],
         totalCount: [
           { $count: "count" }
-        ]
+        ],
+        grandTotal: [
+          {
+            $group: {
+              _id: null,
+              ...await buildGrandTotalFields(summaryFields, getReferenceField, getFieldType)
+            }
+          }
+        ],
+        currencies: [
+      {
+        $group: {
+          _id: "$rowData.Currency"
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          currency: "$_id"
+        }
+      }
+    ]
       }
     });
 
@@ -2927,8 +2975,16 @@ for (const field of summaryFields) {
 
     const facetResult = versionValueData?.[0] || {};
 
+
 const rawData = facetResult.data || [];
 const totalCount = facetResult.totalCount?.[0]?.count || 0;
+
+const grandTotalRaw = facetResult.grandTotal?.[0] || {};
+delete grandTotalRaw._id;
+
+const currencies = (facetResult.currencies || [])
+  .map((c: any) => c.currency)
+  .filter((c: any) => c != null);
 
     // Step 6: Transform
     const transformedData = await Promise.all(
@@ -3094,7 +3150,7 @@ const totalCount = facetResult.totalCount?.[0]?.count || 0;
     // const countResult = await DataSourceVersionValue.aggregate(countPipeline).exec();
     // const totalCount = countResult?.[0]?.totalCount || 0;
 
-    return { data: transformedData, totalCount };
+    return { data: transformedData, totalCount, total: { ...grandTotalRaw, currencies } };
   } catch (err) {
     console.log('err',err);
     throw err;

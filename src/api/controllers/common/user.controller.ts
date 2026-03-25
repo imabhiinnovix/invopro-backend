@@ -344,7 +344,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
     const { userId, organizationId, isSuperUser } = req.user;
 
     let user = await userService.findUserById(userId, [
-      { path: 'organizationId', select: 'id name code status' },
+      { path: 'organizationId', select: 'id name code defaultCurrency status' },
       'roleIds',
       {
         path: 'organizationProductSubscriptionIds',
