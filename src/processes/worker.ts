@@ -164,6 +164,84 @@ async function connectDB() {
 
               worksheet.addRow(dataRow);
             });
+
+            // ======================================================
+  // ✅ ADDITIONAL LOGIC (ONLY for isSummary === true)
+  // ======================================================
+  if (isSummary === true) {
+    // Rename existing sheet to Overview
+    worksheet.name = "Overview";
+
+    // -----------------------------------------------
+    // Fetch detail data
+    // -----------------------------------------------
+    const detailResult =
+      await dataSourceVersionValueService.getDataSourceVersionValueV1({
+        schemaName,
+        query,
+        select,
+        page,
+        limit,
+        sort,
+        filters,
+        entityId,
+        searchFilters,
+        conditions,
+      });
+
+    const detailRows = detailResult?.data ?? [];
+
+    // -----------------------------------------------
+    // Group by Law Firm Name
+    // -----------------------------------------------
+    const lawFirmMap = new Map<string, any[]>();
+
+    detailRows.forEach((row) => {
+      const lawFirmName =
+        row.rowData?.["Law Firm Name"] || "Unknown Law Firm";
+
+      if (!lawFirmMap.has(lawFirmName)) {
+        lawFirmMap.set(lawFirmName, []);
+      }
+
+      lawFirmMap.get(lawFirmName)!.push(row);
+    });
+
+    // -----------------------------------------------
+    // Create Sheet per Law Firm
+    // -----------------------------------------------
+    lawFirmMap.forEach((firmRows, lawFirmName) => {
+      const safeSheetName = lawFirmName.substring(0, 30);
+
+      const sheet = workbook.addWorksheet(safeSheetName);
+
+      sheet.columns = selectedFieldsFiltered.map((f) => ({
+        header: f.label,
+        key: f.label,
+        width: 25,
+      }));
+
+      firmRows.forEach((row) => {
+        const dataRow: any = {};
+
+        selectedFieldsFiltered.forEach((f) => {
+          let value = row.rowData?.[f.mappedAttributeName];
+
+          if (Array.isArray(value)) {
+            value = value.join(", ");
+          }
+
+          if (f.type === "date" || f.type === "date-range") {
+            value = formatDateValue(value);
+          }
+
+          dataRow[f.label] = value ?? "";
+        });
+
+        sheet.addRow(dataRow);
+      });
+    });
+  }
           }else if (job.name === "exportCustomData") {
 // ================================================================
 // CUSTOM DATA EXPORT (GENERIC, BATCHED)
