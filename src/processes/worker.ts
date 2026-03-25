@@ -197,8 +197,18 @@ async function connectDB() {
     const lawFirmMap = new Map<string, any[]>();
 
     detailRows.forEach((row) => {
-      const lawFirmName =
-        row.rowData?.["Law Firm Name"] || "Unknown Law Firm";
+      let lawFirmName = row.rowData?.["Law Firm Name"];
+
+      // Handle array case
+      if (Array.isArray(lawFirmName)) {
+        lawFirmName = lawFirmName[0];
+      }
+
+      // Final fallback
+      lawFirmName = lawFirmName || "Unknown Law Firm";
+
+      // Ensure it's string
+      lawFirmName = String(lawFirmName);
 
       if (!lawFirmMap.has(lawFirmName)) {
         lawFirmMap.set(lawFirmName, []);
@@ -211,7 +221,9 @@ async function connectDB() {
     // Create Sheet per Law Firm
     // -----------------------------------------------
     lawFirmMap.forEach((firmRows, lawFirmName) => {
-      const safeSheetName = lawFirmName.substring(0, 30);
+      const safeSheetName = lawFirmName
+                            .replace(/[\\/?*[\]:]/g, "") // remove invalid chars
+                            .substring(0, 30);
 
       const sheet = workbook.addWorksheet(safeSheetName);
 
