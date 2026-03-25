@@ -2250,7 +2250,7 @@ export const exportDataSourceVersionDataToExcel = async (
       segregationField?: string;
     };
 
-    const { orgCode, userId, organizationId, defaultCurrency } = req.user;
+    const { orgCode, userId, organizationId, orgDefaultCurrency } = req.user;
 
     const summaryMode = isSummary === 'true';
 
@@ -2371,7 +2371,7 @@ export const exportDataSourceVersionDataToExcel = async (
       isSummary: summaryMode,
       summaryFields,
       segregationField,
-      defaultCurrency
+      defaultCurrency: orgDefaultCurrency
     };
 
     // --------------------------------------------------------------------

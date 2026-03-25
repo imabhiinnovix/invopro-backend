@@ -168,7 +168,12 @@ async function connectDB() {
                   value = formatDateValue(value);
                 }
 
-                dataRow[f.label] = value ?? "";
+                const label = f.mappedAttributeName.includes("Converted|") &&
+                        f.type === "number"
+                          ? `${f.label} (${defaultCurrency})`
+                          : f.label;
+
+                dataRow[label] = value ?? "";
               });
 
               worksheet.addRow(dataRow);
@@ -269,7 +274,12 @@ async function connectDB() {
             value = formatDateValue(value);
           }
 
-          dataRow[f.label] = value ?? "";
+           const label = f.mappedAttributeName.includes("Converted|") &&
+                        f.type === "number"
+                          ? `${f.label} (${defaultCurrency})`
+                          : f.label;
+
+          dataRow[label] = value ?? "";
         });
 
         sheet.addRow(dataRow);
