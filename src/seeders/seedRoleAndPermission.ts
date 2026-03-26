@@ -576,6 +576,20 @@ const defaultPermissionsAdmin = [
   { permission: 'GET:/invoicivixVendor/vendor-invoice/:invoiceId', isChangeable: false },
   { permission: 'POST:/invoicivixVendor/vendor-invoice/create', isChangeable: true },
   { permission: 'DELETE:/invoicivixVendor/vendor-invoice/delete/:invoiceId', isChangeable: true },
+
+  { permission: 'GET:/invoicivixVendor/payment-info/list', isChangeable: true },
+  { permission: 'GET:/invoicivixVendor/payment-info/:paymentId', isChangeable: false },
+  { permission: 'POST:/invoicivixVendor/payment-info/create', isChangeable: true },
+  { permission: 'PUT:/invoicivixVendor/payment-info/update/:paymentId', isChangeable: true },
+  { permission: 'DELETE:/invoicivixVendor/payment-info/delete/:paymentId', isChangeable: true },
+  { permission: 'GET:/invoicivixVendor/payment-info/summary', isChangeable: false },
+
+  { permission: 'GET:/invoicivixVendor/purchase-order/list', isChangeable: true },
+  { permission: 'GET:/invoicivixVendor/purchase-order/:poId', isChangeable: false },
+  { permission: 'POST:/invoicivixVendor/purchase-order/create', isChangeable: true },
+  { permission: 'PUT:/invoicivixVendor/purchase-order/update/:poId', isChangeable: true },
+  { permission: 'DELETE:/invoicivixVendor/purchase-order/delete/:poId', isChangeable: true },
+  { permission: 'GET:/invoicivixVendor/purchase-order/summary', isChangeable: false }
 ];
 
 const defaultPermissionsSuperAdmin = [

@@ -6,6 +6,8 @@ import activityRateCardRoutes from './invoicivixVendor/activityRateCard.route';
 import subVendorRoutes from './invoicivixVendor/subVendor.route';
 import vendorAttorneyRoutes from './invoicivixVendor/vendorAttorney.route';
 import vendorInvoiceRoutes from './invoicivixVendor/vendorInvoice.routes';
+import paymentInfoRoutes from './invoicivixVendor/paymentInfo.route';
+import purchaseOrderRoutes from './invoicivixVendor/purchaseOrder.routes';
 
 const router = Router();
 
@@ -17,5 +19,7 @@ router.use('/activity-rate-card', activityRateCardRoutes);
 router.use('/sub-vendor', subVendorRoutes);
 router.use('/vendor-attorney', vendorAttorneyRoutes);
 router.use('/vendor-invoice', vendorInvoiceRoutes);
+router.use('/payment-info', paymentInfoRoutes);
+router.use('/purchase-order', purchaseOrderRoutes);
 
 export default router;
