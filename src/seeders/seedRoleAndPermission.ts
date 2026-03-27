@@ -589,7 +589,13 @@ const defaultPermissionsAdmin = [
   { permission: 'POST:/invoicivixVendor/purchase-order/create', isChangeable: true },
   { permission: 'PUT:/invoicivixVendor/purchase-order/update/:poId', isChangeable: true },
   { permission: 'DELETE:/invoicivixVendor/purchase-order/delete/:poId', isChangeable: true },
-  { permission: 'GET:/invoicivixVendor/purchase-order/summary', isChangeable: false }
+  { permission: 'GET:/invoicivixVendor/purchase-order/summary', isChangeable: false },
+
+  { permission: 'GET:/activity-info/list', isChangeable: true },
+  { permission: 'GET:/activity-info/:activityId', isChangeable: false },
+  { permission: 'POST:/activity-info/create', isChangeable: true },
+  { permission: 'PUT:/activity-info/update/:activityId', isChangeable: true },
+  { permission: 'DELETE:/activity-info/delete/:activityId', isChangeable: true }
 ];
 
 const defaultPermissionsSuperAdmin = [
