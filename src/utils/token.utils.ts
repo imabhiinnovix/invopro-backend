@@ -17,3 +17,15 @@ export const verifyToken = async (token: string): Promise<JwtPayload | undefined
     return undefined; // Token is invalid or expired
   }
 };
+
+export const generateAIToken = (payload: any) => {
+  return jwt.sign(payload, process.env.AI_WEBHOOK_SECRET!, {
+    expiresIn: "2h",
+    issuer: "your-backend",
+    audience: "ai-server",
+  });
+};
+
+export const verifyAIToken = (token: string) => {
+  return jwt.verify(token, process.env.AI_WEBHOOK_SECRET!);
+};

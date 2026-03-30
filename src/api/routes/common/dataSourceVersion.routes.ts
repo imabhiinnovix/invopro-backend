@@ -15,9 +15,11 @@ import {
   // getNewChartData,
   listAllAvailableDataSourceVersionValue,
   listDataSourceVersion,
+  reconciledInvoices,
   updateSingleRowVersionValue,
 } from '../../controllers/common/dataSourceVersion.controller';
 import { permissionMiddleware } from '../../../middlewares/permission.middleware';
+import { uploadSingleFile } from '../../../middlewares/upload.middleware';
 
 const router = Router();
 
@@ -78,6 +80,13 @@ router.post(
   "/master-data",
   authenticateToken,
   getMasterDataListFromDataSource
+);
+
+router.post(
+  "/reconciledInvoices",
+  authenticateToken,
+  uploadSingleFile,
+  reconciledInvoices
 );
 
 export default router;

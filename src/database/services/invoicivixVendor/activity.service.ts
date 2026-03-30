@@ -36,17 +36,24 @@ export const deleteActivity = async (id: string) => {
 };
 
 export const getActivityList = async ({
-  query,
-  page,
-  limit,
+  query = {},
+  page = 1,
+  limit = 10,
   sort = { createdAt: -1 },
+  paginate = true,
 }: any) => {
-  const data = await Activity.find(query)
-    .skip((page - 1) * limit)
-    .limit(limit)
-    .sort(sort);
+  let mongoQuery = Activity.find(query).sort(sort);
 
-  const totalCount = await Activity.countDocuments(query);
+  // Apply pagination only if enabled
+  if (paginate) {
+    const skip = (page - 1) * limit;
+    mongoQuery = mongoQuery.skip(skip).limit(limit);
+  }
+
+  const [data, totalCount] = await Promise.all([
+    mongoQuery,
+    Activity.countDocuments(query),
+  ]);
 
   return { data, totalCount };
 };

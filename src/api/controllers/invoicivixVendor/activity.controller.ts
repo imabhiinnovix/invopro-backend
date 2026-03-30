@@ -4,6 +4,7 @@ import * as activityService from '../../../database/services/invoicivixVendor/ac
 import { Types } from 'mongoose';
 import fs from 'fs';
 import path from 'path';
+import { Queue } from 'bullmq';
 
 /**
  * ================================
@@ -66,6 +67,16 @@ export const createActivity = async (req: Request, res: Response, next: NextFunc
 
       createdActivities.push(activity);
     }
+
+    // Send Files to AI
+    const aiQueue = new Queue("aiFileQueue", {
+      connection: { host: "redis" },
+    });
+
+    await aiQueue.add("sendActivityFiles", {
+      versionValue,
+      activityType
+    });
 
     return res.status(201).json({
       success: true,
@@ -158,6 +169,16 @@ export const updateActivity = async (req: Request, res: Response, next: NextFunc
     }
 
     const updated = await activityService.updateActivity(activityId, updatePayload);
+
+     // Send Files to AI
+    const aiQueue = new Queue("aiFileQueue", {
+      connection: { host: "redis" },
+    });
+
+    await aiQueue.add("sendActivityFiles", {
+      versionValue,
+      activityType
+    });
 
     res.status(200).json({
       success: true,

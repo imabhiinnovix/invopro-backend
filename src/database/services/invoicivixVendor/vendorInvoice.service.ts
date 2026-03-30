@@ -36,27 +36,35 @@ export const deleteVendorInvoice = async (id: string) => {
 };
 
 export const getVendorInvoiceList = async ({
-  query,
+  query = {},
   select = '',
-  page,
-  limit,
+  page = 1,
+  limit = 10,
   sort = { createdAt: -1 },
   populate,
+  paginate = true,
 }: any) => {
   let queryBuilder: any = VendorInvoice.find(query)
     .select(select)
-    .skip((page - 1) * limit)
-    .limit(limit)
     .sort(sort);
 
+  // Apply pagination only if enabled
+  if (paginate) {
+    const skip = (page - 1) * limit;
+    queryBuilder = queryBuilder.skip(skip).limit(limit);
+  }
+
+  // Populate if provided
   if (populate && Array.isArray(populate)) {
     populate.forEach((field: any) => {
       queryBuilder = queryBuilder.populate(field);
     });
   }
 
-  const data = await queryBuilder.exec();
-  const totalCount = await VendorInvoice.countDocuments(query);
+  const [data, totalCount] = await Promise.all([
+    queryBuilder.exec(),
+    VendorInvoice.countDocuments(query),
+  ]);
 
   return { data, totalCount };
 };

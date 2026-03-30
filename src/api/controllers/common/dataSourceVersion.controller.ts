@@ -36,6 +36,7 @@ import { Queue } from 'bullmq';
 import { findCentralFiles, findLatestCentralFile, getLatestCentralMappingAndSeparator } from '../../../database/services/common/centralFile.service';
 import { getCentralFileValue } from '../../../database/services/common/defaultCentralFileValue.service';
 import { autoSyncReferenceRow } from '../../../utils/attributeAutoGenerate.utils';
+import fs from "fs";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -1268,7 +1269,24 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
                                                   isPopulateFixed: 2,
                                                 },
                                               });
-          await dataSourceVersionValueService.bulkUpdateRefCache(validatedData.refCache);                                    
+          await dataSourceVersionValueService.bulkUpdateRefCache(validatedData.refCache);
+
+          if(dataSourceId == "699f04727df5e0efe12d5027"){
+
+              // Send Files to AI
+              const aiQueue = new Queue("aiFileQueue", {
+                connection: { host: "redis" },
+              });
+
+              await aiQueue.add("sendPreValidatedFiles", {
+                dataSourceIds: ["699f04727df5e0efe12d5027"],
+                versionValue,
+                orgCode, // pass orgCode
+                vendorId,
+                user: req?.user
+              });
+
+            }                                    
 
         } catch (error) {
           console.error('Error while processing data:', error);
@@ -3436,6 +3454,74 @@ export const getMasterDataListFromDataSource = async (
       success: true,
       message: "Master Data List Fetched Successfully",
       data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+
+export const reconciledInvoices = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+
+    const { organizationId, orgCode } = req.user;
+
+    // ✅ validation
+    const file = req.file as Express.Multer.File;
+
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        message: "invoiceFile is required",
+      });
+    }
+
+    // ✅ Folder path (similar structure)
+    const destinationDir = path.join(
+      "uploads",
+      organizationId,
+      "reconciliation"
+    );
+
+    if (!fs.existsSync(destinationDir)) {
+      fs.mkdirSync(destinationDir, { recursive: true });
+    }
+
+    // ✅ Move file
+    const newFilePath = path.join(destinationDir, file.filename);
+    fs.renameSync(file.path, newFilePath);
+
+    const normalizedPath = newFilePath.replace(/\\/g, "/");
+
+    // ---------------------------------------------
+    // 🚀 Add Job to Queue
+    // ---------------------------------------------
+    // queue instance
+    const aiAnalyzeDataQueue = new Queue("aiAnalyzeData", {
+      connection: { host: "redis" },
+    });
+    await aiAnalyzeDataQueue.add(
+      "aiReconcilationInvoices",
+      {
+        filePath: normalizedPath,
+        fileName: file.originalname,
+        orgCode,
+        dataSourceId: "699f04727df5e0efe12d5027"
+      }
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Invoice uploaded and sent for reconciliation",
+      data: {
+        fileName: file.originalname,
+        filePath: normalizedPath,
+      },
     });
   } catch (err) {
     next(err);
