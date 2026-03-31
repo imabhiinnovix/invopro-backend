@@ -1285,18 +1285,20 @@ new Worker(
           const key = headers[colNumber];
 
           if (key === "DB Id") {
-            dbId = cell.value?.toString();
+            dbId = cell.value?.toString().trim();
           } else if (validatedFields.includes(key)) {
             // ✅ ONLY validated fields
             updateFields[`rowData.${key}`] = cell.value;
           }
         });
 
+        console.log('updateFields', updateFields, dbId);
+
         if (!dbId || Object.keys(updateFields).length === 0) continue;
 
         bulkOps.push({
           updateOne: {
-            filter: { _id: dbId },
+            filter: { _id: new mongoose.Types.ObjectId(dbId) },
             update: {
               $set: {
                 ...updateFields,
