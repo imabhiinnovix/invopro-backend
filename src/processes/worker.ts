@@ -12,7 +12,7 @@ import "../database/models/common/dashboard";
 import "../database/models/common/dataSource";
 import "../database/models/common/user";
 import fs from "fs";
-import { formatDateValue, getValidatedFields, resolveServiceMethod } from "../utils/common.utils";
+import { formatDateValue, getValidatedFieldsMap, resolveServiceMethod } from "../utils/common.utils";
 import { getDashboardWidget, updateDashboardWidget } from "../database/services/common/dashboardWidget.services";
 import axios from "axios";
 import { buildWidgetRequestPayload } from "../utils/buildWidgetRequest.utils";
@@ -1237,9 +1237,9 @@ new Worker(
       // ---------------------------------------------
       // ✅ Get ONLY Validated Fields
       // ---------------------------------------------
-      const validatedFields = getValidatedFields(dataSourceDetails);
+      const validatedFieldMap = getValidatedFieldsMap(dataSourceDetails);
 
-      console.log("✅ Validated Fields:", validatedFields);
+      console.log("✅ Validated Fields:", validatedFieldMap);
 
       // ---------------------------------------------
       // ✅ Resolve Schema
@@ -1286,9 +1286,10 @@ new Worker(
 
           if (key === "DB Id") {
             dbId = cell.value?.toString().trim();
-          } else if (validatedFields.includes(key)) {
-            // ✅ ONLY validated fields
-            updateFields[`rowData.${key}`] = cell.value;
+          }  else if (validatedFieldMap[key]) {
+            const mappedKey = validatedFieldMap[key];
+
+            updateFields[`rowData.${mappedKey}`] = cell.value;
           }
         });
 
