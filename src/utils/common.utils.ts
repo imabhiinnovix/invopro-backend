@@ -493,6 +493,14 @@ export const getConversionRate = async (from: string, to: string) => {
   }
 };
 
+export const getValidatedFields = (dataSourceDetails: any): string[] => {
+  return (dataSourceDetails.fieldSettings || [])
+    .filter((field: any) =>
+      field.mappedAttributeName?.startsWith("Validated|")
+    )
+    .map((field: any) => field.mappedAttributeName);
+};
+
 
 
 

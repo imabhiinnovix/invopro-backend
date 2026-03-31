@@ -12,7 +12,7 @@ import "../database/models/common/dashboard";
 import "../database/models/common/dataSource";
 import "../database/models/common/user";
 import fs from "fs";
-import { formatDateValue, resolveServiceMethod } from "../utils/common.utils";
+import { formatDateValue, getValidatedFields, resolveServiceMethod } from "../utils/common.utils";
 import { getDashboardWidget, updateDashboardWidget } from "../database/services/common/dashboardWidget.services";
 import axios from "axios";
 import { buildWidgetRequestPayload } from "../utils/buildWidgetRequest.utils";
@@ -1235,7 +1235,14 @@ new Worker(
       }
 
       // ---------------------------------------------
-      // ✅ Resolve Schema (CORRECT WAY)
+      // ✅ Get ONLY Validated Fields
+      // ---------------------------------------------
+      const validatedFields = getValidatedFields(dataSourceDetails);
+
+      console.log("✅ Validated Fields:", validatedFields);
+
+      // ---------------------------------------------
+      // ✅ Resolve Schema
       // ---------------------------------------------
       const schemaName =
         getSchemaNameBasedOnVersionCodeAndOrgCode({
@@ -1258,9 +1265,6 @@ new Worker(
 
       const headers: string[] = [];
 
-      // ---------------------------------------------
-      // ✅ Extract Headers
-      // ---------------------------------------------
       worksheet.getRow(1).eachCell((cell, colNumber) => {
         headers[colNumber] = cell.value?.toString() || "";
       });
@@ -1274,28 +1278,29 @@ new Worker(
       for (let i = 2; i <= worksheet.rowCount; i++) {
         const row = worksheet.getRow(i);
 
-        const rowData: Record<string, any> = {};
         let dbId: any = null;
+        const updateFields: Record<string, any> = {};
 
         row.eachCell((cell, colNumber) => {
           const key = headers[colNumber];
 
           if (key === "DB Id") {
             dbId = cell.value?.toString();
-          } else {
-            rowData[key] = cell.value;
+          } else if (validatedFields.includes(key)) {
+            // ✅ ONLY validated fields
+            updateFields[`rowData.${key}`] = cell.value;
           }
         });
 
-        if (!dbId) continue;
+        if (!dbId || Object.keys(updateFields).length === 0) continue;
 
         bulkOps.push({
           updateOne: {
             filter: { _id: dbId },
             update: {
               $set: {
-                rowData,
-                status: "active", // or "reconciled"
+                ...updateFields,
+                status: "active", // optional
               },
             },
           },
@@ -1312,7 +1317,7 @@ new Worker(
             modified: result.modifiedCount,
           });
 
-          bulkOps.length = 0; // clear
+          bulkOps.length = 0;
         }
       }
 
