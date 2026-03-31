@@ -1060,6 +1060,8 @@ new Worker(
           const fileName = `${dataSourceDetails.name}_filtered_${Date.now()}.xlsx`;
           const tempFilePath = path.join(os.tmpdir(), fileName);
 
+          console.log('tempFilePath',tempFilePath);
+
           const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({
             filename: tempFilePath,
             useStyles: false,
