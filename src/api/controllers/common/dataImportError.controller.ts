@@ -1237,6 +1237,7 @@ export const resolveDataImportError = async (
 
         await updateCustomDataSourceVersionIsCurrentFunction({
           dataSourceVersionId: ctx.dataSourceVersionId,
+          user: req.user
         });
       }
 
@@ -1451,6 +1452,7 @@ export const resolveDataImportError = async (
 
         await updateCustomDataSourceVersionIsCurrentFunction({
           dataSourceVersionId: ctx.dataSourceVersionId,
+          user: req.user
         });
       }
 

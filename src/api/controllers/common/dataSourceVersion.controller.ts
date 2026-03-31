@@ -1281,7 +1281,6 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
               await aiQueue.add("sendPreValidatedFiles", {
                 dataSourceIds: ["699f04727df5e0efe12d5027"],
                 versionValue,
-                orgCode, // pass orgCode
                 vendorId,
                 user: req?.user
               });
@@ -1986,8 +1985,10 @@ export const createUpdateCustomDataSourceVersionValueFunction = async ({
 
 export const updateCustomDataSourceVersionIsCurrentFunction = async ({
   dataSourceVersionId,
+  user
 }: {
   dataSourceVersionId: string;
+  user: any;
 }) => {
   try {
     const dataSourceVersionDetails: any = await dataSourceVersionService.getDataSourceVersionDetailBasedOnId({
@@ -2006,6 +2007,21 @@ export const updateCustomDataSourceVersionIsCurrentFunction = async ({
         status: 'completed',
         isCurrent: true,
       });
+      if(dataSourceVersionDetails.dataSourceId == "699f04727df5e0efe12d5027"){
+
+              // Send Files to AI
+              const aiQueue = new Queue("aiFileQueue", {
+                connection: { host: "redis" },
+              });
+
+              await aiQueue.add("sendPreValidatedFiles", {
+                dataSourceIds: ["699f04727df5e0efe12d5027"],
+                versionValue: dataSourceVersionDetails.versionValue,
+                vendorId: dataSourceVersionDetails.vendorId,
+                user
+              });
+
+      }  
     }
   } catch (e) {
     console.log('Error in createUpdateCustomDataSourceVersionValueFunction.', e);
@@ -3521,6 +3537,49 @@ export const reconciledInvoices = async (
       data: {
         fileName: file.originalname,
         filePath: normalizedPath,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const sendRevalidateRows = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { organizationId, orgCode } = req.user;
+    const { dataSourceId, rowIds } = req.body;
+
+    // ✅ validation (same style as your reference)
+    if (!dataSourceId || !rowIds || !rowIds.length) {
+      return res.status(400).json({
+        success: false,
+        message: "dataSourceId and rowIds are required",
+      });
+    }
+
+    // ---------------------------------------------
+    // 🚀 Add Job to Queue (same inline pattern)
+    // ---------------------------------------------
+    const aiFileQueue = new Queue("aiFileQueue", {
+      connection: { host: "redis" },
+    });
+
+    await aiFileQueue.add("sendPreValidatedRows", {
+      dataSourceId,
+      rowIds,
+      user: req.user
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Rows sent for revalidation",
+      data: {
+        dataSourceId,
+        rowIds,
       },
     });
   } catch (err) {

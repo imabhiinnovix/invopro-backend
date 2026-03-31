@@ -16,10 +16,12 @@ import {
   listAllAvailableDataSourceVersionValue,
   listDataSourceVersion,
   reconciledInvoices,
+  sendRevalidateRows,
   updateSingleRowVersionValue,
 } from '../../controllers/common/dataSourceVersion.controller';
 import { permissionMiddleware } from '../../../middlewares/permission.middleware';
 import { uploadSingleFile } from '../../../middlewares/upload.middleware';
+import { authenticateAIToken } from '../../../middlewares/aiAuth.middleware';
 
 const router = Router();
 
@@ -84,9 +86,15 @@ router.post(
 
 router.post(
   "/reconciledInvoices",
-  authenticateToken,
+  authenticateAIToken,
   uploadSingleFile,
   reconciledInvoices
+);
+
+router.post(
+  "/revalidateRows",
+  authenticateToken,
+  sendRevalidateRows
 );
 
 export default router;

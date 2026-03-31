@@ -666,9 +666,11 @@ new Worker(
   async (job) => {
     try {
 
-      if (job.name !== "sendPreValidatedFiles" && job.name !== "sendActivityFiles") return;
+      if (job.name !== "sendPreValidatedFiles" && job.name !== "sendActivityFiles" && job.name !== "sendPreValidatedRows") return;
 
-      const { dataSourceIds, versionValue, orgCode, vendorId, activityType, user } = job.data;
+      const { dataSourceIds, versionValue, vendorId, activityType, user } = job.data;
+
+      const { orgCode } = user;
       
       console.log(`🚀 Job Started: ${job.name}`);
       
@@ -683,6 +685,7 @@ new Worker(
                       orgDefaultCurrency: user.organizationId?.defaultCurrency || "USD",
                       scope: "ai:invoice:process",
                     });
+        console.log('aiToken', aiToken);            
 
         const tempFiles: { path: string; fileType: string }[] = [];
         const generatedTempFiles: string[] = [];
@@ -897,7 +900,7 @@ new Worker(
           formData.append("file_type", file.fileType);
         });
 
-        formData.append("webhookUrl", `${process.env.BASE_URL}/api/v1/common/dataSourceVersion/reconciledInvoices`);
+        formData.append("webhookUrl", `${process.env.BASE_BACKEND_URL}/api/v1/common/dataSourceVersion/reconciledInvoices`);
         formData.append("authToken", aiToken);
 
         // ✅ Vendor Invoice PDFs (Multiple)
@@ -1001,6 +1004,186 @@ new Worker(
         console.log("✅ Activity upload success:", res.data);
 
         return res.data;
+        }
+      }
+
+      // =========================================================
+      // 🟣 JOB 3: SEND PRE-VALIDATED ROWS
+      // =========================================================
+      if (job.name === "sendPreValidatedRows") {
+        console.log("Pre-validated rows job started");
+
+      const { dataSourceId, rowIds, user } = job.data;
+
+        if (!dataSourceId || !rowIds?.length) {
+          console.warn("⚠ Missing dataSourceId or rowIds");
+          return;
+        }
+
+        const tempFiles: { path: string; fileType: string }[] = [];
+        const generatedTempFiles: string[] = [];
+
+        try {
+
+          const aiToken = generateAIToken({
+                      userId: user.userId,
+                      organizationId: user.organizationId,
+                      orgCode: user.organizationId?.code,
+                      orgDefaultCurrency: user.organizationId?.defaultCurrency || "USD",
+                      scope: "ai:invoice:process",
+                    });
+          console.log('aiToken', aiToken);          
+          // ---------------------------------------------
+          // ✅ Fetch DataSource
+          // ---------------------------------------------
+          const dataSourceDetails: any =
+            await dataSourceService.findDataSourceById(dataSourceId, true);
+
+          if (!dataSourceDetails) {
+            console.warn("⚠ DataSource not found");
+            return;
+          }
+
+          const schemaName =
+            getSchemaNameBasedOnVersionCodeAndOrgCode({
+              orgCode,
+              versionCode: dataSourceDetails.code,
+            });
+
+          // ---------------------------------------------
+          // 📄 Excel Setup
+          // ---------------------------------------------
+          const fileName = `${dataSourceDetails.name}_filtered_${Date.now()}.xlsx`;
+          const tempFilePath = path.join(os.tmpdir(), fileName);
+
+          const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({
+            filename: tempFilePath,
+            useStyles: false,
+            useSharedStrings: false,
+          });
+
+          const worksheet = workbook.addWorksheet("Filtered Rows");
+
+          const fields = dataSourceDetails.fieldSettings.filter(
+            (f: any) => !f.isDerived
+          );
+
+          worksheet.columns = [
+            { header: "DB Id", key: "dbId", width: 30 },
+            { header: "Conversion Rate", key: "conversionRate", width: 30 },
+            ...fields.map((f: any) => ({
+              header: f.label,
+              key: f.label,
+              width: 25,
+            })),
+          ];
+
+          // ---------------------------------------------
+          // 📊 Fetch ONLY SELECTED ROWS
+          // ---------------------------------------------
+          const result =
+            await dataSourceVersionValueService.getDataSourceVersionValueV1({
+              schemaName,
+              query: {
+                _id: { $in: rowIds }, // 🔥 MAIN FILTER
+                status: "active",
+              },
+              page: 1,
+              limit: rowIds.length,
+              sort: {},
+              filters: {},
+              searchFilters: {},
+              entityId: dataSourceDetails.entityId,
+            });
+
+          const rows = result?.data ?? [];
+
+          if (!rows.length) {
+            console.warn("⚠ No matching rows found");
+            return;
+          }
+
+          // ---------------------------------------------
+          // 📄 Write Rows
+          // ---------------------------------------------
+          for (const row of rows) {
+            const excelRow: any = {
+              dbId: row._id?.toString() || "",
+            };
+
+            fields.forEach((f: any) => {
+              let value = row.rowData?.[f.mappedAttributeName];
+
+              if (Array.isArray(value)) value = value.join(", ");
+              if (value === null || value === undefined) value = "";
+
+              excelRow[f.label] = value;
+            });
+
+            excelRow["conversionRate"] = row?.conversion?.rate;
+
+            worksheet.addRow(excelRow).commit();
+          }
+
+          await worksheet.commit();
+          await workbook.commit();
+
+          tempFiles.push({
+            path: tempFilePath,
+            fileType: dataSourceDetails.code,
+          });
+
+          generatedTempFiles.push(tempFilePath);
+
+          // ---------------------------------------------
+          // 📤 Upload to AI
+          // ---------------------------------------------
+          const formData = new FormData();
+
+          tempFiles.forEach((file) => {
+            formData.append(
+              "files",
+              fs.createReadStream(file.path) as any,
+              path.basename(file.path)
+            );
+            formData.append("file_type", file.fileType);
+          });
+
+          formData.append("webhookUrl", `${process.env.BASE_BACKEND_URL}/api/v1/common/dataSourceVersion/reconciledInvoices`);
+          formData.append("authToken", aiToken);
+
+          const response = await axios.post(
+            `${process.env.BASE_AI_SERVICE_URL}/validateInvoice`,
+            formData,
+            {
+              headers: {
+                ...formData.getHeaders(),
+              },
+              maxBodyLength: Infinity,
+              maxContentLength: Infinity,
+            }
+          );
+
+          console.log("✅ Pre-validated rows AI success:", response.data);
+
+          // ---------------------------------------------
+          // 🧹 Cleanup
+          // ---------------------------------------------
+          generatedTempFiles.forEach((file) => {
+            try {
+              if (fs.existsSync(file)) {
+                fs.unlinkSync(file);
+              }
+            } catch {
+              console.warn("⚠ Failed to delete temp file:", file);
+            }
+          });
+
+          return response.data;
+
+        } catch (err: any) {
+          console.error("❌ Pre-validated rows job failed:", err.message);
+          throw err;
         }
       }
     } catch (error: any) {
