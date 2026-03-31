@@ -922,6 +922,8 @@ new Worker(
         formData.append("vendorName", vendorName);
         formData.append("vendorId", vendorId);
 
+        console.log('validateInvoice payload', JSON.stringify(formData));
+
         const response = await axios.post(
           `${process.env.BASE_AI_SERVICE_URL}/validateInvoice`,
           formData,
@@ -1237,7 +1239,7 @@ new Worker(
       // ---------------------------------------------
       // ✅ Get ONLY Validated Fields
       // ---------------------------------------------
-      const validatedFieldMap = getValidatedFieldsMap(dataSourceDetails);
+      const validatedFieldMap: any = getValidatedFieldsMap(dataSourceDetails);
 
       console.log("✅ Validated Fields:", validatedFieldMap);
 
@@ -1283,13 +1285,23 @@ new Worker(
 
         row.eachCell((cell, colNumber) => {
           const key = headers[colNumber];
-
+          let value = cell.value;
           if (key === "DB Id") {
-            dbId = cell.value?.toString().trim();
+            dbId = value?.toString().trim();
           }  else if (validatedFieldMap[key]) {
-            const mappedKey = validatedFieldMap[key];
+            const field = validatedFieldMap[key];
 
-            updateFields[`rowData.${mappedKey}`] = cell.value;
+             // If array → convert to comma-separated
+            if (Array.isArray(value)) {
+              value = value.join(", ");
+            }
+
+            // If date or date-range → format
+            if (field.type === "date" || field.type === "date-range") {
+              value = formatDateValue(value);
+            }
+
+            updateFields[`rowData.${field.mappedAttributeName}`] = value;
           }
         });
 
@@ -1328,6 +1340,7 @@ new Worker(
       // 🚀 Final Flush
       // ---------------------------------------------
       if (bulkOps.length) {
+        console.log('bulkOps', JSON.stringify(bulkOps));
         const result = await Model.bulkWrite(bulkOps);
 
         console.log("📊 Final Bulk Result:", {

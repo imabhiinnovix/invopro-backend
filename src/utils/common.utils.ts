@@ -496,11 +496,11 @@ export const getConversionRate = async (from: string, to: string) => {
 export const getValidatedFieldsMap = (
   dataSourceDetails: any
 ): Record<string, string> => {
-  const validateFieldMap: Record<string, string> = {};
+  const validateFieldMap: Record<string, any> = {};
 
   (dataSourceDetails.fieldSettings || []).forEach((field: any) => {
     if (field.mappedAttributeName?.startsWith("Validated|")) {
-      validateFieldMap[field.label] = field.mappedAttributeName;
+      validateFieldMap[field.label] = field;
     }
   });
 
