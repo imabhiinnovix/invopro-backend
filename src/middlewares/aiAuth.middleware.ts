@@ -2,8 +2,9 @@
 
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { verifyAIToken } from "../utils/token.utils";
 
-export const authenticateAIToken = (
+export const authenticateAIToken = async(
   req: Request,
   res: Response,
   next: NextFunction
@@ -16,10 +17,7 @@ export const authenticateAIToken = (
       return res.status(401).json({ message: "Missing AI token" });
     }
 
-    const decoded: any = jwt.verify(
-      token,
-      process.env.AI_WEBHOOK_SECRET!
-    );
+    const decoded: any = await verifyAIToken(token);
 
     // ✅ Scope validation
     if (decoded.scope !== "ai:invoice:process") {
@@ -27,8 +25,10 @@ export const authenticateAIToken = (
     }
 
     req.user = {
-      userId: decoded.userId,
-      organizationId: decoded.organizationId,
+        userId: decoded.userId,
+        organizationId: decoded.organizationId,
+        orgCode: decoded.orgCode,
+        orgDefaultCurrency: decoded.defaultCurrency,
     };
 
     next();
