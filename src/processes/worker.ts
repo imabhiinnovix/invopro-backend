@@ -1256,6 +1256,10 @@ new Worker(
         schemaName
       ) as Model<Document>;
 
+      console.log("schemaName:", schemaName);
+      console.log("orgCode:", orgCode);
+      console.log("versionCode:", dataSourceDetails.code);
+
       // ---------------------------------------------
       // 📄 Read Excel
       // ---------------------------------------------
