@@ -670,6 +670,8 @@ new Worker(
 
       const { dataSourceIds, versionValue, vendorId, activityType, user } = job.data;
 
+      console.log('job data', JSON.stringify(job.data));
+
       const { orgCode } = user;
       
       console.log(`🚀 Job Started: ${job.name}`);
@@ -1014,6 +1016,8 @@ new Worker(
         console.log("Pre-validated rows job started");
 
       const { dataSourceId, rowIds, user } = job.data;
+
+      console.log('job data', JSON.stringify(job.data));
 
         if (!dataSourceId || !rowIds?.length) {
           console.warn("⚠ Missing dataSourceId or rowIds");
