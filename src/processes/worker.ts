@@ -683,8 +683,8 @@ new Worker(
         const aiToken = generateAIToken({
                       userId: user.userId,
                       organizationId: user.organizationId,
-                      orgCode: user.organizationId?.code,
-                      orgDefaultCurrency: user.organizationId?.defaultCurrency || "USD",
+                      orgCode: user.orgCode,
+                      orgDefaultCurrency: user?.orgDefaultCurrency || "USD",
                       scope: "ai:invoice:process",
                     });
         console.log('aiToken', aiToken);            
@@ -1036,8 +1036,8 @@ new Worker(
           const aiToken = generateAIToken({
                       userId: user.userId,
                       organizationId: user.organizationId,
-                      orgCode: user.organizationId?.code,
-                      orgDefaultCurrency: user.organizationId?.defaultCurrency || "USD",
+                      orgCode: user.orgCode,
+                      orgDefaultCurrency: user?.orgDefaultCurrency || "USD",
                       scope: "ai:invoice:process",
                     });
           console.log('aiToken', aiToken);          
