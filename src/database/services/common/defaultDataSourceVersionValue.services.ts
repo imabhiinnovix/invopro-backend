@@ -231,26 +231,6 @@ export const getDataSourceVersionValueV1 = async ({
   conditions?: any[];
 }) => {
   try {
-
-    console.log(
-  "Query Params:",
-  JSON.stringify(
-    {
-      schemaName,
-      query,
-      select,
-      page,
-      limit,
-      sort,
-      filters,
-      searchFilters,
-      entityId,
-      conditions,
-    },
-    null,
-    2
-  )
-);
     const DataSourceVersionValue = createDefaultDataSourceVersionModel(schemaName);
     const entity: any = await findEntityById(entityId);
 
