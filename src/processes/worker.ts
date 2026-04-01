@@ -833,6 +833,7 @@ new Worker(
                 });
 
               const rows = result?.data ?? [];
+              console.log('total Rows', rows.length);
               if (!rows.length) break;
 
               for (const row of rows) {
