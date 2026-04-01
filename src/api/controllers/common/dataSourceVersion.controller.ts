@@ -3586,7 +3586,7 @@ export const sendRevalidateRows = async (
     // 🔴 PRIORITY MODE (ROW IDS)
     // ---------------------------------------------
     if (rowIds?.length) {
-      query._id = { $in: rowIds };
+      query._id = { $in: rowIds.map((id: string) => new mongoose.Types.ObjectId(id)) };
     } else {
       // ---------------------------------------------
       // 🧠 FIELD MAPPING

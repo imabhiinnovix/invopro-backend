@@ -846,7 +846,12 @@ new Worker(
                   if (Array.isArray(value)) value = value.join(", ");
                   if (value === null || value === undefined) value = "";
 
-                  excelRow[f.label] = value;
+                  const label = f.mappedAttributeName.includes("Converted|") &&
+                        f.type === "number"
+                          ? `${f.label} (${user.orgDefaultCurrency})`
+                          : f.label;
+
+                  excelRow[label] = value;
                 });
                 excelRow['conversionRate'] = row?.conversion?.rate;
 
@@ -1088,6 +1093,8 @@ new Worker(
 
       const rows = result?.data ?? [];
 
+      console.log('total rows', rows.length);
+
       if (!rows.length) break;
 
       for (const row of rows) {
@@ -1102,7 +1109,12 @@ new Worker(
           if (Array.isArray(value)) value = value.join(", ");
           if (value === null || value === undefined) value = "";
 
-          excelRow[f.label] = value;
+          const label = f.mappedAttributeName.includes("Converted|") &&
+                        f.type === "number"
+                          ? `${f.label} (${user.orgDefaultCurrency})`
+                          : f.label;
+
+          excelRow[label] = value;
         });
 
         worksheet.addRow(excelRow).commit();
