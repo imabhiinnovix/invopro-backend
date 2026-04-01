@@ -671,8 +671,6 @@ new Worker(
       const { dataSourceIds, versionValue, vendorId, activityType, user } = job.data;
 
       console.log('job data', JSON.stringify(job.data));
-
-      const { orgCode } = user;
       
       console.log(`🚀 Job Started: ${job.name}`);
       
@@ -763,7 +761,7 @@ new Worker(
 
             const schemaName =
               getSchemaNameBasedOnVersionCodeAndOrgCode({
-                orgCode,
+                orgCode: user.orgCode,
                 versionCode: dataSourceDetails.code,
               });
 
