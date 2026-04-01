@@ -833,7 +833,7 @@ new Worker(
                 });
 
               const rows = result?.data ?? [];
-              console.log('total Rows', rows.length);
+              console.log('total Rows', rows.length, schemaName);
               if (!rows.length) break;
 
               for (const row of rows) {
@@ -1094,7 +1094,7 @@ new Worker(
 
       const rows = result?.data ?? [];
 
-      console.log('total rows', rows.length);
+      console.log('total rows', rows.length, schemaName);
 
       if (!rows.length) break;
 
