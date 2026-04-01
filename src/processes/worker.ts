@@ -1038,7 +1038,6 @@ new Worker(
         orgCode: user.orgCode,
         versionCode: dataSourceDetails.code,
       });
-    const entityId =  dataSourceDetails.entityId;
     const fieldSettings = dataSourceDetails.fieldSettings;
 
     const aiToken = generateAIToken({
@@ -1089,7 +1088,7 @@ new Worker(
           sort: {},
           filters: filters || {},
           searchFilters: searchFilters || {},
-          entityId,
+          entityId: dataSourceDetails.entityId
         });
 
       const rows = result?.data ?? [];
