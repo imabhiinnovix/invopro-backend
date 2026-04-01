@@ -1002,6 +1002,7 @@ new Worker(
             },
             maxBodyLength: Infinity,
             maxContentLength: Infinity,
+            timeout: 15 * 60 * 1000,
           }
         );
 
@@ -1142,6 +1143,7 @@ new Worker(
         headers: formData.getHeaders(),
         maxBodyLength: Infinity,
         maxContentLength: Infinity,
+        timeout: 15 * 60 * 1000,
       }
     );
 
