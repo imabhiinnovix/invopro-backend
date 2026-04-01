@@ -3550,37 +3550,133 @@ export const sendRevalidateRows = async (
   next: NextFunction
 ) => {
   try {
-    const { organizationId, orgCode } = req.user;
-    const { dataSourceId, rowIds } = req.body;
+    const { dataSourceId, rowIds, filters, search, year, month } = req.body;
 
-    // ✅ validation (same style as your reference)
-    if (!dataSourceId || !rowIds || !rowIds.length) {
+    if (!dataSourceId) {
       return res.status(400).json({
         success: false,
-        message: "dataSourceId and rowIds are required",
+        message: "dataSourceId is required",
       });
     }
 
     // ---------------------------------------------
-    // 🚀 Add Job to Queue (same inline pattern)
+    // 📦 DataSource
+    // ---------------------------------------------
+    const dataSourceDetails: any =
+      await dataSourceService.findDataSourceById(dataSourceId, true);
+
+    if (!dataSourceDetails) {
+      return res.status(404).json({
+        success: false,
+        message: "Data source not found",
+      });
+    }
+
+    // ---------------------------------------------
+    // 🧩 BASE QUERY
+    // ---------------------------------------------
+    let query: any = {
+      status: "active",
+    };
+
+    let finalFilters: any = {};
+    let finalSearchFilters: any = {};
+
+    // ---------------------------------------------
+    // 🔴 PRIORITY MODE (ROW IDS)
+    // ---------------------------------------------
+    if (rowIds?.length) {
+      query._id = { $in: rowIds };
+    } else {
+      // ---------------------------------------------
+      // 🧠 FIELD MAPPING
+      // ---------------------------------------------
+      const fieldOptions = await entityService.getEntityFieldOptions(
+        String(dataSourceDetails.entityId._id)
+      );
+
+      for (const field of dataSourceDetails.fieldSettings) {
+        if (field.isDerived && field.attributeId) {
+          const derived = await findDerivedFieldById(field.attributeId);
+          if (derived) {
+            field.mappedAttributeName = `Derived.${derived.name}`;
+          }
+          continue;
+        }
+
+        const match = fieldOptions.find(
+          (opt) =>
+            String(opt.value.attributeId) === String(field.attributeId) &&
+            JSON.stringify(opt.value.refAttributeId || []) ===
+              JSON.stringify(field.refAttributeId || [])
+        );
+
+        field.mappedAttributeName = match?.label || "Unknown";
+      }
+
+      // ---------------------------------------------
+      // 🧠 VERSION FILTER
+      // ---------------------------------------------
+      const versionQuery: any = {
+        dataSourceId,
+        isCurrent: true,
+      };
+
+      if (year && month) {
+        versionQuery.versionValue = `${year}-${month.padStart(2, "0")}`;
+      } else if (year) {
+        versionQuery.versionValue = { $regex: `^${year}` };
+      }
+
+      const versionList =
+        await dataSourceVersionService.getDataSourceVersionList({
+          query: versionQuery,
+        });
+
+      const versionIds = versionList?.data?.map((v: any) => v._id) || [];
+
+      if (dataSourceDetails.versionType !== "constant") {
+        query.dataSourceVersionId = { $in: versionIds };
+      }
+
+      // ---------------------------------------------
+      // 🔍 SEARCH FILTERS
+      // ---------------------------------------------
+      if (search) {
+        for (const field of dataSourceDetails.fieldSettings) {
+          if (
+            field.mappedAttributeName &&
+            field.mappedAttributeName !== "Unknown"
+          ) {
+            finalSearchFilters[field.mappedAttributeName] = search;
+          }
+        }
+      }
+
+      // ---------------------------------------------
+      // 🎯 FILTERS
+      // ---------------------------------------------
+      finalFilters = filters || {};
+    }
+
+    // ---------------------------------------------
+    // 🚀 QUEUE
     // ---------------------------------------------
     const aiFileQueue = new Queue("aiFileQueue", {
       connection: { host: "redis" },
     });
 
     await aiFileQueue.add("sendPreValidatedRows", {
-      dataSourceId,
-      rowIds,
-      user: req.user
+      dataSourceDetails,
+      query,
+      filters: finalFilters,
+      searchFilters: finalSearchFilters,
+      user: req.user,
     });
 
     return res.status(200).json({
       success: true,
-      message: "Rows sent for revalidation",
-      data: {
-        dataSourceId,
-        rowIds,
-      },
+      message: "Revalidation job started",
     });
   } catch (err) {
     next(err);

@@ -1016,186 +1016,151 @@ new Worker(
       // =========================================================
       // 🟣 JOB 3: SEND PRE-VALIDATED ROWS
       // =========================================================
-      if (job.name === "sendPreValidatedRows") {
-        console.log("Pre-validated rows job started");
+     if (job.name === "sendPreValidatedRows") {
+  console.log("🚀 Pre-validated rows job started");
 
-      const { dataSourceId, rowIds, user } = job.data;
+  const {
+    query,
+    filters,
+    searchFilters,
+    user,
+    dataSourceDetails
+  } = job.data;
 
-      console.log('job data', JSON.stringify(job.data));
+  try {
 
-        if (!dataSourceId || !rowIds?.length) {
-          console.warn("⚠ Missing dataSourceId or rowIds");
-          return;
-        }
+    const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+        orgCode: user.orgCode,
+        versionCode: dataSourceDetails.code,
+      });
+    const entityId =  dataSourceDetails.entityId;
+    const fieldSettings = dataSourceDetails.fieldSettings;
 
-        const tempFiles: { path: string; fileType: string }[] = [];
-        const generatedTempFiles: string[] = [];
+    const aiToken = generateAIToken({
+      userId: user.userId,
+      organizationId: user.organizationId,
+      orgCode: user.orgCode,
+      orgDefaultCurrency: user?.orgDefaultCurrency || "USD",
+      scope: "ai:invoice:process",
+    });
 
-        try {
+    // ---------------------------------------------
+    // 📄 Excel Setup
+    // ---------------------------------------------
+    const fileName = `revalidate_${Date.now()}.xlsx`;
+    const tempFilePath = path.join(os.tmpdir(), fileName);
 
-          const aiToken = generateAIToken({
-                      userId: user.userId,
-                      organizationId: user.organizationId,
-                      orgCode: user.orgCode,
-                      orgDefaultCurrency: user?.orgDefaultCurrency || "USD",
-                      scope: "ai:invoice:process",
-                    });
-          console.log('aiToken', aiToken);          
-          // ---------------------------------------------
-          // ✅ Fetch DataSource
-          // ---------------------------------------------
-          const dataSourceDetails: any =
-            await dataSourceService.findDataSourceById(dataSourceId, true);
+    const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({
+      filename: tempFilePath,
+    });
 
-          if (!dataSourceDetails) {
-            console.warn("⚠ DataSource not found");
-            return;
-          }
+    const worksheet = workbook.addWorksheet("Rows");
 
-          const schemaName =
-            getSchemaNameBasedOnVersionCodeAndOrgCode({
-              orgCode,
-              versionCode: dataSourceDetails.code,
-            });
+    const fields = fieldSettings.filter((f: any) => !f.isDerived);
 
-          // ---------------------------------------------
-          // 📄 Excel Setup
-          // ---------------------------------------------
-          const fileName = `${dataSourceDetails.name}_filtered_${Date.now()}.xlsx`;
-          const tempFilePath = path.join(os.tmpdir(), fileName);
+    worksheet.columns = [
+      { header: "DB Id", key: "dbId", width: 30 },
+      { header: "Conversion Rate", key: "conversionRate", width: 30 },
+      ...fields.map((f: any) => ({
+        header: f.label,
+        key: f.label,
+        width: 25,
+      })),
+    ];
 
-          console.log('tempFilePath',tempFilePath);
+    // ---------------------------------------------
+    // 📊 BATCH PROCESSING
+    // ---------------------------------------------
+    let page = 1;
+    const safeLimit = 5000; // tune based on DB
 
-          const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({
-            filename: tempFilePath,
-            useStyles: false,
-            useSharedStrings: false,
-          });
+    while (true) {
+      const result =
+        await dataSourceVersionValueService.getDataSourceVersionValueV1({
+          schemaName,
+          query,
+          page,
+          limit: safeLimit,
+          sort: {},
+          filters: filters || {},
+          searchFilters: searchFilters || {},
+          entityId,
+        });
 
-          const worksheet = workbook.addWorksheet("Filtered Rows");
+      const rows = result?.data ?? [];
 
-          const fields = dataSourceDetails.fieldSettings.filter(
-            (f: any) => !f.isDerived
-          );
+      if (!rows.length) break;
 
-          worksheet.columns = [
-            { header: "DB Id", key: "dbId", width: 30 },
-            { header: "Conversion Rate", key: "conversionRate", width: 30 },
-            ...fields.map((f: any) => ({
-              header: f.label,
-              key: f.label,
-              width: 25,
-            })),
-          ];
+      for (const row of rows) {
+        const excelRow: any = {
+          dbId: row._id?.toString() || "",
+          conversionRate: row?.conversion?.rate,
+        };
 
-          // ---------------------------------------------
-          // 📊 Fetch ONLY SELECTED ROWS
-          // ---------------------------------------------
-          const result =
-            await dataSourceVersionValueService.getDataSourceVersionValueV1({
-              schemaName,
-              query: {
-                _id: { $in: rowIds }, // 🔥 MAIN FILTER
-                status: "active",
-              },
-              page: 1,
-              limit: rowIds.length,
-              sort: {},
-              filters: {},
-              searchFilters: {},
-              entityId: dataSourceDetails.entityId,
-            });
+        fields.forEach((f: any) => {
+          let value = row.rowData?.[f.mappedAttributeName];
 
-          const rows = result?.data ?? [];
+          if (Array.isArray(value)) value = value.join(", ");
+          if (value === null || value === undefined) value = "";
 
-          if (!rows.length) {
-            console.warn("⚠ No matching rows found");
-            return;
-          }
+          excelRow[f.label] = value;
+        });
 
-          // ---------------------------------------------
-          // 📄 Write Rows
-          // ---------------------------------------------
-          for (const row of rows) {
-            const excelRow: any = {
-              dbId: row._id?.toString() || "",
-            };
-
-            fields.forEach((f: any) => {
-              let value = row.rowData?.[f.mappedAttributeName];
-
-              if (Array.isArray(value)) value = value.join(", ");
-              if (value === null || value === undefined) value = "";
-
-              excelRow[f.label] = value;
-            });
-
-            excelRow["conversionRate"] = row?.conversion?.rate;
-
-            worksheet.addRow(excelRow).commit();
-          }
-
-          await worksheet.commit();
-          await workbook.commit();
-
-          tempFiles.push({
-            path: tempFilePath,
-            fileType: dataSourceDetails.code,
-          });
-
-          generatedTempFiles.push(tempFilePath);
-
-          // ---------------------------------------------
-          // 📤 Upload to AI
-          // ---------------------------------------------
-          const formData = new FormData();
-
-          tempFiles.forEach((file) => {
-            formData.append(
-              "files",
-              fs.createReadStream(file.path) as any,
-              path.basename(file.path)
-            );
-            formData.append("file_type", file.fileType);
-          });
-
-          formData.append("webhookUrl", `${process.env.BASE_BACKEND_URL}/api/v1/common/dataSourceVersion/reconciledInvoices`);
-          formData.append("authToken", aiToken);
-
-          const response = await axios.post(
-            `${process.env.BASE_AI_SERVICE_URL}/validateInvoice`,
-            formData,
-            {
-              headers: {
-                ...formData.getHeaders(),
-              },
-              maxBodyLength: Infinity,
-              maxContentLength: Infinity,
-            }
-          );
-
-          console.log("✅ Pre-validated rows AI success:", response.data);
-
-          // ---------------------------------------------
-          // 🧹 Cleanup
-          // ---------------------------------------------
-          generatedTempFiles.forEach((file) => {
-            try {
-              if (fs.existsSync(file)) {
-                fs.unlinkSync(file);
-              }
-            } catch {
-              console.warn("⚠ Failed to delete temp file:", file);
-            }
-          });
-
-          return response.data;
-
-        } catch (err: any) {
-          console.error("❌ Pre-validated rows job failed:", err.message);
-          throw err;
-        }
+        worksheet.addRow(excelRow).commit();
       }
+
+      console.log(`📄 Processed page ${page}`);
+
+      if (rows.length < safeLimit) break;
+
+      page++;
+    }
+
+    await worksheet.commit();
+    await workbook.commit();
+
+    // ---------------------------------------------
+    // 📤 AI CALL
+    // ---------------------------------------------
+    const formData = new FormData();
+
+    formData.append(
+      "files",
+      fs.createReadStream(tempFilePath),
+      path.basename(tempFilePath)
+    );
+
+    formData.append("file_type", dataSourceDetails.code);
+    formData.append(
+      "webhookUrl",
+      `${process.env.BASE_BACKEND_URL}/api/v1/common/dataSourceVersion/reconciledInvoices`
+    );
+    formData.append("authToken", aiToken);
+
+    const response = await axios.post(
+      `${process.env.BASE_AI_SERVICE_URL}/validateInvoice`,
+      formData,
+      {
+        headers: formData.getHeaders(),
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
+      }
+    );
+
+    console.log("✅ AI success:", response.data);
+
+    // cleanup
+    if (fs.existsSync(tempFilePath)) {
+      fs.unlinkSync(tempFilePath);
+    }
+
+    return response.data;
+
+  } catch (err: any) {
+    console.error("❌ Job failed:", err.message);
+    throw err;
+  }
+}
     } catch (error: any) {
       console.error("❌ AI File Worker Failed:", error.message);
       throw error;
