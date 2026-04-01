@@ -31,7 +31,7 @@ import createDefaultDataSourceVersionModel from "../database/models/common/defau
 async function connectDB() {
   if (mongoose.connection.readyState === 0) {
     try {
-      await mongoose.connect(process.env.MONGO_URI || "mongodb://mongo:27017/invoicivix", {
+      await mongoose.connect(process.env.MONGO_URI || "mongodb://invoicivix-mongo:27017/invoicivix", {
         dbName: "invoicivix",
       });
       console.log("✅ Worker connected to MongoDB");
