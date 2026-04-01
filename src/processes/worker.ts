@@ -1025,20 +1025,96 @@ new Worker(
   console.log("🚀 Pre-validated rows job started");
 
   const {
-    query,
+    dataSourceId,
+    rowIds,
     filters,
-    searchFilters,
+    search,
+    year,
+    month,
     user,
-    dataSourceDetails
   } = job.data;
 
   try {
+    // ---------------------------------------------
+    // 📦 FETCH DATASOURCE
+    // ---------------------------------------------
+    const dataSourceDetails =
+      await dataSourceService.findDataSourceById(dataSourceId, true);
 
+    if (!dataSourceDetails) {
+      throw new Error("Data source not found");
+    }
+
+    // ---------------------------------------------
+    // 🧠 PARSE FILTERS
+    // ---------------------------------------------
+    let finalFilters: any = {};
+    try {
+      finalFilters = filters ? JSON.parse(filters) : {};
+    } catch (err) {
+      console.error("❌ Failed to parse filters:", err);
+      finalFilters = {};
+    }
+
+    // ---------------------------------------------
+    // 🧩 BASE QUERY
+    // ---------------------------------------------
+    let query: any = { status: "active" };
+    let finalSearchFilters: any = {};
+
+    if (rowIds?.length) {
+      query._id = {
+        $in: rowIds.map((id: string) => new mongoose.Types.ObjectId(id)),
+      };
+    } else {
+      // ---------------------------------------------
+      // 🔍 SEARCH FILTERS
+      // ---------------------------------------------
+      if (search) {
+        for (const field of dataSourceDetails.fieldSettings) {
+          if (
+            field.mappedAttributeName &&
+            field.mappedAttributeName !== "Unknown"
+          ) {
+            finalSearchFilters[field.mappedAttributeName] = search;
+          }
+        }
+      }
+
+      // ---------------------------------------------
+      // 🧠 VERSION FILTER
+      // ---------------------------------------------
+      const versionQuery: any = {
+        dataSourceId,
+        isCurrent: true,
+      };
+
+      if (year && month) {
+        versionQuery.versionValue = `${year}-${month.padStart(2, "0")}`;
+      } else if (year) {
+        versionQuery.versionValue = { $regex: `^${year}` };
+      }
+
+      const versionList =
+        await dataSourceVersionServices.getDataSourceVersionList({
+          query: versionQuery,
+        });
+
+      const versionIds =
+        versionList?.data?.map((v: any) => v._id) || [];
+
+      if (dataSourceDetails.versionType !== "constant") {
+        query.dataSourceVersionId = { $in: versionIds };
+      }
+    }
+
+    // ---------------------------------------------
+    // 🧠 SCHEMA NAME & TOKEN
+    // ---------------------------------------------
     const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
-        orgCode: user.orgCode,
-        versionCode: dataSourceDetails.code,
-      });
-    const fieldSettings = dataSourceDetails.fieldSettings;
+      orgCode: user.orgCode,
+      versionCode: dataSourceDetails.code,
+    });
 
     const aiToken = generateAIToken({
       userId: user.userId,
@@ -1060,7 +1136,9 @@ new Worker(
 
     const worksheet = workbook.addWorksheet("Rows");
 
-    const fields = fieldSettings.filter((f: any) => !f.isDerived);
+    const fields = dataSourceDetails.fieldSettings.filter(
+      (f: any) => !f.isDerived
+    );
 
     worksheet.columns = [
       { header: "DB Id", key: "dbId", width: 30 },
@@ -1076,7 +1154,7 @@ new Worker(
     // 📊 BATCH PROCESSING
     // ---------------------------------------------
     let page = 1;
-    const safeLimit = 5000; // tune based on DB
+    const safeLimit = 5000;
 
     while (true) {
       const result =
@@ -1086,14 +1164,14 @@ new Worker(
           page,
           limit: safeLimit,
           sort: {},
-          filters: filters || {},
-          searchFilters: searchFilters || {},
-          entityId: dataSourceDetails.entityId
+          filters: finalFilters,
+          searchFilters: finalSearchFilters,
+          entityId: dataSourceDetails.entityId,
         });
 
       const rows = result?.data ?? [];
 
-      console.log('total rows', rows.length, schemaName);
+      console.log("total rows", rows.length, schemaName);
 
       if (!rows.length) break;
 
@@ -1103,16 +1181,25 @@ new Worker(
           conversionRate: row?.conversion?.rate,
         };
 
+        // ---------------------------------------------
+        // Use saved mappedAttributeName directly
+        // ---------------------------------------------
         fields.forEach((f: any) => {
-          let value = row.rowData?.[f.mappedAttributeName];
+          const key = f.mappedAttributeName;
+          let value =
+            key && key !== "Unknown"
+              ? row.rowData?.[key]
+              : "";
 
           if (Array.isArray(value)) value = value.join(", ");
           if (value === null || value === undefined) value = "";
 
-          const label = f.mappedAttributeName.includes("Converted|") &&
-                        f.type === "number"
-                          ? `${f.label} (${user.orgDefaultCurrency})`
-                          : f.label;
+          const label =
+            key &&
+            key.includes("Converted|") &&
+            f.type === "number"
+              ? `${f.label} (${user.orgDefaultCurrency})`
+              : f.label;
 
           excelRow[label] = value;
         });
@@ -1167,7 +1254,6 @@ new Worker(
     }
 
     return response.data;
-
   } catch (err: any) {
     console.error("❌ Job failed:", err.message);
     throw err;

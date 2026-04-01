@@ -3559,119 +3559,19 @@ export const sendRevalidateRows = async (
       });
     }
 
-    // ---------------------------------------------
-    // 📦 DataSource
-    // ---------------------------------------------
-    const dataSourceDetails: any =
-      await dataSourceService.findDataSourceById(dataSourceId, true);
-
-    if (!dataSourceDetails) {
-      return res.status(404).json({
-        success: false,
-        message: "Data source not found",
-      });
-    }
-
-    // ---------------------------------------------
-    // 🧩 BASE QUERY
-    // ---------------------------------------------
-    let query: any = {
-      status: "active",
-    };
-
-    let finalFilters: any = {};
-    let finalSearchFilters: any = {};
-
-    // ---------------------------------------------
-    // 🔴 PRIORITY MODE (ROW IDS)
-    // ---------------------------------------------
-    if (rowIds?.length) {
-      query._id = { $in: rowIds.map((id: string) => new mongoose.Types.ObjectId(id)) };
-    } else {
-      // ---------------------------------------------
-      // 🧠 FIELD MAPPING
-      // ---------------------------------------------
-      const fieldOptions = await entityService.getEntityFieldOptions(
-        String(dataSourceDetails.entityId._id)
-      );
-
-      for (const field of dataSourceDetails.fieldSettings) {
-        if (field.isDerived && field.attributeId) {
-          const derived = await findDerivedFieldById(field.attributeId);
-          if (derived) {
-            field.mappedAttributeName = `Derived.${derived.name}`;
-          }
-          continue;
-        }
-
-        const match = fieldOptions.find(
-          (opt) =>
-            String(opt.value.attributeId) === String(field.attributeId) &&
-            JSON.stringify(opt.value.refAttributeId || []) ===
-              JSON.stringify(field.refAttributeId || [])
-        );
-
-        field.mappedAttributeName = match?.label || "Unknown";
-      }
-
-      // ---------------------------------------------
-      // 🧠 VERSION FILTER
-      // ---------------------------------------------
-      const versionQuery: any = {
-        dataSourceId,
-        isCurrent: true,
-      };
-
-      if (year && month) {
-        versionQuery.versionValue = `${year}-${month.padStart(2, "0")}`;
-      } else if (year) {
-        versionQuery.versionValue = { $regex: `^${year}` };
-      }
-
-      const versionList =
-        await dataSourceVersionService.getDataSourceVersionList({
-          query: versionQuery,
-        });
-
-      const versionIds = versionList?.data?.map((v: any) => v._id) || [];
-
-      if (dataSourceDetails.versionType !== "constant") {
-        query.dataSourceVersionId = { $in: versionIds };
-      }
-
-      // ---------------------------------------------
-      // 🔍 SEARCH FILTERS
-      // ---------------------------------------------
-      if (search) {
-        for (const field of dataSourceDetails.fieldSettings) {
-          if (
-            field.mappedAttributeName &&
-            field.mappedAttributeName !== "Unknown"
-          ) {
-            finalSearchFilters[field.mappedAttributeName] = search;
-          }
-        }
-      }
-
-      // ---------------------------------------------
-      // 🎯 FILTERS
-      // ---------------------------------------------
-      finalFilters = filters || {};
-    }
-
-    // ---------------------------------------------
-    // 🚀 QUEUE
-    // ---------------------------------------------
+    // 🚀 QUEUE (MINIMAL PAYLOAD ONLY)
     const aiFileQueue = new Queue("aiFileQueue", {
       connection: { host: "redis" },
     });
 
     await aiFileQueue.add("sendPreValidatedRows", {
-      dataSourceDetails,
-      query,
-      filters: finalFilters,
-      searchFilters: finalSearchFilters,
-      user: req.user,
+      dataSourceId,
+      rowIds,
+      filters: filters ? JSON.stringify(filters) : null, // ✅ stringify
+      search, // ✅ direct string
+      year,
+      month,
+      user: req.user
     });
 
     return res.status(200).json({
