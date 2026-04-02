@@ -614,11 +614,12 @@ if (rowCurrency) {
                 fileAttributeValue: value,
                 attributeName: attrName,
                 attributeType: attr.type,
-                refEntityId,
-                refAttributeId: refEntityFieldId,
-                refDataSourceId: refDataSourceDetails?._id,
-                errorType: ERROR_CODES.INVALID_REFERENCE.type,
-                errorCode: ERROR_CODES.INVALID_REFERENCE.code,
+                // refEntityId,
+                // refAttributeId: refEntityFieldId,
+                // refDataSourceId: refDataSourceDetails?._id,
+                refAttributeId: attr._id,
+                errorType: ERROR_CODES.INVALID_TYPE.type,
+                errorCode: ERROR_CODES.INVALID_TYPE.code,
                 fileRowNumber: rowNum,
                 fileName,
                 status: 'open',
@@ -627,29 +628,29 @@ if (rowCurrency) {
               newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
             }
           } else{
-             if (refDataSourceDetails?.isReferenceAutoGenerate && refDataSourceDetails?.isReferenceAutoGenerate == true) {
-              errors.push({
-                  entityId,
-                  dataSourceId,
-                  dataSourceVersionId,
-                  rowNumber: index + 1,
-                  fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
-                  fileAttributeValue: value,
-                  attributeName: attrName,
-                  attributeType: attr.type,
-                  refEntityId,
-                  refAttributeId: refEntityFieldId,
-                  refDataSourceId: refDataSourceDetails?._id,
-                  errorType: ERROR_CODES.DUPLICATE_REFERENCE.type,
-                  errorCode: ERROR_CODES.DUPLICATE_REFERENCE.code,
-                  errorRowId: referencedDoc._id,
-                  fileRowNumber: rowNum,
-                  fileName,
-                  status: 'open',
-                  errorMessage: `${attrName}- ${value} already exists.`,
-                });
-                newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
-            }
+            //  if (refDataSourceDetails?.isReferenceAutoGenerate && refDataSourceDetails?.isReferenceAutoGenerate == true) {
+            //   errors.push({
+            //       entityId,
+            //       dataSourceId,
+            //       dataSourceVersionId,
+            //       rowNumber: index + 1,
+            //       fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
+            //       fileAttributeValue: value,
+            //       attributeName: attrName,
+            //       attributeType: attr.type,
+            //       refEntityId,
+            //       refAttributeId: refEntityFieldId,
+            //       refDataSourceId: refDataSourceDetails?._id,
+            //       errorType: ERROR_CODES.DUPLICATE_REFERENCE.type,
+            //       errorCode: ERROR_CODES.DUPLICATE_REFERENCE.code,
+            //       errorRowId: referencedDoc._id,
+            //       fileRowNumber: rowNum,
+            //       fileName,
+            //       status: 'open',
+            //       errorMessage: `${attrName}- ${value} already exists.`,
+            //     });
+            //     newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
+            // }
             newRow.rowData[attrName] = referencedDoc._id;
             newRow.rowData[`${attrName}__display`] = referencedDoc.rowData?.[refEntityField.name];
             tempDisplayAttrs.push(`${attrName}__display`); // ✅ track for cleanup
