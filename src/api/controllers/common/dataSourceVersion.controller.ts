@@ -1259,19 +1259,8 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
               status: 'completed',
               isCurrent: true,
             });
-          }
-          await attributeOptionService.updateAttributeOptionsByQuery({
-                                                query: {
-                                                  organizationId,
-                                                  isPopulateFixed: 1,
-                                                },
-                                                updateFields: {
-                                                  isPopulateFixed: 2,
-                                                },
-                                              });
-          await dataSourceVersionValueService.bulkUpdateRefCache(validatedData.refCache);
 
-          if(dataSourceId == "699f04727df5e0efe12d5027"){
+            if(dataSourceId == "699f04727df5e0efe12d5027"){
 
               // Send Files to AI
               const aiQueue = new Queue("aiFileQueue", {
@@ -1285,7 +1274,18 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
                 user: req?.user
               });
 
-            }                                    
+            }
+          }
+          await attributeOptionService.updateAttributeOptionsByQuery({
+                                                query: {
+                                                  organizationId,
+                                                  isPopulateFixed: 1,
+                                                },
+                                                updateFields: {
+                                                  isPopulateFixed: 2,
+                                                },
+                                              });
+          await dataSourceVersionValueService.bulkUpdateRefCache(validatedData.refCache);                                
 
         } catch (error) {
           console.error('Error while processing data:', error);
