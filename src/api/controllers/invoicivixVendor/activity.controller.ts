@@ -61,6 +61,7 @@ export const createActivity = async (req: Request, res: Response, next: NextFunc
     versionValue,
     activityType,
     activityFileName: file.originalname, // match by original name
+    status: 'active'
   });
 
   // ✅ Skip duplicate
@@ -77,6 +78,7 @@ export const createActivity = async (req: Request, res: Response, next: NextFunc
     activityFileName: file.originalname,
     activityFilePath: newFilePath.replace(/\\/g, '/'),
     analyze_processing_status: 'pending',
+    status: 'active'
   });
 
   createdActivities.push(activity);
