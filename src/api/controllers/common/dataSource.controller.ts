@@ -1057,11 +1057,11 @@ export const exportWidgetDataByFilterToExcel = async (
       });
       dataSourceVersion = versions.data;
     } else {
-      const version = await dataSourceVersionService.getDataSourceVersion({
+      const versions = await dataSourceVersionService.getDataSourceVersionList({
         query: { dataSourceId, isCurrent: true, isActive: true },
         sort: { versionValue: -1 },
       });
-      dataSourceVersion = [version];
+      dataSourceVersion = versions.data;
     }
 
     const isReferenceField = await checkReferenceFieldExist(dataSource);
