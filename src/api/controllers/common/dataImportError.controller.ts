@@ -16,6 +16,7 @@ import { getDataSourceVersion } from '../../../database/services/common/dataSour
 import { autoPopulateAttributeOptionFromRow } from '../../../utils/attributeOption.utils';
 import { createDownloadRequest } from '../../../database/services/common/downloadRequest.service';
 import { Queue } from 'bullmq';
+import * as dataSourceVersionService from '../../../database/services/common/dataSourceVersion.services';
 const ObjectId = mongoose.Types.ObjectId;
 
 // export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
@@ -1077,6 +1078,14 @@ export const resolveDataImportError = async (
         success: false,
         message: "Either reportRequestId or dataSourceVersionId is required",
       });
+    }
+
+    if(action == 'discardedUpload'){
+      await dataSourceVersionService.updateDataSourceVersion(
+            dataSourceVersionId.toString(),
+            { status: 'discarded' }
+          );
+      return res.status(200).json({ success: true, message: 'Action Applied.' });    
     }
 
     const groupedContexts = await getGroupedErrorContext({

@@ -50,23 +50,37 @@ export const createActivity = async (req: Request, res: Response, next: NextFunc
 
     // ✅ LOOP ALL FILES
     for (const file of files) {
-      const newFilePath = path.join(destinationDir, file.filename);
+  const newFilePath = path.join(destinationDir, file.filename);
 
-      // move file
-      fs.renameSync(file.path, newFilePath);
+  // move file
+  fs.renameSync(file.path, newFilePath);
 
-      // create DB entry per file
-      const activity = await activityService.createActivity({
-        organizationId: new Types.ObjectId(organizationId),
-        activityType,
-        versionValue,
-        activityFileName: file.originalname,
-        activityFilePath: newFilePath.replace(/\\/g, '/'),
-        analyze_processing_status: 'pending',
-      });
+  // ✅ Check if already exists
+  const existingActivity = await activityService.findOneByQuery({
+    organizationId: new Types.ObjectId(organizationId),
+    versionValue,
+    activityType,
+    activityFileName: file.originalname, // match by original name
+  });
 
-      createdActivities.push(activity);
-    }
+  // ✅ Skip duplicate
+  if (existingActivity) {
+    console.log(`Skipping duplicate file: ${file.originalname}`);
+    continue;
+  }
+
+  // ✅ Create DB entry
+  const activity = await activityService.createActivity({
+    organizationId: new Types.ObjectId(organizationId),
+    activityType,
+    versionValue,
+    activityFileName: file.originalname,
+    activityFilePath: newFilePath.replace(/\\/g, '/'),
+    analyze_processing_status: 'pending',
+  });
+
+  createdActivities.push(activity);
+}
 
     // Send Files to AI
     const aiQueue = new Queue("aiFileQueue", {

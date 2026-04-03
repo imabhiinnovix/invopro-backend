@@ -1223,9 +1223,20 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
           });
 
           if (validatedData.errors.length > 0) {
+            await dataSourceVersionService.updateDataSourceVersions({
+              query: {
+                dataSourceId,
+                versionValue,
+                vendorId,
+                status: 'failed'
+              },
+              updateFields: { status: 'discarded' },
+            });
+            
             await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id.toString(), {
               status: 'failed',
             });
+            
             const schemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
               orgCode,
               versionCode: dataSourceDetails.code,
@@ -1259,6 +1270,16 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
             await dataSourceVersionService.updateDataSourceVersion(dataSourceVersion._id.toString(), {
               status: 'completed',
               isCurrent: true,
+            });
+
+            await dataSourceVersionService.updateDataSourceVersions({
+              query: {
+                dataSourceId,
+                versionValue,
+                vendorId,
+                status: 'failed'
+              },
+              updateFields: { status: 'discarded' },
             });
 
             if(dataSourceId == "699f04727df5e0efe12d5027"){
@@ -1614,14 +1635,15 @@ export const checkDataSourceVersionNameAvailableOrNot = async (req: Request, res
 
 export const listDataSourceVersion = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search, paginate = 'false' } = req.query;
+    const { search, paginate = 'false', dataSourceId } = req.query;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
     const { organizationId } = req.user;
 
-    const query: any = { organizationId };
+    const query: any = { organizationId, status: { $in : ["completed", "failed"] } };
     if (search) query.name = { $regex: search, $options: 'i' };
+    if(dataSourceId) query.dataSourceId = dataSourceId;
 
     let result: any = {};
     if (paginate) {
@@ -1640,6 +1662,10 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
           },
           {
             path: 'dataSourceId',
+            select: 'name', // Specify the fields to populate
+          },
+          {
+            path: 'vendorId',
             select: 'name', // Specify the fields to populate
           },
         ],
