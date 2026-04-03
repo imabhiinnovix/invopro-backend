@@ -2385,7 +2385,8 @@ export const exportDataSourceVersionDataToExcel = async (
       return res.status(404).json({ success: false, message: 'No version data found.' });
     }
 
-    const dataSourceVersionId = dataSourceVersionDetails.data[0]._id;
+    // const dataSourceVersionId = dataSourceVersionDetails.data[0]._id;
+    const dataSourceVersionIds = dataSourceVersionDetails.data.map(v => v._id);
     const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
       orgCode,
       versionCode: dataSourceDetails.code,
@@ -2395,7 +2396,7 @@ export const exportDataSourceVersionDataToExcel = async (
     const query: any = { status: 'active' };
 
     if (dataSourceDetails.versionType !== 'constant') {
-      query['dataSourceVersionId'] = dataSourceVersionId;
+      query['dataSourceVersionId'] = { $in: dataSourceVersionIds };
     }
 
     // 🔹 Apply user-level data permissions
