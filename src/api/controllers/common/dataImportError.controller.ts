@@ -1573,41 +1573,51 @@ export const getErrorRowDataBasedOnDataSourceVersionIdAndRowNumber = async (
   try {
     const { dataSourceId, dataSourceVersionId, rowNumber, errorId } = req.query as any;
     const { orgCode } = req.user;
+
     const dataSourceDetails = await dataSourceService.findDataSourceById(dataSourceId, true);
+
     const schemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
       orgCode,
       versionCode: dataSourceDetails?.code!,
     });
-    const rawData = await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValuesV1(schemaName, {
-      dataSourceVersionId: new ObjectId(dataSourceVersionId),
-      rowNumber: Number(rowNumber),
-    },
-    dataSourceDetails?.entityId
-  );
 
-  let errorAction: string = '';
+    const rawData =
+      await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValuesV1(
+        schemaName,
+        {
+          dataSourceVersionId: new ObjectId(dataSourceVersionId),
+          rowNumber: Number(rowNumber),
+        },
+        dataSourceDetails?.entityId
+      );
 
-  if (errorId) {
-    const errorRecord = await dataImportErrorServices.getDataImportErrorRecord({ _id: new ObjectId(errorId) });
+    let errorAction: string = '';
+    let errorRecord: any = null; // ✅ ADD THIS
 
-    if (errorRecord) {
-      const { errorCode, attributeName } = errorRecord;
+    if (errorId) {
+      errorRecord = await dataImportErrorServices.getDataImportErrorRecord({
+        _id: new ObjectId(errorId),
+      });
 
-      if (["1001", "1002", "1004"].includes(errorCode)) {
-        errorAction = `Fix Error - ${attributeName}`;
-      } else if (errorCode === "1003") {
-        errorAction = `Create New ${attributeName}`;
+      if (errorRecord) {
+        const { errorCode, attributeName } = errorRecord;
+
+        if (["1001", "1002", "1004"].includes(errorCode)) {
+          errorAction = `Fix Error - ${attributeName}`;
+        } else if (errorCode === "1003") {
+          errorAction = `Create New ${attributeName}`;
+        }
       }
     }
-  }
 
     res.status(200).json({
       success: true,
       message: 'Data retrieved successfully.',
       data: {
-        ...rawData[0] ?? rawData,
-        errorAction
-      }
+        ...(rawData[0] ?? rawData),
+        errorAction,
+        errorRecord,
+      },
     });
   } catch (err) {
     console.log('Error in getDataBasedOnDataSourceVersionIdAndRowNumber', err);

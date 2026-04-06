@@ -37,17 +37,24 @@ export const deleteVendor = async (vendorId: string) => {
 export const getVendorList = async ({
   query,
   select = '',
-  page,
-  limit,
+  page = 1,
+  limit = 10,
   sort = { createdAt: -1 },
   populate,
+  paginate = true,
 }: any) => {
   let vendorQuery: any = Vendor.find(query)
     .select(select)
-    .skip((page - 1) * limit)
-    .limit(limit)
     .sort(sort);
 
+  // Apply pagination only if paginate = true
+  if (paginate) {
+    vendorQuery = vendorQuery
+      .skip((page - 1) * limit)
+      .limit(limit);
+  }
+
+  // Populate fields if provided
   if (populate && Array.isArray(populate)) {
     populate.forEach((field) => {
       vendorQuery = vendorQuery.populate(field);
@@ -55,9 +62,21 @@ export const getVendorList = async ({
   }
 
   const vendors = await vendorQuery.exec();
-  const totalCount = await Vendor.countDocuments(query);
 
-  return { data: vendors, totalCount };
+  // Only count when pagination is needed (optimization)
+  const totalCount = paginate
+    ? await Vendor.countDocuments(query)
+    : vendors.length;
+
+  return {
+    data: vendors,
+    totalCount,
+    ...(paginate && {
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit),
+    }),
+  };
 };
 
 export const findOneByQuery = async (query: any) => {

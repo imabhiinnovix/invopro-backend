@@ -302,7 +302,7 @@ export const getVendorList = async (
   next: NextFunction
 ) => {
   try {
-    const { search } = req.query;
+    const { search, paginate = true } = req.query;
     const { organizationId, isSuperUser } = req.user;
 
     const page = parseInt(req.query.page as string, 10) || 1;
@@ -324,6 +324,7 @@ export const getVendorList = async (
       page,
       limit,
       populate: [{ path: 'engagementLetterId' }],
+      paginate
     });
 
     res.status(200).json({
