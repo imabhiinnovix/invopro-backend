@@ -297,7 +297,14 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
     /* --------------------------------------------------
        5️ Fetch errors
     -------------------------------------------------- */
-    const sort: any = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
+    // const sort: any = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
+
+    const order = sortOrder === "asc" ? 1 : -1;
+
+    const sort: any = {
+      [sortBy]: order,
+      ...(sortBy !== "_id" && { _id: order }),
+    };
 
     const result =
       paginate === true

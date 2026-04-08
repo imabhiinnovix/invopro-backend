@@ -15,6 +15,9 @@ import {
   getConversionRate,
   getImportLogSchemaNameBasedOnVersionCodeAndOrgCode,
   getSchemaNameBasedOnVersionCodeAndOrgCode,
+  isBefore,
+  isValidCaseReference,
+  normalize,
   normalizeValue,
   sleep,
 } from '../../../utils/common.utils';
@@ -271,11 +274,13 @@ async function validateAndConvert({
   type,
   optionAttributeId,
   separator = ',',
+  patternMatch
 }: {
   value: any;
   type: string;
   optionAttributeId?: string;
   separator?: string;
+  patternMatch?: string[];
 }) {
   if (type === 'number') {
     let convertedValue = parseFloat(value);
@@ -291,9 +296,26 @@ async function validateAndConvert({
   }
 
   if (type === 'text' || type === 'richtext') {
-    const convertedValue = value !== undefined && value !== null ? String(value).trim() : null;
-    return { isValid: typeof convertedValue === 'string', convertedValue };
+  const convertedValue =
+    value !== undefined && value !== null ? String(value).trim() : null;
+
+  let isPatternValid = true;
+
+  if (patternMatch?.length && convertedValue) {
+    isPatternValid = patternMatch.every((pattern) => {
+      const regex = new RegExp(pattern);
+      return regex.test(convertedValue);
+    });
   }
+
+  return {
+    isValid: typeof convertedValue === 'string' && isPatternValid,
+    convertedValue:
+      typeof convertedValue === 'string' && isPatternValid
+        ? convertedValue
+        : null,
+  };
+}
 
   if (type === 'date' || type === 'date-range') {
     if (typeof value === 'number') {
@@ -451,8 +473,82 @@ for (const attr of attributes) {
     defaultRate: 83.25,      // fallback
   };
 
+// =====================================================
+// ✅ OPTIMIZED: Batch Portfolio Load using your function
+// =====================================================
+
+const PORTFOLIO_DATASOURCE_ID = process.env.PORTFOLIO_DATASOURCE_ID ?? "69d514893b14fb62153ed0eb";
+
+let portfolioMap = new Map<string, {
+  "SABIC Attroney": any;
+  "SABIC Business Unit": any;
+}>();
+
+const crossFieldRules = [
+  ["Work Date", "Invoice Date"] // Work < Invoice
+];
+
+
+if (PORTFOLIO_DATASOURCE_ID && dataSourceId == "699f04727df5e0efe12d5027") {
+  const portfolioDs = await dataSourceService.findDataSourceById(PORTFOLIO_DATASOURCE_ID, true);
+
+  if (portfolioDs) {
+    const version = await dataSourceVersionService.getDataSourceVersion({
+      query: {
+        dataSourceId: PORTFOLIO_DATASOURCE_ID,
+        isCurrent: true,
+        status: 'completed',
+        ...(versionValue && { versionValue }),
+      },
+      sort: { createdAt: -1 },
+    });
+
+    if (version) {
+      const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+        orgCode: user?.orgCode,
+        versionCode: portfolioDs.code,
+      });
+
+      const BATCH_SIZE = 2000; // 🔥 tune: 1000–5000 ideal
+      let page = 1;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, totalCount } = await dataSourceVersionValueService.getDataSourceVersionValue({
+          schemaName,
+          query: { dataSourceVersionId: version._id },
+          select:
+            "rowData.CaseReference rowData.Attorney rowData.SBU",
+          page,
+          limit: BATCH_SIZE,
+          sort: { _id: 1 }, // stable pagination
+        });
+
+        for (const rec of data) {
+          const key = rec.rowData?.["CaseReference"]?.trim();
+
+          if (key) {
+            portfolioMap.set(key, {
+              "SABIC Attroney": rec.rowData?.["Attorney"],
+              "SABIC Business Unit": rec.rowData?.["SBU"],
+            });
+          }
+        }
+
+        const fetchedCount = page * BATCH_SIZE;
+        hasMore = fetchedCount < totalCount;
+        page++;
+      }
+    }
+  }
+}
+
+// =====================================================
+
   for (const [index, row] of fileData.entries()) {
     console.log('Processing Index:', index);
+    const masterErrorAttrs = new Set<string>();
+    const invalidAttrSet = new Set<string>();
     const parts = row.fileRowNumber.split(':');
     const rowNum = parts.pop(); // last part → row number
     const fileName = parts.join(':');
@@ -623,9 +719,11 @@ if (rowCurrency) {
                 fileRowNumber: rowNum,
                 fileName,
                 status: 'open',
-                errorMessage: `${attrName}- ${value} not found.`,
+                errorMessage: `${attrName}- ${value} in master not found.`,
+                errorSource: 'master'
               });
               newRow.isErrorLog = newRow.isErrorLog ? newRow.isErrorLog + 1 : 1;
+              masterErrorAttrs.add(attrName);
             }
           } else{
             //  if (refDataSourceDetails?.isReferenceAutoGenerate && refDataSourceDetails?.isReferenceAutoGenerate == true) {
@@ -661,9 +759,11 @@ if (rowCurrency) {
             type: attr.type,
             optionAttributeId: attr.optionAttributeId,
             separator: separator[value],
+            patternMatch: attr.patternMatch
           });
 
           if (!isValid) {
+            invalidAttrSet.add(attrName);
             if (['option', 'multioption'].includes(attr.type)) {
               errors.push({
                 entityId,
@@ -708,6 +808,65 @@ if (rowCurrency) {
           }
         }
       }
+
+      // ============================
+    // ✅ NEW: Portfolio Validation (Dynamic inside attr loop)
+    // ============================
+    if(dataSourceId == "699f04727df5e0efe12d5027"){
+      const caseRef = newRow.rowData["SABIC Case Reference Number"];
+
+      const isValidCaseRef = isValidCaseReference(caseRef);
+
+      // define attributes to validate from portfolio
+      const PORTFOLIO_CHECK_ATTRS = [
+        "SABIC Attroney",
+        "SABIC Business Unit",
+      ];
+      console.log('isValidCaseRef',caseRef, isValidCaseRef,portfolioMap.size);
+      if (
+        isValidCaseRef &&
+        portfolioMap.size > 0 &&
+        PORTFOLIO_CHECK_ATTRS.includes(attrName) &&
+        !masterErrorAttrs.has(attrName)
+      ) {
+        const portfolioRecord = portfolioMap.get(caseRef.toString().trim());
+        console.log('portfolioRecord',portfolioRecord, attrName, newRow.rowData);
+        if (portfolioRecord) {
+          const portfolioValue = portfolioRecord?.[attrName];
+
+          if (
+            value &&
+            portfolioValue !== undefined &&
+            normalize(portfolioValue) !== normalize(value)
+          ) {
+            errors.push({
+              entityId,
+              dataSourceId,
+              dataSourceVersionId,
+              rowNumber: index + 1,
+              fileAttributeName: Array.isArray(fileKey)
+                ? fileKey.join('|')
+                : fileKey,
+              fileAttributeValue: value,
+              attributeName: attrName,
+              attributeType: attr.type, // ✅ dynamic
+              refAttributeId: attr._id,
+              status: 'open',
+              fileRowNumber: rowNum,
+              fileName,
+              errorSource: 'portfolio', // ✅ key requirement
+              errorType: ERROR_CODES.INVALID_TYPE.type,
+              errorCode: ERROR_CODES.INVALID_TYPE.code,
+              errorMessage: `${attrName} mismatch with portfolio data.`,
+            });
+
+            newRow.isErrorLog = (newRow.isErrorLog || 0) + 1;
+          }
+        }
+      }
+    }
+
+    // ============================
 
       
     }
@@ -785,6 +944,47 @@ for (const [originalName, convertedName] of convertedAttrMap.entries()) {
     // ✅ cleanup temporary __display keys (always, not just for unique)
     for (const tempKey of tempDisplayAttrs) {
       delete newRow.rowData[tempKey];
+    }
+
+    if(dataSourceId == "699f04727df5e0efe12d5027"){
+      for (const [source, target] of crossFieldRules) {
+        const sourceVal = newRow.rowData[source];
+        const targetVal = newRow.rowData[target];
+
+        // ✅ 1. Skip if missing
+        if (!sourceVal || !targetVal) continue;
+
+        // ✅ 2. Skip if already invalid
+        if (invalidAttrSet.has(source) || invalidAttrSet.has(target)) {
+          continue;
+        }
+
+        // ✅ use raw-safe helper
+        if (!isBefore(sourceVal, targetVal)) {
+          const sourceAttr = attributes.find(a => a.name === source);
+          const fileKey = mapping?.[sourceAttr?.name];
+          console.log('sourceAttr',sourceAttr, mapping);
+          errors.push({
+            entityId,
+            dataSourceId,
+            dataSourceVersionId,
+            rowNumber: index + 1,
+            fileAttributeName: Array.isArray(fileKey) ? fileKey.join('|') : fileKey,
+            fileAttributeValue: sourceVal,
+            attributeName: source,
+            attributeType: sourceAttr?.type,
+            refAttributeId: sourceAttr?._id,
+            status: 'open',
+            fileRowNumber: rowNum,
+            fileName,
+            errorType: ERROR_CODES.INVALID_TYPE.type,
+            errorCode: ERROR_CODES.INVALID_TYPE.code,
+            errorMessage: `${source} must be before ${target}`,
+          });
+
+          newRow.isErrorLog = (newRow.isErrorLog || 0) + 1;
+        }
+      }
     }
 
 
@@ -888,6 +1088,7 @@ export async function validateRowData({
         type: attr.type,
         optionAttributeId: attr.optionAttributeId,
         separator,
+        patternMatch: attr.patternMatch
       });
 
       if (!isValid) {

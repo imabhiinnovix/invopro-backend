@@ -507,6 +507,23 @@ export const getValidatedFieldsMap = (
   return validateFieldMap;
 };
 
+export const normalize = (v: any) => v?.toString().trim().toLowerCase();
+
+export const isValidCaseReference = (value: any): boolean => {
+  if (typeof value !== "string") return false;
+
+  const trimmed = value.trim();
+
+  return trimmed !== "" && /^\d{2}/.test(trimmed);
+};
+
+export const isBefore = (a: any, b: any) => {
+  const d1 = new Date(a);
+  const d2 = new Date(b);
+  return !isNaN(d1.getTime()) && !isNaN(d2.getTime()) && d1 < d2;
+};
+
+
 
 
 

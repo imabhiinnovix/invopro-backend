@@ -42,6 +42,7 @@ export interface IAttribute {
   cleaner?: string[];
   referenceEntitySetting?: IReferenceEntitySetting;
   isReferenceEditable?: string; // ✅ Added
+  patternMatch?: string[];
 }
 
 // ---------------------------
@@ -127,7 +128,11 @@ const attributeSchema = new Schema<IAttribute>(
       type: String,
       enum: ['EDIT', 'VIEW', 'HIDE'], // enum values
       default: 'EDIT',
-    }, // ✅ Added
+    }, // ✅ Added'
+    patternMatch: {
+      type: [String],
+      default: []
+    },
   },
   { _id: true, toJSON: { getters: true }, toObject: { getters: true } }
 );
