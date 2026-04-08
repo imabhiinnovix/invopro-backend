@@ -17,6 +17,8 @@ import { autoPopulateAttributeOptionFromRow } from '../../../utils/attributeOpti
 import { createDownloadRequest } from '../../../database/services/common/downloadRequest.service';
 import { Queue } from 'bullmq';
 import * as dataSourceVersionService from '../../../database/services/common/dataSourceVersion.services';
+import { findDerivedFieldById } from '../../../database/services/common/derivedField.services';
+import { getEntityFieldOptions } from '../../../database/services/common/entity.services';
 const ObjectId = mongoose.Types.ObjectId;
 
 // export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
@@ -1628,6 +1630,277 @@ export const getErrorRowDataBasedOnDataSourceVersionIdAndRowNumber = async (
     });
   } catch (err) {
     console.log('Error in getDataBasedOnDataSourceVersionIdAndRowNumber', err);
+    next(err);
+  }
+};
+
+export const getImportDataSourceVersionData = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      dataSourceId,
+      dataSourceVersionId,
+      page,
+      limit,
+      sort,
+      filters,
+      search,
+      isErrorLog,
+      type
+    } = req.query as any;
+
+    // ✅ Convert safely
+    const pageNumber = page ? parseInt(page as string, 10) : 1;
+    const limitNumber = limit ? parseInt(limit as string, 10) : 10;
+    const isErrorLogNumber = isErrorLog ? Number(isErrorLog as string) : 0;
+
+    const { orgCode, orgDefaultCurrency, organizationId, userId } = req.user;
+
+    const searchFilters = {};
+
+    // 🔹 Get Data Source
+    const dataSourceDetails: any = await dataSourceService.findDataSourceById(
+      dataSourceId.toString().trim(),
+      true
+    );
+
+    if (!dataSourceDetails) {
+      return res.status(404).json({
+        success: false,
+        message: "Data source not found.",
+      });
+    }
+
+    // 🔹 Precompute field mappings
+    const fieldOptions = await getEntityFieldOptions(String(dataSourceDetails.entityId._id));
+
+    
+    if (Array.isArray(dataSourceDetails.fieldSettings)) {
+      for (const field of dataSourceDetails.fieldSettings) {
+        // Derived fields
+        if (field.isDerived && field.attributeId) {
+          const derived = await findDerivedFieldById(field.attributeId);
+          if (derived) {
+            field.mappedAttributeName = `Derived.${derived.name}`;
+            field.values = Array.isArray(derived.valueRules) ? derived.valueRules.map((vr) => vr.value) : [];
+          }
+          continue;
+        }
+
+        // Normal fields → look up in fieldOptions
+        const match = fieldOptions.find(
+          (opt) =>
+            String(opt.value.attributeId) === String(field.attributeId) &&
+            JSON.stringify(opt.value.refAttributeId || []) === JSON.stringify(field.refAttributeId || [])
+        );
+
+        if (match) {
+          field.mappedAttributeName = match.label;
+        } else {
+          field.mappedAttributeName = 'Unknown';
+        }
+
+        
+      }
+    }
+
+    // 🔹 Build search filters using mappedAttributeName
+    if (search && search.length > 0) {
+      for (const field of dataSourceDetails.fieldSettings) {
+        if (!field.mappedAttributeName || field.mappedAttributeName === 'Unknown') continue;
+
+        searchFilters[field.mappedAttributeName] = search;
+      }
+    }
+
+    // 🔹 Build Schema Name
+    const schemaName = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSourceDetails.code,
+    });
+
+    // 🔹 Parse query params
+    const parsedSort = sort ? JSON.parse(sort) : {};
+    const parsedFilters = filters ? JSON.parse(filters) : {};
+
+    // 🔹 Base Query
+    const query: any = {
+      dataSourceVersionId: new Types.ObjectId(dataSourceVersionId.toString().trim()),
+      isErrorLog: isErrorLogNumber
+    };
+
+    if(type == "export"){
+      const requestPayload = {
+      schemaName,
+      query,
+      select: "",
+      page: 1,
+      limit: Number.MAX_SAFE_INTEGER,
+      sort: {},
+      filters: parsedFilters,
+      entityId: dataSourceDetails.entityId,
+      searchFilters,
+      conditions: {},
+      selectedFields: {},
+      dataSourceDetails,
+      defaultCurrency: orgDefaultCurrency
+    };
+
+    // --------------------------------------------------------------------
+    // 3️ SAVE DOWNLOAD REQUEST
+    // --------------------------------------------------------------------
+    const fileName = `${dataSourceDetails.name}_Import_Export_Data_${formatDateTime(Date.now())}.xlsx`;
+    const downloadRequest = await createDownloadRequest({
+      organizationId,
+      userId,
+      status: "pending",
+      fileName,
+      requestPayload,
+      dataSourceId
+    });
+
+    // --------------------------------------------------------------------
+    // 4️ PUSH JOB INTO QUEUE
+    // --------------------------------------------------------------------
+
+    const downloadQueue = new Queue("downloadQueue", {
+      connection: { host: "redis" },
+    });
+
+    await downloadQueue.add("exportDSImportData", { downloadRequestId: downloadRequest._id });
+
+    return res.status(200).json({
+      success: true,
+      message: "Export job queued successfully.",
+      requestId: downloadRequest._id,
+    });
+    }
+
+    // 🔹 Fetch Data
+    const result: any =
+      await importLogDataSourceVersionValueService.getDataSourceImportVersionValueV1({
+        schemaName,
+        query,
+        select: "",
+        page: pageNumber,
+        limit: limitNumber,
+        sort: parsedSort,
+        filters: parsedFilters,
+        entityId: dataSourceDetails.entityId,
+        searchFilters,
+      });
+
+    const data = result?.data ?? [];
+    const totalCount = result?.totalCount ?? 0;
+
+    return res.status(200).json({
+      success: true,
+      message: "Version data has been successfully retrieved.",
+      data,
+      totalCount,
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(totalCount / limitNumber),
+        totalRecords: totalCount,
+      },
+    });
+  } catch (error) {
+    console.log("Error in getDataSourceVersionData:", error);
+    next(error);
+  }
+};
+
+export const updateImportData = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { rowData, rowNumber, dataSourceVersionId, dataSourceId } = req.body;
+    const { orgCode, userId, organizationId } = req.user;
+
+    if (!rowData || !rowNumber || !dataSourceVersionId || !dataSourceId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    // -----------------------------
+    // GET DATASOURCE & ENTITY
+    // -----------------------------
+    const dataSource = await dataSourceService.findDataSourceById(dataSourceId, true);
+    if (!dataSource) {
+      return res.status(404).json({ success: false, message: "DataSource not found" });
+    }
+    const entity = dataSource.entityId as any;
+
+    // -----------------------------
+    // PREPARE SCHEMA
+    // -----------------------------
+    const errorSchema = getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSource.code!,
+    });
+
+    // -----------------------------
+    // AUTO POPULATE OPTIONS
+    // -----------------------------
+    await autoPopulateAttributeOptionFromRow({
+      entityId: entity._id,
+      attributes: entity.attributes,
+      rowData,
+      userId,
+      organizationId,
+    });
+
+    // -----------------------------
+    // VALIDATE ROW
+    // -----------------------------
+    const { isValid, errors, validatedRowData } = await validateRowData({
+      rowData,
+      attributes: entity.attributes,
+    });
+
+    if (!isValid) {
+      return res.status(400).json({ success: false, errors });
+    }
+
+    // -----------------------------
+    // UPDATE IMPORT LOG (without changing isErrorLog)
+    // -----------------------------
+    const updateFields: any = {};
+    Object.entries(validatedRowData).forEach(([k, v]) => {
+      updateFields[`rowData.${k}`] = v;
+    });
+
+    await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+      errorSchema,
+      { _id: rowNumber }, // rowNumber is _id
+      updateFields
+    );
+
+    // -----------------------------
+    // HANDLE REFERENCE SUBFIELDS
+    // -----------------------------
+    const version = await getDataSourceVersion({ query: { _id: dataSourceVersionId } });
+
+    await handleReferenceSubFields({
+      rowData: validatedRowData,
+      attributes: entity.attributes,
+      dataSourceId,
+      versionId: version?._id,
+      versionValue: version?.versionValue,
+      userId,
+      organizationId,
+    });
+
+    return res.status(200).json({ success: true, message: "Row updated successfully" });
+  } catch (err) {
     next(err);
   }
 };

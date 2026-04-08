@@ -2,6 +2,7 @@ import { Worker } from "bullmq";
 import mongoose, { Model } from "mongoose";
 import { getDownloadRequest } from "../database/services/common/downloadRequest.service";
 import * as dataSourceVersionValueService from '../database/services/common/defaultDataSourceVersionValue.services';
+import * as dataSourceVersionImportValueService from '../database/services/common/defaultImportLogDataSourceVersionValue.services';
 import ExcelJS from 'exceljs';
 import path from "path";
 import FormData from "form-data";
@@ -297,6 +298,93 @@ async function connectDB() {
       });
     });
   }
+          }else if (job.name === "exportDSImportData") {
+          // --------------------------------------------------------------------
+          // Fetch data
+          // --------------------------------------------------------------------
+          const result = await dataSourceVersionImportValueService.getDataSourceImportVersionValueV1({
+          schemaName,
+          query,
+          select,
+          page,
+          limit,
+          sort,
+          filters,
+          entityId,
+          searchFilters,
+          conditions
+          });
+          const rows = result?.data ?? [];
+          console.log('rows',JSON.stringify(rows[0]));
+          
+
+          // Parse selected fields safely
+          let selectedFieldsParsed: string[] | null = null;
+
+          if (Array.isArray(selectedFields)) {
+            selectedFieldsParsed = selectedFields;
+          } else {
+            try {
+              selectedFieldsParsed = selectedFields ? JSON.parse(selectedFields) : null;
+            } catch (e) {
+              selectedFieldsParsed = null;
+            }
+          }
+
+          // Apply filter
+          const selectedFieldsFiltered = dataSourceDetails.fieldSettings.filter((f) => {
+            if (f.isDerived === true) return false;
+
+            // If selectedFields provided → include only selected mappedAttributeName
+            if (selectedFieldsParsed?.length) {
+              return selectedFieldsParsed.includes(f.mappedAttributeName);
+            }
+
+            // If no selectedFields → return all displayEnabled fields
+            return true;
+          });
+
+          worksheet.columns = selectedFieldsFiltered.map((f) => {
+            const header =
+              f.mappedAttributeName.includes("Converted|") &&
+              f.type === "number"
+                ? `${f.label} (${defaultCurrency})`
+                : f.label;
+
+            return {
+              header,
+              key: header,
+              width: 25,
+            };
+          });
+        rows.forEach((row) => {
+              const dataRow: any = {};
+
+              selectedFieldsFiltered.forEach((f) => {
+                let value = row.rowData[f.mappedAttributeName];
+
+                // If array → convert to comma-separated
+                if (Array.isArray(value)) {
+                  value = value.join(", ");
+                }
+
+                // If date or date-range → format
+                if (f.type === "date" || f.type === "date-range") {
+                  value = formatDateValue(value);
+                }
+
+                const label = f.mappedAttributeName.includes("Converted|") &&
+                        f.type === "number"
+                          ? `${f.label} (${defaultCurrency})`
+                          : f.label;
+
+                dataRow[label] = value ?? "";
+              });
+
+              worksheet.addRow(dataRow);
+            });
+
+            // ======================================================
           }else if (job.name === "exportCustomData") {
 // ================================================================
 // CUSTOM DATA EXPORT (GENERIC, BATCHED)

@@ -4,6 +4,8 @@ import {
   getErrorRowDataBasedOnDataSourceVersionIdAndRowNumber,
   listDataSourceVersionErrorBasedOnDataSourceVersionId,
   resolveDataImportError,
+  getImportDataSourceVersionData,
+  updateImportData
 } from '../../controllers/common/dataImportError.controller';
 import { permissionMiddleware } from '../../../middlewares/permission.middleware';
 
@@ -22,5 +24,19 @@ router.get(
   authenticateToken,
   //   permissionMiddleware(),
   getErrorRowDataBasedOnDataSourceVersionIdAndRowNumber
+);
+
+router.get(
+  '/import-data',
+  authenticateToken,
+  //   permissionMiddleware(),
+  getImportDataSourceVersionData
+);
+
+router.put(
+  '/update-import-data',
+  authenticateToken,
+  //   permissionMiddleware(),
+  updateImportData
 );
 export default router;
