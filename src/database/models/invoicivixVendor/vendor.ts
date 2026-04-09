@@ -8,6 +8,7 @@ interface IVendor extends Document {
   userId: Types.ObjectId;
 
   name: string;
+  aliasName: string;
   code: string;
   description?: string;
 
@@ -134,6 +135,8 @@ const vendorSchema = new Schema<IVendor>(
     },
 
     name: { type: String, required: true },
+
+    aliasName: { type: String },
 
     code: {
       type: String,

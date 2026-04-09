@@ -4,7 +4,7 @@ import * as vendorService from '../../../database/services/invoicivixVendor/vend
 import { Types } from 'mongoose';
 import { findDataSourceByCodeAndOrganization } from '../../../database/services/common/dataSource.services';
 import { createSingleRowVersionValue } from '../common/dataSourceVersion.controller';
-import { createSingleRowVersionValueService } from '../../../database/services/common/defaultDataSourceVersionValue.services';
+import { createSingleRowVersionValueService, updateSingleRowVersionValueService } from '../../../database/services/common/defaultDataSourceVersionValue.services';
 
 /**
  * ================================
@@ -21,6 +21,7 @@ export const createVendor = async (
 
     const {
       name,
+      aliasName,
       description,
       status,
 
@@ -105,6 +106,7 @@ export const createVendor = async (
       userId,
 
       name,
+      aliasName,
       code,
       description,
       status,
@@ -153,7 +155,8 @@ export const createVendor = async (
           user: req.user,
           rowData: {
             "vendor name": name,
-            "vendor code": code
+            "vendor code": code,
+            "vendor alias name": aliasName ?? ''
           }
       });
     }
@@ -214,6 +217,8 @@ export const updateVendor = async (
   try {
     const { vendorId } = req.params;
 
+    const { organizationId } = req.user;
+
     // Logo upload
     let logoPath = '';
     const files = req.files as Express.Multer.File[];
@@ -249,6 +254,26 @@ export const updateVendor = async (
       return res
         .status(404)
         .json({ success: false, message: 'Vendor not found' });
+    }
+
+    const dataSource: any = await findDataSourceByCodeAndOrganization(
+      'vendor',
+      organizationId
+    );
+
+    if (dataSource) {
+      await updateSingleRowVersionValueService({
+        dataSourceId: dataSource._id,
+        user: req.user,
+        query: {
+          "rowData.vendor code": vendor.code, // 🔥 key part
+          "status": 'active'
+        },
+        rowData: {
+          "vendor name": vendor.name,
+          "vendor alias name": vendor.aliasName ?? '',
+        },
+      });
     }
 
     res.status(200).json({

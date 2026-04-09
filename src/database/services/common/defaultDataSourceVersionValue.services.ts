@@ -6809,6 +6809,128 @@ export const createSingleRowVersionValueService = async ({
   return newRowData;
 };
 
+export const updateSingleRowVersionValueService = async ({
+  dataSourceId,
+  versionValue,
+  rowData,
+  rowId,
+  query, // 👈 NEW
+  user,
+}: {
+  dataSourceId: string;
+  versionValue?: string;
+  rowData: any;
+  rowId?: string;
+  query?: any; // dynamic filter
+  user: any;
+}) => {
+  const { userId, organizationId, orgCode } = user;
+
+  if (!dataSourceId || !rowData || (!rowId && !query)) {
+    throw new Error("Missing required fields. Provide rowId or query.");
+  }
+
+  const dataSourceDetails = await dataSourceService.findDataSourceById(
+    dataSourceId,
+    true
+  );
+
+  if (!dataSourceDetails) {
+    throw new Error("Data source not found.");
+  }
+
+  const versionQuery: any = {
+    dataSourceId,
+    isCurrent: true,
+    ...(versionValue && { versionValue }),
+  };
+
+  const version: any = await dataSourceVersionService.getDataSourceVersion({
+    query: versionQuery,
+    populate: [],
+    sort: { createdAt: -1 },
+  });
+
+  if (!version) {
+    throw new Error("Version not found.");
+  }
+
+  const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+    orgCode,
+    versionCode: dataSourceDetails.code,
+  });
+
+  // ✅ Build filter dynamically
+  const filter = rowId
+    ? { _id: rowId, dataSourceVersionId: version._id }
+    : { ...query, dataSourceVersionId: version._id };
+
+  const existingRow = await dataSourceVersionValueService.findOne(
+    schemaName,
+    filter
+  );
+
+  if (!existingRow) {
+    throw new Error("Row not found for update.");
+  }
+
+  const entity = await findEntityById(dataSourceDetails.entityId);
+
+  if (!entity || !entity.attributes) {
+    throw new Error("Entity or attributes not found.");
+  }
+
+  // ✅ Auto populate
+  await autoPopulateAttributeOptionFromRow({
+    entityId: dataSourceDetails.entityId,
+    attributes: entity.attributes,
+    rowData,
+    userId,
+    organizationId,
+  });
+
+  // ✅ Validate
+  const { isValid, errors, validatedRowData } = await validateRowData({
+    rowData,
+    attributes: entity.attributes,
+    entityId: dataSourceDetails.entityId,
+    dataSourceId,
+    dataSourceVersionId: version._id,
+    uniqueAttributeRules: dataSourceDetails.uniqueAttributeRules,
+  });
+
+  if (!isValid) {
+    throw new Error(JSON.stringify(errors));
+  }
+
+  const updateRow: any = {
+    rowData: validatedRowData,
+    updatedBy: userId,
+    status: "active",
+  };
+
+  // ✅ Update
+  const updatedRow =
+    await dataSourceVersionValueService.updateOne(
+      schemaName,
+      filter,
+      updateRow
+    );
+
+  // ✅ Handle reference fields
+  await handleReferenceSubFields({
+    rowData: validatedRowData,
+    attributes: entity.attributes,
+    dataSourceId,
+    versionId: version._id,
+    versionValue: version.versionValue,
+    userId,
+    organizationId,
+  });
+
+  return updatedRow;
+};
+
 export const createSingleRowVersionValueFileProcessService = async ({
   dataSourceId,
   versionValue,
