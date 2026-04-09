@@ -283,17 +283,30 @@ async function validateAndConvert({
   patternMatch?: string[];
 }) {
   if (type === 'number') {
-    let convertedValue = parseFloat(value);
-    if (typeof value === 'string' && value.toLowerCase().trim() === 'yes') {
-      convertedValue = 1;
-    } else if (typeof value === 'string' && value.toLowerCase().trim() === 'no') {
-      convertedValue = 0;
-    }
-    return {
-      isValid: !isNaN(convertedValue),
-      convertedValue: !isNaN(convertedValue) ? convertedValue : null,
-    };
+  let strValue = String(value ?? '').trim();
+
+  // Handle yes/no strings first
+  if (strValue.toLowerCase() === 'yes') strValue = '1';
+  if (strValue.toLowerCase() === 'no') strValue = '0';
+
+  // Handle parentheses for negative numbers
+  let isNegative = false;
+  if (/^\(.*\)$/.test(strValue)) {
+    isNegative = true;
+    strValue = strValue.replace(/^\((.*)\)$/, '$1');
   }
+
+  // Remove all non-numeric characters except dot
+  strValue = strValue.replace(/[^0-9.]/g, '');
+
+  let convertedValue = parseFloat(strValue);
+  if (isNegative) convertedValue = -convertedValue;
+
+  return {
+    isValid: !isNaN(convertedValue),
+    convertedValue: !isNaN(convertedValue) ? convertedValue : null,
+  };
+}
 
   if (type === 'text' || type === 'richtext') {
   const convertedValue =
