@@ -52,7 +52,10 @@ export const updateDataSourceVersionValue = async (
         if (!attrName) continue;
         const val = row.rowData?.[attrName];
         if (val !== undefined && val !== null && `${val}`.trim() !== '') {
-          condition[`rowData.${attrName}`] = val;
+          const escapedValue = escapeRegExp(String(val).trim());
+          const regex = new RegExp(`^${escapedValue}$`, "i");
+
+          condition[`rowData.${attrName}`] = regex;
           break; // fallback: use first non-empty key in rule
         }
       }
