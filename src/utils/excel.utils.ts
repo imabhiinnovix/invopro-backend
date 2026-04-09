@@ -172,7 +172,11 @@ export async function readExcelFile(filePath: string, sheetNames?: string[]): Pr
   try {
     console.log('Inside readExcelFile', filePath);
 
-    const workbook = xlsx.readFile(filePath);
+    const workbook = xlsx.readFile(filePath,{
+      cellDates: true,
+      cellNF: false,
+      cellText: false // ✅ important
+    });
 
     let sheetsToRead: string[] = [];
 
@@ -195,7 +199,7 @@ export async function readExcelFile(filePath: string, sheetNames?: string[]): Pr
     sheetsToRead.forEach((sheetName) => {
       const worksheet = workbook.Sheets[sheetName];
       if (worksheet) {
-        const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: null });
+        const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: null, raw: false });
         allRows.push(...jsonData);
       }
     });
