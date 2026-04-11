@@ -1019,6 +1019,10 @@ export async function validateRowData({
   entityId,
   dataSourceId,
   dataSourceVersionId,
+  versionValue,
+  user,
+  conversion,
+  isPortfolioErrorOverwrite
 }: {
   rowData: Record<string, any>;
   attributes: any[];
@@ -1027,32 +1031,113 @@ export async function validateRowData({
   entityId?: any;
   dataSourceId?: string;
   dataSourceVersionId?: string;
+  versionValue?: string;
+  user?: any;
+  conversion?: any;
+  isPortfolioErrorOverwrite?:boolean;
 }) {
   const errors: any[] = [];
   const validatedRowData: Record<string, any> = { ...rowData };
 
-  // Create attribute ID → name map for lookup
-  const attributeIdToNameMap = attributes.reduce(
-    (acc, attr) => {
-      acc[attr._id?.toString()] = attr.name;
-      return acc;
-    },
-    {} as Record<string, string>
-  );
+  const attributeIdToNameMap = attributes.reduce((acc, attr) => {
+    acc[attr._id?.toString()] = attr.name;
+    return acc;
+  }, {} as Record<string, string>);
+
+  // =====================================================
+  // ✅ PORTFOLIO MAP (ADDED INSIDE FUNCTION)
+  // =====================================================
+  const portfolioMap = new Map<string, any>();
+
+  const PORTFOLIO_DATASOURCE_ID =
+    process.env.PORTFOLIO_DATASOURCE_ID ?? "69d514893b14fb62153ed0eb";
+
+  if (
+    PORTFOLIO_DATASOURCE_ID &&
+    dataSourceId === "699f04727df5e0efe12d5027" &&
+    !isPortfolioErrorOverwrite
+  ) {
+    const portfolioDs = await dataSourceService.findDataSourceById(
+      PORTFOLIO_DATASOURCE_ID,
+      true
+    );
+
+    if (portfolioDs) {
+      const version = await dataSourceVersionService.getDataSourceVersion({
+        query: {
+          dataSourceId: PORTFOLIO_DATASOURCE_ID,
+          isCurrent: true,
+          status: "completed",
+          ...(versionValue && { versionValue }),
+        },
+        sort: { createdAt: -1 },
+      });
+
+      if (version) {
+        const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+          orgCode: user?.orgCode,
+          versionCode: portfolioDs.code,
+        });
+
+        const BATCH_SIZE = 2000;
+        let page = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+          const { data, totalCount } =
+            await dataSourceVersionValueService.getDataSourceVersionValue({
+              schemaName,
+              query: { dataSourceVersionId: version._id },
+              select:
+                "rowData.CaseReference rowData.Attorney rowData.SBU",
+              page,
+              limit: BATCH_SIZE,
+              sort: { _id: 1 },
+            });
+
+          for (const rec of data) {
+            const key = rec.rowData?.["CaseReference"]?.trim();
+
+            if (key) {
+              portfolioMap.set(key, {
+                "SABIC Attroney": rec.rowData?.["Attorney"],
+                "SABIC Business Unit": rec.rowData?.["SBU"],
+              });
+            }
+          }
+
+          const fetchedCount = page * BATCH_SIZE;
+          hasMore = fetchedCount < totalCount;
+          page++;
+        }
+      }
+    }
+  }
 
   // -----------------------------------------
-  // 1️⃣ Basic type & reference validation
+  // 1️⃣ Basic validation
   // -----------------------------------------
+  const masterErrorAttrs = new Set<string>();
+
+  const convertedAttrMap = new Map<string, string>();
+
+for (const attr of attributes) {
+  if (attr.name.startsWith("Converted|")) {
+    const originalName = attr.name.split("Converted|")[1]?.trim();
+    if (originalName) {
+      convertedAttrMap.set(originalName, attr.name);
+    }
+  }
+}
   for (const attr of attributes) {
     if (!Object.prototype.hasOwnProperty.call(rowData, attr.name)) continue;
+
     const value = validatedRowData[attr.name];
 
-    // if normalization enabled
     if (attr.normalize === true) {
       validatedRowData[`${attr.name}_normalize`] = normalizeValue(value);
     }
 
-    // Required validation
     if (value === undefined || value === null || value === '') {
       if (attr.required === 'Mandatory' || attr.required === true) {
         errors.push({
@@ -1065,13 +1150,13 @@ export async function validateRowData({
       continue;
     }
 
-    // Reference resolution
     if (
       attr.referenceEntitySetting?.refEntityId &&
       ['one_to_one', 'many_to_one'].includes(attr.referenceEntitySetting?.relationType)
     ) {
       const refEntityId = attr.referenceEntitySetting.refEntityId;
       const refFieldId = attr.referenceEntitySetting.refEntityField;
+
       const refEntityField = await getEntityAttribute(refEntityId, refFieldId);
       const RefModel = await getModelForEntity(refEntityId);
 
@@ -1090,19 +1175,21 @@ export async function validateRowData({
           errorCode: '404',
           errorMessage: `"${attr.name}" - "${value}" not found.`,
         });
+         masterErrorAttrs.add(attr.name);
       } else {
         validatedRowData[attr.name] = referencedDoc._id;
-        validatedRowData[`${attr.name}__display`] = referencedDoc.rowData?.[refEntityField.name];
+        validatedRowData[`${attr.name}__display`] =
+          referencedDoc.rowData?.[refEntityField.name];
       }
     } else {
-      // Type validation
-      const { isValid, convertedValue, attributeOptionValue } = await validateAndConvert({
-        value,
-        type: attr.type,
-        optionAttributeId: attr.optionAttributeId,
-        separator,
-        patternMatch: attr.patternMatch
-      });
+      const { isValid, convertedValue, attributeOptionValue } =
+        await validateAndConvert({
+          value,
+          type: attr.type,
+          optionAttributeId: attr.optionAttributeId,
+          separator,
+          patternMatch: attr.patternMatch,
+        });
 
       if (!isValid) {
         errors.push({
@@ -1110,17 +1197,81 @@ export async function validateRowData({
           errorType: 'Type Error',
           errorCode: '400',
           errorMessage: ['option', 'multioption'].includes(attr.type)
-            ? `${attr.name} - ${value} is not valid ${attr.type}. Expected value from options: ${attributeOptionValue}`
-            : `${attr.name} - Invalid value ${value} for ${attr.type} type`,
+            ? `${attr.name} - ${value} is not valid ${attr.type}`
+            : `${attr.name} - Invalid value ${value}`,
         });
       } else {
         validatedRowData[attr.name] = convertedValue;
       }
     }
+
+     // -----------------------------------------
+  // 2️⃣ Portfolio Validation (NOW WORKS)
+  // -----------------------------------------
+  console.log('dataSourceId',dataSourceId, validatedRowData["SABIC Case Reference Number"],portfolioMap.size);
+  if (dataSourceId === "699f04727df5e0efe12d5027" && !isPortfolioErrorOverwrite) {
+    const caseRef = validatedRowData["SABIC Case Reference Number"];
+
+    const isValidCaseRef = isValidCaseReference(caseRef);
+
+    const PORTFOLIO_CHECK_ATTRS = [
+      "SABIC Attroney",
+      "SABIC Business Unit",
+    ];
+
+    console.log('isValidCaseRef',caseRef, isValidCaseRef,portfolioMap.size);
+      if (
+        isValidCaseRef &&
+        portfolioMap.size > 0 &&
+        PORTFOLIO_CHECK_ATTRS.includes(attr.name) &&
+        !masterErrorAttrs.has(attr.name)
+      ) {
+        const portfolioRecord = portfolioMap.get(caseRef.toString().trim());
+        if (portfolioRecord) {
+        for (const attr of PORTFOLIO_CHECK_ATTRS) {
+          const value = validatedRowData[attr];
+          const portfolioValue = portfolioRecord?.[attr];
+
+          if (
+            value &&
+            portfolioValue !== undefined &&
+            normalize(portfolioValue) !== normalize(value)
+          ) {
+            errors.push({
+              attributeName: attr,
+              attributeType: "string",
+              status: "open",
+              errorSource: "portfolio", // ✅ REQUIRED
+              errorType: ERROR_CODES.INVALID_TYPE.type,
+              errorCode: ERROR_CODES.INVALID_TYPE.code,
+              errorMessage: `${attr} mismatch with portfolio data.`,
+            });
+          }
+        }
+      }
+    }
+  }
   }
 
+      // After all attributes processed
+for (const [originalName, convertedName] of convertedAttrMap.entries()) {
+  const value = validatedRowData[originalName];
+
+  if (conversion && value !== undefined && value !== null && value !== '') {
+    const numericValue = Number(value);
+
+    if (!isNaN(numericValue)) {
+      validatedRowData[convertedName] =  Number(
+                                        (numericValue / conversion.rate).toFixed(2)
+                                      );
+      validatedRowData["Converted|Currency"] = conversion.targetCurrency;
+    }
+  }
+}
+  
+
   // -----------------------------------------
-  // 2️⃣ Unique Attribute Combination Validation
+  // 3️⃣ Unique validation
   // -----------------------------------------
   if (Array.isArray(uniqueAttributeRules) && uniqueAttributeRules.length > 0) {
     for (const rule of uniqueAttributeRules) {
@@ -1142,6 +1293,7 @@ export async function validateRowData({
         }
 
         keyValues.push(`${val}`.toLowerCase().trim());
+
         const displayKey = `${attrName}__display`;
         const displayValue = validatedRowData[displayKey] ?? val;
         displayKeyValues.push(`${displayValue}`.trim());
@@ -1149,7 +1301,6 @@ export async function validateRowData({
 
       if (!isValidCombination) continue;
 
-      // Build MongoDB query for duplicate check
       const compositeConditions = rule.map((attrId) => {
         const attrName = attributeIdToNameMap[attrId.toString()];
         return { [`rowData.${attrName}`]: validatedRowData[attrName] };
@@ -1168,23 +1319,26 @@ export async function validateRowData({
           attributeName: displayKeyValues.join('|'),
           errorType: 'Duplicate Error',
           errorCode: '409',
-          errorMessage: `Duplicate combination found for unique keys: ${displayKeyValues.join(' | ')}.`,
+          errorMessage: `Duplicate combination found: ${displayKeyValues.join(' | ')}.`,
         });
       }
 
-      // Only validate first valid rule
       break;
     }
   }
 
   // -----------------------------------------
-  // 3️⃣ Cleanup
+  // 4️⃣ cleanup
   // -----------------------------------------
   for (const key of Object.keys(validatedRowData)) {
     if (key.endsWith('__display')) delete validatedRowData[key];
   }
 
-  return { isValid: errors.length === 0, errors, validatedRowData };
+  return {
+    isValid: errors.length === 0,
+    errors,
+    validatedRowData,
+  };
 }
 
 // =====================

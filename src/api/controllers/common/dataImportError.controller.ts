@@ -265,6 +265,7 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
       "fileName",
       "attributeName",
       "fileAttributeValue",
+      "rowNumber"
     ];
 
     for (const field of filterableFields) {
@@ -295,6 +296,8 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
       searchCondition.length
         ? { $and: [query, { $or: searchCondition }] }
         : query;
+
+    console.log('finalQuery',finalQuery);    
 
     /* --------------------------------------------------
        5️ Fetch errors
@@ -1075,6 +1078,7 @@ export const resolveDataImportError = async (
       attributeOptionId,
       fileAttributeValue,
       attributeName,
+      isPortfolioErrorOverwrite = false
     } = req.body;
 
     let { rowData } = req.body;
@@ -1364,6 +1368,139 @@ export const resolveDataImportError = async (
         );
       }
 
+    } else if (action === "updateAll") {
+      for (const [, ctx] of contextsToProcess) {
+        const dataSource = getCachedDataSource(ctx.dataSourceId);
+        const entity = dataSource?.entityId as any;
+
+        const errorSchema =
+          getImportLogSchemaNameBasedOnVersionCodeAndOrgCode({
+            orgCode,
+            versionCode: dataSource?.code!,
+          });
+
+        const attributes = entity.attributes;
+
+
+        const importData: any = await importLogDataSourceVersionValueService.getImportLogDataSourceVersionValues(
+            errorSchema,
+            {
+              dataSourceVersionId,
+              rowNumber: { $in: ctx.rowNumbers },
+            }
+          );
+
+        // 1️⃣ Validate full row once
+        const { errors, validatedRowData } = await validateRowData({
+          rowData,
+          attributes,
+          dataSourceVersionId: ctx.dataSourceVersionId.toString(),
+          dataSourceId: ctx.dataSourceId.toString(),
+          conversion: importData?.[0]?.conversion,
+          user:req.user,
+          isPortfolioErrorOverwrite
+        });
+
+        // 2️⃣ Extract invalid attribute names
+        const invalidAttributes = new Set(
+          errors.map((e) => e.attributeName)
+        );
+
+        // 3️⃣ Remove invalid attributes from update payload
+        const filteredValidatedData: Record<string, any> = {};
+
+        for (const [key, value] of Object.entries(validatedRowData)) {
+
+          // skip invalid attributes
+          if (invalidAttributes.has(key)) continue;
+
+          filteredValidatedData[key] = value;
+        }
+
+        // 4️⃣ If nothing valid, skip silently (NO ERROR)
+        if (Object.keys(filteredValidatedData).length === 0) {
+          continue;
+        }
+
+        // 5️⃣ Populate options only for valid data
+        await autoPopulateAttributeOptionFromRow({
+          entityId: entity._id,
+          attributes,
+          rowData: filteredValidatedData,
+          userId,
+          organizationId,
+        });
+
+        // 6️⃣ Build update payload
+        const updateFields: any = {};
+        Object.entries(filteredValidatedData).forEach(([k, v]) => {
+          updateFields[`rowData.${k}`] = v;
+        });
+
+         const records =
+          await dataImportErrorServices.getDataImportErrorRecords({
+            dataSourceVersionId: ctx.dataSourceVersionId,
+            rowNumber: { $in: ctx.rowNumbers },
+            status: "open",
+          });
+
+        const errorAttributes = records.map((r) => r.attributeName);
+
+         // 9️⃣ Mark ONLY valid attributes as resolved
+        const filterValidatedAttributes = Object.keys(filteredValidatedData);
+
+        const resolvedAttributes = errorAttributes.filter(attr =>
+                                filterValidatedAttributes.includes(attr)
+                              );
+
+
+        // 7️⃣ Update DB
+        if(resolvedAttributes.length){
+          await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+          errorSchema,
+          {
+            dataSourceVersionId: ctx.dataSourceVersionId,
+            rowNumber: { $in: ctx.rowNumbers },
+          },
+          updateFields,
+          { isErrorLog: (-1 * (resolvedAttributes.length)) }
+        );
+        }else{
+        await importLogDataSourceVersionValueService.updateImportLogDataSourceVersionValue(
+          errorSchema,
+          {
+            dataSourceVersionId: ctx.dataSourceVersionId,
+            rowNumber: { $in: ctx.rowNumbers },
+          },
+          updateFields
+        );
+      }
+
+        // 8️⃣ Reference handling only for valid fields
+        const version = await getDataSourceVersion({
+          query: { _id: ctx.dataSourceVersionId },
+        });
+
+        await handleReferenceSubFields({
+          rowData: filteredValidatedData,
+          attributes,
+          dataSourceId: ctx.dataSourceId,
+          versionId: version?._id,
+          versionValue: version?.versionValue,
+          userId,
+          organizationId,
+        });
+        if(resolvedAttributes.length){
+          await dataImportErrorServices.updateDataImportErrors(
+            {
+              dataSourceVersionId: ctx.dataSourceVersionId,
+              rowNumber: { $in: ctx.rowNumbers },
+              attributeName: { $in: resolvedAttributes },
+            },
+            { status: "resolved" }
+          );
+      }
+      }
     }
 
     // =====================================================
@@ -1729,7 +1866,7 @@ export const getImportDataSourceVersionData = async (
     // 🔹 Base Query
     const query: any = {
       dataSourceVersionId: new Types.ObjectId(dataSourceVersionId.toString().trim()),
-      isErrorLog: isErrorLogNumber
+      isErrorLog: isErrorLogNumber == 1 ? { $gte : isErrorLogNumber } : isErrorLogNumber
     };
 
     if(type == "export"){

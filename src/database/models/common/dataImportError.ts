@@ -25,7 +25,7 @@ interface IDataImportError extends Document {
   refAttributeId: Types.ObjectId;
   fileRowNumber: String;
   fileName: String;
-  errorSource: 'system' | 'master' | 'portfolio';
+  errorSource: 'validation' | 'master' | 'portfolio';
 }
 const DataImportErrorSchema = new Schema<IDataImportError>(
   {
@@ -60,8 +60,8 @@ const DataImportErrorSchema = new Schema<IDataImportError>(
     errorMessage: { type: String },
     errorSource: {
       type: String,
-      enum: ['system', 'master', 'portfolio'],
-      default: 'system', // ✅ default value
+      enum: ['validation', 'master', 'portfolio'],
+      default: 'validation', // ✅ default value
     },
   },
   {
