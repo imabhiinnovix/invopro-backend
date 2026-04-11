@@ -538,15 +538,38 @@ if (PORTFOLIO_DATASOURCE_ID && dataSourceId == "699f04727df5e0efe12d5027") {
         });
 
         for (const rec of data) {
-          const key = rec.rowData?.["CaseReference"]?.trim();
+  const key = rec.rowData?.["CaseReference"]?.trim();
 
-          if (key) {
-            portfolioMap.set(key, {
-              "SABIC Attroney": rec.rowData?.["Attorney"],
-              "SABIC Business Unit": rec.rowData?.["SBU"],
-            });
-          }
-        }
+  if (key) {
+    const attorney = rec.rowData?.["Attorney"]?.trim();
+    const attorneyAlias = rec.rowData?.["Attorney_alias"];
+
+    const sbu = rec.rowData?.["SBU"]?.trim();
+    const sbuAlias = rec.rowData?.["SBU_alias"];
+
+    // 🔥 normalize alias (handle string or array)
+    const normalizeAlias = (alias: any) => {
+      if (!alias) return [];
+      if (Array.isArray(alias)) return alias.filter(Boolean);
+      return [alias]; // if string
+    };
+
+    const attorneyArr = [
+      ...(attorney ? [attorney] : []),
+      ...normalizeAlias(attorneyAlias),
+    ];
+
+    const sbuArr = [
+      ...(sbu ? [sbu] : []),
+      ...normalizeAlias(sbuAlias),
+    ];
+
+    portfolioMap.set(key, {
+      "SABIC Attroney": attorneyArr,
+      "SABIC Business Unit": sbuArr,
+    });
+  }
+}
 
         const fetchedCount = page * BATCH_SIZE;
         hasMore = fetchedCount < totalCount;
@@ -847,34 +870,46 @@ if (rowCurrency) {
         if (portfolioRecord) {
           const portfolioValue = portfolioRecord?.[attrName];
 
-          if (
-            value &&
-            portfolioValue !== undefined &&
-            normalize(portfolioValue) !== normalize(value)
-          ) {
-            errors.push({
-              entityId,
-              dataSourceId,
-              dataSourceVersionId,
-              rowNumber: index + 1,
-              fileAttributeName: Array.isArray(fileKey)
-                ? fileKey.join('|')
-                : fileKey,
-              fileAttributeValue: value,
-              attributeName: attrName,
-              attributeType: attr.type, // ✅ dynamic
-              refAttributeId: attr._id,
-              status: 'open',
-              fileRowNumber: rowNum,
-              fileName,
-              errorSource: 'portfolio', // ✅ key requirement
-              errorType: ERROR_CODES.INVALID_TYPE.type,
-              errorCode: ERROR_CODES.INVALID_TYPE.code,
-              errorMessage: `${attrName} mismatch with portfolio data.`,
-            });
+          const normalizeValue = (v: any) =>
+  v?.toString().toLowerCase().trim();
 
-            newRow.isErrorLog = (newRow.isErrorLog || 0) + 1;
-          }
+const normalizeArray = (arr: any) => {
+  if (!arr) return [];
+  if (Array.isArray(arr)) return arr.map(normalizeValue).filter(Boolean);
+  return [normalizeValue(arr)];
+};
+
+if (value && portfolioValue !== undefined) {
+  const normalizedVal = normalizeValue(value);
+  const portfolioArr = normalizeArray(portfolioValue);
+
+  const isMatch = portfolioArr.includes(normalizedVal);
+
+  if (!isMatch) {
+    errors.push({
+      entityId,
+      dataSourceId,
+      dataSourceVersionId,
+      rowNumber: index + 1,
+      fileAttributeName: Array.isArray(fileKey)
+        ? fileKey.join('|')
+        : fileKey,
+      fileAttributeValue: value,
+      attributeName: attrName,
+      attributeType: attr.type,
+      refAttributeId: attr._id,
+      status: 'open',
+      fileRowNumber: rowNum,
+      fileName,
+      errorSource: 'portfolio',
+      errorType: ERROR_CODES.INVALID_TYPE.type,
+      errorCode: ERROR_CODES.INVALID_TYPE.code,
+      errorMessage: `${attrName} mismatch with portfolio data.`,
+    });
+
+    newRow.isErrorLog = (newRow.isErrorLog || 0) + 1;
+  }
+}
         }
       }
     }
@@ -1095,16 +1130,40 @@ export async function validateRowData({
               sort: { _id: 1 },
             });
 
-          for (const rec of data) {
-            const key = rec.rowData?.["CaseReference"]?.trim();
+          
+        for (const rec of data) {
+  const key = rec.rowData?.["CaseReference"]?.trim();
 
-            if (key) {
-              portfolioMap.set(key, {
-                "SABIC Attroney": rec.rowData?.["Attorney"],
-                "SABIC Business Unit": rec.rowData?.["SBU"],
-              });
-            }
-          }
+  if (key) {
+    const attorney = rec.rowData?.["Attorney"]?.trim();
+    const attorneyAlias = rec.rowData?.["Attorney_alias"];
+
+    const sbu = rec.rowData?.["SBU"]?.trim();
+    const sbuAlias = rec.rowData?.["SBU_alias"];
+
+    // 🔥 normalize alias (handle string or array)
+    const normalizeAlias = (alias: any) => {
+      if (!alias) return [];
+      if (Array.isArray(alias)) return alias.filter(Boolean);
+      return [alias]; // if string
+    };
+
+    const attorneyArr = [
+      ...(attorney ? [attorney] : []),
+      ...normalizeAlias(attorneyAlias),
+    ];
+
+    const sbuArr = [
+      ...(sbu ? [sbu] : []),
+      ...normalizeAlias(sbuAlias),
+    ];
+
+    portfolioMap.set(key, {
+      "SABIC Attroney": attorneyArr,
+      "SABIC Business Unit": sbuArr,
+    });
+  }
+}
 
           const fetchedCount = page * BATCH_SIZE;
           hasMore = fetchedCount < totalCount;
@@ -1129,6 +1188,15 @@ for (const attr of attributes) {
     }
   }
 }
+
+const normalizeValue = (v: any) =>
+  v?.toString().toLowerCase().trim();
+
+const normalizeArray = (arr: any) => {
+  if (!arr) return [];
+  if (Array.isArray(arr)) return arr.map(normalizeValue).filter(Boolean);
+  return [normalizeValue(arr)];
+};
   for (const attr of attributes) {
     if (!Object.prototype.hasOwnProperty.call(rowData, attr.name)) continue;
 
@@ -1209,48 +1277,54 @@ for (const attr of attributes) {
   // 2️⃣ Portfolio Validation (NOW WORKS)
   // -----------------------------------------
   console.log('dataSourceId',dataSourceId, validatedRowData["SABIC Case Reference Number"],portfolioMap.size);
-  if (dataSourceId === "699f04727df5e0efe12d5027" && !isPortfolioErrorOverwrite) {
-    const caseRef = validatedRowData["SABIC Case Reference Number"];
+ if (dataSourceId === "699f04727df5e0efe12d5027" && !isPortfolioErrorOverwrite) {
+  const caseRef = validatedRowData["SABIC Case Reference Number"];
+  const isValidCaseRef = isValidCaseReference(caseRef);
 
-    const isValidCaseRef = isValidCaseReference(caseRef);
+  const PORTFOLIO_CHECK_ATTRS = [
+    "SABIC Attroney", // ✅ fix typo
+    "SABIC Business Unit",
+  ];
 
-    const PORTFOLIO_CHECK_ATTRS = [
-      "SABIC Attroney",
-      "SABIC Business Unit",
-    ];
+  if (
+    isValidCaseRef &&
+    portfolioMap.size > 0 &&
+    !masterErrorAttrs.has(attr.name)
+  ) {
+    const portfolioRecord = portfolioMap.get(caseRef?.toString().trim());
 
-    console.log('isValidCaseRef',caseRef, isValidCaseRef,portfolioMap.size);
-      if (
-        isValidCaseRef &&
-        portfolioMap.size > 0 &&
-        PORTFOLIO_CHECK_ATTRS.includes(attr.name) &&
-        !masterErrorAttrs.has(attr.name)
-      ) {
-        const portfolioRecord = portfolioMap.get(caseRef.toString().trim());
-        if (portfolioRecord) {
-        for (const attr of PORTFOLIO_CHECK_ATTRS) {
-          const value = validatedRowData[attr];
-          const portfolioValue = portfolioRecord?.[attr];
+    if (portfolioRecord) {
+      for (const attrName of PORTFOLIO_CHECK_ATTRS) {
+        const value = validatedRowData[attrName];
+        const portfolioValue = portfolioRecord?.[attrName];
 
-          if (
-            value &&
-            portfolioValue !== undefined &&
-            normalize(portfolioValue) !== normalize(value)
-          ) {
+        if (value && portfolioValue !== undefined) {
+          const normalizedVal = normalizeValue(value);
+
+          // ❗ skip empty safely
+          if (!normalizedVal) continue;
+
+          const portfolioArr = normalizeArray(portfolioValue);
+          const portfolioSet = new Set(portfolioArr);
+
+          const isMatch = portfolioSet.has(normalizedVal);
+
+          if (!isMatch) {
             errors.push({
-              attributeName: attr,
+              attributeName: attrName, // ✅ correct variable
               attributeType: "string",
               status: "open",
-              errorSource: "portfolio", // ✅ REQUIRED
+              errorSource: "portfolio",
               errorType: ERROR_CODES.INVALID_TYPE.type,
               errorCode: ERROR_CODES.INVALID_TYPE.code,
-              errorMessage: `${attr} mismatch with portfolio data.`,
+              errorMessage: `${attrName} mismatch with portfolio data.`,
             });
           }
         }
       }
     }
   }
+}
   }
 
       // After all attributes processed
@@ -1414,6 +1488,7 @@ async function resolveReference(
 ) {
   // 1️⃣ get metadata (cached)
   // const { field, model } = await getRefMeta(refEntityId, refEntityFieldId);
+  const originalValue = value;
   if(matchStrategy === 'normalized'){
     value = normalizeValue(value);
   }
@@ -1433,6 +1508,25 @@ async function resolveReference(
         [`rowData.${field.name}_normalize`]: value,
         status: 'active',
       })) || null;
+
+    if (!doc) {
+    const regex = new RegExp(`^${escapeRegExp(originalValue.trim())}$`, "i");
+
+    doc =
+      (await model.findOne({
+        status: 'active',
+        $or: [
+          // ✅ alias match
+          {
+            [`rowData.${field.name}_alias`]: { $regex: regex },
+          },
+          // ✅ original field match
+          {
+            [`rowData.${field.name}`]: { $regex: regex },
+          },
+        ],
+      })) || null;
+  }  
 
   } else {
      // 3️⃣ exact regex (bracket-safe)

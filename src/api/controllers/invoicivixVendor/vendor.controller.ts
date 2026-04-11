@@ -156,7 +156,7 @@ export const createVendor = async (
           rowData: {
             "vendor name": name,
             "vendor code": code,
-            "vendor alias name": aliasName ?? ''
+            "vendor name_alias": Array.isArray(aliasName) ? aliasName : []
           }
       });
     }
@@ -271,7 +271,7 @@ export const updateVendor = async (
         },
         rowData: {
           "vendor name": vendor.name,
-          "vendor alias name": vendor.aliasName ?? '',
+          "vendor name_alias": Array.isArray(vendor.aliasName) ? vendor.aliasName : [],
         },
       });
     }
