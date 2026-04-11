@@ -337,7 +337,8 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
        7️ Uploaded records count (ONE QUERY PER DATASOURCE)
     -------------------------------------------------- */
     let totalUploadedRecords = 0;
-
+    let totalResolvedRecords = 0;
+    let totalErrorRecords = 0;
     if (dataSourceId && dataSourceVersionId) {
       const dsDetails =
         await dataSourceService.findDataSourceById(dataSourceId, true);
@@ -352,6 +353,16 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
         await importLogDataSourceVersionValueService.getDataSourceVersionValueCount(
           schemaName,
           { dataSourceVersionId: new ObjectId(dataSourceVersionId) }
+        );
+        totalResolvedRecords =
+        await importLogDataSourceVersionValueService.getDataSourceVersionValueCount(
+          schemaName,
+          { dataSourceVersionId: new ObjectId(dataSourceVersionId), isErrorLog: 0 }
+        );
+         totalErrorRecords =
+        await importLogDataSourceVersionValueService.getDataSourceVersionValueCount(
+          schemaName,
+          { dataSourceVersionId: new ObjectId(dataSourceVersionId), isErrorLog: {$gt:0} }
         );
     } 
     // else if (reportRequestId && customReport) {
@@ -395,6 +406,8 @@ export const listDataSourceVersionErrorBasedOnDataSourceVersionId = async (
       totalCount: result.totalCount,
       totalActionCount,
       totalUploadedRecords,
+      totalResolvedRecords,
+      totalErrorRecords
     });
   } catch (err) {
     console.error("Error fetching data import errors:", err);
