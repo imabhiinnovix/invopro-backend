@@ -511,7 +511,7 @@ if (PORTFOLIO_DATASOURCE_ID && dataSourceId == "699f04727df5e0efe12d5027") {
         dataSourceId: PORTFOLIO_DATASOURCE_ID,
         isCurrent: true,
         status: 'completed',
-        ...(versionValue && { versionValue }),
+        // ...(versionValue && { versionValue }),
       },
       sort: { createdAt: -1 },
     });
@@ -542,31 +542,31 @@ if (PORTFOLIO_DATASOURCE_ID && dataSourceId == "699f04727df5e0efe12d5027") {
 
   if (key) {
     const attorney = rec.rowData?.["Attorney"]?.trim();
-    const attorneyAlias = rec.rowData?.["Attorney_alias"];
+    // const attorneyAlias = rec.rowData?.["Attorney_alias"];
 
     const sbu = rec.rowData?.["SBU"]?.trim();
-    const sbuAlias = rec.rowData?.["SBU_alias"];
+    // const sbuAlias = rec.rowData?.["SBU_alias"];
 
     // 🔥 normalize alias (handle string or array)
-    const normalizeAlias = (alias: any) => {
-      if (!alias) return [];
-      if (Array.isArray(alias)) return alias.filter(Boolean);
-      return [alias]; // if string
-    };
+    // const normalizeAlias = (alias: any) => {
+    //   if (!alias) return [];
+    //   if (Array.isArray(alias)) return alias.filter(Boolean);
+    //   return [alias]; // if string
+    // };
 
-    const attorneyArr = [
-      ...(attorney ? [attorney] : []),
-      ...normalizeAlias(attorneyAlias),
-    ];
+    // const attorneyArr = [
+    //   ...(attorney ? [attorney] : []),
+    //   ...normalizeAlias(attorneyAlias),
+    // ];
 
-    const sbuArr = [
-      ...(sbu ? [sbu] : []),
-      ...normalizeAlias(sbuAlias),
-    ];
+    // const sbuArr = [
+    //   ...(sbu ? [sbu] : []),
+    //   ...normalizeAlias(sbuAlias),
+    // ];
 
     portfolioMap.set(key, {
-      "SABIC Attroney": attorneyArr,
-      "SABIC Business Unit": sbuArr,
+      "SABIC Attroney": attorney,
+      "SABIC Business Unit": sbu,
     });
   }
 }
@@ -787,6 +787,10 @@ if (rowCurrency) {
             // }
             newRow.rowData[attrName] = referencedDoc._id;
             newRow.rowData[`${attrName}__display`] = referencedDoc.rowData?.[refEntityField.name];
+            if(refMatchStrategy == 'normalized'){
+              newRow.rowData[`${attrName}__alias_display`] = referencedDoc.rowData?.[`${refEntityField.name}_alias`];
+              tempDisplayAttrs.push(`${attrName}__alias_display`);
+            }
             tempDisplayAttrs.push(`${attrName}__display`); // ✅ track for cleanup
           }
         } else {
@@ -873,17 +877,30 @@ if (rowCurrency) {
           const normalizeValue = (v: any) =>
   v?.toString().toLowerCase().trim();
 
-const normalizeArray = (arr: any) => {
-  if (!arr) return [];
-  if (Array.isArray(arr)) return arr.map(normalizeValue).filter(Boolean);
-  return [normalizeValue(arr)];
+const normalizeArray = (arr: any): string[] => {
+  return (Array.isArray(arr) ? arr : [arr]).map((v) =>
+    v?.toString().toLowerCase().trim()
+  );
 };
 
 if (value && portfolioValue !== undefined) {
-  const normalizedVal = normalizeValue(value);
-  const portfolioArr = normalizeArray(portfolioValue);
+  const normalizedVal = normalizeValue(portfolioValue);
+  let masterValue: any[] = [value];
 
-  const isMatch = portfolioArr.includes(normalizedVal);
+const alias = newRow.rowData[`${attrName}__alias_display`];
+const display = newRow.rowData[`${attrName}__display`];
+
+if (alias) {
+  masterValue.push(...(Array.isArray(alias) ? alias : [alias]));
+}
+
+if (display) {
+  masterValue.push(...(Array.isArray(display) ? display : [display]));
+}
+  const masterValueArr = normalizeArray(masterValue);
+  const masterValueSet = new Set(masterValueArr);
+  console.log('masterValue',masterValueSet,normalizedVal);
+  const isMatch = masterValueSet.has(normalizedVal);
 
   if (!isMatch) {
     errors.push({
@@ -1103,7 +1120,7 @@ export async function validateRowData({
           dataSourceId: PORTFOLIO_DATASOURCE_ID,
           isCurrent: true,
           status: "completed",
-          ...(versionValue && { versionValue }),
+          // ...(versionValue && { versionValue }),
         },
         sort: { createdAt: -1 },
       });
@@ -1136,31 +1153,31 @@ export async function validateRowData({
 
   if (key) {
     const attorney = rec.rowData?.["Attorney"]?.trim();
-    const attorneyAlias = rec.rowData?.["Attorney_alias"];
+    // const attorneyAlias = rec.rowData?.["Attorney_alias"];
 
     const sbu = rec.rowData?.["SBU"]?.trim();
-    const sbuAlias = rec.rowData?.["SBU_alias"];
+    // const sbuAlias = rec.rowData?.["SBU_alias"];
 
-    // 🔥 normalize alias (handle string or array)
-    const normalizeAlias = (alias: any) => {
-      if (!alias) return [];
-      if (Array.isArray(alias)) return alias.filter(Boolean);
-      return [alias]; // if string
-    };
+    // // 🔥 normalize alias (handle string or array)
+    // const normalizeAlias = (alias: any) => {
+    //   if (!alias) return [];
+    //   if (Array.isArray(alias)) return alias.filter(Boolean);
+    //   return [alias]; // if string
+    // };
 
-    const attorneyArr = [
-      ...(attorney ? [attorney] : []),
-      ...normalizeAlias(attorneyAlias),
-    ];
+    // const attorneyArr = [
+    //   ...(attorney ? [attorney] : []),
+    //   ...normalizeAlias(attorneyAlias),
+    // ];
 
-    const sbuArr = [
-      ...(sbu ? [sbu] : []),
-      ...normalizeAlias(sbuAlias),
-    ];
+    // const sbuArr = [
+    //   ...(sbu ? [sbu] : []),
+    //   ...normalizeAlias(sbuAlias),
+    // ];
 
     portfolioMap.set(key, {
-      "SABIC Attroney": attorneyArr,
-      "SABIC Business Unit": sbuArr,
+      "SABIC Attroney": attorney,
+      "SABIC Business Unit": sbu,
     });
   }
 }
@@ -1192,11 +1209,16 @@ for (const attr of attributes) {
 const normalizeValue = (v: any) =>
   v?.toString().toLowerCase().trim();
 
-const normalizeArray = (arr: any) => {
+
+const normalizeArray = (arr: any): string[] => {
   if (!arr) return [];
-  if (Array.isArray(arr)) return arr.map(normalizeValue).filter(Boolean);
-  return [normalizeValue(arr)];
+
+  return (Array.isArray(arr) ? arr : [arr])
+    .flat(Infinity) // ✅ flatten nested arrays
+    .map((v) => v?.toString().toLowerCase().trim()) // ✅ inline normalize
+    .filter(Boolean);
 };
+
   for (const attr of attributes) {
     if (!Object.prototype.hasOwnProperty.call(rowData, attr.name)) continue;
 
@@ -1224,6 +1246,7 @@ const normalizeArray = (arr: any) => {
     ) {
       const refEntityId = attr.referenceEntitySetting.refEntityId;
       const refFieldId = attr.referenceEntitySetting.refEntityField;
+      const refMatchStrategy = attr.referenceEntitySetting.matchStrategy;
 
       const refEntityField = await getEntityAttribute(refEntityId, refFieldId);
       const RefModel = await getModelForEntity(refEntityId);
@@ -1248,6 +1271,9 @@ const normalizeArray = (arr: any) => {
         validatedRowData[attr.name] = referencedDoc._id;
         validatedRowData[`${attr.name}__display`] =
           referencedDoc.rowData?.[refEntityField.name];
+        if(refMatchStrategy == 'normalized'){
+           validatedRowData[`${attr.name}__alias_display`] = referencedDoc.rowData?.[`${refEntityField.name}_alias`];
+          }
       }
     } else {
       const { isValid, convertedValue, attributeOptionValue } =
@@ -1299,15 +1325,27 @@ const normalizeArray = (arr: any) => {
         const portfolioValue = portfolioRecord?.[attrName];
 
         if (value && portfolioValue !== undefined) {
-          const normalizedVal = normalizeValue(value);
+          const normalizedVal = normalizeValue(portfolioValue);
 
           // ❗ skip empty safely
           if (!normalizedVal) continue;
+          let masterValue: any[] = [value];
 
-          const portfolioArr = normalizeArray(portfolioValue);
-          const portfolioSet = new Set(portfolioArr);
+const alias = validatedRowData[`${attr.name}__alias_display`];
+const display = validatedRowData[`${attr.name}__display`];
 
-          const isMatch = portfolioSet.has(normalizedVal);
+if (alias) {
+  masterValue.push(...(Array.isArray(alias) ? alias : [alias]));
+}
+
+if (display) {
+  masterValue.push(...(Array.isArray(display) ? display : [display]));
+}
+
+          const masterValueArr = normalizeArray(masterValue);
+          const masterValueSet = new Set(masterValueArr);
+
+          const isMatch = masterValueSet.has(normalizedVal);
 
           if (!isMatch) {
             errors.push({
@@ -1406,6 +1444,7 @@ for (const [originalName, convertedName] of convertedAttrMap.entries()) {
   // -----------------------------------------
   for (const key of Object.keys(validatedRowData)) {
     if (key.endsWith('__display')) delete validatedRowData[key];
+    if (key.endsWith('__alias_display')) delete validatedRowData[key];
   }
 
   return {
