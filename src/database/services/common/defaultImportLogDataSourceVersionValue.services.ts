@@ -1606,12 +1606,34 @@ aggregationPipeline.push({
 aggregationPipeline.push({ $replaceRoot: { newRoot: "$doc" } });
 
     // Step 3: Sort
-    const finalSort: Record<string, 1 | -1> = {};
-    if (sort && Object.keys(sort).length > 0) {
-      for (const key in sort) finalSort[`rowData.${key}`] = sort[key];
-    } else finalSort.updatedAt = -1;
+    // const finalSort: Record<string, 1 | -1> = {};
+    // if (sort && Object.keys(sort).length > 0) {
+    //   for (const key in sort) finalSort[`rowData.${key}`] = sort[key];
+    // } else finalSort.updatedAt = -1;
 
-    aggregationPipeline.push({ $sort: finalSort }, { $skip: (page - 1) * limit }, { $limit: limit });
+    // aggregationPipeline.push({ $sort: finalSort }, { $skip: (page - 1) * limit }, { $limit: limit });
+
+    const finalSort: Record<string, 1 | -1> = {};
+
+if (sort && Object.keys(sort).length > 0) {
+  for (const key in sort) {
+    if (key === "rowNumber") {
+      // ✅ parent field
+      finalSort[key] = sort[key];
+    } else {
+      // ✅ nested inside rowData
+      finalSort[`rowData.${key}`] = sort[key];
+    }
+  }
+} else {
+  finalSort.updatedAt = -1;
+}
+
+aggregationPipeline.push(
+  { $sort: finalSort },
+  { $skip: (page - 1) * limit },
+  { $limit: limit }
+);
 
     // Step 4: Projection
     if (select) {
