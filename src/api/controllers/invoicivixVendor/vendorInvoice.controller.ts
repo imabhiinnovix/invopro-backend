@@ -125,7 +125,7 @@ export const deleteVendorInvoice = async (req: Request, res: Response, next: Nex
 export const getVendorInvoiceList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { search, vendorId, versionValue } = req.query;
-    const { organizationId, isSuperUser } = req.user;
+    const { organizationId, isSuperUser, paginate = true } = req.user;
 
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || Number.MAX_SAFE_INTEGER;
@@ -136,7 +136,7 @@ export const getVendorInvoiceList = async (req: Request, res: Response, next: Ne
     if (versionValue) query.versionValue = { $regex: versionValue as string, $options: 'i' };
     if (search) query.fileName = { $regex: search as string, $options: 'i' };
 
-    const result = await vendorInvoiceService.getVendorInvoiceList({ query, page, limit, populate: ["vendorId"]  });
+    const result = await vendorInvoiceService.getVendorInvoiceList({ query, page, limit, populate: ["vendorId"], paginate });
 
     res.status(200).json({
       success: true,
