@@ -264,12 +264,90 @@ export const getActivityList = async (req: Request, res: Response, next: NextFun
       query,
       page,
       limit,
+      sort: {versionValue : -1}
     });
 
     res.status(200).json({
       success: true,
       data: result.data,
       totalCount: result.totalCount,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+export const getActivityFileList = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { organizationId, isSuperUser } = req.user;
+    const { activityType, versionValue } = req.query;
+
+    const baseQuery: any = { status: 'active' };
+
+    if (!isSuperUser) {
+      baseQuery.organizationId = new Types.ObjectId(organizationId);
+    }
+
+
+    // ===============================
+    // 🔹 QUERY 1: NORMAL TYPES
+    // ===============================
+    const normalQuery: any = {
+      ...baseQuery,
+      activityType: {
+        $nin: ['portfolio', 'disclosure'],
+      },
+    };
+
+    if (versionValue) {
+      normalQuery.versionValue = versionValue;
+    }
+    if (activityType) {
+      normalQuery.activityType = activityType;
+    }
+
+    const normalResult = await activityService.getActivityList({
+      query: normalQuery,
+      paginate: false,
+      sort: { versionValue: -1 },
+    });
+
+    // ===============================
+    // 🔹 QUERY 2: LATEST PORTFOLIO & DISCLOSURE
+    // ===============================
+    const specialBaseQuery: any = {
+      ...baseQuery,
+      activityType: { $in: ['portfolio', 'disclosure'] },
+    };
+
+    // get latest portfolio
+    const latestPortfolio = await activityService.findOneByQuery({
+      ...specialBaseQuery,
+      activityType: 'portfolio',
+    },
+    { versionValue: -1 },
+  );
+
+    // get latest disclosure
+    const latestDisclosure = await activityService.findOneByQuery({
+      ...specialBaseQuery,
+      activityType: 'disclosure',
+    },
+   { versionValue: -1 },
+  );
+
+    // ===============================
+    // 🔹 COMBINE
+    // ===============================
+    const finalData = [
+      ...(latestPortfolio ? [latestPortfolio] : []),
+      ...(latestDisclosure ? [latestDisclosure] : []),
+      ...normalResult.data,
+    ];
+
+    res.status(200).json({
+      success: true,
+      data: finalData,
+      totalCount: normalResult.totalCount, // only paginated count
     });
   } catch (err) {
     next(err);

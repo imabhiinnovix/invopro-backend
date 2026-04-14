@@ -58,6 +58,9 @@ export const getActivityList = async ({
   return { data, totalCount };
 };
 
-export const findOneByQuery = async (query: any) => {
-  return await Activity.findOne(query);
+export const findOneByQuery = async (
+  query: any,
+  sort: any = { createdAt: -1 } // default latest
+) => {
+  return await Activity.findOne(query).sort(sort);
 };

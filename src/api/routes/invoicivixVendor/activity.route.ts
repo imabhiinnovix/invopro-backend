@@ -5,6 +5,7 @@ import {
   updateActivity,
   deleteActivity,
   getActivityList,
+  getActivityFileList,
 } from '../../controllers/invoicivixVendor/activity.controller';
 
 import { authenticateToken } from '../../../middlewares/authenticate.middleware';
@@ -13,6 +14,8 @@ import { uploadMultipleFile } from '../../../middlewares/upload.middleware';
 const router = Router();
 
 router.get('/list', authenticateToken, getActivityList);
+
+router.get('/list-files', authenticateToken, getActivityFileList);
 
 router.post(
   '/create',
