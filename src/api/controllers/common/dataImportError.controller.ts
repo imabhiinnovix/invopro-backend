@@ -1799,13 +1799,16 @@ export const getImportDataSourceVersionData = async (
       filters,
       search,
       isErrorLog,
-      type
+      type,
+      isSummary,
+      segregationField
     } = req.query as any;
 
     // ✅ Convert safely
     const pageNumber = page ? parseInt(page as string, 10) : 1;
     const limitNumber = limit ? parseInt(limit as string, 10) : 10;
     const isErrorLogNumber = isErrorLog ? Number(isErrorLog as string) : 0;
+    const summaryMode = isSummary === 'true';
 
     const { orgCode, orgDefaultCurrency, organizationId, userId } = req.user;
 
@@ -1826,7 +1829,7 @@ export const getImportDataSourceVersionData = async (
 
     // 🔹 Precompute field mappings
     const fieldOptions = await getEntityFieldOptions(String(dataSourceDetails.entityId._id));
-
+    const summaryFields: string[] = [];
     
     if (Array.isArray(dataSourceDetails.fieldSettings)) {
       for (const field of dataSourceDetails.fieldSettings) {
@@ -1852,9 +1855,21 @@ export const getImportDataSourceVersionData = async (
         } else {
           field.mappedAttributeName = 'Unknown';
         }
-
+         // Build summary fields dynamically
+        if (
+          summaryMode &&
+          field.isSummaryDisplayEnable &&
+          field.mappedAttributeName &&
+          field.mappedAttributeName !== 'Unknown'
+        ) {
+          summaryFields.push(field.mappedAttributeName);
+        }
         
       }
+    }
+
+    if(summaryMode && !summaryFields.length){
+       return res.status(400).json({ success: false, message: 'At least one summary field required.' });
     }
 
     // 🔹 Build search filters using mappedAttributeName
@@ -1879,8 +1894,10 @@ export const getImportDataSourceVersionData = async (
     // 🔹 Base Query
     const query: any = {
       dataSourceVersionId: new Types.ObjectId(dataSourceVersionId.toString().trim()),
-      isErrorLog: isErrorLogNumber == 1 ? { $gte : isErrorLogNumber } : isErrorLogNumber
     };
+    if(!summaryMode){
+      query['isErrorLog'] = isErrorLogNumber == 1 ? { $gte : isErrorLogNumber } : isErrorLogNumber
+    }
 
     if(type == "export"){
       const requestPayload = {
@@ -1931,7 +1948,20 @@ export const getImportDataSourceVersionData = async (
 
     // 🔹 Fetch Data
     const result: any =
-      await importLogDataSourceVersionValueService.getDataSourceImportVersionValueV1({
+      summaryMode ? await importLogDataSourceVersionValueService.getDataSourceImportVersionSummaryValue({
+      schemaName,
+      query,
+      select: '',
+      page: pageNumber,
+      limit: limitNumber,
+      sort: parsedSort,
+      filters: parsedFilters,
+      entityId: dataSourceDetails.entityId,
+      searchFilters,
+      conditions: [],
+      summaryFields,
+      segregationField,
+    }) : await importLogDataSourceVersionValueService.getDataSourceImportVersionValueV1({
         schemaName,
         query,
         select: "",
@@ -1945,6 +1975,22 @@ export const getImportDataSourceVersionData = async (
 
     const data = result?.data ?? [];
     const totalCount = result?.totalCount ?? 0;
+    const total = result?.total ?? {};
+    if(summaryMode){
+       return res.status(200).json({
+      success: true,
+      message: 'Version data has been successfully retrieved.',
+      data,
+      totalCount,
+      total,
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(totalCount / limitNumber),
+        totalRecords: totalCount,
+      },
+    });
+    }
 
     return res.status(200).json({
       success: true,
