@@ -291,9 +291,14 @@ async function validateAndConvert({
 
   // Handle parentheses for negative numbers
   let isNegative = false;
-  if (/^\(.*\)$/.test(strValue)) {
+  // if (/^\(.*\)$/.test(strValue)) {
+  //   isNegative = true;
+  //   strValue = strValue.replace(/^\((.*)\)$/, '$1');
+  // }
+
+  if (/^\s*\(?\s*\$?\s*-|\(.*\)/.test(strValue)) {
     isNegative = true;
-    strValue = strValue.replace(/^\((.*)\)$/, '$1');
+    strValue = strValue.replace(/[()]/g, '').replace(/^\s*\$?\s*-/, '');
   }
 
   // Remove all non-numeric characters except dot
