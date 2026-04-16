@@ -1219,6 +1219,10 @@ const normalizeArray = (arr: any): string[] => {
     .filter(Boolean);
 };
 
+const FORCE_OVERWRITE_ATTRS = new Set([
+  "SABIC Case Reference Number"
+]);
+
   for (const attr of attributes) {
     if (!Object.prototype.hasOwnProperty.call(rowData, attr.name)) continue;
 
@@ -1276,6 +1280,15 @@ const normalizeArray = (arr: any): string[] => {
           }
       }
     } else {
+      const isForceOverwrite =
+    FORCE_OVERWRITE_ATTRS.has(attr.name) &&
+    dataSourceId === "699f04727df5e0efe12d5027" &&
+    isPortfolioErrorOverwrite === true;
+
+  if (isForceOverwrite) {
+    // 🚀 skip validation completely
+    validatedRowData[attr.name] = value;
+  } else {
       const { isValid, convertedValue, attributeOptionValue } =
         await validateAndConvert({
           value,
@@ -1298,6 +1311,7 @@ const normalizeArray = (arr: any): string[] => {
         validatedRowData[attr.name] = convertedValue;
       }
     }
+  }
 
      // -----------------------------------------
   // 2️⃣ Portfolio Validation (NOW WORKS)
