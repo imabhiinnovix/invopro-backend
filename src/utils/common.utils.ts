@@ -520,7 +520,7 @@ export const isValidCaseReference = (value: any): boolean => {
 export const isBefore = (a: any, b: any) => {
   const d1 = new Date(a);
   const d2 = new Date(b);
-  return !isNaN(d1.getTime()) && !isNaN(d2.getTime()) && d1 < d2;
+  return !isNaN(d1.getTime()) && !isNaN(d2.getTime()) && d1 <= d2;
 };
 
 
