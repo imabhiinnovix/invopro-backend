@@ -6683,6 +6683,16 @@ export const updateOne = async (
   return await ModelClass.updateOne(filter, update, options).exec();
 };
 
+export const updateMany = async (
+  schemaName: string,
+  filter: Record<string, any>,
+  update: Record<string, any>,
+  options: any = {}
+) => {
+  const ModelClass = createDefaultDataSourceVersionModel(schemaName) as Model<Document>;
+  return await ModelClass.updateMany(filter, update, options).exec();
+};
+
 export const deleteVersionValues = async (schemaName: string, filter: Record<string, any>) => {
   const Model = createDefaultDataSourceVersionModel(schemaName) as Model<Document>;
 

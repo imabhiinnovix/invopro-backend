@@ -14,6 +14,8 @@ interface IDefaultDataSourceVersionValue extends Document {
     targetCurrency: string;
     rate: number;
   };
+  aiPreValidateStatus: 'pending' | 'processing' | 'completed' | 'error';
+  aiCostValidateStatus: 'pending' | 'processing' | 'completed' | 'error';
   status: 'active' | 'in-active';
   createdBy?: Types.ObjectId;
   createdAt?: Date;
@@ -37,6 +39,16 @@ const defaultDataSourceVersionSchema = new Schema<IDefaultDataSourceVersionValue
       baseCurrency: { type: String },
       targetCurrency: { type: String },
       rate: { type: Number },
+    },
+    aiPreValidateStatus: {
+      type: String,
+      enum: ['pending', 'processing', 'completed', 'error'],
+      default: 'pending',
+    },
+    aiCostValidateStatus: {
+      type: String,
+      enum: ['pending', 'processing', 'completed', 'error'],
+      default: 'pending',
     },
     createdBy: { type: Schema.Types.ObjectId },
     createdAt: { type: Date, default: () => new Date() },

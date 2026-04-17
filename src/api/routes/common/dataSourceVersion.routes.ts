@@ -16,6 +16,8 @@ import {
   listAllAvailableDataSourceVersionValue,
   listDataSourceVersion,
   reconciledInvoices,
+  reconciledInvoicesCost,
+  sendRevalidateCostRows,
   sendRevalidateRows,
   updateSingleRowVersionValue,
 } from '../../controllers/common/dataSourceVersion.controller';
@@ -92,9 +94,22 @@ router.post(
 );
 
 router.post(
+  "/reconciledInvoicesCost",
+  authenticateAIToken,
+  uploadSingleFile,
+  reconciledInvoicesCost
+);
+
+router.post(
   "/revalidateRows",
   authenticateToken,
   sendRevalidateRows
+);
+
+router.post(
+  "/revalidateCostRows",
+  authenticateToken,
+  sendRevalidateCostRows
 );
 
 export default router;

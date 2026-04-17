@@ -4130,3 +4130,108 @@ export const sendRevalidateRows = async (
     next(err);
   }
 };
+
+export const reconciledInvoicesCost = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+
+    const { organizationId, orgCode } = req.user;
+
+    // ✅ validation
+    const file = req.file as Express.Multer.File;
+
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        message: "invoiceFile is required",
+      });
+    }
+
+    // ✅ Folder path (similar structure)
+    const destinationDir = path.join(
+      "uploads",
+      organizationId,
+      "reconciliation_cost"
+    );
+
+    if (!fs.existsSync(destinationDir)) {
+      fs.mkdirSync(destinationDir, { recursive: true });
+    }
+
+    // ✅ Move file
+    const newFilePath = path.join(destinationDir, file.filename);
+    fs.renameSync(file.path, newFilePath);
+
+    const normalizedPath = newFilePath.replace(/\\/g, "/");
+
+    // ---------------------------------------------
+    // 🚀 Add Job to Queue
+    // ---------------------------------------------
+    // queue instance
+    const aiAnalyzeDataQueue = new Queue("aiAnalyzeData", {
+      connection: { host: "redis" },
+    });
+    await aiAnalyzeDataQueue.add(
+      "aiReconcilationInvoicesCost",
+      {
+        filePath: normalizedPath,
+        fileName: file.originalname,
+        orgCode,
+        dataSourceId: "699f04727df5e0efe12d5027"
+      }
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Invoice uploaded and sent for reconciliation",
+      data: {
+        fileName: file.originalname,
+        filePath: normalizedPath,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const sendRevalidateCostRows = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { dataSourceId, rowIds, filters, search, year, month } = req.body;
+
+    if (!dataSourceId) {
+      return res.status(400).json({
+        success: false,
+        message: "dataSourceId is required",
+      });
+    }
+
+    // 🚀 QUEUE (MINIMAL PAYLOAD ONLY)
+    const aiFileQueue = new Queue("aiFileQueue", {
+      connection: { host: "redis" },
+    });
+
+    await aiFileQueue.add("sendCostValidatedRows", {
+      dataSourceId,
+      rowIds,
+      filters: filters ? JSON.stringify(filters) : null, // ✅ stringify
+      search, // ✅ direct string
+      year,
+      month,
+      user: req.user
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Revalidation cost job started",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
