@@ -394,6 +394,7 @@ async function connectDB() {
         query,
         sort,
         selectedFields,
+        aliasFields = {},
         queryConfig,
         schemaName, // ✅ optionally included in payload
       } = req.requestPayload;
@@ -419,6 +420,18 @@ async function connectDB() {
         } catch {
           selectedFieldsParsed = null;
         }
+      }
+
+      let aliasFieldsParsed: Record<string, string> = {};
+
+      if (typeof aliasFields === "string") {
+        try {
+          aliasFieldsParsed = JSON.parse(aliasFields);
+        } catch {
+          aliasFieldsParsed = {};
+        }
+      } else {
+        aliasFieldsParsed = aliasFields || {};
       }
 
 
@@ -449,7 +462,7 @@ async function connectDB() {
                 );
 
           worksheet.columns = headers.map((key) => ({
-            header: key,
+            header: aliasFieldsParsed[key] || key,
             key,
             width: 30,
           }));

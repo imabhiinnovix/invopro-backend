@@ -2,7 +2,9 @@
 import { Request, Response, NextFunction } from "express";
 import * as activityRateCardService from "../../../database/services/invoicivixVendor/activityRateCard.service";
 import { Types } from "mongoose";
-import { getConversionRate } from "../../../utils/common.utils";
+import { formatDateTime, getConversionRate } from "../../../utils/common.utils";
+import { createDownloadRequest } from "../../../database/services/common/downloadRequest.service";
+import { Queue } from "bullmq";
 
 /**
  * ================================
@@ -323,8 +325,15 @@ export const getActivityRateCardList = async (
   next: NextFunction
 ) => {
   try {
-    const { vendorId, costCode, costType, activityEntity, engagementLetterId } = req.query;
+    const { vendorId, costCode, costType, activityEntity, engagementLetterId, type = 'list' } = req.query;
     const { organizationId, isSuperUser } = req.user;
+
+     // ----------------------------------------------------
+    // EXPORT SHORT-CIRCUIT
+    // ----------------------------------------------------
+    if (type === "export") {
+      return exportActivityRateCardListToExcel(req, res, next);
+    }
 
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit =
@@ -377,6 +386,157 @@ export const getActivityRateCardList = async (
       totalCount: result.totalCount,
     });
   } catch (err) {
+    next(err);
+  }
+};
+
+export const exportActivityRateCardListToExcel = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      vendorId,
+      costCode,
+      costType,
+      activityEntity,
+      engagementLetterId,
+    } = req.query;
+
+    const { userId, organizationId, isSuperUser, orgDefaultCurrency } = req.user;
+
+    // ----------------------------------------------------
+    // BUILD QUERY (SAME AS LIST API)
+    // ----------------------------------------------------
+    const query: any = { status: "active" };
+
+    if (!isSuperUser) {
+      query.organizationId = new Types.ObjectId(organizationId);
+    }
+
+    if (vendorId) {
+      query.vendorId = new Types.ObjectId(vendorId as string);
+    }
+
+    if (engagementLetterId) {
+      query.engagementLetterId = new Types.ObjectId(
+        engagementLetterId as string
+      );
+    }
+
+    if (activityEntity) {
+      query.activityEntity = activityEntity;
+    }
+
+    if (costCode) {
+      query.costCode = costCode;
+    }
+
+    if (costType) {
+      query.costType = costType;
+    }
+
+    // ----------------------------------------------------
+    // PAYLOAD FOR QUEUE
+    // ----------------------------------------------------
+    const requestPayload = {
+      query,
+      page: 1,
+      limit: Number.MAX_SAFE_INTEGER,
+      sort: { createdAt: -1 },
+      populate: [
+        { path: "vendorId", select: "name code" },
+        { path: "attorneyId", select: "name email" },
+        { path: "subVendorId", select: "name code" },
+        { path: "engagementLetterId", select: "referenceNumber" },
+      ],
+      conversionFields: ["rate", "maxRate", "minRate", "upperCap"],
+       selectedFields: [
+        "vendorId.name",
+        "engagementLetterId.referenceNumber",
+        "attorneyId.name",
+        "subVendorId.name",
+        "costCode",
+        "costType",
+        "rateType",
+        "rate",
+        "maxRate",
+        "minRate",
+        "languageFrom",
+        "languageTo",
+        "upperCap",
+        "currency",
+         "Converted|rate",
+        "Converted|minRate",
+        "Converted|maxRate",
+        "Converted|upperCap",
+        "Converted|currency",
+      ],
+      aliasFields: {
+        "vendorId.name": "Vendor Name",
+        "engagementLetterId.referenceNumber": "Engagement Ref No",
+        "attorneyId.name": "Attorney Name",
+        "subVendorId.name": "Sub Vendor Name",
+        costCode: "Cost Code",
+        costType: "Cost Type",
+        rateType: "Rate Type",
+        rate: "Rate",
+        minRate: "Min Rate",
+        maxRate: "Max Rate",
+        languageFrom: "Language From",
+        languageTo: "Language To",
+        upperCap: "Upper Cap",
+        currency: "Currency",
+        "Converted|rate": `Rate (${orgDefaultCurrency})`,
+        "Converted|minRate": `Min Rate (${orgDefaultCurrency})`,
+        "Converted|maxRate": `Max Rate (${orgDefaultCurrency})`,
+        "Converted|upperCap": `Upper Cap (${orgDefaultCurrency})`,
+         "Converted|currency": "Default Currency",
+      },
+      queryConfig: {
+        service: "activityRateCard.services",
+        method: "getActivityRateCardList",
+      },
+    };
+
+    // ----------------------------------------------------
+    // CREATE DOWNLOAD REQUEST
+    // ----------------------------------------------------
+    const fileName = `Activity_Rate_Card_${formatDateTime(
+      Date.now()
+    )}.xlsx`;
+
+    const downloadRequest = await createDownloadRequest({
+      organizationId,
+      userId,
+      status: "pending",
+      fileName,
+      requestPayload,
+      type: "exportCustomData",
+    });
+
+    // ----------------------------------------------------
+    // PUSH TO QUEUE
+    // ----------------------------------------------------
+    const downloadQueue = new Queue("downloadQueue", {
+      connection: { host: "redis" },
+    });
+
+    await downloadQueue.add("exportCustomData", {
+      downloadRequestId: downloadRequest._id,
+    });
+
+    // ----------------------------------------------------
+    // RESPONSE
+    // ----------------------------------------------------
+    return res.status(200).json({
+      success: true,
+      message: "Export job queued successfully.",
+      requestId: downloadRequest._id,
+    });
+  } catch (err) {
+    console.error("exportActivityRateCardListToExcel:", err);
     next(err);
   }
 };
