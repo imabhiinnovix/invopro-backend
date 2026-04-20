@@ -3621,7 +3621,7 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
 
     const existingRow = await dataSourceVersionValueService.findOne(schemaName, {
       _id: rowId,
-      dataSourceVersionId: version._id,
+      // dataSourceVersionId: version._id,
     });
 
     if (!existingRow) {
@@ -3701,8 +3701,8 @@ const updateRow: any = {
       rowData: validatedRowData,
       attributes: entity.attributes,
       dataSourceId,
-      versionId: version?._id,
-      versionValue: version.versionValue,
+      versionId: existingRow?.dataSourceVersionId,
+      versionValue: existingRow?.versionValue,
       userId,
       organizationId,
     });
