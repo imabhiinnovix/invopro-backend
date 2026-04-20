@@ -497,6 +497,7 @@ export const exportActivityRateCardListToExcel = async (
       queryConfig: {
         service: "activityRateCard.service",
         method: "getActivityRateCardList",
+        module: "invoicivixVendor"
       },
     };
 
