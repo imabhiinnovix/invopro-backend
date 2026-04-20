@@ -2821,12 +2821,14 @@ export const exportDataSourceVersionDataToExcel = async (
   next: NextFunction
 ) => {
   try {
-    const { dataSourceId, versionValue, filters, search, selectedFields, isSummary, segregationField } = req.query as {
+    const { dataSourceId, versionValue, filters, search, selectedFields, year, month, isSummary, segregationField } = req.query as {
       dataSourceId: string;
       versionValue?: string;
       filters?: string;
       search?: string;
       selectedFields?: string | string[]; // optional now
+      year?: string;
+      month?: string;
       isSummary?: string;
       segregationField?: string;
     };
@@ -2895,7 +2897,22 @@ export const exportDataSourceVersionDataToExcel = async (
       dataSourceId,
       isCurrent: true,
     };
-    if (versionValue) versionQuery.versionValue = versionValue;
+    
+     // ✅ Priority 1: exact versionValue (if directly passed)
+    if (versionValue) {
+      versionQuery.versionValue = versionValue;
+    }
+
+    // ✅ Priority 2: year + month filter
+    else if (year && month) {
+      const formattedMonth = month.padStart(2, '0');
+      versionQuery.versionValue = `${year.toString().trim()}-${formattedMonth.toString().trim()}`;
+    }
+
+    // ✅ Priority 3: only year filter
+    else if (year) {
+      versionQuery.versionValue = { $regex: `^${year.toString().trim()}` };
+    }
 
     const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({
       query: versionQuery,

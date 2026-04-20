@@ -980,9 +980,7 @@ export const exportWidgetDataByFilterToExcel = async (
       plotType,
       selectedFields, // Optional
       sort,
-      aggregation,
-      year,
-      month
+      aggregation
     } = req.body;
 
     let startVersionValue = dashboardFilters?.startVersionValue;
@@ -1059,24 +1057,8 @@ export const exportWidgetDataByFilterToExcel = async (
       });
       dataSourceVersion = versions.data;
     } else {
-        const versionQuery: any = {
-        dataSourceId,
-        isCurrent: true, // Always filter for current version
-        isActive: true
-      };
-
-      // ✅ Priority 2: year + month filter
-      if (year && month) {
-        const formattedMonth = month.padStart(2, '0');
-        versionQuery.versionValue = `${year.toString().trim()}-${formattedMonth.toString().trim()}`;
-      }
-
-      // ✅ Priority 3: only year filter
-      else if (year) {
-        versionQuery.versionValue = { $regex: `^${year.toString().trim()}` };
-      }
       const versions = await dataSourceVersionService.getDataSourceVersionList({
-        query: versionQuery,
+        query: { dataSourceId, isCurrent: true, isActive: true },
         sort: { versionValue: -1 },
       });
       dataSourceVersion = versions.data;
