@@ -30,6 +30,12 @@ export interface IActivityRateCard extends Document {
 
   upperCap?: number;
 
+   conversion?: {
+    baseCurrency: string;
+    targetCurrency: string;
+    rate: number;
+  };
+
   status: "active" | "inactive";
 
   createdAt: Date;
@@ -119,6 +125,12 @@ const activityRateCardSchema = new Schema<IActivityRateCard>(
     languageTo: String,
 
     upperCap: Number,
+
+    conversion: {
+      baseCurrency: { type: String },
+      targetCurrency: { type: String },
+      rate: { type: Number },
+    },
 
     status: {
       type: String,

@@ -2,6 +2,7 @@
 import { Request, Response, NextFunction } from "express";
 import * as activityRateCardService from "../../../database/services/invoicivixVendor/activityRateCard.service";
 import { Types } from "mongoose";
+import { getConversionRate } from "../../../utils/common.utils";
 
 /**
  * ================================
@@ -14,7 +15,7 @@ export const createActivityRateCard = async (
   next: NextFunction
 ) => {
   try {
-    const { organizationId, userId } = req.user;
+    const { organizationId, userId, orgDefaultCurrency } = req.user;
 
     const payload: any = {
       ...req.body,
@@ -62,6 +63,38 @@ export const createActivityRateCard = async (
         message: "subVendorId is required when activityEntity is subvendor",
       });
     }
+
+    // ================= 🔥 CURRENCY LOGIC (YOUR STYLE) =================
+    const rowCurrency =
+      typeof payload.currency === "string" && payload.currency
+        ? payload.currency.toUpperCase().trim()
+        : "";
+
+    if (rowCurrency) {
+      const to = orgDefaultCurrency?.toUpperCase()?.trim();
+      const from = rowCurrency;
+
+      let rate;
+
+      // ✅ SAME
+      if (from === to) {
+        rate = 1;
+      } else {
+        rate = await getConversionRate(from, to);
+
+        // ✅ fallback
+        if (!rate) {
+          rate = 1;
+        }
+      }
+
+      payload.conversion = {
+        baseCurrency: from,
+        targetCurrency: to,
+        rate,
+      };
+    }
+    // ====================================================
 
     const rateCard =
       await activityRateCardService.createActivityRateCard(payload);
@@ -131,6 +164,8 @@ export const updateActivityRateCard = async (
 
     const updatePayload: any = { ...req.body };
 
+    const { orgDefaultCurrency } = req.user;
+
     if (!updatePayload.activityEntity) {
       updatePayload.activityEntity = "vendor";
     }
@@ -180,6 +215,45 @@ export const updateActivityRateCard = async (
         message: "subVendorId is required when activityEntity is subvendor",
       });
     }
+
+
+   // ================= 🔥 SMART CURRENCY LOGIC =================
+if (updatePayload.currency) {
+  const newCurrency =
+    typeof updatePayload.currency === "string"
+      ? updatePayload.currency.toUpperCase().trim()
+      : "";
+
+  if (newCurrency) {
+    // 🔴 get existing record first
+    const existing = await activityRateCardService.findActivityRateCardById(activityRateCardId);
+
+    const oldCurrency = existing?.currency?.toUpperCase()?.trim();
+    const to = orgDefaultCurrency?.toUpperCase()?.trim();
+
+    // ✅ ONLY if currency changed
+    if (oldCurrency !== newCurrency) {
+      let rate;
+
+      if (newCurrency === to) {
+        rate = 1;
+      } else {
+        rate = await getConversionRate(newCurrency, to);
+
+        if (!rate) {
+          rate = 1; // fallback
+        }
+      }
+
+      updatePayload.conversion = {
+        baseCurrency: newCurrency,
+        targetCurrency: to,
+        rate,
+      };
+    }
+  }
+}
+// ==========================================================
 
     const updated =
       await activityRateCardService.updateActivityRateCard(
@@ -293,6 +367,7 @@ export const getActivityRateCardList = async (
           { path: "subVendorId", select: "name code" },
           { path: "engagementLetterId", select: "referenceNumber" },
         ],
+        conversionFields: ['rate', 'maxRate', 'minRate', 'upperCap']
       });
 
     res.status(200).json({

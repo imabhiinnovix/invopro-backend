@@ -34,6 +34,32 @@ export const deleteActivityRateCard = async (activityRateCardId: string) => {
   );
 };
 
+// export const getActivityRateCardList = async ({
+//   query,
+//   select = '',
+//   page,
+//   limit,
+//   sort = { createdAt: -1 },
+//   populate,
+// }: any) => {
+//   let rateQuery: any = ActivityRateCard.find(query)
+//     .select(select)
+//     .skip((page - 1) * limit)
+//     .limit(limit)
+//     .sort(sort);
+
+//   if (populate && Array.isArray(populate)) {
+//     populate.forEach((field) => {
+//       rateQuery = rateQuery.populate(field);
+//     });
+//   }
+
+//   const data = await rateQuery.exec();
+//   const totalCount = await ActivityRateCard.countDocuments(query);
+
+//   return { data, totalCount };
+// };
+
 export const getActivityRateCardList = async ({
   query,
   select = '',
@@ -41,21 +67,60 @@ export const getActivityRateCardList = async ({
   limit,
   sort = { createdAt: -1 },
   populate,
+  conversionFields = [], // ✅ NEW
 }: any) => {
+  const skip = (page - 1) * limit;
+
   let rateQuery: any = ActivityRateCard.find(query)
     .select(select)
-    .skip((page - 1) * limit)
+    .skip(skip)
     .limit(limit)
     .sort(sort);
 
+  // ✅ KEEP YOUR EXISTING POPULATE (NO CHANGE)
   if (populate && Array.isArray(populate)) {
     populate.forEach((field) => {
       rateQuery = rateQuery.populate(field);
     });
   }
 
-  const data = await rateQuery.exec();
+  const rawData = await rateQuery.exec();
   const totalCount = await ActivityRateCard.countDocuments(query);
+
+  // =========================
+  // ✅ APPLY CONVERSION (POST QUERY)
+  // =========================
+  const data = rawData.map((doc: any) => {
+    const obj = doc.toObject();
+
+    // if (!obj.conversion || !obj.conversion.rate) {
+    //   return obj;
+    // }
+
+    const rate = obj?.conversion?.rate ?? 1;
+
+    conversionFields.forEach((field: string) => {
+      const value = obj[field];
+
+      if (
+        value !== null &&
+        value !== undefined &&
+        !isNaN(value) &&
+        rate !== 0
+      ) {
+        obj[`Converted|${field}`] = Number(
+          (value / rate).toFixed(2) // ✅ DIVIDE
+        );
+      } else {
+        obj[`Converted|${field}`] = null;
+      }
+    });
+
+    // ✅ Add Converted Currency
+    obj["Converted|currency"] = obj?.conversion?.targetCurrency ?? 'USD';
+
+    return obj;
+  });
 
   return { data, totalCount };
 };
