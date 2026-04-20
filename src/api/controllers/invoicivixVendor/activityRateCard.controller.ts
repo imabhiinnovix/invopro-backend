@@ -495,7 +495,7 @@ export const exportActivityRateCardListToExcel = async (
          "Converted|currency": "Default Currency",
       },
       queryConfig: {
-        service: "activityRateCard.services",
+        service: "activityRateCard.service",
         method: "getActivityRateCardList",
       },
     };
