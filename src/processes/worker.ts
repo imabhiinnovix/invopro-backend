@@ -380,30 +380,41 @@ async function connectDB() {
     }
   });
 
-  // converted fields next
-  selectedFieldsFiltered.forEach((f) => {
-    if (f.mappedAttributeName.startsWith("Converted|")) {
-      baseColumns.push({
-        header: `${f.label} (${defaultCurrency})`,
-        key: f.mappedAttributeName,
-        width: 25,
-      });
-    }
-  });
-
-  // ALWAYS PUSH TOTAL AT END (FIXED)
-  baseColumns.push(
-    {
-      header: "Total Fees",
-      key: "__total_normal__",
+  // normal fields first
+selectedFieldsFiltered.forEach((f) => {
+  if (!f.mappedAttributeName.startsWith("Converted|")) {
+    baseColumns.push({
+      header: f.label,
+      key: f.mappedAttributeName,
       width: 25,
-    },
-    {
-      header: `Total Fees (${defaultCurrency})`,
-      key: "__total_converted__",
-      width: 30,
-    }
-  );
+    });
+  }
+});
+
+// ADD ONLY THESE 2 NORMAL TOTAL FIELDS IN ORDER
+baseColumns.push({
+  header: "Total Fees",
+  key: "__total_normal__",
+  width: 25,
+});
+
+// converted fields next
+selectedFieldsFiltered.forEach((f) => {
+  if (f.mappedAttributeName.startsWith("Converted|")) {
+    baseColumns.push({
+      header: `${f.label} (${defaultCurrency})`,
+      key: f.mappedAttributeName,
+      width: 25,
+    });
+  }
+});
+
+// LAST COLUMN MUST BE CONVERTED TOTAL
+baseColumns.push({
+  header: `Total Fees (${defaultCurrency})`,
+  key: "__total_converted__",
+  width: 30,
+});
 
   worksheet.columns = baseColumns;
 
