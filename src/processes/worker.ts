@@ -325,10 +325,24 @@ async function connectDB() {
   const rows = result?.data ?? [];
 
   // --------------------------------------------------------------------
-  // FILTER FIELDS
+  // FILTER FIELDS (ONLY selectedFields)
   // --------------------------------------------------------------------
+  const selectedFieldsParsed: string[] | null = Array.isArray(selectedFields)
+    ? selectedFields
+    : selectedFields
+    ? JSON.parse(selectedFields)
+    : null;
+
   const selectedFieldsFiltered =
-    dataSourceDetails.fieldSettings.filter((f) => f.isDerived !== true);
+    dataSourceDetails.fieldSettings.filter((f) => {
+      if (f.isDerived) return false;
+
+      if (selectedFieldsParsed?.length) {
+        return selectedFieldsParsed.includes(f.mappedAttributeName);
+      }
+
+      return true;
+    });
 
   // --------------------------------------------------------------------
   // VALID PAIRED FIELDS
@@ -351,20 +365,15 @@ async function connectDB() {
   );
 
   // --------------------------------------------------------------------
-  // BUILD COLUMNS (ONLY FOR OVERVIEW)
+  // BUILD OVERVIEW COLUMNS
   // --------------------------------------------------------------------
   const baseColumns: any[] = [];
-  let lastNormalIndex = -1;
   let lastConvertedIndex = -1;
 
   selectedFieldsFiltered.forEach((f) => {
     const isConverted =
       f.mappedAttributeName.startsWith("Converted|") &&
       f.type === "number";
-
-    const original = isConverted
-      ? f.mappedAttributeName.replace("Converted|", "")
-      : f.mappedAttributeName;
 
     const header = isConverted
       ? `${f.label} (${defaultCurrency})`
@@ -376,24 +385,12 @@ async function connectDB() {
       width: 25,
     });
 
-    if (validFields.includes(original)) {
-      if (!isConverted) {
-        lastNormalIndex = baseColumns.length - 1;
-      } else {
-        lastConvertedIndex = baseColumns.length - 1;
-      }
+    if (isConverted) {
+      lastConvertedIndex = baseColumns.length - 1;
     }
   });
 
-  // insert totals ONLY for overview
-  if (lastNormalIndex !== -1) {
-    baseColumns.splice(lastNormalIndex + 1, 0, {
-      header: "Total Fees",
-      key: "Total Fees",
-      width: 25,
-    });
-  }
-
+  // Insert Total Fees (Converted)
   if (lastConvertedIndex !== -1) {
     baseColumns.splice(lastConvertedIndex + 1, 0, {
       header: `Total Fees (${defaultCurrency})`,
@@ -407,6 +404,8 @@ async function connectDB() {
   // --------------------------------------------------------------------
   // OVERVIEW ROWS
   // --------------------------------------------------------------------
+  let grandTotalConverted = 0;
+
   rows.forEach((row) => {
     const dataRow: any = {};
 
@@ -428,20 +427,17 @@ async function connectDB() {
       dataRow[label] = value ?? "";
     });
 
-    // paired totals
-    let totalFees = 0;
-    let totalFeesConverted = 0;
+    let rowTotalConverted = 0;
 
     validFields.forEach((field) => {
-      totalFees += Number(row.rowData[field] || 0);
-      totalFeesConverted += Number(
+      rowTotalConverted += Number(
         row.rowData[`Converted|${field}`] || 0
       );
     });
 
-    dataRow["Total Fees"] = totalFees;
-    dataRow[`Total Fees (${defaultCurrency})`] =
-      totalFeesConverted;
+    grandTotalConverted += rowTotalConverted;
+
+    dataRow[`Total Fees (${defaultCurrency})`] = rowTotalConverted;
 
     worksheet.addRow(dataRow);
   });
@@ -449,7 +445,16 @@ async function connectDB() {
   worksheet.name = "Overview";
 
   // --------------------------------------------------------------------
-  // DETAIL DATA (LAW FIRM SHEETS - NO TOTAL COLUMNS)
+  // FINAL TOTAL ROW (OVERVIEW)
+  // --------------------------------------------------------------------
+  const totalRow: any = {};
+  totalRow[`Total Fees (${defaultCurrency})`] = grandTotalConverted;
+
+  worksheet.addRow({});
+  worksheet.addRow(totalRow);
+
+  // --------------------------------------------------------------------
+  // DETAIL DATA (NO TOTAL COLUMNS)
   // --------------------------------------------------------------------
   const detailResult =
     await dataSourceVersionValueService.getDataSourceVersionValueV1({
@@ -472,9 +477,7 @@ async function connectDB() {
   detailRows.forEach((row) => {
     let lawFirmName = row.rowData?.["Law Firm Name"];
 
-    if (Array.isArray(lawFirmName)) {
-      lawFirmName = lawFirmName[0];
-    }
+    if (Array.isArray(lawFirmName)) lawFirmName = lawFirmName[0];
 
     lawFirmName = lawFirmName || "Unknown Law Firm";
     lawFirmName = String(lawFirmName);
@@ -487,73 +490,94 @@ async function connectDB() {
   });
 
   // --------------------------------------------------------------------
-  // CREATE LAW FIRM SHEETS
+  // LAW FIRM SHEETS (ONLY TOTAL ROW)
   // --------------------------------------------------------------------
   lawFirmMap.forEach((firmRows, lawFirmName) => {
-    const safeSheetName = lawFirmName
-      .replace(/[\\/?*[\]:]/g, "")
-      .substring(0, 30);
+  const sheet = workbook.addWorksheet(
+    lawFirmName.replace(/[\\/?*[\]:]/g, "").substring(0, 30)
+  );
 
-    const sheet = workbook.addWorksheet(safeSheetName);
+  // -------------------------------
+  // Columns (NO total columns)
+  // -------------------------------
+  sheet.columns = selectedFieldsFiltered.map((f) => {
+    const header =
+      f.mappedAttributeName.includes("Converted|") &&
+      f.type === "number"
+        ? `${f.label} (${defaultCurrency})`
+        : f.label;
 
-    // ❌ NO TOTAL COLUMNS HERE
-    sheet.columns = selectedFieldsFiltered.map((f) => {
-      const header =
+    return {
+      header,
+      key: header,
+      width: 25,
+    };
+  });
+
+  // -------------------------------
+  // Column-wise totals map
+  // -------------------------------
+  const columnTotals: Record<string, number> = {};
+
+  selectedFieldsFiltered.forEach((f) => {
+    columnTotals[f.mappedAttributeName] = 0;
+  });
+
+  // -------------------------------
+  // ROWS
+  // -------------------------------
+  firmRows.forEach((row) => {
+    const dataRow: any = {};
+
+    selectedFieldsFiltered.forEach((f) => {
+      let value = row.rowData[f.mappedAttributeName];
+
+      if (Array.isArray(value)) value = value.join(", ");
+
+      if (f.type === "date" || f.type === "date-range") {
+        value = formatDateValue(value);
+      }
+
+      const label =
         f.mappedAttributeName.includes("Converted|") &&
         f.type === "number"
           ? `${f.label} (${defaultCurrency})`
           : f.label;
 
-      return {
-        header,
-        key: header,
-        width: 25,
-      };
+      const numValue = Number(row.rowData[f.mappedAttributeName]) || 0;
+
+      columnTotals[f.mappedAttributeName] += numValue;
+
+      dataRow[label] = value ?? "";
     });
 
-    let totalFees = 0;
-    let totalFeesConverted = 0;
-
-    firmRows.forEach((row) => {
-      const dataRow: any = {};
-
-      selectedFieldsFiltered.forEach((f) => {
-        let value = row.rowData[f.mappedAttributeName];
-
-        if (Array.isArray(value)) value = value.join(", ");
-
-        if (f.type === "date" || f.type === "date-range") {
-          value = formatDateValue(value);
-        }
-
-        const label =
-          f.mappedAttributeName.includes("Converted|") &&
-          f.type === "number"
-            ? `${f.label} (${defaultCurrency})`
-            : f.label;
-
-        dataRow[label] = value ?? "";
-      });
-
-      validFields.forEach((field) => {
-        totalFees += Number(row.rowData[field] || 0);
-        totalFeesConverted += Number(
-          row.rowData[`Converted|${field}`] || 0
-        );
-      });
-
-      sheet.addRow(dataRow);
-    });
-
-    // FINAL TOTAL ROW ONLY
-    const totalRow: any = {};
-    totalRow["Total Fees"] = totalFees;
-    totalRow[`Total Fees (${defaultCurrency})`] =
-      totalFeesConverted;
-
-    sheet.addRow({});
-    sheet.addRow(totalRow);
+    sheet.addRow(dataRow);
   });
+
+  // -------------------------------
+  // FINAL TOTAL ROW (COLUMN WISE)
+  // -------------------------------
+  const totalRow: any = {};
+
+  selectedFieldsFiltered.forEach((f, idx) => {
+    const key = f.mappedAttributeName;
+
+    const label =
+      f.mappedAttributeName.includes("Converted|") &&
+      f.type === "number"
+        ? `${f.label} (${defaultCurrency})`
+        : f.label;
+
+    if (idx === 0) {
+      totalRow[label] = "TOTAL";
+    } else {
+      totalRow[label] = columnTotals[key] || 0;
+    }
+  });
+
+  sheet.addRow({});
+  sheet.addRow(totalRow);
+});
 }else if (job.name === "exportDSImportData") {
           // --------------------------------------------------------------------
           // Fetch data
