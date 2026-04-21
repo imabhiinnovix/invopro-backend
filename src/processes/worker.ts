@@ -365,54 +365,45 @@ async function connectDB() {
   );
 
   // --------------------------------------------------------------------
-  // BUILD COLUMNS (KEY FIX: USE FIELD NAME NOT LABEL)
+  // BUILD COLUMNS (FIXED ORDER LOGIC)
   // --------------------------------------------------------------------
   const baseColumns: any[] = [];
 
+  // normal fields first
   selectedFieldsFiltered.forEach((f) => {
-    const isConverted =
-      f.mappedAttributeName.startsWith("Converted|") &&
-      f.type === "number";
-
-    baseColumns.push({
-      header: isConverted
-        ? `${f.label} (${defaultCurrency})`
-        : f.label,
-      key: f.mappedAttributeName, // ✅ CRITICAL FIX
-      width: 25,
-    });
+    if (!f.mappedAttributeName.startsWith("Converted|")) {
+      baseColumns.push({
+        header: f.label,
+        key: f.mappedAttributeName,
+        width: 25,
+      });
+    }
   });
 
-  // --------------------------------------------------------------------
-  // POSITION TOTAL COLUMNS (FIXED LOGIC)
-  // --------------------------------------------------------------------
-  let lastNormalIndex = -1;
-  let lastConvertedIndex = -1;
-
-  selectedFieldsFiltered.forEach((f, i) => {
-    const isConverted =
-      f.mappedAttributeName.startsWith("Converted|") &&
-      f.type === "number";
-
-    if (isConverted) lastConvertedIndex = i;
-    else lastNormalIndex = i;
+  // converted fields next
+  selectedFieldsFiltered.forEach((f) => {
+    if (f.mappedAttributeName.startsWith("Converted|")) {
+      baseColumns.push({
+        header: `${f.label} (${defaultCurrency})`,
+        key: f.mappedAttributeName,
+        width: 25,
+      });
+    }
   });
 
-  if (lastNormalIndex !== -1) {
-    baseColumns.splice(lastNormalIndex + 1, 0, {
+  // ALWAYS PUSH TOTAL AT END (FIXED)
+  baseColumns.push(
+    {
       header: "Total Fees",
       key: "__total_normal__",
       width: 25,
-    });
-  }
-
-  if (lastConvertedIndex !== -1) {
-    baseColumns.splice(lastConvertedIndex + 1, 0, {
+    },
+    {
       header: `Total Fees (${defaultCurrency})`,
       key: "__total_converted__",
       width: 30,
-    });
-  }
+    }
+  );
 
   worksheet.columns = baseColumns;
 
@@ -505,7 +496,7 @@ async function connectDB() {
   });
 
   // --------------------------------------------------------------------
-  // DETAIL SHEETS (STRICT SUM FIX)
+  // DETAIL SHEETS
   // --------------------------------------------------------------------
   lawFirmMap.forEach((firmRows, lawFirmName) => {
     const sheet = workbook.addWorksheet(
@@ -533,7 +524,8 @@ async function connectDB() {
       if (f.type !== "number") return;
 
       const hasConverted = allFields.some(
-        (x) => x.mappedAttributeName === `Converted|${f.mappedAttributeName}`
+        (x) =>
+          x.mappedAttributeName === `Converted|${f.mappedAttributeName}`
       );
 
       if (hasConverted) {
@@ -561,7 +553,6 @@ async function connectDB() {
 
         dataRow[f.mappedAttributeName] = value ?? "";
 
-        // ONLY SUM VALID FIELDS
         if (
           f.type === "number" &&
           allowedSumFields.has(f.mappedAttributeName)
@@ -578,16 +569,20 @@ async function connectDB() {
     });
 
     // ----------------------------------------------------------------
-    // DETAIL TOTAL ROW
+    // DETAIL TOTAL ROW (NO ZERO FOR NON-SUM FIELDS)
     // ----------------------------------------------------------------
     const totalRow: any = {};
     const firstField = allFields[0]?.mappedAttributeName;
 
     allFields.forEach((f) => {
+      const isSumField = allowedSumFields.has(f.mappedAttributeName);
+
       totalRow[f.mappedAttributeName] =
         f.mappedAttributeName === firstField
           ? "TOTAL"
-          : totals[f.mappedAttributeName] || 0;
+          : isSumField
+            ? totals[f.mappedAttributeName] || 0
+            : ""; // ✅ FIX: NO 0
     });
 
     sheet.addRow({});
