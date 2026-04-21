@@ -325,7 +325,7 @@ async function connectDB() {
   const rows = result?.data ?? [];
 
   // --------------------------------------------------------------------
-  // FILTER FIELDS (ONLY selectedFields)
+  // FILTER FIELDS
   // --------------------------------------------------------------------
   const selectedFieldsParsed: string[] | null = Array.isArray(selectedFields)
     ? selectedFields
@@ -365,15 +365,20 @@ async function connectDB() {
   );
 
   // --------------------------------------------------------------------
-  // BUILD OVERVIEW COLUMNS
+  // BUILD OVERVIEW COLUMNS (RESTORED LOGIC)
   // --------------------------------------------------------------------
   const baseColumns: any[] = [];
+  let lastNormalIndex = -1;
   let lastConvertedIndex = -1;
 
   selectedFieldsFiltered.forEach((f) => {
     const isConverted =
       f.mappedAttributeName.startsWith("Converted|") &&
       f.type === "number";
+
+    const original = isConverted
+      ? f.mappedAttributeName.replace("Converted|", "")
+      : f.mappedAttributeName;
 
     const header = isConverted
       ? `${f.label} (${defaultCurrency})`
@@ -385,12 +390,21 @@ async function connectDB() {
       width: 25,
     });
 
-    if (isConverted) {
-      lastConvertedIndex = baseColumns.length - 1;
+    if (validFields.includes(original)) {
+      if (!isConverted) lastNormalIndex = baseColumns.length - 1;
+      else lastConvertedIndex = baseColumns.length - 1;
     }
   });
 
-  // Insert Total Fees (Converted)
+  // KEEP ORIGINAL TOTAL FIELDS LOGIC
+  if (lastNormalIndex !== -1) {
+    baseColumns.splice(lastNormalIndex + 1, 0, {
+      header: "Total Fees",
+      key: "Total Fees",
+      width: 25,
+    });
+  }
+
   if (lastConvertedIndex !== -1) {
     baseColumns.splice(lastConvertedIndex + 1, 0, {
       header: `Total Fees (${defaultCurrency})`,
@@ -402,7 +416,7 @@ async function connectDB() {
   worksheet.columns = baseColumns;
 
   // --------------------------------------------------------------------
-  // OVERVIEW ROWS
+  // OVERVIEW ROWS (UNCHANGED LOGIC)
   // --------------------------------------------------------------------
   let grandTotalConverted = 0;
 
@@ -427,17 +441,18 @@ async function connectDB() {
       dataRow[label] = value ?? "";
     });
 
-    let rowTotalConverted = 0;
+    let rowTotal = 0;
 
     validFields.forEach((field) => {
-      rowTotalConverted += Number(
+      rowTotal += Number(
         row.rowData[`Converted|${field}`] || 0
       );
     });
 
-    grandTotalConverted += rowTotalConverted;
+    grandTotalConverted += rowTotal;
 
-    dataRow[`Total Fees (${defaultCurrency})`] = rowTotalConverted;
+    dataRow["Total Fees"] = rowTotal;
+    dataRow[`Total Fees (${defaultCurrency})`] = rowTotal;
 
     worksheet.addRow(dataRow);
   });
@@ -445,16 +460,34 @@ async function connectDB() {
   worksheet.name = "Overview";
 
   // --------------------------------------------------------------------
-  // FINAL TOTAL ROW (OVERVIEW)
+  // OVERVIEW TOTAL ROW (FIXED POSITION)
   // --------------------------------------------------------------------
   const totalRow: any = {};
+
+  const firstLabel = selectedFieldsFiltered[0]?.mappedAttributeName;
+
+  selectedFieldsFiltered.forEach((f) => {
+    const label =
+      f.mappedAttributeName.includes("Converted|") &&
+      f.type === "number"
+        ? `${f.label} (${defaultCurrency})`
+        : f.label;
+
+    if (f.mappedAttributeName === firstLabel) {
+      totalRow[label] = "TOTAL";
+    } else {
+      totalRow[label] = "";
+    }
+  });
+
+  totalRow["Total Fees"] = "";
   totalRow[`Total Fees (${defaultCurrency})`] = grandTotalConverted;
 
   worksheet.addRow({});
   worksheet.addRow(totalRow);
 
   // --------------------------------------------------------------------
-  // DETAIL DATA (NO TOTAL COLUMNS)
+  // DETAIL DATA (ALL FIELDS)
   // --------------------------------------------------------------------
   const detailResult =
     await dataSourceVersionValueService.getDataSourceVersionValueV1({
@@ -490,94 +523,73 @@ async function connectDB() {
   });
 
   // --------------------------------------------------------------------
-  // LAW FIRM SHEETS (ONLY TOTAL ROW)
+  // DETAIL SHEETS (FIXED TOTAL ALIGNMENT)
   // --------------------------------------------------------------------
   lawFirmMap.forEach((firmRows, lawFirmName) => {
-  const sheet = workbook.addWorksheet(
-    lawFirmName.replace(/[\\/?*[\]:]/g, "").substring(0, 30)
-  );
+    const sheet = workbook.addWorksheet(
+      lawFirmName.replace(/[\\/?*[\]:]/g, "").substring(0, 30)
+    );
 
-  // -------------------------------
-  // Columns (NO total columns)
-  // -------------------------------
-  sheet.columns = selectedFieldsFiltered.map((f) => {
-    const header =
-      f.mappedAttributeName.includes("Converted|") &&
-      f.type === "number"
-        ? `${f.label} (${defaultCurrency})`
-        : f.label;
+    const allFields = dataSourceDetails.fieldSettings.filter(
+      (f) => f.isDerived !== true
+    );
 
-    return {
-      header,
-      key: header,
-      width: 25,
-    };
-  });
-
-  // -------------------------------
-  // Column-wise totals map
-  // -------------------------------
-  const columnTotals: Record<string, number> = {};
-
-  selectedFieldsFiltered.forEach((f) => {
-    columnTotals[f.mappedAttributeName] = 0;
-  });
-
-  // -------------------------------
-  // ROWS
-  // -------------------------------
-  firmRows.forEach((row) => {
-    const dataRow: any = {};
-
-    selectedFieldsFiltered.forEach((f) => {
-      let value = row.rowData[f.mappedAttributeName];
-
-      if (Array.isArray(value)) value = value.join(", ");
-
-      if (f.type === "date" || f.type === "date-range") {
-        value = formatDateValue(value);
-      }
-
-      const label =
+    sheet.columns = allFields.map((f) => ({
+      header:
         f.mappedAttributeName.includes("Converted|") &&
         f.type === "number"
           ? `${f.label} (${defaultCurrency})`
-          : f.label;
+          : f.label,
+      key: f.mappedAttributeName,
+      width: 25,
+    }));
 
-      const numValue = Number(row.rowData[f.mappedAttributeName]) || 0;
+    const totals: Record<string, number> = {};
 
-      columnTotals[f.mappedAttributeName] += numValue;
-
-      dataRow[label] = value ?? "";
+    allFields.forEach((f) => {
+      totals[f.mappedAttributeName] = 0;
     });
 
-    sheet.addRow(dataRow);
+    firmRows.forEach((row) => {
+      const dataRow: any = {};
+
+      allFields.forEach((f) => {
+        let value = row.rowData[f.mappedAttributeName];
+
+        if (Array.isArray(value)) value = value.join(", ");
+
+        if (f.type === "date" || f.type === "date-range") {
+          value = formatDateValue(value);
+        }
+
+        dataRow[f.mappedAttributeName] = value ?? "";
+
+        totals[f.mappedAttributeName] +=
+          Number(row.rowData[f.mappedAttributeName]) || 0;
+      });
+
+      sheet.addRow(dataRow);
+    });
+
+    // -------------------------------
+    // TOTAL ROW (Service Fees position preserved)
+    // -------------------------------
+    const totalRow: any = {};
+
+    const firstField = allFields[0]?.mappedAttributeName;
+
+    allFields.forEach((f) => {
+      if (f.mappedAttributeName === firstField) {
+        totalRow[f.mappedAttributeName] = "TOTAL";
+      } else {
+        totalRow[f.mappedAttributeName] =
+          totals[f.mappedAttributeName] || 0;
+      }
+    });
+
+    sheet.addRow({});
+    sheet.addRow(totalRow);
   });
-
-  // -------------------------------
-  // FINAL TOTAL ROW (COLUMN WISE)
-  // -------------------------------
-  const totalRow: any = {};
-
-  selectedFieldsFiltered.forEach((f, idx) => {
-    const key = f.mappedAttributeName;
-
-    const label =
-      f.mappedAttributeName.includes("Converted|") &&
-      f.type === "number"
-        ? `${f.label} (${defaultCurrency})`
-        : f.label;
-
-    if (idx === 0) {
-      totalRow[label] = "TOTAL";
-    } else {
-      totalRow[label] = columnTotals[key] || 0;
-    }
-  });
-
-  sheet.addRow({});
-  sheet.addRow(totalRow);
-});
 }else if (job.name === "exportDSImportData") {
           // --------------------------------------------------------------------
           // Fetch data
