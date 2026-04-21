@@ -2993,8 +2993,11 @@ export const exportDataSourceVersionDataToExcel = async (
     const downloadQueue = new Queue("downloadQueue", {
       connection: { host: "redis" },
     });
-
-    await downloadQueue.add("exportDSData", { downloadRequestId: downloadRequest._id });
+    if (summaryMode) {
+      await downloadQueue.add("exportDSSummaryData", { downloadRequestId: downloadRequest._id });
+    }else{
+      await downloadQueue.add("exportDSData", { downloadRequestId: downloadRequest._id });
+    }
 
     return res.status(200).json({
       success: true,

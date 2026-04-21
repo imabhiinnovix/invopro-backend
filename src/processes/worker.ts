@@ -302,7 +302,259 @@ async function connectDB() {
       });
     });
   }
-          }else if (job.name === "exportDSImportData") {
+          }else if (job.name === "exportDSSummaryData") {
+  // --------------------------------------------------------------------
+  // Fetch SUMMARY data
+  // --------------------------------------------------------------------
+  const result =
+    await dataSourceVersionValueService.getDataSourceVersionSummaryValue({
+      schemaName,
+      query,
+      select,
+      page,
+      limit,
+      sort,
+      filters,
+      entityId,
+      searchFilters,
+      conditions,
+      summaryFields,
+      segregationField,
+    });
+
+  const rows = result?.data ?? [];
+
+  // --------------------------------------------------------------------
+  // FILTER FIELDS
+  // --------------------------------------------------------------------
+  const selectedFieldsFiltered =
+    dataSourceDetails.fieldSettings.filter((f) => f.isDerived !== true);
+
+  // --------------------------------------------------------------------
+  // VALID PAIRED FIELDS
+  // --------------------------------------------------------------------
+  const normalSet = new Set<string>();
+  const convertedSet = new Set<string>();
+
+  selectedFieldsFiltered.forEach((f) => {
+    if (f.type !== "number") return;
+
+    if (f.mappedAttributeName.startsWith("Converted|")) {
+      convertedSet.add(f.mappedAttributeName.replace("Converted|", ""));
+    } else {
+      normalSet.add(f.mappedAttributeName);
+    }
+  });
+
+  const validFields = [...normalSet].filter((f) =>
+    convertedSet.has(f)
+  );
+
+  // --------------------------------------------------------------------
+  // BUILD COLUMNS (ONLY FOR OVERVIEW)
+  // --------------------------------------------------------------------
+  const baseColumns: any[] = [];
+  let lastNormalIndex = -1;
+  let lastConvertedIndex = -1;
+
+  selectedFieldsFiltered.forEach((f) => {
+    const isConverted =
+      f.mappedAttributeName.startsWith("Converted|") &&
+      f.type === "number";
+
+    const original = isConverted
+      ? f.mappedAttributeName.replace("Converted|", "")
+      : f.mappedAttributeName;
+
+    const header = isConverted
+      ? `${f.label} (${defaultCurrency})`
+      : f.label;
+
+    baseColumns.push({
+      header,
+      key: header,
+      width: 25,
+    });
+
+    if (validFields.includes(original)) {
+      if (!isConverted) {
+        lastNormalIndex = baseColumns.length - 1;
+      } else {
+        lastConvertedIndex = baseColumns.length - 1;
+      }
+    }
+  });
+
+  // insert totals ONLY for overview
+  if (lastNormalIndex !== -1) {
+    baseColumns.splice(lastNormalIndex + 1, 0, {
+      header: "Total Fees",
+      key: "Total Fees",
+      width: 25,
+    });
+  }
+
+  if (lastConvertedIndex !== -1) {
+    baseColumns.splice(lastConvertedIndex + 1, 0, {
+      header: `Total Fees (${defaultCurrency})`,
+      key: `Total Fees (${defaultCurrency})`,
+      width: 30,
+    });
+  }
+
+  worksheet.columns = baseColumns;
+
+  // --------------------------------------------------------------------
+  // OVERVIEW ROWS
+  // --------------------------------------------------------------------
+  rows.forEach((row) => {
+    const dataRow: any = {};
+
+    selectedFieldsFiltered.forEach((f) => {
+      let value = row.rowData[f.mappedAttributeName];
+
+      if (Array.isArray(value)) value = value.join(", ");
+
+      if (f.type === "date" || f.type === "date-range") {
+        value = formatDateValue(value);
+      }
+
+      const label =
+        f.mappedAttributeName.includes("Converted|") &&
+        f.type === "number"
+          ? `${f.label} (${defaultCurrency})`
+          : f.label;
+
+      dataRow[label] = value ?? "";
+    });
+
+    // paired totals
+    let totalFees = 0;
+    let totalFeesConverted = 0;
+
+    validFields.forEach((field) => {
+      totalFees += Number(row.rowData[field] || 0);
+      totalFeesConverted += Number(
+        row.rowData[`Converted|${field}`] || 0
+      );
+    });
+
+    dataRow["Total Fees"] = totalFees;
+    dataRow[`Total Fees (${defaultCurrency})`] =
+      totalFeesConverted;
+
+    worksheet.addRow(dataRow);
+  });
+
+  worksheet.name = "Overview";
+
+  // --------------------------------------------------------------------
+  // DETAIL DATA (LAW FIRM SHEETS - NO TOTAL COLUMNS)
+  // --------------------------------------------------------------------
+  const detailResult =
+    await dataSourceVersionValueService.getDataSourceVersionValueV1({
+      schemaName,
+      query,
+      select,
+      page,
+      limit,
+      sort,
+      filters,
+      entityId,
+      searchFilters,
+      conditions,
+    });
+
+  const detailRows = detailResult?.data ?? [];
+
+  const lawFirmMap = new Map<string, any[]>();
+
+  detailRows.forEach((row) => {
+    let lawFirmName = row.rowData?.["Law Firm Name"];
+
+    if (Array.isArray(lawFirmName)) {
+      lawFirmName = lawFirmName[0];
+    }
+
+    lawFirmName = lawFirmName || "Unknown Law Firm";
+    lawFirmName = String(lawFirmName);
+
+    if (!lawFirmMap.has(lawFirmName)) {
+      lawFirmMap.set(lawFirmName, []);
+    }
+
+    lawFirmMap.get(lawFirmName)!.push(row);
+  });
+
+  // --------------------------------------------------------------------
+  // CREATE LAW FIRM SHEETS
+  // --------------------------------------------------------------------
+  lawFirmMap.forEach((firmRows, lawFirmName) => {
+    const safeSheetName = lawFirmName
+      .replace(/[\\/?*[\]:]/g, "")
+      .substring(0, 30);
+
+    const sheet = workbook.addWorksheet(safeSheetName);
+
+    // ❌ NO TOTAL COLUMNS HERE
+    sheet.columns = selectedFieldsFiltered.map((f) => {
+      const header =
+        f.mappedAttributeName.includes("Converted|") &&
+        f.type === "number"
+          ? `${f.label} (${defaultCurrency})`
+          : f.label;
+
+      return {
+        header,
+        key: header,
+        width: 25,
+      };
+    });
+
+    let totalFees = 0;
+    let totalFeesConverted = 0;
+
+    firmRows.forEach((row) => {
+      const dataRow: any = {};
+
+      selectedFieldsFiltered.forEach((f) => {
+        let value = row.rowData[f.mappedAttributeName];
+
+        if (Array.isArray(value)) value = value.join(", ");
+
+        if (f.type === "date" || f.type === "date-range") {
+          value = formatDateValue(value);
+        }
+
+        const label =
+          f.mappedAttributeName.includes("Converted|") &&
+          f.type === "number"
+            ? `${f.label} (${defaultCurrency})`
+            : f.label;
+
+        dataRow[label] = value ?? "";
+      });
+
+      validFields.forEach((field) => {
+        totalFees += Number(row.rowData[field] || 0);
+        totalFeesConverted += Number(
+          row.rowData[`Converted|${field}`] || 0
+        );
+      });
+
+      sheet.addRow(dataRow);
+    });
+
+    // FINAL TOTAL ROW ONLY
+    const totalRow: any = {};
+    totalRow["Total Fees"] = totalFees;
+    totalRow[`Total Fees (${defaultCurrency})`] =
+      totalFeesConverted;
+
+    sheet.addRow({});
+    sheet.addRow(totalRow);
+  });
+}else if (job.name === "exportDSImportData") {
           // --------------------------------------------------------------------
           // Fetch data
           // --------------------------------------------------------------------
