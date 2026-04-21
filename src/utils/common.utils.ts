@@ -524,13 +524,6 @@ export const isBefore = (a: any, b: any) => {
   return !isNaN(d1.getTime()) && !isNaN(d2.getTime()) && d1 <= d2;
 };
 
-export const getNestedValue = (obj: any, path: string) => {
-  return path.split(".").reduce((acc, key) => {
-    if (acc == null) return "";
-    return acc[key];
-  }, obj);
-};
-
 
 
 

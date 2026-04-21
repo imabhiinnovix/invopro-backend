@@ -397,6 +397,7 @@ async function connectDB() {
         aliasFields = {},
         queryConfig,
         schemaName, // ✅ optionally included in payload
+        user
       } = req.requestPayload;
 
       if (!queryConfig?.service || !queryConfig?.method) {
@@ -442,6 +443,7 @@ async function connectDB() {
           limit: safeLimit,
           sort,
           ...(schemaName ? { schemaName } : {}), // optional schemaName
+          ...(user ? { user } : {}) // optional user
         });
 
         const rows = result?.data ?? [];
@@ -478,8 +480,7 @@ async function connectDB() {
           const excelRow: any = {};
 
           worksheet.columns.forEach((col: any) => {
-            // let value = row[col.key];
-            let value = getNestedValue(row, col.key);
+            let value = row[col.key];
 
             if (value === null || value === undefined) {
               excelRow[col.key] = "";
