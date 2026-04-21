@@ -12,6 +12,10 @@ import "../database/models/common/widgetType";
 import "../database/models/common/dashboard";
 import "../database/models/common/dataSource";
 import "../database/models/common/user";
+import "../database/models/invoicivixVendor/vendorAttorney";   // ⭐ THIS IS MISSING
+import "../database/models/invoicivixVendor/vendor";
+import "../database/models/invoicivixVendor/subVendor";
+import "../database/models/invoicivixVendor/engagementLetter";
 import fs from "fs";
 import { formatDateValue, getValidatedFieldsMap, resolveServiceMethod } from "../utils/common.utils";
 import { getDashboardWidget, updateDashboardWidget } from "../database/services/common/dashboardWidget.services";
