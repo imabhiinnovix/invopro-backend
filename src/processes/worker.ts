@@ -370,17 +370,6 @@ async function connectDB() {
   const baseColumns: any[] = [];
 
   // normal fields first
-  selectedFieldsFiltered.forEach((f) => {
-    if (!f.mappedAttributeName.startsWith("Converted|")) {
-      baseColumns.push({
-        header: f.label,
-        key: f.mappedAttributeName,
-        width: 25,
-      });
-    }
-  });
-
-  // normal fields first
 selectedFieldsFiltered.forEach((f) => {
   if (!f.mappedAttributeName.startsWith("Converted|")) {
     baseColumns.push({
