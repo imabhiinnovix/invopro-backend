@@ -3647,6 +3647,11 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
     const { isValid, errors, validatedRowData } = await validateRowData({
       rowData,
       attributes: entity.attributes,
+      dataSourceVersionId: existingRow?.dataSourceVersionId.toString(),
+      dataSourceId: existingRow?.dataSourceId.toString(),
+      conversion: existingRow?.conversion,
+      user:req.user,
+      isPortfolioErrorOverwrite: true
     });
 
     if (!isValid) {
