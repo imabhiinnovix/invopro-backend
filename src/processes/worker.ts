@@ -13,7 +13,7 @@ import "../database/models/common/dashboard";
 import "../database/models/common/dataSource";
 import "../database/models/common/user";
 import fs from "fs";
-import { formatDateValue, getNestedValue, getValidatedFieldsMap, resolveServiceMethod } from "../utils/common.utils";
+import { formatDateValue, getValidatedFieldsMap, resolveServiceMethod } from "../utils/common.utils";
 import { getDashboardWidget, updateDashboardWidget } from "../database/services/common/dashboardWidget.services";
 import axios from "axios";
 import { buildWidgetRequestPayload } from "../utils/buildWidgetRequest.utils";
