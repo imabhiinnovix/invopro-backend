@@ -345,7 +345,7 @@ async function connectDB() {
     });
 
   // --------------------------------------------------------------------
-  // VALID PAIRED FIELDS
+  // VALID FIELDS (PAIR MATCHING)
   // --------------------------------------------------------------------
   const normalSet = new Set<string>();
   const convertedSet = new Set<string>();
@@ -365,20 +365,14 @@ async function connectDB() {
   );
 
   // --------------------------------------------------------------------
-  // BUILD OVERVIEW COLUMNS (RESTORED LOGIC)
+  // BUILD OVERVIEW COLUMNS
   // --------------------------------------------------------------------
   const baseColumns: any[] = [];
-  let lastNormalIndex = -1;
-  let lastConvertedIndex = -1;
 
   selectedFieldsFiltered.forEach((f) => {
     const isConverted =
       f.mappedAttributeName.startsWith("Converted|") &&
       f.type === "number";
-
-    const original = isConverted
-      ? f.mappedAttributeName.replace("Converted|", "")
-      : f.mappedAttributeName;
 
     const header = isConverted
       ? `${f.label} (${defaultCurrency})`
@@ -389,14 +383,22 @@ async function connectDB() {
       key: header,
       width: 25,
     });
+  });
 
-    if (validFields.includes(original)) {
-      if (!isConverted) lastNormalIndex = baseColumns.length - 1;
-      else lastConvertedIndex = baseColumns.length - 1;
+  // --------------------------------------------------------------------
+  // POSITIONING LOGIC (FIXED)
+  // --------------------------------------------------------------------
+  let lastNormalIndex = -1;
+  let lastConvertedIndex = -1;
+
+  baseColumns.forEach((col, i) => {
+    if (col.header.includes(`(${defaultCurrency})`)) {
+      lastConvertedIndex = i;
+    } else {
+      lastNormalIndex = i;
     }
   });
 
-  // KEEP ORIGINAL TOTAL FIELDS LOGIC
   if (lastNormalIndex !== -1) {
     baseColumns.splice(lastNormalIndex + 1, 0, {
       header: "Total Fees",
@@ -416,7 +418,7 @@ async function connectDB() {
   worksheet.columns = baseColumns;
 
   // --------------------------------------------------------------------
-  // OVERVIEW ROWS (UNCHANGED LOGIC)
+  // OVERVIEW ROWS
   // --------------------------------------------------------------------
   let grandTotalConverted = 0;
 
@@ -433,7 +435,7 @@ async function connectDB() {
       }
 
       const label =
-        f.mappedAttributeName.includes("Converted|") &&
+        f.mappedAttributeName.startsWith("Converted|") &&
         f.type === "number"
           ? `${f.label} (${defaultCurrency})`
           : f.label;
@@ -444,9 +446,7 @@ async function connectDB() {
     let rowTotal = 0;
 
     validFields.forEach((field) => {
-      rowTotal += Number(
-        row.rowData[`Converted|${field}`] || 0
-      );
+      rowTotal += Number(row.rowData[`Converted|${field}`] || 0);
     });
 
     grandTotalConverted += rowTotal;
@@ -460,24 +460,20 @@ async function connectDB() {
   worksheet.name = "Overview";
 
   // --------------------------------------------------------------------
-  // OVERVIEW TOTAL ROW (FIXED POSITION)
+  // OVERVIEW TOTAL ROW
   // --------------------------------------------------------------------
   const totalRow: any = {};
-
   const firstLabel = selectedFieldsFiltered[0]?.mappedAttributeName;
 
   selectedFieldsFiltered.forEach((f) => {
     const label =
-      f.mappedAttributeName.includes("Converted|") &&
+      f.mappedAttributeName.startsWith("Converted|") &&
       f.type === "number"
         ? `${f.label} (${defaultCurrency})`
         : f.label;
 
-    if (f.mappedAttributeName === firstLabel) {
-      totalRow[label] = "TOTAL";
-    } else {
-      totalRow[label] = "";
-    }
+    totalRow[label] =
+      f.mappedAttributeName === firstLabel ? "TOTAL" : "";
   });
 
   totalRow["Total Fees"] = "";
@@ -487,7 +483,7 @@ async function connectDB() {
   worksheet.addRow(totalRow);
 
   // --------------------------------------------------------------------
-  // DETAIL DATA (ALL FIELDS)
+  // DETAIL DATA
   // --------------------------------------------------------------------
   const detailResult =
     await dataSourceVersionValueService.getDataSourceVersionValueV1({
@@ -513,7 +509,6 @@ async function connectDB() {
     if (Array.isArray(lawFirmName)) lawFirmName = lawFirmName[0];
 
     lawFirmName = lawFirmName || "Unknown Law Firm";
-    lawFirmName = String(lawFirmName);
 
     if (!lawFirmMap.has(lawFirmName)) {
       lawFirmMap.set(lawFirmName, []);
@@ -523,7 +518,7 @@ async function connectDB() {
   });
 
   // --------------------------------------------------------------------
-  // DETAIL SHEETS (FIXED TOTAL ALIGNMENT)
+  // DETAIL SHEETS (FIXED SUM LOGIC)
   // --------------------------------------------------------------------
   lawFirmMap.forEach((firmRows, lawFirmName) => {
     const sheet = workbook.addWorksheet(
@@ -531,12 +526,12 @@ async function connectDB() {
     );
 
     const allFields = dataSourceDetails.fieldSettings.filter(
-      (f) => f.isDerived !== true
+      (f) => !f.isDerived
     );
 
     sheet.columns = allFields.map((f) => ({
       header:
-        f.mappedAttributeName.includes("Converted|") &&
+        f.mappedAttributeName.startsWith("Converted|") &&
         f.type === "number"
           ? `${f.label} (${defaultCurrency})`
           : f.label,
@@ -547,7 +542,9 @@ async function connectDB() {
     const totals: Record<string, number> = {};
 
     allFields.forEach((f) => {
-      totals[f.mappedAttributeName] = 0;
+      if (f.type === "number") {
+        totals[f.mappedAttributeName] = 0;
+      }
     });
 
     firmRows.forEach((row) => {
@@ -564,27 +561,30 @@ async function connectDB() {
 
         dataRow[f.mappedAttributeName] = value ?? "";
 
-        totals[f.mappedAttributeName] +=
-          Number(row.rowData[f.mappedAttributeName]) || 0;
+        // FIXED: correct numeric handling
+        if (f.type === "number") {
+          const actual =
+            row.rowData[`Converted|${f.mappedAttributeName}`] ??
+            row.rowData[f.mappedAttributeName];
+
+          totals[f.mappedAttributeName] += Number(actual) || 0;
+        }
       });
 
       sheet.addRow(dataRow);
     });
 
-    // -------------------------------
-    // TOTAL ROW (Service Fees position preserved)
-    // -------------------------------
+    // ----------------------------------------------------------------
+    // DETAIL TOTAL ROW
+    // ----------------------------------------------------------------
     const totalRow: any = {};
-
     const firstField = allFields[0]?.mappedAttributeName;
 
     allFields.forEach((f) => {
-      if (f.mappedAttributeName === firstField) {
-        totalRow[f.mappedAttributeName] = "TOTAL";
-      } else {
-        totalRow[f.mappedAttributeName] =
-          totals[f.mappedAttributeName] || 0;
-      }
+      totalRow[f.mappedAttributeName] =
+        f.mappedAttributeName === firstField
+          ? "TOTAL"
+          : totals[f.mappedAttributeName] || 0;
     });
 
     sheet.addRow({});
