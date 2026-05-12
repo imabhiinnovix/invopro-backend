@@ -45,6 +45,16 @@ export function getImportLogCentralFileSchemaNameBasedOnVersionCodeAndOrgCode({
   return `data_${orgCode}_import_log_central_file_${versionCode}`;
 }
 
+export function getRowVersionSchemaName({
+  orgCode,
+  versionCode,
+}: {
+  orgCode: string;
+  versionCode: string;
+}) {
+  return `data_${orgCode}_row_version_${versionCode}`;
+}
+
 export function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -506,6 +516,18 @@ export const getValidatedFieldsMap = (
   });
 
   return validateFieldMap;
+};
+
+export const getAllFieldsMap = (
+  dataSourceDetails: any,
+): Record<string, string> => {
+  const fieldMap: Record<string, any> = {};
+
+  (dataSourceDetails.fieldSettings || []).forEach((field: any) => {
+      fieldMap[field.label] = field;
+  });
+
+  return fieldMap;
 };
 
 export const normalize = (v: any) => v?.toString().trim().toLowerCase();

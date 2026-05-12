@@ -391,7 +391,7 @@ ds.visibility = dsVisibility?.visibility || 'primary';
 
             const allDataSourceVersions = await dataSourceVersionService.getAllDataSourceVersions({
               query: { dataSourceId: ds._id },
-              populate: [],
+              populate: ['vendorId'],
               sort: { createdAt: -1 },
             });
 

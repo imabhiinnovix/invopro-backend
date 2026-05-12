@@ -20,6 +20,16 @@ interface IDataSourceVersion extends Document {
   versionName: string;
   isCurrent: boolean;
   status: 'failed' | 'processing' | 'completed' | 'partially-completed' | 'discarded';
+  aiStatus:
+  | 'pending'
+  | 'extracting'
+  | 'validating'
+  | 'analyst-review'
+  | 'revalidation-needed'
+  | 'approved'
+  | 'paid'
+  | 'rate-violation'
+  | 'failed';
   fileName: string;
   mappings: Record<string, string>;
   separator: Record<string, string>;
@@ -40,6 +50,22 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
       enum: ['failed', 'processing', 'completed', 'partially-completed', 'discarded'], // Restricting the values of status
       required: true,
       default: 'processing', // Optional: Default value for status
+    },
+
+    aiStatus: {
+      type: String,
+      enum: [
+        'pending',
+        'extracting',
+        'validating',
+        'analyst-review',
+        'revalidation-needed',
+        'approved',
+        'paid',
+        'rate-violation',
+        'failed'
+      ],
+      default: 'pending'
     },
     mappings: { type: Schema.Types.Mixed },
     separator: {

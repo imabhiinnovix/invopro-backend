@@ -14,6 +14,7 @@ import {
   getCentralFileSchemaNameBasedOnVersionCodeAndOrgCode,
   getConversionRate,
   getImportLogSchemaNameBasedOnVersionCodeAndOrgCode,
+  getRowVersionSchemaName,
   getSchemaNameBasedOnVersionCodeAndOrgCode,
   isBefore,
   isValidCaseReference,
@@ -40,6 +41,7 @@ import { findCentralFiles, findLatestCentralFile, getLatestCentralMappingAndSepa
 import { getCentralFileValue } from '../../../database/services/common/defaultCentralFileValue.service';
 import { autoSyncReferenceRow } from '../../../utils/attributeAutoGenerate.utils';
 import fs from "fs";
+import { bulkCreateRowVersionsFromInserted, createRowVersion, getLatestRowVersion, getRowVersionHistory } from '../../../database/services/common/dataSourceRowVersion.services';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -1600,7 +1602,139 @@ async function resolveReference(
   return doc;
 }
 
+export async function createDataSourceVersionAI(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const {
+      versionName,
+      mappings,
+      separator,
+      dataSourceId,
+      versionValue,
+      vendorId,
+    } = req.body;
 
+    const jsonMapping = JSON.parse(mappings || "{}");
+    const jsonSeparator = separator ? JSON.parse(separator) : {};
+
+    const { userId, organizationId } = req.user;
+
+    const files = Array.isArray(req.files)
+      ? req.files
+      : Object.values(req.files || {}).flat();
+
+    if (!files.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Files are required",
+      });
+    }
+
+    let combinedFileName = "";
+    let combinedFilePath = "";
+    let combinedMimeType = "";
+    let combinedSize = 0;
+
+    for (const file of files) {
+      const {
+        originalname,
+        path: tempPath,
+        size,
+        mimetype,
+      } = file;
+
+      const newFilePath = path.join(
+        "uploads",
+        organizationId,
+        userId,
+        "dsvRequest",
+        `${dataSourceId}_${versionValue}_${versionName}_${originalname}`
+      );
+
+      await fsPromises.mkdir(path.dirname(newFilePath), {
+        recursive: true,
+      });
+
+      await fsPromises.rename(tempPath, newFilePath);
+
+      combinedFileName = combinedFileName
+        ? `${combinedFileName}|${originalname}`
+        : originalname;
+
+      combinedFilePath = combinedFilePath
+        ? `${combinedFilePath}|${newFilePath}`
+        : newFilePath;
+
+      combinedMimeType = combinedMimeType
+        ? `${combinedMimeType}|${mimetype}`
+        : mimetype;
+
+      combinedSize += size;
+    }
+
+    const existingVersionData =
+      await dataSourceVersionService.getDataSourceVersionBasedOnDataSourceIdAndVersionValueAndVersionName(
+        dataSourceId,
+        versionValue,
+        versionName
+      );
+
+    if (existingVersionData) {
+      return res.status(400).send(
+        "Version name already exists for same data source and version value."
+      );
+    }
+
+    const dataSourceDetails =
+      await dataSourceService.findDataSourceById(dataSourceId, true);
+
+    if (!dataSourceDetails?.entityId) {
+      throw new Error("Data source not found.");
+    }
+
+    const dataSourceVersion =
+      await dataSourceVersionService.createDataSourceVersion({
+        organizationId,
+        vendorId,
+        entityId: dataSourceDetails.entityId._id,
+        dataSourceId,
+        versionName,
+        versionValue,
+        createdBy: userId,
+        status: "processing",
+        separator: jsonSeparator,
+        fileName: combinedFileName,
+        filePath: combinedFilePath,
+        fileType: combinedMimeType,
+        fileSize: combinedSize,
+        mappings: jsonMapping,
+        isActive: true,
+        isCurrent: false,
+      });
+
+    // Push directly to AI queue
+    const aiQueue = new Queue("aiFileQueue", {
+      connection: { host: "redis" },
+    });
+
+    await aiQueue.add("processAIExtraction", {
+      dataSourceVersionId: dataSourceVersion._id,
+      user: req.user,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "File uploaded. AI extraction started.",
+      dataSourceVersionId: dataSourceVersion._id,
+      status: "processing",
+    });
+  } catch (e) {
+    next(e);
+  }
+}
 
 
 export async function createDataSourceVersion(req: Request, res: Response, next: NextFunction) {
@@ -1779,7 +1913,28 @@ export async function createDataSourceVersion(req: Request, res: Response, next:
                 dataSourceDetails.uniqueAttributeRules || []
               );
             } else {
-              await dataSourceVersionValueService.createDataSourceVersionValue(schemaName, validatedData.newRowData);
+              const insertedRows =
+              await dataSourceVersionValueService.createDataSourceVersionValue(
+                schemaName,
+                validatedData.newRowData
+              );
+
+            // // 🔥 ROW VERSION SCHEMA NAME
+            // const rowVersionSchemaName = getRowVersionSchemaName({
+            //   orgCode,
+            //   versionCode: dataSourceDetails.code,
+            // });
+
+            // // 🔥 BULK CREATE ROW VERSIONS
+            // await bulkCreateRowVersionsFromInserted({
+            //   schemaName: rowVersionSchemaName,
+            //   insertedRows,
+            //   entityId: dataSourceDetails.entityId._id,
+            //   dataSourceId,
+            //   dataSourceVersionId: dataSourceVersion._id,
+            //   userId,
+            //   versionValue,
+            // });
             }
 
             await dataSourceVersionService.updateDataSourceVersions({
@@ -2155,15 +2310,17 @@ export const checkDataSourceVersionNameAvailableOrNot = async (req: Request, res
 
 export const listDataSourceVersion = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search, paginate = 'false', dataSourceId } = req.query;
+    const { search, paginate = 'false', dataSourceId, versionId } = req.query;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
     const { organizationId } = req.user;
 
-    const query: any = { organizationId, status: { $in : ["completed", "failed"] } };
+    // const query: any = { organizationId, status: { $in : ["completed", "failed"] } };
+    const query: any = { organizationId };
     if (search) query.name = { $regex: search, $options: 'i' };
     if(dataSourceId) query.dataSourceId = dataSourceId;
+    if(versionId) query.versionId = versionId;
 
     let result: any = {};
     if (paginate) {
@@ -2182,7 +2339,7 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
           },
           {
             path: 'dataSourceId',
-            select: 'name', // Specify the fields to populate
+            select: 'name code', // Specify the fields to populate
           },
           {
             path: 'vendorId',
@@ -2196,13 +2353,192 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
       });
     }
 
+    // ===============================
+    // INVOICE SUMMARY PER VERSION
+    // ===============================
+   
+    let summary: any[] = [];
+
+    if (
+      dataSourceId &&
+      String(dataSourceId) === String(process.env.INVOICE_DATASOURCE_ID)
+    ) {
+      const versionList = result?.data || [];
+
+      for (const version of versionList) {
+        const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+          orgCode: req.user?.orgCode,
+          versionCode: version?.dataSourceId?.code,
+        });
+
+        const BATCH_SIZE = 2000;
+        let page = 1;
+        let hasMore = true;
+
+        let totalLineItems = 0;
+        let totalServiceFees = 0;
+        let totalOfficialFees = 0;
+        let totalApprovedCount = 0;
+        let totalFlaggedCount = 0;
+
+        let firstInvoiceNumber: string | null = null;
+        let firstInvoiceDate: string | null = null;
+        let firstCurrency: string | null = null;
+        let firstCaptured = false;
+
+        while (hasMore) {
+  const { data, totalCount } =
+    await dataSourceVersionValueService.getDataSourceVersionValueSafe({
+      schemaName,
+      query: {
+        dataSourceVersionId: version._id,
+      },
+
+      select: {
+        "rowData.Invoice Number": 1,
+        "rowData.Invoice Date": 1,
+        "rowData.Service Fees": 1,
+        "rowData.Official Fees": 1,
+        "rowData.Validated|Analyze Status": 1,
+        "rowData.currency": 1
+      },
+
+      page,
+      limit: BATCH_SIZE,
+      sort: { _id: 1 },
+    });
+
+  console.log("data", data);
+
+  for (const rec of data) {
+    const row = rec.rowData || {};
+
+    totalLineItems++;
+
+    totalServiceFees += Number(row?.["Service Fees"] || 0);
+    totalOfficialFees += Number(row?.["Official Fees"] || 0);
+
+    const status = row?.["Validated|Analyze Status"];
+
+    if (status === "Approved") {
+      totalApprovedCount++;
+    } else {
+      totalFlaggedCount++;
+    }
+
+    if (!firstCaptured) {
+      firstInvoiceNumber = row?.["Invoice Number"] || null;
+      firstInvoiceDate = row?.["Invoice Date"] || null;
+      firstCurrency = row?.["currency"] || null;
+      firstCaptured = true;
+    }
+  }
+
+  const fetchedCount = page * BATCH_SIZE;
+  hasMore = fetchedCount < totalCount;
+  page++;
+}
+
+        summary.push({
+          dataSourceVersionId: version._id,
+          totalLineItems,
+          totalAmount: totalServiceFees + totalOfficialFees,
+          totalApprovedCount,
+          totalFlaggedCount,
+          firstInvoiceNumber,
+          firstInvoiceDate,
+          firstCurrency
+        });
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: 'Data Source Version Fetched Successfully',
       data: result.data,
       totalCount: result.totalCount,
+      summary,
     });
   } catch (err) {
+    next(err);
+  }
+};
+
+export const getAuditLogs = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { versionId, recordId } = req.query;
+
+    const page =
+      parseInt(req.query.page as string, 10) || 1;
+
+    const limit =
+      parseInt(req.query.limit as string, 10) || 10;
+
+    const { orgCode } = req.user;
+
+    // ---------------------------------------------
+    // Validation
+    // ---------------------------------------------
+    if (!versionId) {
+      return res.status(400).json({
+        success: false,
+        message: 'versionId is mandatory',
+      });
+    }
+
+    // ---------------------------------------------
+    // Fetch datasource version
+    // ---------------------------------------------
+    const version: any =
+      await dataSourceVersionService.getDataSourceVersion({
+        query: { _id: versionId },
+        populate: ['dataSourceId'],
+      });
+
+    if (!version) {
+      return res.status(404).json({
+        success: false,
+        message: 'Version not found',
+      });
+    }
+
+    // ---------------------------------------------
+    // Resolve audit schema
+    // ---------------------------------------------
+    const schemaName =
+      getRowVersionSchemaName({
+        orgCode,
+        versionCode: version?.dataSourceId?.code,
+      });
+
+    // ---------------------------------------------
+    // Fetch logs
+    // ---------------------------------------------
+    const result =
+      await getRowVersionHistory({
+        schemaName,
+        versionId: versionId as string,
+        recordId: recordId as string,
+        page,
+        limit,
+      });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Audit logs fetched successfully',
+      data: result.data,
+      totalCount: result.totalCount,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+    });
+
+  } catch (err) {
+    console.error('Error fetching audit logs:', err);
     next(err);
   }
 };
@@ -2609,7 +2945,7 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
   next: NextFunction
 ) => {
   try {
-    const { dataSourceId, versionValue, year, month, page, limit, sort, filters, search, isSummary, segregationField } = req.query as {
+    const { dataSourceId, versionValue, year, month, page, limit, sort, filters, search, isSummary, segregationField, versionId } = req.query as {
       dataSourceId: string;
       versionValue: string;
       page?: string;
@@ -2621,6 +2957,7 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
       month?: string;
       isSummary?: string;
       segregationField?: string;
+      versionId?: string;
     };
 
     const summaryMode = isSummary === 'true';
@@ -2694,12 +3031,16 @@ export const getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue = async 
 
     const versionQuery: any = {
       dataSourceId,
-      isCurrent: true, // Always filter for current version
+      // isCurrent: true, // Always filter for current version
     };
 
     // ✅ Priority 1: exact versionValue (if directly passed)
     if (versionValue) {
       versionQuery.versionValue = versionValue;
+    }
+
+    if(versionId){
+      versionQuery._id = new Types.ObjectId(versionId);
     }
 
     // ✅ Priority 2: year + month filter
@@ -3603,7 +3944,7 @@ export const updateSingleRowVersionValue = async (req: Request, res: Response, n
 
     const versionQuery: any = {
       dataSourceId,
-      isCurrent: true,
+      // isCurrent: true,
       ...(versionValue && { versionValue }),
     };
 
@@ -3703,6 +4044,46 @@ const updateRow: any = {
       { _id: rowId },
       updateRow
     );
+
+    const auditSchemaName = getRowVersionSchemaName({
+      orgCode,
+      versionCode: dataSourceDetails.code,
+    });
+
+   const existingHistory = await getLatestRowVersion({
+  schemaName: auditSchemaName,
+  recordId: rowId,
+});
+
+if (!existingHistory) {
+  // Insert original row snapshot
+  await createRowVersion({
+    schemaName: auditSchemaName,
+    entityId: existingRow.entityId,
+    dataSourceId: existingRow.dataSourceId,
+    dataSourceVersionId: existingRow.dataSourceVersionId,
+    recordId: rowId,
+    rowData: existingRow.rowData,
+    changeType: 'UPLOAD',
+    source: 'SYSTEM',
+    versionValue: existingRow.versionValue,
+    changedBy: userId,
+  });
+}
+
+// Insert edited row
+await createRowVersion({
+  schemaName: auditSchemaName,
+  entityId: existingRow.entityId,
+  dataSourceId: existingRow.dataSourceId,
+  dataSourceVersionId: existingRow.dataSourceVersionId,
+  recordId: rowId,
+  rowData: validatedRowData,
+  changeType: 'EDIT',
+  source: 'MANUAL',
+  versionValue: existingRow.versionValue,
+  changedBy: userId,
+});
 
     // 🔹 Handle reference subfields
     await handleReferenceSubFields({
@@ -4049,7 +4430,75 @@ export const getMasterDataListFromDataSource = async (
   }
 };
 
+export const reconciledInvoicesExtraction = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
 
+    const { organizationId, orgCode } = req.user;
+
+    const { uploadId } = req.body;
+
+    // ✅ validation
+    const file = req.file as Express.Multer.File;
+
+    if (!file || !uploadId) {
+      return res.status(400).json({
+        success: false,
+        message: "invoiceFile and Upload Id both are required",
+      });
+    }
+
+    // ✅ Folder path (similar structure)
+    const destinationDir = path.join(
+      "uploads",
+      organizationId,
+      "reconcileExtraction",
+      uploadId
+    );
+
+    if (!fs.existsSync(destinationDir)) {
+      fs.mkdirSync(destinationDir, { recursive: true });
+    }
+
+    // ✅ Move file
+    const newFilePath = path.join(destinationDir, file.filename);
+    fs.renameSync(file.path, newFilePath);
+
+    const normalizedPath = newFilePath.replace(/\\/g, "/");
+
+    // ---------------------------------------------
+    // 🚀 Add Job to Queue
+    // ---------------------------------------------
+    // queue instance
+    const aiAnalyzeDataQueue = new Queue("aiAnalyzeData", {
+      connection: { host: "redis" },
+    });
+    await aiAnalyzeDataQueue.add(
+      "aiReconcilationInvoicesExtraction",
+      {
+        filePath: normalizedPath,
+        fileName: file.originalname,
+        orgCode,
+        dataSourceId: process.env.INVOICE_DATASOURCE_ID || "69fdc5f5292b03c7f0d71cdf",
+        uploadId
+      }
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Invoice uploaded and sent for reconciliation",
+      data: {
+        fileName: file.originalname,
+        filePath: normalizedPath,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 export const reconciledInvoices = async (
   req: Request,
@@ -4100,7 +4549,7 @@ export const reconciledInvoices = async (
         filePath: normalizedPath,
         fileName: file.originalname,
         orgCode,
-        dataSourceId: "699f04727df5e0efe12d5027"
+        dataSourceId: process.env.INVOICE_DATASOURCE_ID || "69fdc5f5292b03c7f0d71cdf"
       }
     );
 

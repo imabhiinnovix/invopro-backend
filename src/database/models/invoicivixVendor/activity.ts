@@ -4,7 +4,7 @@ import { Schema, model, Document, Types } from 'mongoose';
 export interface IActivity extends Document {
   organizationId: Types.ObjectId;
 
-  activityType: 'mailBox' | 'action' | 'disclosure' | 'portfolio';
+  activityType: 'mailbox' | 'action' | 'disclosure' | 'portfolio';
 
   versionValue: string; // e.g. 2026-03
 
@@ -30,7 +30,7 @@ const activitySchema = new Schema<IActivity>(
 
     activityType: {
       type: String,
-      enum: ['mailBox', 'action', 'disclosure', 'portfolio'],
+      enum: ['mailbox', 'action', 'disclosure', 'portfolio'],
       required: true,
       index: true,
     },

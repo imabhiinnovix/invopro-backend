@@ -8,6 +8,7 @@ import {
   createUpdateCustomDataSourceVersionValue,
   deleteMultipleRowsFromVersion,
   exportDataSourceVersionDataToExcel,
+  getAuditLogs,
   getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue,
   getDataSourceVersionDetailsBasedOnId,
   getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue,
@@ -17,6 +18,7 @@ import {
   listDataSourceVersion,
   reconciledInvoices,
   reconciledInvoicesCost,
+  reconciledInvoicesExtraction,
   sendRevalidateCostRows,
   sendRevalidateRows,
   updateSingleRowVersionValue,
@@ -28,6 +30,9 @@ import { authenticateAIToken } from '../../../middlewares/aiAuth.middleware';
 const router = Router();
 
 router.get('/list', authenticateToken, permissionMiddleware(), listDataSourceVersion);
+
+router.get('/auditList', authenticateToken, getAuditLogs);
+
 
 router.get(
   '/dataSourceId/:dataSourceId/versionValue/:versionValue/versionName/:versionName',
@@ -91,6 +96,13 @@ router.post(
   authenticateAIToken,
   uploadSingleFile,
   reconciledInvoices
+);
+
+router.post(
+  "/reconciledInvoicesExtraction",
+  authenticateAIToken,
+  uploadSingleFile,
+  reconciledInvoicesExtraction
 );
 
 router.post(

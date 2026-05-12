@@ -17,7 +17,7 @@ import "../database/models/invoicivixVendor/vendor";
 import "../database/models/invoicivixVendor/subVendor";
 import "../database/models/invoicivixVendor/engagementLetter";
 import fs from "fs";
-import { formatDateValue, getValidatedFieldsMap, resolveServiceMethod } from "../utils/common.utils";
+import { formatDateValue, getAllFieldsMap, getRowVersionSchemaName, getValidatedFieldsMap, resolveServiceMethod } from "../utils/common.utils";
 import { getDashboardWidget, updateDashboardWidget } from "../database/services/common/dashboardWidget.services";
 import axios from "axios";
 import { buildWidgetRequestPayload } from "../utils/buildWidgetRequest.utils";
@@ -29,6 +29,8 @@ import * as vendorInvoiceService from "../database/services/invoicivixVendor/ven
 import * as activityService from "../database/services/invoicivixVendor/activity.service";
 import { generateAIToken } from "../utils/token.utils";
 import createDefaultDataSourceVersionModel from "../database/models/common/defaultDataSourceVersionModel";
+import { populate } from "dotenv";
+import { createInvoiceAuditLog } from "../database/services/common/dataSourceRowVersion.services";
 
 
 
@@ -36,8 +38,8 @@ import createDefaultDataSourceVersionModel from "../database/models/common/defau
 async function connectDB() {
   if (mongoose.connection.readyState === 0) {
     try {
-      await mongoose.connect(process.env.MONGO_URI || "mongodb://invoicivix-mongo:27017/invoicivix", {
-        dbName: "invoicivix",
+      await mongoose.connect(process.env.MONGO_URI || "mongodb://invopro-mongo:27017/invopro", {
+        dbName: "invopro",
       });
       console.log("✅ Worker connected to MongoDB");
     } catch (err) {
@@ -1059,7 +1061,7 @@ new Worker(
   async (job) => {
     try {
 
-      if (job.name !== "sendPreValidatedFiles" && job.name !== "sendActivityFiles" && job.name !== "sendPreValidatedRows" && job.name !== "sendCostValidatedRows") return;
+      if (job.name !== "sendPreValidatedFiles" && job.name !== "processAIExtraction" && job.name !== "sendActivityFiles" && job.name !== "sendPreValidatedRows" && job.name !== "sendCostValidatedRows") return;
 
       const { dataSourceIds, versionValue, vendorId, activityType, user } = job.data;
 
@@ -1427,7 +1429,144 @@ new Worker(
         });
 
         return true;
-      }else{
+      }else if (job.name == "processAIExtraction") {
+  console.log("🚀 AI Extraction started");
+
+  const { dataSourceVersionId, user } = job.data;
+
+  const aiToken = generateAIToken({
+    userId: user.userId,
+    organizationId: user.organizationId,
+    orgCode: user.orgCode,
+    orgDefaultCurrency: user?.orgDefaultCurrency || "USD",
+    scope: "ai:invoice:process",
+  });
+
+  const filesToUpload: { path: string; fileName: string }[] = [];
+
+  try {
+    // ---------------------------------------------
+    // Fetch datasource version
+    // ---------------------------------------------
+    const version: any =
+      await dataSourceVersionServices.getDataSourceVersion({
+        query: {_id: dataSourceVersionId },
+        populate: ["dataSourceId"]
+    });
+    if (!version) {
+      throw new Error("Datasource version not found");
+    }
+
+    const filePaths = version.filePath?.split("|") || [];
+    const fileNames = version.fileName?.split("|") || [];
+
+    for (let i = 0; i < filePaths.length; i++) {
+      const filePath = filePaths[i];
+
+      if (filePath && fs.existsSync(filePath)) {
+        filesToUpload.push({
+          path: filePath,
+          fileName: fileNames[i] || path.basename(filePath),
+        });
+      }
+    }
+
+    if (!filesToUpload.length) {
+      throw new Error("No valid files found");
+    }
+
+    // ---------------------------------------------
+    // Build request
+    // ---------------------------------------------
+    const formData = new FormData();
+
+    filesToUpload.forEach((file) => {
+      formData.append(
+        "files",
+        fs.createReadStream(file.path) as any,
+        file.fileName
+      );
+    });
+
+    formData.append(
+      "webhookUrl",
+      `${process.env.BASE_BACKEND_URL}/api/v1/common/dataSourceVersion/reconciledInvoicesExtraction`
+    );
+
+    formData.append("authToken", aiToken);
+    formData.append("uploadId", dataSourceVersionId);
+
+    console.log('aiToken',aiToken);
+
+
+    const schemaName =
+  getRowVersionSchemaName({
+    orgCode: user.orgCode,
+    versionCode: version?.dataSourceId?.code,
+  });
+
+await createInvoiceAuditLog({
+  schemaName,
+  entityId: version.entityId,
+  dataSourceId: version.dataSourceId,
+  dataSourceVersionId: version._id,
+  versionValue: version.versionValue,
+  changeType: 'UPLOAD',
+  source: 'SYSTEM',
+  changedBy: user.userId,
+  rowData: {
+    status: 'processing',
+    aiStatus: 'extracting',
+  },
+});
+
+    // ---------------------------------------------
+    // Mark processing
+    // ---------------------------------------------
+    await dataSourceVersionServices.updateDataSourceVersion(
+      dataSourceVersionId,
+      {
+        status: "processing",
+        aiStatus: "extracting"
+      }
+    );
+
+    // ---------------------------------------------
+    // Send to AI
+    // ---------------------------------------------
+    const response = await axios.post(
+      `${process.env.BASE_AI_SERVICE_URL}/invoiceAIExtraction`,
+      formData,
+      {
+        headers: {
+          ...formData.getHeaders(),
+        },
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
+        timeout: 15 * 60 * 1000,
+      }
+    );
+
+    console.log("✅ AI Extraction success:", response?.data);
+
+    if (response?.data?.success !== true) {
+      throw new Error("AI extraction failed");
+    }
+
+    return true;
+  } catch (error: any) {
+    console.error("❌ AI Extraction error:", error.message);
+
+    await dataSourceVersionServices.updateDataSourceVersion(
+      dataSourceVersionId,
+      {
+        status: "failed",
+      }
+    );
+
+    throw error;
+  }
+}else{
         // =========================================================
       // 🔵 JOB 2: ACTIVITY FILES
       // =========================================================
@@ -2058,9 +2197,203 @@ new Worker(
   "aiAnalyzeData",
   async (job) => {
     try {
-      if (job.name !== "aiReconcilationInvoices" && job.name !== "aiReconcilationInvoicesCost") return;
+      if (job.name !== "aiReconcilationInvoices" && job.name !== "aiReconcilationInvoicesCost" && job.name !== "aiReconcilationInvoicesExtraction") return;
 
-      if(job.name == "aiReconcilationInvoices" ){
+      if (job.name === "aiReconcilationInvoicesExtraction") {
+  console.log("🚀 Reconciliation Extraction Started");
+
+  const {
+    filePath,
+    orgCode,
+    uploadId,
+  } = job.data;
+
+  if (!uploadId) {
+    throw new Error("dataSourceVersionId is required");
+  }
+
+  if (!filePath || !fs.existsSync(filePath)) {
+    throw new Error("File not found");
+  }
+
+  // ---------------------------------------------
+  // Fetch Version + Populate datasource
+  // ---------------------------------------------
+  const version =
+    await dataSourceVersionServices.getDataSourceVersion({
+      query: { _id: uploadId },
+      populate: ["dataSourceId"],
+    });
+
+  if (!version) {
+    throw new Error("Datasource version not found");
+  }
+
+  const dataSourceDetails: any = version.dataSourceId;
+
+  if (!dataSourceDetails) {
+    throw new Error("Datasource not found");
+  }
+
+  console.log("✅ Version Found:", version.versionValue);
+
+  // ---------------------------------------------
+  // Field Mapping
+  // ---------------------------------------------
+  const fieldMap: any = getAllFieldsMap(
+    dataSourceDetails
+  );
+
+  console.log("✅ Field Map:", fieldMap);
+
+  // ---------------------------------------------
+  // Resolve Schema
+  // ---------------------------------------------
+  const schemaName =
+    getSchemaNameBasedOnVersionCodeAndOrgCode({
+      orgCode,
+      versionCode: dataSourceDetails.code,
+    });
+
+  console.log("schemaName:", schemaName);
+
+  // ---------------------------------------------
+  // Read Excel
+  // ---------------------------------------------
+  const workbook = new ExcelJS.Workbook();
+
+  await workbook.xlsx.readFile(filePath);
+
+  const worksheet = workbook.worksheets[0];
+
+  if (!worksheet) {
+    throw new Error("No sheet found");
+  }
+
+  const headers: string[] = [];
+
+  worksheet.getRow(1).eachCell(
+    (cell, colNumber) => {
+      headers[colNumber] =
+        cell.value?.toString().trim() || "";
+    }
+  );
+
+  // ---------------------------------------------
+  // Build Insert Payload
+  // ---------------------------------------------
+  const insertData: any[] = [];
+
+  for (let i = 2; i <= worksheet.rowCount; i++) {
+    const row = worksheet.getRow(i);
+
+    const rowData: Record<string, any> = {};
+
+    row.eachCell((cell, colNumber) => {
+      const key = headers[colNumber];
+
+      if (!fieldMap[key]) return;
+
+      const field = fieldMap[key];
+
+      let value = cell.value;
+
+      if (Array.isArray(value)) {
+        value = value.join(", ");
+      }
+
+      if (
+        field.type === "date" ||
+        field.type === "date-range"
+      ) {
+        value = formatDateValue(value);
+      }
+
+      rowData[field.mappedAttributeName] =
+        value;
+    });
+
+    if (Object.keys(rowData).length === 0) {
+      continue;
+    }
+
+    insertData.push({
+      entityId: version.entityId,
+      dataSourceId:
+        dataSourceDetails._id,
+      dataSourceVersionId: uploadId,
+      versionValue:
+        version.versionValue,
+      rowData,
+      status: "active",
+      aiPreValidateStatus: "completed",
+    });
+  }
+
+  console.log(
+    `📦 Rows Prepared: ${insertData.length}`
+  );
+
+  // ---------------------------------------------
+  // Bulk Insert
+  // ---------------------------------------------
+  if (insertData.length) {
+    await dataSourceVersionValueService.createDataSourceVersionValue(
+      schemaName,
+      insertData
+    );
+    await dataSourceVersionServices.updateDataSourceVersions({
+            query: { dataSourceId :dataSourceDetails?._id, versionValue: version?.versionValue },
+            updateFields: { isCurrent: false },
+          });
+    await dataSourceVersionServices.updateDataSourceVersion(
+      uploadId,
+      {
+        status: "completed",
+        aiStatus: "analyst-review",
+      }
+    );
+  }
+
+  const auditSchemaName =
+  getRowVersionSchemaName({
+    orgCode,
+    versionCode: dataSourceDetails?.code,
+  });
+
+      await createInvoiceAuditLog({
+  schemaName: auditSchemaName,
+  entityId: version.entityId,
+  dataSourceId: dataSourceDetails._id,
+  dataSourceVersionId: uploadId,
+  versionValue: version.versionValue,
+  changeType: 'EXTRACTION',
+  source: 'AI',
+  rowData: {
+    extractedRows: insertData.length,
+    status: 'completed',
+    aiStatus: 'analyst-review',
+  },
+});
+
+  // ---------------------------------------------
+  // Cleanup
+  // ---------------------------------------------
+  try {
+    fs.unlinkSync(filePath);
+  } catch {
+    console.warn(
+      "⚠ Failed to delete file:",
+      filePath
+    );
+  }
+
+  console.log(
+    "✅ Reconciliation Extraction Completed"
+  );
+
+  return true;
+}else if(job.name == "aiReconcilationInvoices" ){
       console.log("🚀 Reconciliation Job Started");
 
       const { filePath, orgCode, dataSourceId } = job.data;

@@ -17,9 +17,9 @@ import { escapeRegExp, getConversionRate, getLabelByMappedAttributeName, getSche
 import { getPlotTypeConfig, PlotType, plotTypesConfig } from '../../../config/plotType.config';
 import { handleReferenceSubFields, validateRowData } from '../../../api/controllers/common/dataSourceVersion.controller';
 import { autoPopulateAttributeOptionFromRow } from '../../../utils/attributeOption.utils';
-import * as dataSourceVersionService from '../../../database/services/common/dataSourceVersion.services';
-import * as dataSourceVersionValueService from '../../../database/services/common/defaultDataSourceVersionValue.services';
-import * as dataSourceService from '../../../database/services/common/dataSource.services';
+import * as dataSourceVersionService from './dataSourceVersion.services';
+import * as dataSourceVersionValueService from './defaultDataSourceVersionValue.services';
+import * as dataSourceService from './dataSource.services';
 
 export const updateDataSourceVersionValue = async (
   schemaName: string,
@@ -204,6 +204,52 @@ export const getDataSourceVersionValue = async ({
     ]);
 
     return { data: versionValueData, totalCount: totalCountResult };
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getDataSourceVersionValueSafe = async ({
+  schemaName,
+  query,
+  select = {},
+  page,
+  limit,
+  sort = { updatedAt: 1 },
+}: any) => {
+  try {
+    const DataSourceVersionValue =
+      createDefaultDataSourceVersionModel(schemaName);
+
+    const aggregationPipeline: any[] = [
+      { $match: query },
+      { $sort: sort },
+    ];
+
+    // =========================
+    // SAFE PROJECTION (OBJECT ONLY)
+    // =========================
+    if (select && Object.keys(select).length > 0) {
+      aggregationPipeline.push({
+        $project: select,
+      });
+    }
+
+    // =========================
+    // PAGINATION
+    // =========================
+    aggregationPipeline.push({ $skip: (page - 1) * limit });
+    aggregationPipeline.push({ $limit: limit });
+
+    const [versionValueData, totalCountResult] = await Promise.all([
+      DataSourceVersionValue.aggregate(aggregationPipeline).exec(),
+      DataSourceVersionValue.countDocuments(query),
+    ]);
+
+    return {
+      data: versionValueData,
+      totalCount: totalCountResult,
+    };
   } catch (err) {
     throw err;
   }

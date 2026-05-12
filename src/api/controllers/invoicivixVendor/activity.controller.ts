@@ -16,11 +16,10 @@ export const createActivity = async (req: Request, res: Response, next: NextFunc
     const { organizationId } = req.user;
     const { activityType, versionValue } = req.body;
 
-    // ✅ Validation
     if (!versionValue || !activityType) {
       return res.status(400).json({
         success: false,
-        message: 'versionValue and activityType are required',
+        message: "versionValue and activityType are required",
       });
     }
 
@@ -29,15 +28,14 @@ export const createActivity = async (req: Request, res: Response, next: NextFunc
     if (!files || !files.length) {
       return res.status(400).json({
         success: false,
-        message: 'At least one file is required',
+        message: "At least one file is required",
       });
     }
 
-    // ✅ Folder path (version → activityType)
     const destinationDir = path.join(
-      'uploads',
+      "uploads",
       organizationId.toString(),
-      'activities',
+      "activities",
       versionValue,
       activityType
     );
@@ -47,58 +45,74 @@ export const createActivity = async (req: Request, res: Response, next: NextFunc
     }
 
     const createdActivities: any[] = [];
+    const skippedData: { fileName: string }[] = [];
+    let skippedCount = 0;
 
-    // ✅ LOOP ALL FILES
     for (const file of files) {
-  const newFilePath = path.join(destinationDir, file.filename);
+      const existingActivity = await activityService.findOneByQuery({
+        organizationId: new Types.ObjectId(organizationId),
+        versionValue,
+        activityType,
+        activityFileName: file.originalname,
+        status: "active",
+      });
 
-  // move file
-  fs.renameSync(file.path, newFilePath);
+      if (existingActivity) {
+        skippedCount++;
+         skippedData.push({
+          fileName: file.originalname,
+        });
+        console.log(`Skipping duplicate file: ${file.originalname}`);
+        continue;
+      }
 
-  // ✅ Check if already exists
-  const existingActivity = await activityService.findOneByQuery({
-    organizationId: new Types.ObjectId(organizationId),
-    versionValue,
-    activityType,
-    activityFileName: file.originalname, // match by original name
-    status: 'active'
-  });
+      const newFilePath = path.join(destinationDir, file.filename);
 
-  // ✅ Skip duplicate
-  if (existingActivity) {
-    console.log(`Skipping duplicate file: ${file.originalname}`);
-    continue;
-  }
+      fs.renameSync(file.path, newFilePath);
 
-  // ✅ Create DB entry
-  const activity = await activityService.createActivity({
-    organizationId: new Types.ObjectId(organizationId),
-    activityType,
-    versionValue,
-    activityFileName: file.originalname,
-    activityFilePath: newFilePath.replace(/\\/g, '/'),
-    analyze_processing_status: 'pending',
-    status: 'active'
-  });
+      const activity = await activityService.createActivity({
+        organizationId: new Types.ObjectId(organizationId),
+        activityType,
+        versionValue,
+        activityFileName: file.originalname,
+        activityFilePath: newFilePath.replace(/\\/g, "/"),
+        analyze_processing_status: "pending",
+        status: "active",
+      });
 
-  createdActivities.push(activity);
-}
+      createdActivities.push(activity);
+    }
 
-    // Send Files to AI
-    const aiQueue = new Queue("aiFileQueue", {
-      connection: { host: "redis" },
-    });
+    // Only trigger AI queue if new files uploaded
+    if (createdActivities.length > 0) {
+      const aiQueue = new Queue("aiFileQueue", {
+        connection: { host: "redis" },
+      });
 
-    await aiQueue.add("sendActivityFiles", {
-      versionValue,
-      activityType
-    });
+      await aiQueue.add("sendActivityFiles", {
+        versionValue,
+        activityType,
+      });
+    }
+
+    // Dynamic message
+    let message = "";
+
+    if (createdActivities.length === 0) {
+      message = "All uploaded files already exist.";
+    } else if (skippedCount > 0) {
+      message = `${createdActivities.length} file(s) uploaded successfully, ${skippedCount} duplicate file(s) skipped.`;
+    } else {
+      message = "All files uploaded successfully.";
+    }
 
     return res.status(201).json({
       success: true,
-      message: 'Activities created successfully',
+      message,
       data: createdActivities,
       count: createdActivities.length,
+      skippedData,
+      skippedCount,
     });
   } catch (err) {
     next(err);
