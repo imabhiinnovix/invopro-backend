@@ -530,6 +530,18 @@ export const getAllFieldsMap = (
   return fieldMap;
 };
 
+export const getAllAttributesMap = (
+  dataSourceDetails: any,
+): Record<string, string> => {
+  const fieldMap: Record<string, any> = {};
+
+  (dataSourceDetails.fieldSettings || []).forEach((field: any) => {
+      fieldMap[field.mappedAttributeName] = field.label;
+  });
+
+  return fieldMap;
+};
+
 export const normalize = (v: any) => v?.toString().trim().toLowerCase();
 
 export const isValidCaseReference = (value: any): boolean => {

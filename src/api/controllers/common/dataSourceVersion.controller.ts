@@ -4463,13 +4463,12 @@ export const reconciledInvoicesExtraction = async (
       {
         filePath: normalizedPath,
         fileName: file.originalname,
-        orgCode,
         dataSourceId: process.env.INVOICE_DATASOURCE_ID || "69fdc5f5292b03c7f0d71cdf",
         uploadId,
         invoiceNumber,
         invoiceDate,
         currency,
-        targetCurrency: orgDefaultCurrency || 'USD'
+        user: req?.user
       }
     );
 
@@ -4558,7 +4557,7 @@ export const sendRevalidateRows = async (
   next: NextFunction
 ) => {
   try {
-    const { dataSourceId, rowIds, filters, search, year, month } = req.body;
+    const { dataSourceId, rowIds, filters, search, year, month, isAllSelected = false, versionId } = req.body;
 
     if (!dataSourceId) {
       return res.status(400).json({
@@ -4572,15 +4571,24 @@ export const sendRevalidateRows = async (
       connection: { host: "redis" },
     });
 
-    await aiFileQueue.add("sendPreValidatedRows", {
-      dataSourceId,
-      rowIds,
-      filters: filters ? JSON.stringify(filters) : null, // ✅ stringify
-      search, // ✅ direct string
-      year,
-      month,
-      user: req.user
-    });
+    if(isAllSelected == true){
+      await aiFileQueue.add("sendPreValidatedFiles", {
+                dataSourceIds: [process.env.INVOICE_DATASOURCE_ID],
+                versionId,
+                user: req?.user
+              });
+    }else{
+
+      await aiFileQueue.add("sendPreValidatedRows", {
+        dataSourceId,
+        rowIds,
+        filters: filters ? JSON.stringify(filters) : null, // ✅ stringify
+        search, // ✅ direct string
+        year,
+        month,
+        user: req.user
+      });
+    }
 
     return res.status(200).json({
       success: true,

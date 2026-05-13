@@ -17,7 +17,7 @@ import "../database/models/invoicivixVendor/vendor";
 import "../database/models/invoicivixVendor/subVendor";
 import "../database/models/invoicivixVendor/engagementLetter";
 import fs from "fs";
-import { formatDateValue, getAllFieldsMap, getConversionRate, getRowVersionSchemaName, getValidatedFieldsMap, resolveServiceMethod } from "../utils/common.utils";
+import { formatDateValue, getAllAttributesMap, getAllFieldsMap, getConversionRate, getRowVersionSchemaName, getValidatedFieldsMap, resolveServiceMethod } from "../utils/common.utils";
 import { getDashboardWidget, updateDashboardWidget } from "../database/services/common/dashboardWidget.services";
 import axios from "axios";
 import { buildWidgetRequestPayload } from "../utils/buildWidgetRequest.utils";
@@ -31,6 +31,7 @@ import { generateAIToken } from "../utils/token.utils";
 import createDefaultDataSourceVersionModel from "../database/models/common/defaultDataSourceVersionModel";
 import { populate } from "dotenv";
 import { createInvoiceAuditLog } from "../database/services/common/dataSourceRowVersion.services";
+import { autoPopulateAttributeOption } from "../utils/attributeOption.utils";
 
 
 
@@ -1063,7 +1064,7 @@ new Worker(
 
       if (job.name !== "sendPreValidatedFiles" && job.name !== "processAIExtraction" && job.name !== "sendActivityFiles" && job.name !== "sendPreValidatedRows" && job.name !== "sendCostValidatedRows") return;
 
-      const { dataSourceIds, versionValue, vendorId, activityType, user } = job.data;
+      const { dataSourceIds, versionValue, vendorId, activityType, user, versionId } = job.data;
 
       console.log('job data', JSON.stringify(job.data));
       
@@ -1164,7 +1165,8 @@ new Worker(
               await dataSourceVersionServices.getDataSourceVersionList({
                 query: {
                   dataSourceId,
-                  isCurrent: true,
+                  ...(versionId && { _id: versionId }),
+                  // isCurrent: true,
                   ...(versionValue && { versionValue }),
                   ...(vendorId && {vendorId})
                 },
@@ -2204,13 +2206,14 @@ new Worker(
 
   const {
     filePath,
-    orgCode,
     uploadId,
     invoiceNumber,
     invoiceDate,
     currency,
-    targetCurrency
+    user
   } = job.data;
+
+  const { organizationId, orgCode, orgDefaultCurrency: targetCurrency, userId } = user;
 
   if (!uploadId) {
     throw new Error("dataSourceVersionId is required");
@@ -2226,7 +2229,7 @@ new Worker(
   const version =
     await dataSourceVersionServices.getDataSourceVersion({
       query: { _id: uploadId },
-      populate: ["dataSourceId"],
+      populate: ["dataSourceId", "entityId"],
     });
 
   if (!version) {
@@ -2287,6 +2290,7 @@ new Worker(
   // Build Insert Payload
   // ---------------------------------------------
   const insertData: any[] = [];
+  const finalRowData: any[] = [];
 
   for (let i = 2; i <= worksheet.rowCount; i++) {
     const row = worksheet.getRow(i);
@@ -2332,6 +2336,7 @@ new Worker(
       status: "active",
       aiPreValidateStatus: "completed",
     });
+    finalRowData.push(rowData);
   }
 
   console.log(
@@ -2346,6 +2351,17 @@ new Worker(
       schemaName,
       insertData
     );
+    const entityDetails = version.entityId as any;
+    let attributes = entityDetails?.attributes || [];
+    const jsonMapping = await getAllAttributesMap(dataSourceDetails);
+    await autoPopulateAttributeOption({
+            fileData: finalRowData,
+            entityId: dataSourceDetails?.entityId || '',
+            attributesDetails: attributes,
+            attributMapping: jsonMapping,
+            userId,
+            organizationId,
+          });
     // await dataSourceVersionServices.updateDataSourceVersions({
     //         query: { dataSourceId :dataSourceDetails?._id, versionValue: version?.versionValue },
     //         updateFields: { isCurrent: false },
