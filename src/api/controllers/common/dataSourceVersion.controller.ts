@@ -2381,11 +2381,6 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
         let totalApprovedCount = 0;
         let totalFlaggedCount = 0;
 
-        let firstInvoiceNumber: string | null = null;
-        let firstInvoiceDate: string | null = null;
-        let firstCurrency: string | null = null;
-        let firstCaptured = false;
-
         while (hasMore) {
   const { data, totalCount } =
     await dataSourceVersionValueService.getDataSourceVersionValueSafe({
@@ -2395,12 +2390,9 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
       },
 
       select: {
-        "rowData.Invoice Number": 1,
-        "rowData.Invoice Date": 1,
         "rowData.Service Fees": 1,
         "rowData.Official Fees": 1,
         "rowData.Validated|Analyze Status": 1,
-        "rowData.currency": 1
       },
 
       page,
@@ -2425,13 +2417,6 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
     } else {
       totalFlaggedCount++;
     }
-
-    if (!firstCaptured) {
-      firstInvoiceNumber = row?.["Invoice Number"] || null;
-      firstInvoiceDate = row?.["Invoice Date"] || null;
-      firstCurrency = row?.["currency"] || null;
-      firstCaptured = true;
-    }
   }
 
   const fetchedCount = page * BATCH_SIZE;
@@ -2444,10 +2429,7 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
           totalLineItems,
           totalAmount: totalServiceFees + totalOfficialFees,
           totalApprovedCount,
-          totalFlaggedCount,
-          firstInvoiceNumber,
-          firstInvoiceDate,
-          firstCurrency
+          totalFlaggedCount
         });
       }
     }
@@ -4437,9 +4419,9 @@ export const reconciledInvoicesExtraction = async (
 ) => {
   try {
 
-    const { organizationId, orgCode } = req.user;
+    const { organizationId, orgCode, orgDefaultCurrency } = req.user;
 
-    const { uploadId } = req.body;
+    const { uploadId, invoiceNumber, invoiceDate, currency } = req.body;
 
     // ✅ validation
     const file = req.file as Express.Multer.File;
@@ -4483,7 +4465,11 @@ export const reconciledInvoicesExtraction = async (
         fileName: file.originalname,
         orgCode,
         dataSourceId: process.env.INVOICE_DATASOURCE_ID || "69fdc5f5292b03c7f0d71cdf",
-        uploadId
+        uploadId,
+        invoiceNumber,
+        invoiceDate,
+        currency,
+        targetCurrency: orgDefaultCurrency || 'USD'
       }
     );
 

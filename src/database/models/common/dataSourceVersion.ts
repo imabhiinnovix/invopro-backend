@@ -3,6 +3,19 @@
 
 import { Schema, model, Document, Types } from 'mongoose';
 
+interface ICurrencyConversion {
+  baseCurrency?: string;
+  targetCurrency?: string;
+  rate?: number;
+}
+
+interface IAIExtraction {
+  invoiceNumber?: string;
+  invoiceDate?: Date;
+  extractedAt?: Date;
+  conversion?: ICurrencyConversion;
+}
+
 interface IDataSourceVersion extends Document {
   organizationId: Types.ObjectId;
   vendorId: Types.ObjectId | null;
@@ -33,6 +46,7 @@ interface IDataSourceVersion extends Document {
   fileName: string;
   mappings: Record<string, string>;
   separator: Record<string, string>;
+  aiExtraction?: IAIExtraction;
 }
 
 const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
@@ -66,6 +80,38 @@ const dataSourceVersionSchema = new Schema<IDataSourceVersion>(
         'failed'
       ],
       default: 'pending'
+    },
+    aiExtraction: {
+      invoiceNumber: {
+        type: String,
+        default: null,
+      },
+
+      invoiceDate: {
+        type: Date,
+        default: null,
+      },
+
+      extractedAt: {
+        type: Date,
+        default: null,
+      },
+      conversion: {
+        baseCurrency: {
+          type: String,
+          default: null,
+        },
+
+        targetCurrency: {
+          type: String,
+          default: null,
+        },
+
+        rate: {
+          type: Number,
+          default: null,
+        },
+      },
     },
     mappings: { type: Schema.Types.Mixed },
     separator: {

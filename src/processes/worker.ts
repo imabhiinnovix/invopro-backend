@@ -17,7 +17,7 @@ import "../database/models/invoicivixVendor/vendor";
 import "../database/models/invoicivixVendor/subVendor";
 import "../database/models/invoicivixVendor/engagementLetter";
 import fs from "fs";
-import { formatDateValue, getAllFieldsMap, getRowVersionSchemaName, getValidatedFieldsMap, resolveServiceMethod } from "../utils/common.utils";
+import { formatDateValue, getAllFieldsMap, getConversionRate, getRowVersionSchemaName, getValidatedFieldsMap, resolveServiceMethod } from "../utils/common.utils";
 import { getDashboardWidget, updateDashboardWidget } from "../database/services/common/dashboardWidget.services";
 import axios from "axios";
 import { buildWidgetRequestPayload } from "../utils/buildWidgetRequest.utils";
@@ -2206,6 +2206,10 @@ new Worker(
     filePath,
     orgCode,
     uploadId,
+    invoiceNumber,
+    invoiceDate,
+    currency,
+    targetCurrency
   } = job.data;
 
   if (!uploadId) {
@@ -2342,15 +2346,46 @@ new Worker(
       schemaName,
       insertData
     );
-    await dataSourceVersionServices.updateDataSourceVersions({
-            query: { dataSourceId :dataSourceDetails?._id, versionValue: version?.versionValue },
-            updateFields: { isCurrent: false },
-          });
+    // await dataSourceVersionServices.updateDataSourceVersions({
+    //         query: { dataSourceId :dataSourceDetails?._id, versionValue: version?.versionValue },
+    //         updateFields: { isCurrent: false },
+    //       });
+
+    let conversion:any = null;
+
+    if (currency) {
+      const from = currency;
+      const to = targetCurrency; // pass in job.data
+
+      let rate = 1;
+
+      if (from !== to) {
+        rate = await getConversionRate(from, to);
+
+        if (!rate) {
+          rate = 83.25; // fallback
+        }
+      }
+
+      conversion = {
+        baseCurrency: from,
+        targetCurrency: to,
+        rate,
+      };
+    }
     await dataSourceVersionServices.updateDataSourceVersion(
       uploadId,
       {
         status: "completed",
         aiStatus: "analyst-review",
+        aiExtraction: {
+          invoiceNumber,
+          invoiceDate: invoiceDate
+            ? new Date(invoiceDate)
+            : null,
+          extractedAt: new Date(),
+          conversion
+        },
       }
     );
   }
