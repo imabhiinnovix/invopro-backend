@@ -42,6 +42,7 @@ import { getCentralFileValue } from '../../../database/services/common/defaultCe
 import { autoSyncReferenceRow } from '../../../utils/attributeAutoGenerate.utils';
 import fs from "fs";
 import { bulkCreateRowVersionsFromInserted, createRowVersion, getLatestRowVersion, getRowVersionHistory } from '../../../database/services/common/dataSourceRowVersion.services';
+import { getVendorList } from '../../../database/services/invoicivixVendor/vendor.service';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -2310,7 +2311,18 @@ export const checkDataSourceVersionNameAvailableOrNot = async (req: Request, res
 
 export const listDataSourceVersion = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search, paginate = 'false', dataSourceId, versionId } = req.query;
+    const {
+      search,
+      paginate = "false",
+      dataSourceId,
+      versionId,
+      year,
+      month,
+      vendorId,
+      startDate,
+      endDate,
+      aiStatus
+    } = req.query;
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 10;
 
@@ -2318,9 +2330,47 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
 
     // const query: any = { organizationId, status: { $in : ["completed", "failed"] } };
     const query: any = { organizationId };
-    if (search) query.name = { $regex: search, $options: 'i' };
-    if(dataSourceId) query.dataSourceId = dataSourceId;
-    if(versionId) query.versionId = versionId;
+
+    if (dataSourceId) query.dataSourceId = dataSourceId;
+    if (versionId) query.versionId = versionId;
+    if (vendorId) query.vendorId = vendorId;
+    if (aiStatus) query.aiStatus = aiStatus == 'approvedPaid' ?  {$in:['approved', 'paid']} : {$nin:['approved', 'paid']};
+
+    if (search) {
+      const matchingVendors = await getVendorList({
+      query: {
+        name: { $regex: search, $options: "i" }
+      }
+    });
+
+      const vendorIds = matchingVendors.data.map((v) => v._id);
+
+      query.$or = [
+        { vendorId: { $in: vendorIds } },
+        { versionValue: { $regex: search, $options: "i" } },
+        { "aiExtraction.invoiceNumber": { $regex: search, $options: "i" } },
+      ];
+    }
+
+    if (year && month) {
+      query.versionValue = `${year}-${month}`;
+    } else if (year) {
+      query.versionValue = { $regex: `^${year}` };
+    }
+
+    if (startDate || endDate) {
+      query.createdAt = {};
+
+      if (startDate) {
+        query.createdAt.$gte = new Date(startDate as string);
+      }
+
+      if (endDate) {
+        const end = new Date(endDate as string);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
+    }
 
     let result: any = {};
     if (paginate) {
@@ -2348,10 +2398,14 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
         ],
       });
     } else {
-      result = await dataSourceService.getDataSourceList({
+      result = await dataSourceVersionService.getDataSourceVersionList({
         query,
       });
     }
+
+    // AI STATUS SUMMARY
+    const aiSummary =
+      await dataSourceVersionService.getDataSourceVersionAiSummary(query);
 
     // ===============================
     // INVOICE SUMMARY PER VERSION
@@ -2400,8 +2454,6 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
       sort: { _id: 1 },
     });
 
-  console.log("data", data);
-
   for (const rec of data) {
     const row = rec.rowData || {};
 
@@ -2440,6 +2492,7 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
       data: result.data,
       totalCount: result.totalCount,
       summary,
+      aiSummary
     });
   } catch (err) {
     next(err);
@@ -3144,7 +3197,7 @@ export const exportDataSourceVersionDataToExcel = async (
   next: NextFunction
 ) => {
   try {
-    const { dataSourceId, versionValue, filters, search, selectedFields, year, month, isSummary, segregationField } = req.query as {
+    const { dataSourceId, versionValue, filters, search, selectedFields, year, month, isSummary, segregationField, versionId } = req.query as {
       dataSourceId: string;
       versionValue?: string;
       filters?: string;
@@ -3154,6 +3207,7 @@ export const exportDataSourceVersionDataToExcel = async (
       month?: string;
       isSummary?: string;
       segregationField?: string;
+      versionId?: string;
     };
 
     const { orgCode, userId, organizationId, orgDefaultCurrency } = req.user;
@@ -3218,7 +3272,7 @@ export const exportDataSourceVersionDataToExcel = async (
     // 🔹 Build version query
     const versionQuery: any = {
       dataSourceId,
-      isCurrent: true,
+      // isCurrent: true,
     };
     
      // ✅ Priority 1: exact versionValue (if directly passed)
@@ -3235,6 +3289,10 @@ export const exportDataSourceVersionDataToExcel = async (
     // ✅ Priority 3: only year filter
     else if (year) {
       versionQuery.versionValue = { $regex: `^${year.toString().trim()}` };
+    }
+
+    if(versionId){
+      versionQuery._id = new Types.ObjectId(versionId);
     }
 
     const dataSourceVersionDetails = await dataSourceVersionService.getDataSourceVersionList({

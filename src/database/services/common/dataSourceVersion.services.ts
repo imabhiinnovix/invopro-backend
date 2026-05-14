@@ -68,9 +68,13 @@ export const getDataSourceVersionList = async ({
     // Remove the await keyword here
     let dataSourceVersionQuery: any = DataSourceVersion.find(query)
       .select(select)
-      .skip((page - 1) * limit)
-      .limit(limit)
       .sort(sort);
+
+    if (page && limit) {
+      dataSourceVersionQuery = dataSourceVersionQuery
+        .skip((page - 1) * limit)
+        .limit(limit);
+    }
 
     if (populate && Array.isArray(populate)) {
       populate.forEach((field) => {
@@ -179,6 +183,26 @@ export const getDataSourceVersionListAdvanceFunction = async ({
 
       return { data: dataSourceVersion, totalCount };
     }
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getDataSourceVersionAiSummary = async (query: any) => {
+  try {
+    const [approvedPaidCount, totalCount] = await Promise.all([
+      DataSourceVersion.countDocuments({
+        ...query,
+        aiStatus: { $in: ["approved", "paid"] },
+      }),
+      DataSourceVersion.countDocuments(query),
+    ]);
+
+    return {
+      approvedPaidCount,
+      otherCount: totalCount - approvedPaidCount,
+      totalCount,
+    };
   } catch (err) {
     throw err;
   }
