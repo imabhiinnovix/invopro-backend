@@ -2499,7 +2499,7 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
   }
 };
 
-export const getDashboardAnalytics = async (
+export const getDashboardSummary = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -2537,10 +2537,185 @@ export const getDashboardAnalytics = async (
 
     if (startDate || endDate) {
       query.createdAt = {};
-
-      if (startDate) {
-        query.createdAt.$gte = new Date(startDate as string);
+      if (startDate) query.createdAt.$gte = new Date(startDate as string);
+      if (endDate) {
+        const end = new Date(endDate as string);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
       }
+    }
+
+    const { data: versions } =
+      await dataSourceVersionService.getDataSourceVersionList({
+        query,
+        populate: [
+          { path: "vendorId", select: "name country" },
+          { path: "dataSourceId", select: "code" },
+        ],
+      });
+
+    const analytics: {
+  kpis: {
+    totalBilled: number;
+    processed: number;
+    unprocessed: number;
+    flagged: number;
+    billingSessions: number;
+  };
+  monthly: Record<string, { processed: number; unprocessed: number }>;
+  regionWise: Record<string, number>;
+  firms: any[];
+} = {
+  kpis: {
+    totalBilled: 0,
+    processed: 0,
+    unprocessed: 0,
+    flagged: 0,
+    billingSessions: 0,
+  },
+  monthly: {},
+  regionWise: {},
+  firms: [],
+};
+
+    const vendorMap: Record<string, any> = {};
+
+    for (const version of versions) {
+      const vendorKey = version.vendorId?._id?.toString();
+
+      if (!vendorMap[vendorKey]) {
+        vendorMap[vendorKey] = {
+          firm: version.vendorId?.name || "Unknown",
+          region: version.vendorId?.country || "Other",
+          total: 0,
+          totalAmount: 0,
+          approved: 0,
+          pending: 0,
+          flagged: 0,
+          proc: 0,
+          unproc: 0,
+        };
+      }
+
+      const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+        orgCode,
+        versionCode: version?.dataSourceId?.code,
+      });
+
+      const rows =
+        await dataSourceVersionValueService.getDataSourceVersionValueSafe({
+          schemaName,
+          query: { dataSourceVersionId: version._id },
+          select: { rowData: 1 },
+          limit: 5000,
+          page: 1,
+        });
+
+      let versionAmount = 0;
+      let approved = 0;
+      let flagged = 0;
+
+      for (const rec of rows.data) {
+        const row = rec.rowData || {};
+
+        const amount =
+          Number(row["Service Fees"] || 0) +
+          Number(row["Official Fees"] || 0);
+
+        versionAmount += amount;
+
+        if (row["Validated|Analyze Status"] === "Approved") {
+          approved += amount;
+        } else {
+          flagged++;
+        }
+      }
+
+      const pending = versionAmount - approved;
+      const monthKey = version.versionValue.split("-")[1];
+
+      vendorMap[vendorKey].total++;
+      vendorMap[vendorKey].totalAmount += versionAmount;
+      vendorMap[vendorKey].approved += approved;
+      vendorMap[vendorKey].pending += pending;
+      vendorMap[vendorKey].flagged += flagged;
+
+      if (approved > 0) vendorMap[vendorKey].proc++;
+      if (pending > 0) vendorMap[vendorKey].unproc++;
+
+      analytics.kpis.totalBilled += versionAmount;
+      analytics.kpis.processed += approved;
+      analytics.kpis.unprocessed += pending;
+      analytics.kpis.flagged += flagged;
+
+      if (!analytics.monthly[monthKey]) {
+        analytics.monthly[monthKey] = {
+          processed: 0,
+          unprocessed: 0,
+        };
+      }
+
+      analytics.monthly[monthKey].processed += approved;
+      analytics.monthly[monthKey].unprocessed += pending;
+
+      analytics.regionWise[vendorMap[vendorKey].region] =
+        (analytics.regionWise[vendorMap[vendorKey].region] || 0) +
+        versionAmount;
+    }
+
+    analytics.firms = Object.values(vendorMap);
+    analytics.kpis.billingSessions = versions.length;
+
+    res.status(200).json({
+      success: true,
+      data: analytics,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+export const getDashboardAnalytics = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      dataSourceId,
+      year,
+      month,
+      vendorId,
+      aiStatus,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 10,
+    } = req.query as any;
+
+    const { organizationId, orgCode } = req.user;
+
+    const query: any = { organizationId };
+
+    if (dataSourceId) query.dataSourceId = dataSourceId;
+    if (vendorId) query.vendorId = vendorId;
+
+    if (aiStatus) {
+      query.aiStatus =
+        aiStatus === "approvedPaid"
+          ? { $in: ["approved", "paid"] }
+          : { $nin: ["approved", "paid"] };
+    }
+
+    if (year && month) {
+      query.versionValue = `${year}-${month}`;
+    } else if (year) {
+      query.versionValue = { $regex: `^${year}` };
+    }
+
+    if (startDate || endDate) {
+      query.createdAt = {};
+
+      if (startDate) query.createdAt.$gte = new Date(startDate as string);
 
       if (endDate) {
         const end = new Date(endDate as string);
@@ -2558,21 +2733,9 @@ export const getDashboardAnalytics = async (
         ],
       });
 
-    const analytics = {
-      kpis: {
-        totalBilled: 0,
-        processed: 0,
-        unprocessed: 0,
-        flagged: 0,
-        billingSessions: 0,
-      },
-      monthly: {} as Record<string, { processed: number; unprocessed: number }>,
-      regionWise: {} as Record<string, number>,
-      firms: [] as any[],
-      table: [] as any[],
-    };
-
-    // Group versions by vendor + versionValue
+    /**
+     * Group by vendor + version
+     */
     const groupedVersions: Record<string, any[]> = {};
 
     for (const version of versions) {
@@ -2585,7 +2748,7 @@ export const getDashboardAnalytics = async (
       groupedVersions[key].push(version);
     }
 
-    analytics.kpis.billingSessions = Object.keys(groupedVersions).length;
+    const tableRows: any[] = [];
 
     for (const group of Object.values(groupedVersions)) {
       const baseVersion = group[0];
@@ -2595,15 +2758,14 @@ export const getDashboardAnalytics = async (
       let flagged = 0;
 
       const invoiceSet = new Set<string>();
+      const processedInvoices = new Set<string>();
+      const unprocessedInvoices = new Set<string>();
 
       for (const version of group) {
-        // unique invoiceNumber from version model
-        if (Array.isArray(version.invoiceNumber)) {
-          version.invoiceNumber.forEach((inv: string) =>
-            invoiceSet.add(inv)
-          );
-        } else if (version.invoiceNumber) {
-          invoiceSet.add(version.invoiceNumber);
+        const invoiceNumber = version?.aiExtraction?.invoiceNumber;
+
+        if (invoiceNumber) {
+          invoiceSet.add(invoiceNumber);
         }
 
         const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
@@ -2624,6 +2786,8 @@ export const getDashboardAnalytics = async (
             page: 1,
           });
 
+        let invoiceApproved = true;
+
         for (const rec of rows.data) {
           const row = rec.rowData || {};
 
@@ -2637,52 +2801,29 @@ export const getDashboardAnalytics = async (
             approved += amount;
           } else {
             flagged++;
+            invoiceApproved = false;
+          }
+        }
+
+        if (invoiceNumber) {
+          if (invoiceApproved) {
+            processedInvoices.add(invoiceNumber);
+          } else {
+            unprocessedInvoices.add(invoiceNumber);
           }
         }
       }
 
       const invoiceCount = invoiceSet.size;
       const pending = totalAmount - approved;
-      const region = baseVersion.vendorId?.country || "Other";
 
-      analytics.kpis.totalBilled += totalAmount;
-      analytics.kpis.processed += approved;
-      analytics.kpis.unprocessed += pending;
-      analytics.kpis.flagged += flagged;
-
-      const monthKey = baseVersion.versionValue.split("-")[1];
-
-      if (!analytics.monthly[monthKey]) {
-        analytics.monthly[monthKey] = {
-          processed: 0,
-          unprocessed: 0,
-        };
-      }
-
-      analytics.monthly[monthKey].processed += approved;
-      analytics.monthly[monthKey].unprocessed += pending;
-
-      analytics.regionWise[region] =
-        (analytics.regionWise[region] || 0) + totalAmount;
-
-      analytics.firms.push({
+      tableRows.push({
         firm: baseVersion.vendorId?.name || "Unknown",
-        region,
+        region: baseVersion.vendorId?.country || "Other",
         session: baseVersion.versionValue,
         total: invoiceCount,
-        amount: totalAmount,
-        approved,
-        pending,
-        flagged,
-        proc: approved > 0 ? invoiceCount : 0,
-        unproc: pending > 0 ? invoiceCount : 0,
-      });
-
-      analytics.table.push({
-        firm: baseVersion.vendorId?.name || "Unknown",
-        region,
-        session: baseVersion.versionValue,
-        invoices: invoiceCount,
+        proc: processedInvoices.size,
+        unproc: unprocessedInvoices.size,
         totalAmount,
         approved,
         pending,
@@ -2690,9 +2831,32 @@ export const getDashboardAnalytics = async (
       });
     }
 
+    /**
+     * Sort latest first
+     */
+    tableRows.sort((a, b) => b.session.localeCompare(a.session));
+
+    /**
+     * Pagination
+     */
+    const total = tableRows.length;
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+
+    const start = (pageNumber - 1) * limitNumber;
+    const paginatedRows = tableRows.slice(start, start + limitNumber);
+
     res.status(200).json({
       success: true,
-      data: analytics,
+      data: {
+        table: paginatedRows,
+        pagination: {
+          total,
+          page: pageNumber,
+          limit: limitNumber,
+          totalPages: Math.ceil(total / limitNumber),
+        },
+      },
     });
   } catch (err) {
     next(err);

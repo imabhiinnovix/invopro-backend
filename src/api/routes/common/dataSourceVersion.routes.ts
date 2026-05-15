@@ -10,6 +10,7 @@ import {
   exportDataSourceVersionDataToExcel,
   getAuditLogs,
   getDashboardAnalytics,
+  getDashboardSummary,
   getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue,
   getDataSourceVersionDetailsBasedOnId,
   getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue,
@@ -32,6 +33,7 @@ const router = Router();
 
 router.get('/list', authenticateToken, permissionMiddleware(), listDataSourceVersion);
 
+router.get('/dashboard/analyticsSummary', authenticateToken, getDashboardSummary);
 router.get('/dashboard/analytics', authenticateToken, getDashboardAnalytics);
 
 router.get('/auditList', authenticateToken, getAuditLogs);
