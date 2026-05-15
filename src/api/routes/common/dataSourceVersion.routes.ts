@@ -9,6 +9,7 @@ import {
   deleteMultipleRowsFromVersion,
   exportDataSourceVersionDataToExcel,
   getAuditLogs,
+  getDashboardAnalytics,
   getDataSourceVersionDataBasedOnDataSourceIdAndVersionValue,
   getDataSourceVersionDetailsBasedOnId,
   getLatestDataSourceVersionDetailBasedOnCustomReportIdAndVersionValue,
@@ -30,6 +31,8 @@ import { authenticateAIToken } from '../../../middlewares/aiAuth.middleware';
 const router = Router();
 
 router.get('/list', authenticateToken, permissionMiddleware(), listDataSourceVersion);
+
+router.get('/dashboard/analytics', authenticateToken, getDashboardAnalytics);
 
 router.get('/auditList', authenticateToken, getAuditLogs);
 

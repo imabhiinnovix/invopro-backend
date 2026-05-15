@@ -2499,6 +2499,206 @@ export const listDataSourceVersion = async (req: Request, res: Response, next: N
   }
 };
 
+export const getDashboardAnalytics = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      dataSourceId,
+      year,
+      month,
+      vendorId,
+      aiStatus,
+      startDate,
+      endDate,
+    } = req.query;
+
+    const { organizationId, orgCode } = req.user;
+
+    const query: any = { organizationId };
+
+    if (dataSourceId) query.dataSourceId = dataSourceId;
+    if (vendorId) query.vendorId = vendorId;
+
+    if (aiStatus) {
+      query.aiStatus =
+        aiStatus === "approvedPaid"
+          ? { $in: ["approved", "paid"] }
+          : { $nin: ["approved", "paid"] };
+    }
+
+    if (year && month) {
+      query.versionValue = `${year}-${month}`;
+    } else if (year) {
+      query.versionValue = { $regex: `^${year}` };
+    }
+
+    if (startDate || endDate) {
+      query.createdAt = {};
+
+      if (startDate) {
+        query.createdAt.$gte = new Date(startDate as string);
+      }
+
+      if (endDate) {
+        const end = new Date(endDate as string);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
+    }
+
+    const { data: versions } =
+      await dataSourceVersionService.getDataSourceVersionList({
+        query,
+        populate: [
+          { path: "vendorId", select: "name country" },
+          { path: "dataSourceId", select: "code" },
+        ],
+      });
+
+    const analytics = {
+      kpis: {
+        totalBilled: 0,
+        processed: 0,
+        unprocessed: 0,
+        flagged: 0,
+        billingSessions: 0,
+      },
+      monthly: {} as Record<string, { processed: number; unprocessed: number }>,
+      regionWise: {} as Record<string, number>,
+      firms: [] as any[],
+      table: [] as any[],
+    };
+
+    // Group versions by vendor + versionValue
+    const groupedVersions: Record<string, any[]> = {};
+
+    for (const version of versions) {
+      const key = `${version.vendorId?._id}-${version.versionValue}`;
+
+      if (!groupedVersions[key]) {
+        groupedVersions[key] = [];
+      }
+
+      groupedVersions[key].push(version);
+    }
+
+    analytics.kpis.billingSessions = Object.keys(groupedVersions).length;
+
+    for (const group of Object.values(groupedVersions)) {
+      const baseVersion = group[0];
+
+      let totalAmount = 0;
+      let approved = 0;
+      let flagged = 0;
+
+      const invoiceSet = new Set<string>();
+
+      for (const version of group) {
+        // unique invoiceNumber from version model
+        if (Array.isArray(version.invoiceNumber)) {
+          version.invoiceNumber.forEach((inv: string) =>
+            invoiceSet.add(inv)
+          );
+        } else if (version.invoiceNumber) {
+          invoiceSet.add(version.invoiceNumber);
+        }
+
+        const schemaName = getSchemaNameBasedOnVersionCodeAndOrgCode({
+          orgCode,
+          versionCode: version?.dataSourceId?.code,
+        });
+
+        const rows =
+          await dataSourceVersionValueService.getDataSourceVersionValueSafe({
+            schemaName,
+            query: {
+              dataSourceVersionId: version._id,
+            },
+            select: {
+              rowData: 1,
+            },
+            limit: 5000,
+            page: 1,
+          });
+
+        for (const rec of rows.data) {
+          const row = rec.rowData || {};
+
+          const amount =
+            Number(row["Service Fees"] || 0) +
+            Number(row["Official Fees"] || 0);
+
+          totalAmount += amount;
+
+          if (row["Validated|Analyze Status"] === "Approved") {
+            approved += amount;
+          } else {
+            flagged++;
+          }
+        }
+      }
+
+      const invoiceCount = invoiceSet.size;
+      const pending = totalAmount - approved;
+      const region = baseVersion.vendorId?.country || "Other";
+
+      analytics.kpis.totalBilled += totalAmount;
+      analytics.kpis.processed += approved;
+      analytics.kpis.unprocessed += pending;
+      analytics.kpis.flagged += flagged;
+
+      const monthKey = baseVersion.versionValue.split("-")[1];
+
+      if (!analytics.monthly[monthKey]) {
+        analytics.monthly[monthKey] = {
+          processed: 0,
+          unprocessed: 0,
+        };
+      }
+
+      analytics.monthly[monthKey].processed += approved;
+      analytics.monthly[monthKey].unprocessed += pending;
+
+      analytics.regionWise[region] =
+        (analytics.regionWise[region] || 0) + totalAmount;
+
+      analytics.firms.push({
+        firm: baseVersion.vendorId?.name || "Unknown",
+        region,
+        session: baseVersion.versionValue,
+        total: invoiceCount,
+        amount: totalAmount,
+        approved,
+        pending,
+        flagged,
+        proc: approved > 0 ? invoiceCount : 0,
+        unproc: pending > 0 ? invoiceCount : 0,
+      });
+
+      analytics.table.push({
+        firm: baseVersion.vendorId?.name || "Unknown",
+        region,
+        session: baseVersion.versionValue,
+        invoices: invoiceCount,
+        totalAmount,
+        approved,
+        pending,
+        flagged,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: analytics,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getAuditLogs = async (
   req: Request,
   res: Response,
