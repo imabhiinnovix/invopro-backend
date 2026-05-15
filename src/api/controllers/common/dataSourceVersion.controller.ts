@@ -2579,9 +2579,10 @@ export const getDashboardSummary = async (
 };
 
     const vendorMap: Record<string, any> = {};
-
+    const uniqueVersions = new Set<string>();
     for (const version of versions) {
       const vendorKey = version.vendorId?._id?.toString();
+      uniqueVersions.add(version.versionValue);
 
       if (!vendorMap[vendorKey]) {
         vendorMap[vendorKey] = {
@@ -2664,7 +2665,7 @@ export const getDashboardSummary = async (
     }
 
     analytics.firms = Object.values(vendorMap);
-    analytics.kpis.billingSessions = versions.length;
+    analytics.kpis.billingSessions = uniqueVersions.size;
 
     res.status(200).json({
       success: true,
