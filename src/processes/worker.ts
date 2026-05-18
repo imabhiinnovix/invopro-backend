@@ -1453,7 +1453,7 @@ new Worker(
     const version: any =
       await dataSourceVersionServices.getDataSourceVersion({
         query: {_id: dataSourceVersionId },
-        populate: ["dataSourceId"]
+        populate: ["dataSourceId", "vendorId"]
     });
     if (!version) {
       throw new Error("Datasource version not found");
@@ -1484,7 +1484,7 @@ new Worker(
 
     filesToUpload.forEach((file) => {
       formData.append(
-        "files",
+        "invoice_file",
         fs.createReadStream(file.path) as any,
         file.fileName
       );
@@ -1496,7 +1496,8 @@ new Worker(
     );
 
     formData.append("authToken", aiToken);
-    formData.append("uploadId", dataSourceVersionId);
+    formData.append("invoice_global_id", dataSourceVersionId);
+    formData.append("law_firm_name", version?.vendorId?.name);
 
     console.log('aiToken',aiToken);
 
@@ -1537,7 +1538,7 @@ await createInvoiceAuditLog({
     // Send to AI
     // ---------------------------------------------
     const response = await axios.post(
-      `${process.env.BASE_AI_SERVICE_URL}/invoiceAIExtraction`,
+      `${process.env.BASE_AI_SERVICE_URL}/analyze_invoice`,
       formData,
       {
         headers: {

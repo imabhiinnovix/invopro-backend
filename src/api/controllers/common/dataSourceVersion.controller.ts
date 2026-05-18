@@ -2588,6 +2588,7 @@ export const getDashboardSummary = async (
         vendorMap[vendorKey] = {
           firm: version.vendorId?.name || "Unknown",
           region: version.vendorId?.country || "Other",
+          aiExtraction: version?.aiExtraction,
           total: 0,
           totalAmount: 0,
           approved: 0,
@@ -2619,9 +2620,16 @@ export const getDashboardSummary = async (
       for (const rec of rows.data) {
         const row = rec.rowData || {};
 
-        const amount =
-          Number(row["Service Fees"] || 0) +
-          Number(row["Official Fees"] || 0);
+        const serviceFees = Number(row["Service Fees"] || 0);
+        const officialFees = Number(row["Official Fees"] || 0);
+
+        const rate = Number(
+          version?.aiExtraction?.conversion?.rate || 1
+        );
+
+        const amount = Number(
+          ((serviceFees + officialFees) / rate).toFixed(2)
+        );
 
         versionAmount += amount;
 
@@ -2729,7 +2737,7 @@ export const getDashboardAnalytics = async (
       await dataSourceVersionService.getDataSourceVersionList({
         query,
         populate: [
-          { path: "vendorId", select: "name country" },
+          { path: "vendorId", select: "name country _id" },
           { path: "dataSourceId", select: "code" },
         ],
       });
@@ -2819,9 +2827,11 @@ export const getDashboardAnalytics = async (
       const pending = totalAmount - approved;
 
       tableRows.push({
+        vendorId: baseVersion?.vendorId?._id || "",
         firm: baseVersion.vendorId?.name || "Unknown",
         region: baseVersion.vendorId?.country || "Other",
         session: baseVersion.versionValue,
+        aiExtraction: baseVersion?.aiExtraction,
         total: invoiceCount,
         proc: processedInvoices.size,
         unproc: unprocessedInvoices.size,
@@ -3562,7 +3572,7 @@ export const exportDataSourceVersionDataToExcel = async (
   next: NextFunction
 ) => {
   try {
-    const { dataSourceId, versionValue, filters, search, selectedFields, year, month, isSummary, segregationField, versionId } = req.query as {
+    const { dataSourceId, versionValue, filters, search, selectedFields, year, month, isSummary, segregationField, versionId, aiStatus, vendorId } = req.query as {
       dataSourceId: string;
       versionValue?: string;
       filters?: string;
@@ -3573,6 +3583,8 @@ export const exportDataSourceVersionDataToExcel = async (
       isSummary?: string;
       segregationField?: string;
       versionId?: string;
+      aiStatus?: string;
+      vendorId?: string;
     };
 
     const { orgCode, userId, organizationId, orgDefaultCurrency } = req.user;
@@ -3643,6 +3655,14 @@ export const exportDataSourceVersionDataToExcel = async (
      // ✅ Priority 1: exact versionValue (if directly passed)
     if (versionValue) {
       versionQuery.versionValue = versionValue;
+    }
+
+    if (aiStatus) {
+      versionQuery.aiStatus = aiStatus;
+    }
+
+    if (vendorId) {
+      versionQuery.vendorId = vendorId;
     }
 
     // ✅ Priority 2: year + month filter
@@ -4844,7 +4864,7 @@ export const reconciledInvoicesExtraction = async (
 
     const { organizationId, orgCode, orgDefaultCurrency } = req.user;
 
-    const { uploadId, invoiceNumber, invoiceDate, currency } = req.body;
+    const { invoice_global_id: uploadId, invoice_number: invoiceNumber, invoice_date: invoiceDate, invoice_currency: currency } = req.body;
 
     // ✅ validation
     const file = req.file as Express.Multer.File;

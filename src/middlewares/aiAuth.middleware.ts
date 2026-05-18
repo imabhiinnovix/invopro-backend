@@ -28,7 +28,7 @@ export const authenticateAIToken = async(
         userId: decoded.userId,
         organizationId: decoded.organizationId,
         orgCode: decoded.orgCode,
-        orgDefaultCurrency: decoded.defaultCurrency,
+        orgDefaultCurrency: decoded.orgDefaultCurrency,
     };
 
     next();
